@@ -1,0 +1,41 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..2bd4c18f 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+@@ -4211,2 +4211,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
++	    xmlNsPtr orig_ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	    if (orig_ns != NULL) {
+@@ -4216 +4216,3 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		/* Check if namespace is still valid before copying */
++		if (orig_ns->href != NULL) {
++		    ret->ns = xmlNewNs(root, orig_ns->href, orig_ns->prefix);
+@@ -4218 +4220,4 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++		    ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++		}
++	    } else {
++		ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..83ba6d59 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1280 +1280 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-        if ((reader->preserves > 0) &&
++	if ((reader->preserves > 0) &&
+@@ -1299 +1299 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
+@@ -1301 +1301,6 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-		xmlTextReaderFreeNode(reader, tmp);
++		/* Add reference counting to prevent premature deallocation */
++		if (tmp->type == XML_ELEMENT_NODE && tmp->_private != NULL) {
++		    xmlTextReaderFreeNode(reader, tmp);
++		} else if (tmp->type != XML_NAMESPACE_DECL) {
++		    xmlTextReaderFreeNode(reader, tmp);
++		}

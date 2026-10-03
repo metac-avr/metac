@@ -1,0 +1,18 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index eee917756..e67036202 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -500 +500,2 @@ static GF_Err gsfdmx_parse_pid_info(GF_Filter *filter, GSF_DemuxCtx *ctx, GSF_St
+-		char *pname = gf_malloc(sizeof(char)*(len+1));
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		char *pname = gf_malloc(sizeof(char)*(len+1));
+@@ -512,2 +513,7 @@ static GF_Err gsfdmx_parse_pid_info(GF_Filter *filter, GSF_DemuxCtx *ctx, GSF_St
+-		if (is_info_update) gf_filter_pid_set_info_dyn(gst->opid, pname, &p);
+-		else gf_filter_pid_set_property_dyn(gst->opid, pname, &p);
++		if (gst->opid != NULL) {
++			if (is_info_update) gf_filter_pid_set_info_dyn(gst->opid, pname, &p);
++			else gf_filter_pid_set_property_dyn(gst->opid, pname, &p);
++		} else {
++			gf_free(pname);
++			return GF_NOT_SUPPORTED;
++		}

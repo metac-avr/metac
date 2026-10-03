@@ -1,0 +1,42 @@
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index c9d23d11b7d..93babada9c6 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -1077,5 +1077,10 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-			sizeof(zval) * op_array->last_literal);
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++		size_t opcode_size = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++		size_t literal_size = sizeof(zval) * op_array->last_literal;
++		size_t total_size = opcode_size + literal_size;
++		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes, total_size);
++		if (op_array->opcodes != NULL && op_array->literals != NULL) {
++			char* dest = ((char*)op_array->opcodes) + opcode_size;
++			if (dest >= (char*)op_array->opcodes && dest < (char*)op_array->opcodes + total_size) {
++				memcpy(dest, op_array->literals, literal_size);
++			}
++		}
+@@ -1083 +1088 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)(((char*)op_array->opcodes) + opcode_size);
+@@ -1188,5 +1193,10 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-			sizeof(zval) * op_array->last_literal);
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++		size_t opcode_size = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++		size_t literal_size = sizeof(zval) * op_array->last_literal;
++		size_t total_size = opcode_size + literal_size;
++		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes, total_size);
++		if (op_array->opcodes != NULL && op_array->literals != NULL) {
++			char* dest = ((char*)op_array->opcodes) + opcode_size;
++			if (dest >= (char*)op_array->opcodes && dest < (char*)op_array->opcodes + total_size) {
++				memcpy(dest, op_array->literals, literal_size);
++			}
++		}
+@@ -1194 +1204 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)(((char*)op_array->opcodes) + opcode_size);

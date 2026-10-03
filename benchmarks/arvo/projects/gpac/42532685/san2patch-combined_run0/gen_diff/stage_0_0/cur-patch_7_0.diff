@@ -1,0 +1,29 @@
+diff --git a/src/filters/reframe_img.c b/src/filters/reframe_img.c
+index 9eb787203..d0ddb6619 100644
+--- a/src/filters/reframe_img.c
++++ b/src/filters/reframe_img.c
+@@ -347,7 +347,17 @@ GF_Err img_process(GF_Filter *filter)
+-			pix = data + fh.bfOffBits + i*in_stride;
+-			for (j=0; j<out_stride; j+=4) {
+-				output[j + irow] = pix[2];
+-				output[j+1 + irow] = pix[1];
+-				output[j+2 + irow] = pix[0];
+-				output[j+3 + irow] = pix[3];
+-				pix += 4;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++			if (data != NULL) {
++				u8* pix_temp = data + fh.bfOffBits + i*in_stride;
++				if (pix_temp >= data && pix_temp < data + fh.bfSize) {
++					pix = pix_temp;
++					for (j=0; j<out_stride; j+=4) {
++						output[j + irow] = pix[2];
++						output[j+1 + irow] = pix[1];
++						output[j+2 + irow] = pix[0];
++						output[j+3 + irow] = pix[3];
++						pix += 4;
++					}
++				} else {
++					return GF_BAD_PARAM;
++				}
++			} else {
++				return GF_BAD_PARAM;

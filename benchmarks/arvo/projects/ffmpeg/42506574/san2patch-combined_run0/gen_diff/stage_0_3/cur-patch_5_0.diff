@@ -1,0 +1,17 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..536cd8a506 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -656 +656,2 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    }
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     }
+@@ -708,0 +710,8 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
++    /* Add bounds checking before dng_blit to prevent buffer overflow */
++    if (w > frame->width || h > frame->height ||
++        dst_x + w > frame->width || dst_y + h > frame->height) {
++        av_log(avctx, AV_LOG_ERROR, "DNG JPEG dimensions exceed frame boundaries\n");
++        av_frame_unref(s->jpgframe);
++        return AVERROR_INVALIDDATA;
++    }
++

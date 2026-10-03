@@ -1,0 +1,62 @@
+diff --git a/tree.c b/tree.c
+index e4425f10..464cff7a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3800,2 +3800,12 @@ xmlFreeNode(xmlNodePtr cur) {
+-	DICT_FREE(ent->SystemID);
+-	DICT_FREE(ent->ExternalID);
++	if (ent->SystemID != NULL) {
++	    if ((dict != NULL) && (xmlDictOwns(dict, ent->SystemID)))
++	        ; /* Dictionary-owned string, do nothing */
++	    else
++	        xmlFree((char *)ent->SystemID);
++	}
++	if (ent->ExternalID != NULL) {
++	    if ((dict != NULL) && (xmlDictOwns(dict, ent->ExternalID)))
++	        ; /* Dictionary-owned string, do nothing */
++	    else
++	        xmlFree((char *)ent->ExternalID);
++	}
+@@ -3803 +3813 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->children != NULL) &&
++     if ((cur->children != NULL) &&
+@@ -3817 +3827,4 @@ xmlFreeNode(xmlNodePtr cur) {
+-	DICT_FREE(cur->content)
++	if ((dict != NULL) && (xmlDictOwns(dict, cur->content)))
++	    ; /* Dictionary-owned string, do nothing */
++	else
++	    xmlFree((char *)cur->content);
+@@ -3827,2 +3840,6 @@ xmlFreeNode(xmlNodePtr cur) {
+-        (cur->type != XML_COMMENT_NODE))
+-	DICT_FREE(cur->name)
++        (cur->type != XML_COMMENT_NODE)) {
++	if ((dict != NULL) && (xmlDictOwns(dict, cur->name)))
++	    ; /* Dictionary-owned string, do nothing */
++	else
++	    xmlFree((char *)cur->name);
++    }
+diff --git a/parser.c b/parser.c
+index c3068cad..b2c92093 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7186 +7186,17 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-	    ret = xmlParseExternalEntityPrivate(ctxt->myDoc, ctxt, ctxt->sax,
++	    /* Validate entity URI and IDs before processing to prevent bad frees */
++	    if ((ent->URI != NULL) || (ent->ExternalID != NULL)) {
++	        xmlChar *safeURI = (ent->URI && !xmlDictOwns(ctxt->dict, ent->URI)) ? 
++	                          xmlStrdup(ent->URI) : ent->URI;
++	        xmlChar *safeExternalID = (ent->ExternalID && !xmlDictOwns(ctxt->dict, ent->ExternalID)) ? 
++	                                  xmlStrdup(ent->ExternalID) : ent->ExternalID;
++	        
++	        if ((safeURI == ent->URI || safeURI != NULL) && 
++	            (safeExternalID == ent->ExternalID || safeExternalID != NULL)) {
++	            ret = xmlParseExternalEntityPrivate(ctxt->myDoc, ctxt, ctxt->sax,
++	                                       user_data, ctxt->depth, safeURI,
++					       safeExternalID, &list);
++	        } else {
++	            ret = XML_ERR_NO_MEMORY;
++	        }
++	    } else {
++	        ret = xmlParseExternalEntityPrivate(ctxt->myDoc, ctxt, ctxt->sax,
+@@ -7188,0 +7205 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++	    }

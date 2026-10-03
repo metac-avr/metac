@@ -1,0 +1,65 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d0bc551f0..c5c5ba8b4 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -2445,0 +2446 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
++							subs = NULL; // Clear pointer after freeing
+@@ -2448 +2449,2 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-
++						group->substreams = NULL; // Clear pointer after freeing
++ 
+@@ -2451,6 +2453,9 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-
+-					// remove potential duplicates of group
+-					s32 idx = 1;
+-					while (idx>=0) {
+-						idx = gf_list_find(pres->substream_groups, group);
+-						if (idx>=0) gf_list_rem(pres->substream_groups, idx);
++					group = NULL; // Clear pointer after freeing
++
++					// remove potential duplicates of group - check for NULL before use
++					if (pres->substream_groups) { // Additional safety check
++						s32 idx = 1;
++						while (idx>=0) {
++							idx = gf_list_find(pres->substream_groups, group);
++							if (idx>=0) gf_list_rem(pres->substream_groups, idx);
++						}
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index be826527f..c7cb9872d 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -15954,0 +15955 @@ static Bool gf_ac4_raw_frame(GF_BitStream *bs, GF_AC4Config* hdr, Bool full_pars
++// FIXME: Crash CWE-416: Use After Free
+@@ -15957,12 +15958,20 @@ static Bool gf_ac4_raw_frame(GF_BitStream *bs, GF_AC4Config* hdr, Bool full_pars
+-			GF_SAFEALLOC(group, GF_AC4SubStreamGroupV1);
+-			gf_ac4_substream_group_info(bs,
+-										group,
+-										bitstream_version,
+-										pinfo->presentation_version,
+-										default_presentation_flag,
+-										frame_rate_factor,
+-										fs_index,
+-										&local_channel_count,
+-										&speaker_group_index_mask,
+-										&b_obj_or_ajoc);
+-			gf_list_add(temp_groups, group);
++			{
++				GF_AC4SubStreamGroupV1* temp_group = NULL;
++				GF_SAFEALLOC(temp_group, GF_AC4SubStreamGroupV1);
++				if (temp_group) {
++					gf_ac4_substream_group_info(bs,
++												temp_group,
++												bitstream_version,
++												pinfo->presentation_version,
++												default_presentation_flag,
++												frame_rate_factor,
++												fs_index,
++												&local_channel_count,
++												&speaker_group_index_mask,
++												&b_obj_or_ajoc);
++					gf_list_add(temp_groups, temp_group);
++					group = temp_group;  // Assign to group variable safely
++				} else {
++					continue;  // Skip if allocation failed
++				}
++			}

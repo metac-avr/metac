@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..4f061762709 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -132 +131,0 @@ static ZEND_FUNCTION(pass)
+-
+@@ -145 +144 @@ ZEND_API const zend_internal_function zend_pass_function = {
+-	(zend_internal_arg_info *) zend_pass_function_arg_info + 1, /* arg_info */
++	(zend_internal_arg_info *)zend_pass_function_arg_info + 1, /* arg_info */
+@@ -152,2 +151,9 @@ ZEND_API const zend_internal_function zend_pass_function = {
+-#define FREE_VAR_PTR_AND_EXTRACT_RESULT_IF_NECESSARY(free_var) do {			\
+-	zval *__container_to_free = EX_VAR(free_var);							\
++#define FREE_VAR_PTR_AND_EXTRACT_RESULT_IF_NECESSARY(free_var) do { \
++	if ((free_var) && Z_REFCOUNT_P(free_var) > 0) { \
++		Z_DELREF_P(free_var); \
++		if (Z_REFCOUNT_P(free_var) == 0) { \
++			zval_ptr_dtor(free_var); \
++			free_var = NULL; \
++		} \
++	} \
++} while (0)	zval *__container_to_free = EX_VAR(free_var);							\

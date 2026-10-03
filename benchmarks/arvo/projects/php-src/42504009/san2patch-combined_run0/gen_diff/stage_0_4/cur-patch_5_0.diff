@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..39b129f4496 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1051,0 +1052,5 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
++	/* Check for null pointers to prevent expired pointer dereference */
++	if (!op1 || !op2) {
++		return FAILURE;
++	}
++
+@@ -1078 +1083,2 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	ZEND_ASSERT(0 && "Operation must succeed");
++
++ZEND_ASSERT(0 && "Operation must succeed");
+@@ -1087 +1093,7 @@ ZEND_API zend_result ZEND_FASTCALL add_function(zval *result, zval *op1, zval *o
+-		return add_function_slow(result, op1, op2);
++		/* Prevent use-after-free by validating zval pointers */
++		if (EXPECTED(op1 != NULL && op2 != NULL)) {
++			return add_function_slow(result, op1, op2);
++		} else {
++			ZVAL_UNDEF(result);
++			return FAILURE;
++		}

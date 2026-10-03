@@ -1,0 +1,71 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..63808109d 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -127,0 +128,2 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
++	char *local_packet = NULL;
++	long local_bytes = 0;
+@@ -129,0 +132,13 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
++// FIXME: Crash CWE-416: Use After Free
++	
++	/* Defensive copy to prevent use-after-free */
++	if (!oggpacket || !oggpacket->packet || oggpacket->bytes <= 0) {
++		return;
++	}
++	
++	local_bytes = oggpacket->bytes;
++	local_packet = (char*)gf_malloc(local_bytes);
++	if (!local_packet) {
++		return;
++	}
++	memcpy(local_packet, oggpacket->packet, local_bytes);
+@@ -132 +147 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-	if ((oggpacket->bytes >= 7) && !strncmp((char *) &oggpacket->packet[1], "vorbis", 6)) {
++	if ((local_bytes >= 7) && !strncmp((char *) &local_packet[1], "vorbis", 6)) {
+@@ -134 +149 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-		oggpack_readinit(&opb, oggpacket->packet, oggpacket->bytes);
++		oggpack_readinit(&opb, (unsigned char *)local_packet, local_bytes);
+@@ -144 +159 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-	else if ((oggpacket->bytes >= 7) && !strncmp((char *) &oggpacket->packet[0], "Speex", 5)) {
++	else if ((local_bytes >= 7) && !strncmp((char *) &local_packet[0], "Speex", 5)) {
+@@ -146 +161 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-		oggpack_readinit(&opb, oggpacket->packet, oggpacket->bytes);
++		oggpack_readinit(&opb, (unsigned char *)local_packet, local_bytes);
+@@ -155 +170 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-	else if ((oggpacket->bytes >= 4) && !strncmp((char *) &oggpacket->packet[0], "fLaC", 4)) {
++	else if ((local_bytes >= 4) && !strncmp((char *) &local_packet[0], "fLaC", 4)) {
+@@ -161 +176 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-	else if ((oggpacket->bytes >= 8) && !strncmp((char *) &oggpacket->packet[0], "OpusHead", 8)) {
++	else if ((local_bytes >= 8) && !strncmp((char *) &local_packet[0], "OpusHead", 8)) {
+@@ -168 +183 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-	else if ((oggpacket->bytes >= 7) && !strncmp((char *) &oggpacket->packet[1], "theora", 6)) {
++	else if ((local_bytes >= 7) && !strncmp((char *) &local_packet[1], "theora", 6)) {
+@@ -174 +189 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-		bs = gf_bs_new((char *) oggpacket->packet, oggpacket->bytes, GF_BITSTREAM_READ);
++		bs = gf_bs_new(local_packet, local_bytes, GF_BITSTREAM_READ);
+@@ -208,0 +224,5 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
++	
++	/* Clean up defensive copy */
++	if (local_packet) {
++		gf_free(local_packet);
++	}
+@@ -431,0 +452,10 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
++					// Store packet information before clearing the stream
++					GF_OggPacket temp_packet;
++					temp_packet.packet = NULL;
++					temp_packet.bytes = oggpacket.bytes;
++					if (oggpacket.packet && oggpacket.bytes > 0) {
++						temp_packet.packet = gf_malloc(oggpacket.bytes);
++						if (temp_packet.packet) {
++							memcpy(temp_packet.packet, oggpacket.packet, oggpacket.bytes);
++						}
++					}
+@@ -432,0 +463,4 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
++					// Clean up temporary packet copy
++					if (temp_packet.packet) {
++						gf_free(temp_packet.packet);
++					}
+@@ -438 +472,2 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-				}
++// FIXME: Crash CWE-416: Use After Free
++ 				}

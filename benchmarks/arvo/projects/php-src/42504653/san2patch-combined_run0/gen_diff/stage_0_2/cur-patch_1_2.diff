@@ -1,0 +1,44 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..e80fc038242 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29947,22 +29947,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-assign_dim_error:
+-
+-			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
+-				ZVAL_NULL(EX_VAR(opline->result.var));
+-			}
+-		}
+-	}
+-	if (IS_CV != IS_UNUSED) {
+-
+-	}
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+-	/* assign_dim has two opcodes! */
+-	ZEND_VM_NEXT_OPCODE_EX(1, 2);
+-}
+-
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA_TMP_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	zval *object_ptr, *orig_object_ptr;
+-	zval *value;
+-	zval *variable_ptr;
+-	zval *dim;
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	ZEND_ASSERT(p->refcount > 0);
++	ZEND_RC_MOD_CHECK(p);
++	return --(p->refcount);
++}	zval *dim;
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..c68613652b2 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1184,0 +1186 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (UNEXPECTED(GC_FLAGS(p) & GC_PURGED)) return 0;  // Check if memory was already purged
+@@ -1193 +1194,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-

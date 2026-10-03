@@ -1,0 +1,40 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..5fa7ebcc 100644
+--- a/tree.c
++++ b/tree.c
+@@ -8452,2 +8452,2 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * Handle XML namespace.
+-    */
++     * Handle XML namespace - prevent use-after-free by validating ns
++     */
+@@ -8725 +8725 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-			    (cur->ns == mi->oldNs)) {
++                            (cur->ns == mi->oldNs)) {
+@@ -8727,7 +8727,8 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-			    cur->ns = mi->newNs;
+-			    goto ns_end;
+-			}
+-		    }
+-		}
+-		/*
+-		* Acquire a normalized ns-decl and add it to the map.
++                            cur->ns = mi->newNs;
++                            goto ns_end;
++                        }
++                    }
++                }
++                /*
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		* Acquire a normalized ns-decl and add it to the map.
+@@ -8739 +8740 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-			(cur->type == XML_ATTRIBUTE_NODE) ? 1 : 0) == -1)
++			(cur->type == XML_ATTRIBUTE_NODE) ? 1 : 0) == -1) {
+@@ -8741 +8742,3 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-		cur->ns = ns;
++		} else {
++		    cur->ns = ns;  /* Only assign if acquisition was successful */
++		}
+@@ -8745,2 +8748 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-		    (cur->properties != NULL)) {
+-		    /*
++		    (cur->properties != NULL)) {		    /*

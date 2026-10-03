@@ -1,0 +1,33 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..06eaf089d 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -37 +37,2 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
+@@ -39,2 +40,4 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-    x->p=(mp_limb*)mrb_realloc(mrb,x->p,size*sizeof(mp_limb));
+-    for (size_t i=x->sz; i<size; i++)
++    mp_limb* new_p = (mp_limb*)mrb_realloc(mrb, x->p, size * sizeof(mp_limb));
++    if (new_p == NULL) return; // Prevent null pointer dereference
++    x->p = new_p;
++    for (size_t i = x->sz; i < size; i++)
+@@ -432,0 +436 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    if (j >= x.len) break;
+@@ -436,0 +441 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        if (i+j >= x.len) break;
+@@ -442 +447 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if (i+j < x.len) b += x.p[i+j];
+@@ -444 +449 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
++    for (; b!=0 && j < q.len; qhat--) {
+@@ -446,0 +452 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        if (i+j >= x.len) break;
+@@ -451 +457 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += c;
++      if (i+j < x.len) b += c;
+@@ -453 +459 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < q.len) q.p[j] = qhat;

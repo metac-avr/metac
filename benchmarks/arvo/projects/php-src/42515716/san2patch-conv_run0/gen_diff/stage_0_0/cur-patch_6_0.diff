@@ -1,0 +1,15 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..73369bb45cf 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2278,0 +2279,3 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++		*last_errors = NULL; // Prevent double-free by setting to NULL immediately after assignment
++	} else {
++		*last_errors = NULL; // Ensure we always NULL the pointer to prevent UAF
+@@ -2281,2 +2284,4 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-	timelib_error_container_dtor(*last_errors);
+-	*last_errors = NULL;
++	if (DATEG(last_errors)) { // Additional safety check before dtor call
++		timelib_error_container_dtor(DATEG(last_errors));
++		DATEG(last_errors) = NULL;
++	}

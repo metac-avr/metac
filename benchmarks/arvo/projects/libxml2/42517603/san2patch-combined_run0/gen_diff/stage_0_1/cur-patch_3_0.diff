@@ -1,0 +1,81 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..5c8e3efe 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2050,0 +2051,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++    
++    /* Check if the reference element is still valid */
++    if (ref->elem == NULL)
++        return(-1);
++        
+@@ -2076 +2081 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-            xmlFreeNodeList(list);
++            if (list) xmlFreeNodeList(list);
+@@ -2088,0 +2094,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++	    /* Check if cur is still valid before accessing it */
++            if (cur == NULL) {
++                if (end) xmlFreeNode(end);
++                continue;
++            }
+@@ -2094,2 +2104,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	xmlUnlinkNode(cur);
+-	xmlFreeNode(cur);
++	if (cur) {
++	    xmlUnlinkNode(cur);
++	    xmlFreeNode(cur);
++	}
+@@ -2103 +2115 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-        if (ref->fallback)
++        if (ref->fallback && cur)
+@@ -2105 +2117 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	cur->type = XML_XINCLUDE_START;
++	if (cur) cur->type = XML_XINCLUDE_START;
+@@ -2107,4 +2119,6 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-        for (child = cur->children; child != NULL; child = next) {
+-            next = child->next;
+-            xmlUnlinkNode(child);
+-            xmlFreeNode(child);
++        if (cur) {
++            for (child = cur->children; child != NULL; child = next) {
++                next = child->next;
++                xmlUnlinkNode(child);
++                xmlFreeNode(child);
++            }
+@@ -2112 +2126,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	end = xmlNewDocNode(cur->doc, cur->ns, cur->name, NULL);
++	end = NULL;
++	if (cur) end = xmlNewDocNode(cur->doc, cur->ns, cur->name, NULL);
+@@ -2115,2 +2130,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-			   "failed to build node\n", NULL);
+-            xmlFreeNodeList(list);
++			"failed to build node\n", NULL);
++            if (list) xmlFreeNodeList(list);
+@@ -2120 +2135 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	xmlAddNextSibling(cur, end);
++	if (cur) xmlAddNextSibling(cur, end);
+@@ -2128,0 +2144,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++	    /* Check if end is still valid before accessing it */
++            if (end == NULL) {
++                if (cur) xmlFreeNode(cur);
++                continue;
++            }
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..f19d14b3 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1345 +1345 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-        if ((reader->preserves > 0) &&
++	if ((reader->preserves > 0) &&
+@@ -1364,3 +1364,9 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Check if node is referenced by XInclude before freeing */
++		if (tmp->references == 0) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		} else {
++		    /* Mark for deferred freeing when references drop to 0 */
++		    tmp->extra |= NODE_IS_DEFERRED_FREE;
++		}

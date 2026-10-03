@@ -1,0 +1,42 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..1d47f3674 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -106 +106,2 @@ static void
+-mpz_clear(mrb_state *mrb, mpz_t *s)
++// FIXME: Crash CWE-416: Use After Free
++ mpz_clear(mrb_state *mrb, mpz_t *s)
+@@ -108,2 +109,6 @@ mpz_clear(mrb_state *mrb, mpz_t *s)
+-  if (s->p) mrb_free(mrb, s->p);
+-  s->p=NULL;
++  if (s->p) {
++    if (!((uintptr_t)s->p & 0x1)) {  // Check if pointer is valid
++      mrb_free(mrb, s->p);
++    }
++    s->p=NULL;
++  }
+@@ -118 +122,0 @@ digits(mpz_t *x)
+-
+@@ -432,0 +437,4 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    /* Bounds checking to prevent access to freed memory */
++    if (j >= x.len || j >= q.len || j + yd >= x.len || j + yd - 1 >= x.len) {
++        break;
++    }
+@@ -436,0 +445,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        /* Additional bounds checks to prevent out-of-bounds access */
++        if (i >= y.len || i+j >= x.len) break;
+@@ -442 +452 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if (i+j < x.len) b += x.p[i+j];
+@@ -444 +454 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
++    for (; b!=0 && qhat > 0; qhat--) {
+@@ -446,0 +457,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        /* Additional bounds checks */
++        if (i >= y.len || i+j >= x.len) break;
+@@ -451 +463 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += c;
++      if (i+j < x.len) b += c;
+@@ -453 +465 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < q.len) q.p[j] = qhat;

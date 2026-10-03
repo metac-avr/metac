@@ -1,0 +1,37 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..79873d5d 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2226 +2226,3 @@ xmlSAX2StartElementNs(void *ctx,
+-        pref = namespaces[i++];
++	// FIXME: Crash CWE-416: Use After Free
++	/* Fix: Ensure namespace validity before use */
++	pref = namespaces[i++];
+@@ -2237,0 +2240,3 @@ xmlSAX2StartElementNs(void *ctx,
++	    
++	    /* Validate namespace before proceeding */
++	    if (ns->type != XML_NAMESPACE_DECL) continue;
+diff --git a/valid.c b/valid.c
+index e11d2c95..77e99396 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364,9 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
++
++	if (elem->ns != NULL) {
++	    xmlNsPtr ns = elem->ns;
++	    if (ns->_private != NULL) {
++	        int *refcnt = (int*)ns->_private;
++	        (*refcnt)++;
++	    }
++	}
+@@ -2384,0 +2393,8 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
++	if (elem->ns != NULL) {
++	    xmlNsPtr ns = elem->ns;
++	    if (ns->_private != NULL) {
++	        int *refcnt = (int*)ns->_private;
++	        (*refcnt)--;
++	    }
++	}
++

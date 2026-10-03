@@ -1,0 +1,26 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..9b81d0b24 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -618,0 +619 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++    if (n - i < sizeof(bitint)) break;
+@@ -623 +624 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-    while (zeros) {
++    while (zeros && j < sizeof(bitint)) {
+@@ -626 +627 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-        if (memcmp(substr, xs + 1, m - 2) == 0) {
++        if (m - 2 >= 0 && j + 1 + (m - 2) <= sizeof(bitint) && memcmp(substr, xs + 1, m - 2) == 0) {
+@@ -762 +763 @@ mrb_str_index(mrb_state *mrb, mrb_value str, const char *sptr, mrb_int slen, mrb
+-  /* need proceed one character at a time */
++  // Fixed CWE-125: Out-of-bounds Read by ensuring positive length
+@@ -764,3 +765,7 @@ mrb_str_index(mrb_state *mrb, mrb_value str, const char *sptr, mrb_int slen, mrb
+-  pos = mrb_memsearch(sptr, slen, s, len);
+-  if (pos < 0) return pos;
+-  return pos + offset;
++  if (len < 0) return -1;
++  if (len > 0) {
++    pos = mrb_memsearch(sptr, slen, s, len);
++    if (pos < 0) return pos;
++    return pos + offset;
++  }
++  return -1;

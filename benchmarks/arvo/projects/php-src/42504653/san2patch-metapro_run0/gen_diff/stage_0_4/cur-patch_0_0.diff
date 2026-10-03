@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..6b6ab966fde 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1684 +1684,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++	// Fixed CWE-416: Use After Free by setting ht to NULL after freeing
++	ht = NULL;
++ free_ht:
+@@ -1688,5 +1689,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..220a6b0181a 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -32 +32,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35 +36,3 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		ZVAL_NULL(zval_ptr); // Prevent dangling pointer by clearing the zval
++		rc_dtor_func(ref);

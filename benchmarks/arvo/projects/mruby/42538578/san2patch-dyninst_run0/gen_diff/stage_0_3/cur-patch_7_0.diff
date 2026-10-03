@@ -1,0 +1,33 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..3f4e1e264 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348,5 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
++    void* new_mem = mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    if (new_mem == NULL && size*2 > 0) {
++      mrb_exc_raise(mrb, mrb_obj_value(mrb->nomem_err));
+@@ -350 +354 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    c->cibase = (mrb_callinfo*)new_mem;
+@@ -2710,3 +2714,7 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
+-      if (mrb_nil_p(regs[a])) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
++      // Check if registers are still valid before accessing them
++      volatile mrb_value reg_a_val = regs[a];
++      volatile mrb_value reg_a1_val = regs[a+1];
++      mrb_value splat = mrb_ary_splat(mrb, reg_a1_val);
++      if (mrb_nil_p(reg_a_val)) {
+@@ -2716,2 +2724,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-        mrb_assert(mrb_array_p(regs[a]));
+-        mrb_ary_concat(mrb, regs[a], splat);
++        mrb_assert(mrb_array_p(reg_a_val));
++        mrb_ary_concat(mrb, reg_a_val, splat);
++        regs[a] = reg_a_val;
+@@ -2722 +2730,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

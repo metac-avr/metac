@@ -1,0 +1,17 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 9f1dd9cf5..56308c575 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1402 +1402,11 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
+-  ndpi_check_http_tcp(ndpi_struct, flow);
++  
++  /* Validate packet payload before HTTP processing */
++  if (flow->packet.payload != NULL && 
++      flow->packet.payload_packet_len > 0 && 
++      flow->packet.payload_packet_len < 4096) {
++    ndpi_check_http_tcp(ndpi_struct, flow);
++  } else {
++    NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++    http_bitmask_exclude_other(flow);
++    return;
++  }

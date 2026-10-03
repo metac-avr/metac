@@ -1,0 +1,26 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..2112556cf 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1700,14 +1700,7 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-{
+-  struct RString *s = mrb_str_ptr(str);
+-  return mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
+-}
+-
+-/* 15.2.10.5.20 */
+-/*
+- * call-seq:
+- *    str.hash   => int
+- *
+- * Return a hash based on the string's length and content.
+- */
+-static mrb_value
+-mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++ {
++  mrb_value rooted_str = mrb_gc_protect(mrb, str);
++  struct RString *s = mrb_str_ptr(rooted_str);
++  uint32_t result = mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
++  mrb_gc_protect(mrb, rooted_str);
++  return result;
++}mrb_str_hash_m(mrb_state *mrb, mrb_value self)

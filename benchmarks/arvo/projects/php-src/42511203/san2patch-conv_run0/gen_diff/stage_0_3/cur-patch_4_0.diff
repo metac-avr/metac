@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..c5fb75e728f 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -156,7 +156,10 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			zend_copy_to_variable(variable_ptr, value, value_type);
+-			if (GC_DELREF(garbage) == 0) {
+-				rc_dtor_func(garbage);
+-			} else { /* we need to split */
+-				/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
+-				if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
+-					gc_possible_root(garbage);
++// FIXME: Crash CWE-416: Use After Free
++                        if (garbage != NULL && GC_TYPE(garbage) != 0) {
++				zend_copy_to_variable(variable_ptr, value, value_type);
++				if (GC_DELREF(garbage) == 0) {
++					rc_dtor_func(garbage);
++				} else { /* we need to split */
++					/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
++					if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
++						gc_possible_root(garbage);
++					}
+@@ -164 +167 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			}
++                        }
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..2be14efcaaf 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -27150,0 +27151,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
++	if (!variable_ptr || !value_ptr) {
++		ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++	}
++
+@@ -27158 +27162 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
+-			   UNEXPECTED(!Z_ISREF_P(value_ptr))) {
++	           UNEXPECTED(!Z_ISREF_P(value_ptr))) {

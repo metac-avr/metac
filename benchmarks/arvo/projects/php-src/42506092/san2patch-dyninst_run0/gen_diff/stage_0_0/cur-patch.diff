@@ -1,0 +1,37 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..59ab1c223cb 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756,4 +756,9 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
+-	}
+-	return zend_hash_lookup(ht, offset_key);
+-
++        goto num_index;
++    }
++    // Safety check for freed memory access
++    if (!ht || HT_IS_DESTROYED(ht)) {
++        return NULL;
++    }
++    return zend_hash_lookup(ht, offset_key);
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -761,2 +766,6 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
++    // Prevent use-after-free by validating array state
++    if (!ht || HT_IS_DESTROYED(ht)) {
++        return NULL;
++    }
++    ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
++    return retval;
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..6e9452f5e83 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1781,0 +1782,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Ensure JIT pointers are cleared to prevent dangling references */
++	zend_jit_clear_ht_pointers(ht);
+@@ -1783 +1785 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++ free_ht:

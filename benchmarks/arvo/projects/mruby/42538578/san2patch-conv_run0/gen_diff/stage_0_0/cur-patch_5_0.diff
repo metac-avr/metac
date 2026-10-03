@@ -1,0 +1,20 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..7c0057e45 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -350 +351,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    void *new_cibase = mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    c->cibase = (mrb_callinfo*)new_cibase;
+@@ -2710 +2712,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
++      mrb_value src = regs[a+1];
++      regs[a+1] = src; // Ensure register is stable before splat operation
+@@ -2722 +2726,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

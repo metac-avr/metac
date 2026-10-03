@@ -1,0 +1,20 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index bfa8465f3..8506dacda 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1110 +1110,2 @@ int_mod(mrb_state *mrb, mrb_value x)
+-#ifdef MRB_USE_BIGINT
++// FIXME: Crash CWE-369: Divide By Zero
++ #ifdef MRB_USE_BIGINT
+@@ -1111,0 +1113,11 @@ int_mod(mrb_state *mrb, mrb_value x)
++    /* Validate divisor before proceeding to bigint mod operation */
++    if (mrb_bigint_p(y)) {
++      if (mrb_bint_cmp(mrb, y, mrb_int_value(mrb, 0)) == 0) {
++        mrb_int_zerodiv(mrb);
++      }
++    } else if (mrb_integer_p(y)) {
++      b = mrb_integer(y);
++      if (b == 0) mrb_int_zerodiv(mrb);
++    } else {
++      mrb_raise(mrb, E_TYPE_ERROR, "unsupported operand type");
++    }

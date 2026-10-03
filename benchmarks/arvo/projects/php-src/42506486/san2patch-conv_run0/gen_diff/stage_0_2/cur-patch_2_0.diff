@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..3a82cc75371 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -275 +274 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
++	
+@@ -277,3 +276 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-		zend_hash_graceful_reverse_destroy(&EG(symbol_table));
+-
+-		/* Constants may contain objects, destroy them before the object store. */
++		/* Clean up constants first to avoid premature string release during symbol table destruction */
+@@ -282,0 +280,4 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
++			zend_hash_reverse_apply(EG(zend_constants), clean_non_persistent_constant);
++		}
++		zend_hash_graceful_reverse_destroy(&EG(symbol_table));
++
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..b44de7d94eb 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -41 +41 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (Z_REFCOUNTED_P(zval_ptr) && zval_ptr) {

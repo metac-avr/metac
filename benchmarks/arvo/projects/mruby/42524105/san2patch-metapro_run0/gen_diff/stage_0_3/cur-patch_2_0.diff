@@ -1,0 +1,26 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..1f9b05edf 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -212,4 +212,10 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-  shared->refcnt--;
+-  if (shared->refcnt == 0) {
+-    mrb_free(mrb, shared->ptr);
+-    mrb_free(mrb, shared);
++  // FIXME: Crash CWE-825: Expired Pointer Dereference
++  if (!shared) return;  // Prevent null pointer dereference
++  if (shared->refcnt > 0) {  // Only decrement if refcnt is positive
++    shared->refcnt--;
++    if (shared->refcnt == 0) {
++      if (shared->ptr) {  // Check ptr before freeing
++        mrb_free(mrb, shared->ptr);
++      }
++      mrb_free(mrb, shared);
++    }
+@@ -1683,2 +1689,4 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-
+-    /* xor the bottom with the current octet */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
++    /* xor the bottom with the current octet - check for null pointer */
++    if (s == NULL) break;

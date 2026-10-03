@@ -1,0 +1,53 @@
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index 753cff17d..f731f10ea 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -1294,6 +1294,6 @@ GF_Err esds_box_read(GF_Box *s, GF_BitStream *bs)
+-					gf_odf_slc_set_pref(ptr->desc->slConfig);
+-				}
+-			}
+-		}
+-	}
+-	return e;
++                    gf_odf_slc_set_pref(ptr->desc->slConfig);
++                }
++            }
++        }
++    }
++    return e;
+@@ -1302 +1302,2 @@ GF_Err esds_box_read(GF_Box *s, GF_BitStream *bs)
+-GF_Box *esds_box_new()
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ GF_Box *esds_box_new()
+@@ -1304,2 +1305,8 @@ GF_Box *esds_box_new()
+-	ISOM_DECL_BOX_ALLOC(GF_ESDBox, GF_ISOM_BOX_TYPE_ESDS);
+-	return (GF_Box *)tmp;
++    ISOM_DECL_BOX_ALLOC(GF_ESDBox, GF_ISOM_BOX_TYPE_ESDS);
++    // Explicitly initialize all members to safe defaults to avoid expired pointer dereference
++    if (tmp) {
++        tmp->desc = NULL;
++        tmp->OCRESID = 0;
++        tmp->ESID = 0;
++    }
++    return (GF_Box *)tmp;
+@@ -1313,3 +1320,2 @@ GF_Err esds_box_write(GF_Box *s, GF_BitStream *bs)
+-	GF_Err e;
+-	u8 *enc_desc;
+-	u32 descSize = 0;
++    GF_Err e;
++    u8 *enc_desc;	u32 descSize = 0;
+@@ -1800,0 +1807,14 @@ GF_Err hmhd_box_read(GF_Box *s,GF_BitStream *bs)
++	// Defensive programming: Check for valid pointer and clean up expired references
++	if (!ptr || !bs) return GF_BAD_PARAM;
++	// Pre-validate child array to prevent use-after-free
++	if (((GF_Box*)ptr)->child_boxes) {
++		u32 child_idx;
++		for (child_idx = 0; child_idx < ((GF_Box*)ptr)->child_boxes_count; child_idx++) {
++			if (((GF_Box*)ptr)->child_boxes[child_idx] != NULL) {
++				// Nullify any ESDS pointers that may have been freed
++				if (((GF_Box*)ptr)->child_boxes[child_idx]->type == 0x65736473) { // 'esds' in hex
++					((GF_Box*)ptr)->child_boxes[child_idx] = NULL;
++				}
++			}
++		}
++	}

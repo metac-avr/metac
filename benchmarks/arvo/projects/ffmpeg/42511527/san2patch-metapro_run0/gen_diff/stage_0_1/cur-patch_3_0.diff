@@ -1,0 +1,47 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..3b3151830f 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -152,0 +153,4 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Validate that tmpblock is not NULL before use to prevent use-after-free
++    if (!s->tmpblock)
++        return AVERROR_INVALIDDATA;
++    
+@@ -172,0 +177,4 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Validate that deflate_block is not NULL before use to prevent use-after-free
++    if (!s->deflate_block)
++        return AVERROR_INVALIDDATA;
++        
+@@ -194 +202,2 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
++// FIXME: Crash CWE-416: Use After Free
++     }
+@@ -200,0 +210,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        
++        /* Re-validate tmpblock pointer after flashsv2_prime call which may have done realloc */
++        if (!s->tmpblock) {
++            av_log(avctx, AV_LOG_ERROR, "tmpblock is NULL after flashsv2_prime\n");
++            return AVERROR(ENOMEM);
++        }
++        line = s->tmpblock;
+@@ -205,0 +222,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++    
++    /* Validate tmpblock before inflate operation */
++    if (!s->tmpblock) {
++        av_log(avctx, AV_LOG_ERROR, "tmpblock is NULL before inflate\n");
++        return AVERROR(ENOMEM);
++    }
++    
+@@ -210,0 +234,6 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        
++        /* Re-validate tmpblock after inflateSync */
++        if (!s->tmpblock) {
++            av_log(avctx, AV_LOG_ERROR, "tmpblock is NULL after inflateSync\n");
++            return AVERROR(ENOMEM);
++        }
+@@ -227,0 +257,5 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++            /* Validate frame data pointer before memcpy */
++            if (!s->frame || !s->frame->data[0]) {
++                av_log(avctx, AV_LOG_ERROR, "Frame data is NULL\n");
++                return AVERROR_INVALIDDATA;
++            }

@@ -1,0 +1,67 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..e1c885a9e26 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,9 +1172,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
+-	}
+-}
+-
+@@ -1185,10 +1176,5 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	return --(p->refcount);
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++	if (!(p->u.type_info & GC_IMMUTABLE) && p->refcount > 0) {
++		return --(p->refcount);
++	}
++	return 0;
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..8c28ebcbd3d 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
+@@ -82 +82,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +85,16 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (!zval_ptr) return;
++	
++	if (Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && (GC_FLAGS(ref) & GC_IMMUTABLE) == 0) {
++			if (GC_DELREF(ref) >= 0) {
++				i_zval_ptr_dtor(zval_ptr);
++			} else {
++				ZVAL_UNDEF(zval_ptr);
++			}
++		} else {
++			i_zval_ptr_dtor(zval_ptr);
++		}
++	} else {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -90,6 +106 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++	if (Z_REFCOUNTED_P(zval_ptr)) {				zend_string *str = (zend_string*)ref;

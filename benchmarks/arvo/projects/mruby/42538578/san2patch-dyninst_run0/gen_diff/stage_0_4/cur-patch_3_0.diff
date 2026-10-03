@@ -1,0 +1,25 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..8762b4cb8 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -339,0 +340 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  mrb_callinfo *prev_ci = c->ci; /* Store previous ci for safe access */
+@@ -348 +349,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -357 +359 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-  ci->stack = ci[-1].stack + push_stacks;
++  ci->stack = prev_ci->stack + push_stacks; /* Use stored prev_ci instead of ci[-1] */
+@@ -2710 +2712,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
+@@ -2717 +2720,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-        mrb_ary_concat(mrb, regs[a], splat);
++        // Validate that regs[a] is still a valid array reference before concat
++        if (mrb_array_p(regs[a])) {
++          mrb_ary_concat(mrb, regs[a], splat);
++        }
+@@ -2722 +2727,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

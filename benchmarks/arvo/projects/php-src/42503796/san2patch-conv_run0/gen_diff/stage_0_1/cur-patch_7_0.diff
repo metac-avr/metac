@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..ea886c0b3d8 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,0 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (GC_TYPE(p) > IS_CONSTANT_AST || GC_TYPE(p) < 0) return;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..60faf7ea6a3 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16731 +16731,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-			value = zend_fetch_dimension_address_inner(Z_ARRVAL_P(container), dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);
++			zend_array *arr = Z_ARRVAL_P(container);
++			if (UNEXPECTED(GC_DELREF(arr) == 0)) {
++				GC_ADDREF(arr);
++				zend_error(E_ERROR, "Array has been destroyed");
++			}
++			value = zend_fetch_dimension_address_inner(arr, dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);

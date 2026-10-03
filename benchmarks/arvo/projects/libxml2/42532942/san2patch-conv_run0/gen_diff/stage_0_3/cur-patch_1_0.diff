@@ -1,0 +1,30 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..b0274d85 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2745,5 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    /* Validate that the ID structure is still valid before removal */
++    if (attr->id != NULL && attr->id->value != NULL) {
++        if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }
+diff --git a/tree.c b/tree.c
+index 8e0b346a..521428ce 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4366 +4366,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -4367,0 +4369,4 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
++    if (ret != NULL) {
++        /* Ensure all ID table entries are cleaned up before freeing node */
++        xmlUnlinkNode(ret);
++    }
+@@ -4378 +4382,0 @@ xmlStaticCopyNodeList(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent) {
+-

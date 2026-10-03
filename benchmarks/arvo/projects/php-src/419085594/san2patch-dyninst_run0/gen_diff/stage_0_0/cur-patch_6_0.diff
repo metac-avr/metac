@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..5fbdf363f42 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45981 +45981 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-				zend_cannot_add_element();
++				zend_circular_reference_exception();
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..9651c8553d5 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,5 +1894,12 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}
++			/* Check if op1 points to freed memory before attempting object operation */
++			if (Z_REFCOUNTED_P(op1) && GC_DEL_CHECKED(GC_HDR(op1))) {
++				if (orig_op1 != result) {
++					ZVAL_UNDEF(result);
++				}
++				return FAILURE;
++			}

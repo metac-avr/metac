@@ -1,0 +1,68 @@
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index c9d23d11b7d..03d986b0005 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -1076,0 +1077,10 @@ static void zend_redo_pass_two(zend_op_array *op_array)
++		zend_ulong aligned_op_size = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++		zend_ulong literals_size = sizeof(zval) * op_array->last_literal;
++		
++		/* Validate sizes to prevent buffer overflows */
++		if (aligned_op_size / 16 < sizeof(zend_op) * op_array->last / 16 || 
++		    literals_size / sizeof(zval) != op_array->last_literal) {
++			zend_throw_error(NULL, "Invalid memory allocation size detected");
++			return;
++		}
++		
+@@ -1078,4 +1088,10 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-			sizeof(zval) * op_array->last_literal);
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++			aligned_op_size +
++			literals_size);
++		
++		if (((char*)op_array->opcodes) + aligned_op_size < (char*)op_array->opcodes) {
++			zend_throw_error(NULL, "Pointer arithmetic overflow");
++			return;
++		}
++		
++		memcpy(((char*)op_array->opcodes) + aligned_op_size,
++			op_array->literals, literals_size);
+@@ -1083 +1099 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)(((char*)op_array->opcodes) + aligned_op_size);
+@@ -1187,0 +1204,10 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
++		zend_ulong aligned_op_size = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++		zend_ulong literals_size = sizeof(zval) * op_array->last_literal;
++		
++		/* Validate sizes to prevent buffer overflows */
++		if (aligned_op_size / 16 < sizeof(zend_op) * op_array->last / 16 || 
++		    literals_size / sizeof(zval) != op_array->last_literal) {
++			zend_throw_error(NULL, "Invalid memory allocation size detected");
++			return;
++		}
++		
+@@ -1189,4 +1215,10 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-			sizeof(zval) * op_array->last_literal);
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++			aligned_op_size +
++			literals_size);
++		
++		if (((char*)op_array->opcodes) + aligned_op_size < (char*)op_array->opcodes) {
++			zend_throw_error(NULL, "Pointer arithmetic overflow");
++			return;
++		}
++		
++		memcpy(((char*)op_array->opcodes) + aligned_op_size,
++			op_array->literals, literals_size);
+@@ -1194 +1226 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)(((char*)op_array->opcodes) + aligned_op_size);
+@@ -1526 +1558 @@ ZEND_API void zend_optimize_script(zend_script *script, zend_long optimization_l
+-				if (op_array->live_range) {
++				if (op_array->live_range && ((char*)op_array->live_range - (char*)op_array) >= 0) {
+@@ -1531 +1563 @@ ZEND_API void zend_optimize_script(zend_script *script, zend_long optimization_l
+-				if (op_array->live_range) {
++				if (op_array->live_range && ((char*)op_array->live_range - (char*)op_array) >= 0) {

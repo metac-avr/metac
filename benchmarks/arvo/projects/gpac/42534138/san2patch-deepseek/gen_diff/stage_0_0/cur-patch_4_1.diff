@@ -1,0 +1,42 @@
+diff --git a/src/filters/reframe_mpgvid.c b/src/filters/reframe_mpgvid.c
+index 29e961a07..6f3c328f0 100644
+--- a/src/filters/reframe_mpgvid.c
++++ b/src/filters/reframe_mpgvid.c
+@@ -868,20 +868,9 @@ GF_Err mpgviddmx_process(GF_Filter *filter)
+-			}
+-			gf_filter_pck_set_carousel_version(dst_pck, 1);
+-			mpgviddmx_enqueue_or_dispatch(ctx, dst_pck, GF_FALSE, GF_FALSE);
+-		}
+-
+-		//we're align to startcode, stop trashing packets
+-		ctx->trash_trailer = GF_FALSE;
+-
+-		//not enough bytes to parse start code
+-		if (remain<5) {
+-			memcpy(ctx->hdr_store, start, remain);
+-			ctx->bytes_in_header = remain;
+-			break;
+-		}
+-
+-		//parse headers
+-		//we have a start code loaded, eg the data packet does not have a full start code at the beginning
+-		if (sc_type_forced) {
+-			gf_bs_reassign_buffer(ctx->bs, start + hdr_offset, remain - hdr_offset);
+-			sc_type = forced_sc_type;
++static void mpgviddmx_check_dur(GF_List *com_list, u64 dur, u32 ts_scale, u32 src_scale, u32 dst_scale)
++{
++	u32 i, count = gf_list_count(com_list);
++	for (i=0; i<count; i++) {
++		GF_Packet *pck = (GF_Packet *)gf_list_get(com_list, i);
++		u64 ts = pck->dts;
++		if (ts > dur) {
++			pck->dts = 0;
++			pck->cts = 0;
+@@ -889 +878,6 @@ GF_Err mpgviddmx_process(GF_Filter *filter)
+-			gf_bs_reassign_buffer(ctx->bs, start, remain);
++			pck->dts = (u32) (ts * (u64) dst_scale / (u64) ts_scale);
++			pck->cts = (u32) (pck->cts * (u64) dst_scale / (u64) ts_scale);
++		}
++		pck->duration = (u32) (pck->duration * (u64) dst_scale / (u64) ts_scale);
++	}
++}			gf_bs_reassign_buffer(ctx->bs, start, remain);

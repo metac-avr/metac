@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..a0121cc12ba 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,11 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// FIXME: Crash CWE-416: Use After Free
++		/* Validate object before freeing to prevent use-after-free */
++		if (object && GC_TYPE(object) != IS_NULL) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		} else {
++			/* Skip freeing invalid object and mark bucket as free */
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 54e9a85808c..3edeb72ed0d 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1264,0 +1265,6 @@ void zend_call_destructors(void) /* {{{ */
++	} zend_catch {
++		/* Clear potentially freed object references to prevent UAF */
++		if (EG(objects_store).object_buckets) {
++			memset(EG(objects_store).object_buckets, 0, 
++			       EG(objects_store).top * sizeof(zend_object*));
++		}
+@@ -1274,2 +1280 @@ ZEND_API void zend_deactivate(void) /* {{{ */
+-	zend_try {
+-		shutdown_scanner();
++	zend_try {		shutdown_scanner();

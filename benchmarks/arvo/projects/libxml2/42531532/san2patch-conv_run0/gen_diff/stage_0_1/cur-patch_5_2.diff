@@ -1,0 +1,61 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..e1c7722a 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2610,9 +2609,0 @@ xmlAddIDSafe(xmlDocPtr doc, const xmlChar *value, xmlAttrPtr attr,
+- * @ctxt:  the validation context
+- * @doc:  pointer to the document
+- * @value:  the value name
+- * @attr:  the attribute holding the ID
+- *
+- * Register a new id declaration
+- *
+- * Returns NULL if not, otherwise the new xmlIDPtr
+- */
+@@ -2624,0 +2616,3 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
++    if ((doc == NULL) || (value == NULL) || (attr == NULL))
++        return(NULL);
++
+@@ -2631 +2625,15 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-        if (ctxt != NULL) {
++        /*
++         * The ID already exists, trigger a validity error.
++         */
++        xmlErrValidNode(ctxt, attr->parent, XML_DTD_ID_REDEFINED,
++                        "ID %s already defined\n", value, NULL, NULL);
++        if (id != NULL) {
++            xmlUnlinkNode((xmlNodePtr) attr);
++            xmlFreeID(id);
++        }
++        return(NULL);
++    }
++#endif /* LIBXML_VALID_ENABLED */
++
++    return(id);
++}        if (ctxt != NULL) {
+@@ -2638,6 +2645,0 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+@@ -2646,12 +2648,4 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++    xmlIDPtr id_entry = (xmlIDPtr) id;
++    if (id_entry != NULL) {
++        xmlFreeID(id_entry);
++    }
+@@ -2659 +2652,0 @@ xmlFreeIDTable(xmlIDTablePtr table) {
+-

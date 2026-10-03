@@ -1,0 +1,17 @@
+diff --git a/libavcodec/hevc_ps.c b/libavcodec/hevc_ps.c
+index 348e4d8de2..895f9ee4c9 100644
+--- a/libavcodec/hevc_ps.c
++++ b/libavcodec/hevc_ps.c
+@@ -1422,2 +1422,6 @@ static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
+-    pps->colour_mapping_enabled_flag = get_bits1(gb);
+-    if (pps->colour_mapping_enabled_flag)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     pps->colour_mapping_enabled_flag = get_bits1(gb);
++    if (pps->colour_mapping_enabled_flag) {
++        if (!pps->colour_mapping_table) {
++            return AVERROR_INVALIDDATA;
++        }
+@@ -1424,0 +1429,3 @@ static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
++    } else {
++        return 0;
++    }

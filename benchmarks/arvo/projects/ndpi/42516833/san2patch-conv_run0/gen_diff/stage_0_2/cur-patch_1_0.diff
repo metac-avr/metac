@@ -1,0 +1,28 @@
+diff --git a/src/lib/protocols/irc.c b/src/lib/protocols/irc.c
+index 367ec86bd..09a7fb48e 100644
+--- a/src/lib/protocols/irc.c
++++ b/src/lib/protocols/irc.c
+@@ -408,0 +409 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -410,2 +411,11 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-
+-	  snprintf(buf, sizeof(buf), "%s", &user[5]);
++	  size_t max_copy_len = sizeof(buf) - 1;
++	  size_t available_len = packet->payload_packet_len - (&user[5] - (char*)packet->payload);
++	  size_t copy_len = (available_len < max_copy_len) ? available_len : max_copy_len;
++	  
++	  if (copy_len > 0) {
++	    memcpy(buf, &user[5], copy_len);
++	    buf[copy_len] = '\0';
++	  } else {
++	    buf[0] = '\0';
++	  }
++	  
+@@ -442 +452 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-					      || memcmp(packet->line[c].ptr, "USER ", 5) == 0)) {
++			      || memcmp(packet->line[c].ptr, "USER ", 5) == 0)) {
+@@ -457,2 +467,2 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-					      || memcmp(packet->line[c].ptr, "USER ",
+-							5) == 0)) {
++			      || memcmp(packet->line[c].ptr, "USER ",
++					5) == 0)) {

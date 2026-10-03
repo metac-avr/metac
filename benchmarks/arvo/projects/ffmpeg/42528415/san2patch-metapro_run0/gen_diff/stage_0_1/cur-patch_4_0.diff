@@ -1,0 +1,14 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 95da597427..f8f4d61db3 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1107 +1107,8 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
+-            H266RawPPS *pps = unit->content;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             H266RawPPS *pps = unit->content;
++
++            // Validate buffer has enough data for PPS read (minimum 2 bytes needed)
++            if (bytestream2_get_bytes_left(&gbc) < 2) {
++                av_log(ctx->log_ctx, AV_LOG_ERROR, "Insufficient buffer space for PPS data\n");
++                return AVERROR_INVALIDDATA;
++            }

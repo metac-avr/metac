@@ -1,0 +1,23 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..c35a499c 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -642 +642,2 @@ dropNode(xmlNodePtr node) {
+-         * Return if tree is referenced from another node
++// FIXME: Crash CWE-416: Use After Free
++          * Return if tree is referenced from another node
+@@ -644 +645,2 @@ dropNode(xmlNodePtr node) {
+-        if (nodeGetTree(other) == tree)
++        xmlNodePtr other_tree = nodeGetTree(other);
++        if (other_tree == tree && tree != NULL)
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..cedde540 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6895,2 +6895,4 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-		if (tmp->next == NULL)
+-		    prop->last = tmp;
++		if (tmp->next == NULL) {
++		    if (tmp->doc != NULL)  /* Validate node before setting last */
++		        prop->last = tmp;
++		}

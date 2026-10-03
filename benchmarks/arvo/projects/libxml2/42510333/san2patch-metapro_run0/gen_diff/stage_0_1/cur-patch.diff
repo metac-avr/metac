@@ -1,0 +1,48 @@
+diff --git a/tree.c b/tree.c
+index 8077348a..50bed275 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699,2 +3699,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
+-	return;
++    xmlFreeNsList((xmlNsPtr) cur);
++    return;
+@@ -3702 +3702,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-    if (cur->doc != NULL) dict = cur->doc->dict;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     if (cur->doc != NULL) dict = cur->doc->dict;
+@@ -3708,0 +3710 @@ xmlFreeNodeList(xmlNodePtr cur) {
++            xmlNodePtr temp = cur;
+@@ -3709,0 +3712 @@ xmlFreeNodeList(xmlNodePtr cur) {
++            temp->children = NULL;  /* Break link to prevent UAF */
+@@ -3722,0 +3726 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    /* Free properties first */
+@@ -3726 +3730 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->properties != NULL))
++		(cur->properties != NULL)) {
+@@ -3727,0 +3732,4 @@ xmlFreeNodeList(xmlNodePtr cur) {
++		cur->properties = NULL;  /* Prevent use-after-free */
++	    }
++	    
++	    /* Free content */
+@@ -3733 +3741,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		DICT_FREE(cur->content)
++		DICT_FREE(cur->content);
++		cur->content = NULL;  /* Prevent use-after-free */
+@@ -3734,0 +3744,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Free namespace definitions */
+@@ -3738 +3749 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->nsDef != NULL))
++		(cur->nsDef != NULL)) {
+@@ -3739,0 +3751,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
++		cur->nsDef = NULL;  /* Prevent use-after-free */
++	    }
+@@ -3749,2 +3762,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
++		(cur->type != XML_COMMENT_NODE)) {
++		DICT_FREE(cur->name);
++		cur->name = NULL;  /* Prevent use-after-free */
++	    }
++	    

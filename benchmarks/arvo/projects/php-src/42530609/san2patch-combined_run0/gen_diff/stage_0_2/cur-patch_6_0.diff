@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..a20ab835e6a 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272,2 +3272,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+-				}
++zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++			}
++		}
++// Fixed CWE-416: Use After Free - Check if object is still valid before decrementing refcount
++		if (EX_VAR(throw_op->result.var) && Z_TYPE_P(EX_VAR(throw_op->result.var)) == IS_OBJECT) {
++			zend_object *obj = Z_OBJ_P(EX_VAR(throw_op->result.var));
++			if (obj && !(GC_FLAGS(obj) & GC_IMMEDIATE)) {
++				zend_gc_delref(obj);
++			}
++		} else {
++			zend_gc_delref(Z_OBJ_P(EX_VAR(throw_op->result.var)));
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..c13fd8ec26a 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (p == NULL) return;

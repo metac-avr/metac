@@ -1,0 +1,45 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..2e18bfc1 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6827 +6827,3 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    if (localname == NULL)
++    if (localname == NULL) {
++        if (prefix != NULL)
++            xmlFree(prefix);
+@@ -6828,0 +6831 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
++    }
+@@ -6835,2 +6838,6 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr ret = xmlSetNsProp(node, ns, localname, value);
++            if (localname != name)
++                xmlFree((xmlChar *)localname);
++            return(ret);
++        }
+@@ -6839 +6846,4 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr ret = xmlSetNsProp(node, NULL, name, value);
++    if (localname != name)
++        xmlFree((xmlChar *)localname);
++    return(ret);
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..22788ea7 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -644 +644,3 @@ dropNode(xmlNodePtr node) {
+-        if (nodeGetTree(other) == tree)
++        if (nodeGetTree(other) == tree) {
++            /* Clear the reference to avoid use-after-free */
++            nodes[i] = NULL;
+@@ -645,0 +648 @@ dropNode(xmlNodePtr node) {
++        }
+@@ -653 +656 @@ dropNode(xmlNodePtr node) {
+-             (xmlDtdPtr) tree != doc->extSubset))
++             (xmlDtdPtr) tree != doc->extSubset)) {
+@@ -654,0 +658,4 @@ dropNode(xmlNodePtr node) {
++            /* Clear node references to prevent dangling pointers */
++            if (node == tree) 
++                node = NULL;
++        }

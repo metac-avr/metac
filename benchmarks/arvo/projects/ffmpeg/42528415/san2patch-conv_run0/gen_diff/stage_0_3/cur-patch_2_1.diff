@@ -1,0 +1,68 @@
+diff --git a/libavcodec/cbs_h266_syntax_template.c b/libavcodec/cbs_h266_syntax_template.c
+index e2246cfc1b..aabe71ec93 100644
+--- a/libavcodec/cbs_h266_syntax_template.c
++++ b/libavcodec/cbs_h266_syntax_template.c
+@@ -1899,4 +1899,6 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
+-                    else
+-                        infer(pps_slice_height_in_tiles_minus1[i],
+-                              current->pps_slice_height_in_tiles_minus1[i - 1]);
+-                }
++static int cbs_h266_read_pps(CodedBitstreamContext *ctx, RBSPBuffer *rbsp)
++{
++    H266RawPPS *current;
++    int err, i, j;
++    int ctu_x, ctu_y;
++    int tile_x, tile_y;
+@@ -1904,17 +1906,35 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
+-                ctu_x = ctu_y = 0;
+-                for (j = 0; j < tile_x; j++) {
+-                    ctu_x += current->col_width_val[j];
+-                }
+-                for (j = 0; j < tile_y; j++) {
+-                    ctu_y += current->row_height_val[j];
+-                }
+-                if (current->pps_slice_width_in_tiles_minus1[i] == 0 &&
+-                    current->pps_slice_height_in_tiles_minus1[i] == 0 &&
+-                    current->row_height_val[tile_y] > 1) {
+-                    int num_slices_in_tile,
+-                        uniform_slice_height, remaining_height_in_ctbs_y;
+-                    remaining_height_in_ctbs_y =
+-                        current->row_height_val[tile_y];
+-                    ues(pps_num_exp_slices_in_tile[i],
+-                        0, current->row_height_val[tile_y] - 1, 1, i);
+-                    if (current->pps_num_exp_slices_in_tile[i] == 0) {
++    current = av_mallocz(sizeof(*current));
++    if (!current)
++        return AVERROR(ENOMEM);
++
++    // ... existing code ...
++
++    for (i = 0; i <= pps_num_slices_in_pic_minus1; i++) {
++        // ... existing code ...
++        } else {
++            infer(pps_slice_height_in_tiles_minus1[i],
++                  current->pps_slice_height_in_tiles_minus1[i - 1]);
++        }
++    }
++
++    ctu_x = ctu_y = 0;
++    for (j = 0; j < tile_x; j++) {
++        ctu_x += current->col_width_val[j];
++    }
++    for (j = 0; j < FFMIN(tile_y, VVC_MAX_TILE_ROWS); j++) {
++        ctu_y += current->row_height_val[j];
++    }
++    if (current->pps_slice_width_in_tiles_minus1[i] == 0 &&
++        current->pps_slice_height_in_tiles_minus1[i] == 0 &&
++        tile_y < VVC_MAX_TILE_ROWS &&
++        current->row_height_val[tile_y] > 1) {
++        int num_slices_in_tile,
++            uniform_slice_height, remaining_height_in_ctbs_y;
++        remaining_height_in_ctbs_y =
++            current->row_height_val[tile_y];
++        ues(pps_num_exp_slices_in_tile[i],
++            0, current->row_height_val[tile_y] - 1, 1, i);
++    }
++
++    // ... rest of the function ...
++}                    if (current->pps_num_exp_slices_in_tile[i] == 0) {

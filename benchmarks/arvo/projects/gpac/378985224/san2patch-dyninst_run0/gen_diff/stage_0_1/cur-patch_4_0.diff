@@ -1,0 +1,15 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index dca7f4da1..3b5f50c9e 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -1337,3 +1337,7 @@ static void gsfdmx_finalize(GF_Filter *filter)
+-		GSF_Packet *gsp = gf_list_pop_back(ctx->pck_res);
+-		if (gsp->frags) gf_free(gsp->frags);
+-		gf_free(gsp);
++// FIXME: Crash CWE-416: Use After Free
++ 		GSF_Packet *gsp = gf_list_pop_back(ctx->pck_res);
++		if (gsp && gsp->frags) {
++			gf_free(gsp->frags);
++			gsp->frags = NULL;
++		}
++		if (gsp) gf_free(gsp);

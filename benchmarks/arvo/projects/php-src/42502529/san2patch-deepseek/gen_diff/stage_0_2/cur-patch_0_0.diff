@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..03f5d207e6e 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43,4 +43,6 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
+-			gc_check_possible_root(ref);
++		if (GC_TYPE(ref) != IS_STRING || !ZSTR_IS_INTERNED(Z_STR_P(zval_ptr))) {
++			if (!GC_DELREF(ref)) {
++				rc_dtor_func(ref);
++			} else {
++				gc_check_possible_root(ref);
++			}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..f312ce14f70 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272,2 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+-	/* No PHP callback functions should be called after this point. */
+@@ -275 +272,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -277,0 +275,3 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
++	}
++
++	if (!fast_shutdown) {

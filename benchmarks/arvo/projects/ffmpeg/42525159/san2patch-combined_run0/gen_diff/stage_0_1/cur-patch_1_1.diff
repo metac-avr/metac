@@ -1,0 +1,81 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..811454bb86 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,8 +2017,26 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
++static void WRITE_FRAME(8, uint8_t)
++{
++    int h = tile->coding_parameters->extended_height;
++    int w = tile->coding_parameters->extended_width;
++    int y;
++    int x;
++    int plane = 0;
++    int pixelsize = 1;
++    int *dst = (int *)picture->data[plane];
++    int *line = (int *)picture->data[plane];
++    int *i_datap = tile->data[plane];
++    int sample;
++
++    for (y = 0; y < h; y++) {
++        line = (int *)(picture->data[plane] + y * picture->linesize[plane]);
++        for (x = 0; x < w; x++) {
++            sample = *i_datap;
++            if (sample < 0) sample = 0;
++            if (sample > 255) sample = 255;
++            // Fixed CWE-787: Out-of-bounds Write - Bounds check prevents buffer overflow
++            if ((uintptr_t)line < (uintptr_t)(picture->data[plane] + picture->linesize[plane] * picture->height)) {
++                *line = sample;
++            }
++            i_datap++;
++            line += pixelsize;
++        }
+@@ -2025,0 +2044 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
++}
+@@ -2027,7 +2046 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
++static void WRITE_FRAME(16, uint16_t)
+@@ -2035,4 +2048,26 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++    int h = tile->coding_parameters->extended_height;
++    int w = tile->coding_parameters->extended_width;
++    int y;
++    int x;
++    int plane = 0;
++    int pixelsize = 1;
++    int *dst = (int *)picture->data[plane];
++    int *line = (int *)picture->data[plane];
++    int *i_datap = tile->data[plane];
++    int sample;
++
++    for (y = 0; y < h; y++) {
++        line = (int *)(picture->data[plane] + y * picture->linesize[plane]);
++        for (x = 0; x < w; x++) {
++            sample = *i_datap;
++            if (sample < 0) sample = 0;
++            if (sample > 65535) sample = 65535;
++            // Fixed CWE-787: Out-of-bounds Write - Bounds check prevents buffer overflow
++            if ((uintptr_t)line < (uintptr_t)(picture->data[plane] + picture->linesize[plane] * picture->height)) {
++                *line = sample;
++            }
++            i_datap++;
++            line += pixelsize;
++        }
++    }
++}

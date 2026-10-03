@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..64944842740 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -291 +291 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-
++ 
+@@ -293 +293,11 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-		zend_array_destroy(named_params);
++		/* Explicitly clean up string references before destroying the array to prevent use-after-free */
++		zend_string *str_key;
++		zend_ulong num_key;
++		zval *entry;
++		ZEND_HASH_FOREACH_KEY_VAL(named_params, num_key, str_key, entry) {
++			if (str_key) {
++				zend_string_release(str_key);
++			}
++		} ZEND_HASH_FOREACH_END();
++		zend_hash_destroy(named_params);
++		efree(named_params);
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..1bdd36c8fc6 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1838 +1838 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++// FIXME: Crash CWE-416: Use After Free
+@@ -1840,0 +1841 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++						p->key = NULL;
+@@ -1841,0 +1843 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++					i_zval_ptr_dtor(&p->val);
+@@ -1846 +1847,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						i_zval_ptr_dtor(&p->val);
+@@ -1848,0 +1850 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++							p->key = NULL;
+@@ -1849,0 +1852 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++						i_zval_ptr_dtor(&p->val);

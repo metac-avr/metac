@@ -1,0 +1,30 @@
+diff --git a/libavformat/iamf_parse.c b/libavformat/iamf_parse.c
+index feb670180e..a65c0d3bf6 100644
+--- a/libavformat/iamf_parse.c
++++ b/libavformat/iamf_parse.c
+@@ -942 +942,2 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
+-                int sound_system;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                 int sound_system;
+@@ -944 +945,7 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
+-                av_channel_layout_copy(&submix_layout->sound_system, &ff_iamf_sound_system_map[sound_system].layout);
++                if (sound_system < sizeof(ff_iamf_sound_system_map) / sizeof(ff_iamf_sound_system_map[0])) {
++                    av_channel_layout_copy(&submix_layout->sound_system, &ff_iamf_sound_system_map[sound_system].layout);
++                } else {
++                    av_log(s, AV_LOG_ERROR, "Sound system index %d out of bounds\n", sound_system);
++                    ret = AVERROR_INVALIDDATA;
++                    goto fail;
++                }
+@@ -1080 +1087,2 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+-            break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             break;
+@@ -1082 +1090,7 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+-            ret = mix_presentation_obu(log_ctx, c, pb, obu_size);
++            // Bounds checking to prevent out-of-bounds read vulnerability
++            if (obu_size > 0 && obu_size <= INT_MAX) {
++                ret = mix_presentation_obu(log_ctx, c, pb, obu_size);
++            } else {
++                av_log(log_ctx, AV_LOG_WARNING, "Skipping invalid mix presentation OBU\n");
++                ret = 0;
++            }

@@ -1,0 +1,50 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index feeff659bd5..b79be00005f 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -649 +649,4 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return ex->func->op_array.opcodes[0].lineno;
++			if (ex->func && ex->func->op_array.opcodes) {
++				return ex->func->op_array.opcodes[0].lineno;
++			}
++			return 0;
+@@ -651 +654 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-		if (EG(exception) && ex->opline->opcode == ZEND_HANDLE_EXCEPTION &&
++		if (EG(exception) && ex->opline && ex->opline->opcode == ZEND_HANDLE_EXCEPTION &&
+@@ -653 +656,2 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return EG(opline_before_exception)->lineno;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			return EG(opline_before_exception) ? EG(opline_before_exception)->lineno : 0;
+@@ -655 +659 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-		return ex->opline->lineno;
++		return ex->opline ? ex->opline->lineno : 0;
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..6d66dcb7b59 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -341,3 +341,18 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+-
+-	zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++	zend_string *cv = NULL;
++
++	/* Validate all pointers before dereferencing to prevent expired pointer access */
++	if (execute_data && 
++	    execute_data->func && 
++	    &(execute_data->func->op_array) &&
++	    execute_data->func->op_array.vars) {
++		
++		if (EX_VAR_TO_NUM(var) < execute_data->func->op_array.last_var) {
++			cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++		}
++	}
++	
++	if (cv) {
++		zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++	} else {
++		zend_error(E_WARNING, "Undefined variable");
++	}
+@@ -353,2 +368 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint3
+-	 * Temporarily increase the refcount to detect this situation. */
+-	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
++	 * Temporarily increase the refcount to detect this situation. */	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {

@@ -1,0 +1,22 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..6bf674e7 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -653,2 +653,5 @@ dropNode(xmlNodePtr node) {
+-             (xmlDtdPtr) tree != doc->extSubset))
+-            xmlFreeNode(tree);
++             (xmlDtdPtr) tree != doc->extSubset)) {
++            /* Check if node is still actively referenced before freeing */
++            if (!tree->active_references)
++                xmlFreeNode(tree);
++        }
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..116d8318 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1709,0 +1710,5 @@ xmlNewPropInternal(xmlNodePtr node, xmlNsPtr ns,
++    
++    /* Validate node integrity after property setting */
++    if (cur->children != NULL && cur->children->doc == NULL) {
++        cur->children->doc = doc;
++    }

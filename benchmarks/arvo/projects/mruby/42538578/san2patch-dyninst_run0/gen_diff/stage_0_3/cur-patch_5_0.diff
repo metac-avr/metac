@@ -1,0 +1,30 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..64d651431 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -350,2 +350,9 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
+-    c->ci = ci = c->cibase + size;
++    void *new_cibase = mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    if (new_cibase != c->cibase) {
++      ptrdiff_t ci_offset = ci - c->cibase;
++      c->cibase = (mrb_callinfo*)new_cibase;
++      ci = c->cibase + ci_offset;
++    } else {
++      c->cibase = (mrb_callinfo*)new_cibase;
++    }
++    c->ci = ci;
+@@ -2710 +2717,10 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
++      /* Validate callinfo bounds to prevent expired pointer dereference */
++      const struct mrb_context *ctx = mrb->c;
++      if (ctx && ctx->ci && ctx->cibase) {
++        ptrdiff_t ci_offset = ctx->ci - ctx->cibase;
++        if (ci_offset < 0 || ci_offset >= ctx->ci_size) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "use-after-free detected in callinfo");
++        }
++      }
+@@ -2722 +2737,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

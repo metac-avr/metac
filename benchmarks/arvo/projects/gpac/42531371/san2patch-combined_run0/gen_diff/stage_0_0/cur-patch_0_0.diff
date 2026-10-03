@@ -1,0 +1,28 @@
+diff --git a/src/filters/in_rtp_sdp.c b/src/filters/in_rtp_sdp.c
+index 43507f077..90cf2a7d0 100644
+--- a/src/filters/in_rtp_sdp.c
++++ b/src/filters/in_rtp_sdp.c
+@@ -325,0 +326,23 @@ void rtpin_load_sdp(GF_RTPIn *rtp, char *sdp_text, u32 sdp_len, GF_RTPInStream *
++// FIXME: Crash CWE-787: Out-of-bounds Write
++  	// Validate SDP text length to prevent buffer overflow
++	if (sdp_text == NULL || sdp_len == 0) {
++		return;
++	}
++	
++	// Check for excessively long lines that could exceed LineBuf capacity (3000 bytes)
++	char *line_start = sdp_text;
++	char *current = sdp_text;
++	u32 pos = 0;
++	while (pos < sdp_len && *current != '\0') {
++		if (*current == '\n' || *current == '\r') {
++			// Check if line length exceeds buffer capacity
++			if ((current - line_start) >= 2999) { // Leave room for null terminator
++				GF_LOG(GF_LOG_ERROR, GF_LOG_RTP, ("[RTPIn] SDP line too long, potential buffer overflow\n"));
++				return;
++			}
++			line_start = current + 1;
++		}
++		current++;
++		pos++;
++	}
++	

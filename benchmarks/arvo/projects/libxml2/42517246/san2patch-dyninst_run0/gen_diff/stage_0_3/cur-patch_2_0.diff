@@ -1,0 +1,46 @@
+diff --git a/dict.c b/dict.c
+index 5c9ca719..1825605e 100644
+--- a/dict.c
++++ b/dict.c
+@@ -879,3 +879,10 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    if (len < 0)
+-        l = strlen((const char *) name);
+-    else
++    /* Fix for CWE-825: Expired Pointer Dereference */
++    if (len < 0) {
++        /* Use safer string length calculation */
++        const xmlChar *scan = name;
++        l = 0;
++        while (scan && *scan) {
++            l++;
++            scan++;
++        }
++    } else {
+@@ -882,0 +890 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
++    }
+@@ -890,2 +898 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..5bf6b2aa 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -846,3 +846,7 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-    if (elem->type == XML_DOCUMENT_NODE)
+-	result = xmlXIncludeCopyNodeList(ctxt, target, source, elem->children);
+-    else
++    if (elem->type == XML_DOCUMENT_NODE) {
++        if (elem->children != NULL) {
++            xmlNodePtr children = elem->children;
++            if (children != NULL)
++                result = xmlXIncludeCopyNodeList(ctxt, target, source, children);
++        }
++    } else {
+@@ -849,0 +854,6 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++        if (result != NULL && result->content != NULL) {
++            if (xmlValidateCharData(result->content, xmlStrlen(result->content)) != 0) {
++                result->content = NULL;
++            }
++        }
++    }

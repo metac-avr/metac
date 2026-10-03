@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..31d7ecb69ad 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16750,2 +16750,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op2.var));
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++	/* Add safety check before dtor calls to prevent accessing freed memory */
++	if (EX_VAR(opline->op2.var)) {
++		if (!Z_REFCOUNTED_P(EX_VAR(opline->op2.var)) || Z_COUNTED_P(EX_VAR(opline->op2.var))) {
++			zval_ptr_dtor_nogc(EX_VAR(opline->op2.var));
++		}
++	}
++	if (EX_VAR(opline->op1.var)) {
++		if (!Z_REFCOUNTED_P(EX_VAR(opline->op1.var)) || Z_COUNTED_P(EX_VAR(opline->op1.var))) {
++			zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++		}
++	}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..6ad7fb50ce5 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,2 +56,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p && GC_TYPE(p) <= IS_CONSTANT_AST && GC_REFCOUNT(p) > 0) {
++		ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

@@ -1,0 +1,27 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..6fdc7e2b8 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -830,0 +831,8 @@ void gf_net_close_capture()
++		// Set all pointers to NULL before freeing the struct
++		nf->cap_bs = NULL;
++		nf->file = NULL;
++		nf->read_socks = NULL;
++		nf->rules = NULL;
++		nf->id = NULL;
++		nf->src = NULL;
++		nf->dst = NULL;
+@@ -1480,4 +1488,9 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
+-			gf_netcap_load_pck_pcap(nf);
++		if (nf->cap_mode==NETCAP_GPAC) {
++			// Validate network capture handle before use to prevent UAF
++			if (nf->cap_bs && !nf->capture_closed)
++				gf_netcap_load_pck_gpac(nf);
++		} else {
++			// Validate network capture handle before use to prevent UAF
++			if (nf->cap_bs && !nf->capture_closed)
++				gf_netcap_load_pck_pcap(nf);
++		}

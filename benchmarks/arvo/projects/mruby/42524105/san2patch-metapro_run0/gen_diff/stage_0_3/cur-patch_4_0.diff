@@ -1,0 +1,25 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..ad74d5db4 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -212,4 +212,8 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-  shared->refcnt--;
+-  if (shared->refcnt == 0) {
+-    mrb_free(mrb, shared->ptr);
+-    mrb_free(mrb, shared);
++  // Mark pointer as expired before freeing to prevent use-after-free
++  if (shared && shared->refcnt > 0) {
++    shared->refcnt--;
++    if (shared->refcnt == 0) {
++      shared->ptr = NULL;  // Mark as expired
++      mrb_free(mrb, shared->ptr_orig);  // Free original pointer
++      mrb_free(mrb, shared);
++    }
+@@ -224,0 +229 @@ str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
++
+@@ -1675,0 +1681 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
++  if (s == NULL) return hval;
+@@ -1683 +1689,2 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 

@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..bc80b9745ba 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352 +1352,2 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
++// FIXME: Crash CWE-416: Use After Free
++ 		ZVAL_COPY_VALUE(&tmp, &p->val);
+@@ -1354 +1355,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ht->pDestructor(&tmp);
++		if (Z_TYPE(tmp) != IS_UNDEF) {
++			ht->pDestructor(&tmp);
++		}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..8cd361446aa 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -64,0 +65 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	// Fixed CWE-416: Use After Free by validating reference state before destruction
+@@ -66,0 +68,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	// Additional safety check to prevent use-after-free
++	if (GC_REFCOUNT(str) != 0) {
++		GC_SET_REFCOUNT(str, 0); // Force reset reference count
++	}
+@@ -77 +81,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

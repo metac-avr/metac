@@ -1,0 +1,37 @@
+diff --git a/src/filters/dmx_ghi.c b/src/filters/dmx_ghi.c
+index b6c6d245b..99073f05b 100644
+--- a/src/filters/dmx_ghi.c
++++ b/src/filters/dmx_ghi.c
+@@ -858 +858 @@ GF_Err ghi_dmx_init_bin(GF_Filter *filter, GHIDmxCtx *ctx, GF_BitStream *bs)
+-		gf_bs_skip_bytes(bs, skip);
++	gf_bs_skip_bytes(bs, skip);
+@@ -866,0 +867,3 @@ GF_Err ghi_dmx_init_xml(GF_Filter *filter, GHIDmxCtx *ctx, const u8 *data)
++	// Validate input data before processing
++	if (!data) return GF_BAD_PARAM;
++	
+@@ -868 +871,20 @@ GF_Err ghi_dmx_init_xml(GF_Filter *filter, GHIDmxCtx *ctx, const u8 *data)
+-	GF_Err e = gf_xml_dom_parse_string(mpd_parser, (char*) data);
++	// Ensure data is null-terminated by creating a bounded copy
++	char *validated_data = NULL;
++	const size_t MAX_XML_SIZE = 1000000; // 1MB limit
++	size_t orig_len = strnlen((char*)data, MAX_XML_SIZE);
++	
++	if (orig_len >= MAX_XML_SIZE) {
++		gf_xml_dom_del(mpd_parser);
++		return GF_NON_COMPLIANT_BITSTREAM;
++	}
++	
++	validated_data = gf_malloc(orig_len + 1);
++	if (!validated_data) {
++		gf_xml_dom_del(mpd_parser);
++		return GF_OUT_OF_MEM;
++	}
++	memcpy(validated_data, data, orig_len);
++	validated_data[orig_len] = '\0';
++	
++	GF_Err e = gf_xml_dom_parse_string(mpd_parser, validated_data);
++	gf_free(validated_data);
+@@ -878,2 +900 @@ GF_Err ghi_dmx_init_xml(GF_Filter *filter, GHIDmxCtx *ctx, const u8 *data)
+-	if (e) {
+-		GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[GHIX] Error in MPD creation %s\n", gf_error_to_string(e)));
++	if (e) {		GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[GHIX] Error in MPD creation %s\n", gf_error_to_string(e)));

@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..37a6c8bd76e 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	ZEND_ASSERT(p != NULL);
++	if (!p) return;
+@@ -57 +59,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (GC_TYPE(p) <= IS_CONSTANT_AST) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index 5c7a73aa273..fcd9b00b698 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -290,2 +289,0 @@ static zend_never_inline gc_stack* gc_stack_next(gc_stack *stack)
+-}
+-
+@@ -298 +296,4 @@ static zend_always_inline void gc_stack_push(gc_stack **stack, size_t *top, zend
+-	(*stack)->data[(*top)++] = ref;
++	// Prevent pushing freed objects to GC stack
++	if (ref != NULL && !IS_BAD_PTR(ref)) {
++		(*stack)->data[(*top)++] = ref;
++	}
+@@ -310,0 +312 @@ static zend_always_inline zend_refcounted* gc_stack_pop(gc_stack **stack, size_t
++	}

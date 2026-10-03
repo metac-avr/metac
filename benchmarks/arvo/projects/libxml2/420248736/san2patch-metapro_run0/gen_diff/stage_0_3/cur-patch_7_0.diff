@@ -1,0 +1,39 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4..94396cc3 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -624 +624,2 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++// FIXME: Crash CWE-416: Use After Free
++     xmlNodePtr cur = node;
+@@ -626 +627 @@ nodeGetTree(xmlNodePtr node) {
+-    while (cur->parent)
++    while (cur != NULL && cur->parent)
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..6d6dddab 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1066,7 +1066,8 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem == NULL) return;
+-    xmlUnlinkNode((xmlNodePtr) elem);
+-    xmlFreeDocElementContent(elem->doc, elem->content);
+-    if (elem->name != NULL)
+-	xmlFree((xmlChar *) elem->name);
+-    if (elem->prefix != NULL)
+-	xmlFree((xmlChar *) elem->prefix);
++    xmlElementPtr temp_elem = elem;
++    if (temp_elem == NULL) return;
++    xmlUnlinkNode((xmlNodePtr) temp_elem);
++    xmlFreeDocElementContent(temp_elem->doc, temp_elem->content);
++    if (temp_elem->name != NULL)
++	xmlFree((xmlChar *) temp_elem->name);
++    if (temp_elem->prefix != NULL)
++	xmlFree((xmlChar *) temp_elem->prefix);
+@@ -1074,2 +1075,2 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem->contModel != NULL)
+-	xmlRegFreeRegexp(elem->contModel);
++    if (temp_elem->contModel != NULL)
++	xmlRegFreeRegexp(temp_elem->contModel);
+@@ -1077 +1078 @@ xmlFreeElement(xmlElementPtr elem) {
+-    xmlFree(elem);
++    xmlFree(temp_elem);

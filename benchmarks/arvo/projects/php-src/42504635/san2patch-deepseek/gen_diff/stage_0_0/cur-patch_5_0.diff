@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 4a26e0c252e..3ba11ab45e8 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -22485 +22485,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_VAR_CONST_H
+-			zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			zval tmp;
++			ZVAL_COPY(&tmp, var_ptr);
++			zend_binary_op(&tmp, &tmp, value OPLINE_CC);
++			ZVAL_COPY_VALUE(var_ptr, &tmp);
+@@ -22525,0 +22529 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_VAR_CONST_H
++
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..42e823e110b 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1966 +1966,2 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-		if (result == op1 && Z_REFCOUNTED_P(result)) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (result == op1 && Z_REFCOUNTED_P(result)) {
+@@ -1968 +1969,4 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			zval tmp;
++			ZVAL_COPY(&tmp, result);
++			result_str = zend_string_extend(Z_STR(tmp), result_len, 0);
++			zval_ptr_dtor(&tmp);

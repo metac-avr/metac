@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..91ac6e947c2 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1028 +1028,11 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-	zend_uchar type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));
++	zend_uchar type_pair;
++	
++	if (UNEXPECTED(op1 == NULL || op2 == NULL)) {
++		return FAILURE;
++	}
++	
++	if (UNEXPECTED(Z_TYPE_P(op1) >= IS_CALLABLE || Z_TYPE_P(op2) >= IS_CALLABLE)) {
++		return FAILURE;
++	}
++	
++	type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));
+@@ -1051,0 +1062,3 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
++	zval *orig_op1 = op1;
++	zval *orig_op2 = op2;
++
+@@ -1063,2 +1076,2 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-		zend_binop_error("+", op1, op2);
+-		if (result != op1) {
++		zend_binop_error("+", orig_op1, orig_op2);
++		if (result != orig_op1) {
+@@ -1070 +1083 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (result == op1) {
++	if (result == orig_op1) {

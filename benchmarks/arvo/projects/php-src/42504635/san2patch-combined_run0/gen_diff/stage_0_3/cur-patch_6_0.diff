@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..cfa3fd75b43 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
++/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (p == NULL) return;
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..9ba3106296f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1751,3 +1751,6 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-			do {
+-				i_zval_ptr_dtor(zv);
+-			} while (++zv != end);
++			while (zv != end) {
++				if (Z_TYPE_P(zv) != IS_UNDEF) {
++					i_zval_ptr_dtor(zv);
++				}
++				zv++;
++			}
+@@ -1760 +1763,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (Z_TYPE(p->val) != IS_UNDEF) {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1764 +1769,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (Z_TYPE(p->val) != IS_UNDEF) {
++						i_zval_ptr_dtor(&p->val);
++					}

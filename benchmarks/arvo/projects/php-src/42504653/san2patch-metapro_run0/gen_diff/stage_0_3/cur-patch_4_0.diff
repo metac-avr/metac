@@ -1,0 +1,48 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..e0f64796da0 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7616 +7616,2 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
++				(polymorphism << 8) |
++				(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+@@ -7623,0 +7625,5 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
++	// Fixed: Check for valid execute_data before JIT tracing to prevent use-after-free
++	if (execute_data != NULL) {
++		JIT_G(tracing) = 1;
++		stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
++		JIT_G(tracing) = 0;
+@@ -7625,6 +7631,4 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	JIT_G(tracing) = 1;
+-	stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
+-	JIT_G(tracing) = 0;
+-
+-	if (stop & ZEND_JIT_TRACE_HALT) {
+-		ret = -1;
++		if (stop & ZEND_JIT_TRACE_HALT) {
++			ret = -1;
++		}
++		stop &= ~ZEND_JIT_TRACE_HALT;
+@@ -7632 +7635,0 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	stop &= ~ZEND_JIT_TRACE_HALT;
+@@ -7636,2 +7639 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-			const zend_op_array *op_array = trace_buffer[0].op_array;
+-			const zend_op *opline = trace_buffer[1].opline;
++			const zend_op_array *op_array = trace_buffer[0].op_array;			const zend_op *opline = trace_buffer[1].opline;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..d5b928fee0f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,9 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *op1_var = EX_VAR(opline->op1.var);
++		if (op1_var && !Z_ISREF_P(op1_var) && Z_REFCOUNTED_P(op1_var)) {
++			GC_DELREF(Z_COUNTED_P(op1_var));
++			if (GC_REFCOUNT(Z_COUNTED_P(op1_var)) == 0) {
++				zval_ptr_dtor(op1_var);
++			}
++		}
++	} else {
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+@@ -29957 +29964,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));

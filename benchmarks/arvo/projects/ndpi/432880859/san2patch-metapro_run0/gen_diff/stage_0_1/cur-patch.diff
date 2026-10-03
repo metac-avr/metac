@@ -1,0 +1,16 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 0c0ab0599..b271407da 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -11450 +11450,10 @@ u_int16_t ndpi_match_host_subprotocol(struct ndpi_detection_module_struct *ndpi_
+-  snprintf(buf, sizeof(buf), "%*s", _string_to_match_len, _string_to_match);
++  /* Fix: Use safer string handling with proper bounds checking */
++  if(_string_to_match_len > 0 && _string_to_match != NULL) {
++    /* Ensure we don't exceed buffer bounds */
++    u_int copy_len = (_string_to_match_len < (sizeof(buf) - 1)) ? _string_to_match_len : (sizeof(buf) - 1);
++    memcpy(buf, _string_to_match, copy_len);
++    buf[copy_len] = '\0';
++  } else {
++    buf[0] = '\0';
++  }
++  

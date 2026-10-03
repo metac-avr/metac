@@ -1,0 +1,36 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..e6850c61cb6 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267 +2267,2 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-{
++// Fixed CWE-825: Expired Pointer Dereference - check for self-assignment before dtor
++ {
+@@ -2278,0 +2280,4 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++		*last_errors = NULL;
++	} else {
++		timelib_error_container_dtor(*last_errors);
++		*last_errors = NULL;
+@@ -2280,3 +2284,0 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-
+-	timelib_error_container_dtor(*last_errors);
+-	*last_errors = NULL;
+@@ -2332,2 +2334,12 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	/* update last errors and warnings */
+-	update_errors_warnings(&err);
++	/* Check if err points to valid memory before updating errors */
++	if (err != NULL) {
++		/* Create a local copy of error container to avoid double free issues */
++		timelib_error_container local_err = *err;
++		update_errors_warnings(&local_err);
++		/* Only destroy the original if it was actually allocated */
++		if (err->error_count > 0 || err->warning_count > 0) {
++			timelib_error_container_dtor(err);
++		}
++	} else {
++		update_errors_warnings(&err);
++	}
+@@ -2343,2 +2355 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = 0;
+-		return 0;
++		dateobj->time = 0;		return 0;

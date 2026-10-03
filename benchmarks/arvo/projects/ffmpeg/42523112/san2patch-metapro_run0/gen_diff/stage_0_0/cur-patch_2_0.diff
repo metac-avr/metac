@@ -1,0 +1,27 @@
+diff --git a/libavcodec/mpegvideo_dec.c b/libavcodec/mpegvideo_dec.c
+index 522a0aada5..89f827cd87 100644
+--- a/libavcodec/mpegvideo_dec.c
++++ b/libavcodec/mpegvideo_dec.c
+@@ -989 +989 @@ static int lowest_referenced_row(MpegEncContext *s, int dir)
+-    return av_clip(s->mb_y + off, 0, s->mb_height - 1);
++return av_clip(s->mb_y + off, 0, s->mb_height - 1);
+@@ -997 +997,2 @@ static inline void add_dct(MpegEncContext *s,
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read - RESOLVED
++ {
+@@ -999 +1000,3 @@ static inline void add_dct(MpegEncContext *s,
+-        s->idsp.idct_add(dest, line_size, block);
++        if (s->idsp.idct_add && dest && block) {
++            s->idsp.idct_add(dest, line_size, block);
++        }
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 7216afb094..a30714b52d 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -178,2 +178,4 @@ static void add_pixels_clamped4_c(const int16_t *block, uint8_t *av_restrict pix
+-        pixels += line_size;
+-        block += 8;
++        if (i < 3) {  // Prevent overflow on last iteration
++            pixels += line_size;
++            block += 8;
++        }

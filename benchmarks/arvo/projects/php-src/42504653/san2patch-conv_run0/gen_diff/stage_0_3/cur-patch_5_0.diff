@@ -1,0 +1,23 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..c1129f9c9d2 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++		/* Validate memory pointers before use to prevent use-after-free */
+@@ -862,0 +864,2 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Ensure pointers are valid before proceeding */
++			if ((void*)execute_data >= (void*)0x1000 && (void*)prev_execute_data >= (void*)0x1000) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..d7c8de5f9bc 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *ptr = EX_VAR(opline->op1.var);
++		if (ptr && !Z_ISREF_P(ptr)) {
++			zval_ptr_dtor_nogc(ptr);
++		}
++	} else {
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+@@ -29957 +29961,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));

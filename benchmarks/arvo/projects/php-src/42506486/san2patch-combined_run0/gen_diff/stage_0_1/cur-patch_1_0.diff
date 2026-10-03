@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..675ba7d86c5 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -389 +389,2 @@ void shutdown_executor(void) /* {{{ */
+-	} zend_end_try();
++// FIXME: Crash CWE-416: Use After Free
++ 	} zend_end_try();
+@@ -392,0 +394,5 @@ void shutdown_executor(void) /* {{{ */
++	/* Force garbage collection before proceeding with shutdown to prevent accessing freed memory */
++	if (!fast_shutdown) {
++		zend_gc_collect_cycles();
++	}
++
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..ea124c5b205 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1374 +1374 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}
+@@ -1376,0 +1377,3 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++	/* Synchronize garbage collection before hash table operations to prevent use-after-free */
++	zend_gc_cleanup_unreferenced_objects();
++

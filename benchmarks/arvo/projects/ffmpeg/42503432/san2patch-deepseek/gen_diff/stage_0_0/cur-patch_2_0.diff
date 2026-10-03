@@ -1,0 +1,18 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..b3b15b3453 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -622,0 +623 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
++        int fifo_size;
+@@ -663,2 +664,3 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        start_offset = av_fifo_size(fpc->fifo_buf) -
+-                       ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
++        fifo_size    = av_fifo_size(fpc->fifo_buf);
++        start_offset = fifo_size -
++                        ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
+@@ -666 +668,4 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        nb_headers   = find_new_headers(fpc, start_offset);
++        if (fifo_size - start_offset < MAX_FRAME_HEADER_SIZE) {
++            goto handle_error;
++        }
++        nb_headers   = find_new_headers(fpc, start_offset, fifo_size);

@@ -1,0 +1,28 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..52da37bc3 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -618,0 +619,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++    // Prevent out-of-bounds access by checking loop bounds
++    if (i >= n || i + sizeof(bitint) > n) break;
+@@ -626 +628,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-        if (memcmp(substr, xs + 1, m - 2) == 0) {
++        // Ensure substring comparison stays within bounds
++        if (m - 2 <= n - (i + j + 1) && memcmp(substr, xs + 1, m - 2) == 0) {
+@@ -636,0 +640,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++      // Additional bounds check for j increment
++      if (i + j >= n) break;
+@@ -1234,0 +1240,13 @@ mrb_str_aref(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen)
++  /* Validate string bounds before processing */
++  if (mrb_string_p(str)) {
++    mrb_int str_len = RSTRING_LEN(str);
++    if (str_len <= 0) return mrb_nil_value();
++    
++    /* Pre-validate parameters to prevent buffer overflow */
++    if (!mrb_nil_p(indx) && mrb_fixnum_p(indx)) {
++      mrb_int idx_val = mrb_fixnum(indx);
++      if (idx_val < 0) idx_val += str_len;
++      if (idx_val < 0 || idx_val >= str_len) return mrb_nil_value();
++    }
++  }
++

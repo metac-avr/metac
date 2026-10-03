@@ -1,0 +1,23 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..c8246f24 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2546 +2546,5 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
+-    return(xmlXIncludeProcessTreeFlagsData(tree, flags, data));
++    /* Add explicit null check before dereferencing tree pointer */
++    if ((tree != NULL) && (doc != NULL)) {
++        return(xmlXIncludeProcessTreeFlagsData(tree, flags, data));
++    }
++    return(-1);
+diff --git a/tree.c b/tree.c
+index 8077348a..f8f3f1c5 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699 +3699 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
++xmlFreeNsList((xmlNsPtr) cur);
+@@ -3702,0 +3703,4 @@ xmlFreeNodeList(xmlNodePtr cur) {
++    /* Nullify parent reference to prevent dangling pointer access */
++    if (cur->parent != NULL && cur->parent->children == cur) {
++        cur->parent->children = NULL;
++    }

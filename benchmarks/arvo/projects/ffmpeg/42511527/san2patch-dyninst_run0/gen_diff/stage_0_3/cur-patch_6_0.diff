@@ -1,0 +1,31 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..7eb30ab1ce 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -194 +194,2 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
++// FIXME: Crash CWE-416: Use After Free
++     }
+@@ -195,0 +197,5 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        // Check if tmpblock is still valid after potential reallocations
++        if (!s->tmpblock) {
++            av_log(avctx, AV_LOG_ERROR, "Invalid buffer pointer after reallocation\n");
++            return AVERROR_INVALIDDATA;
++        }
+@@ -227,0 +234,4 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++            if (!s->frame || !s->frame->data[0]) {
++                av_log(avctx, AV_LOG_ERROR, "Invalid frame data pointer\n");
++                return AVERROR_INVALIDDATA;
++            }
+@@ -465 +474,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-
+@@ -474,0 +484,5 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++                // Check if keyframe buffer is still valid after potential reallocs
++                if (!s->keyframe) {
++                    av_log(avctx, AV_LOG_ERROR, "Keyframe buffer is NULL\n");
++                    return AVERROR_INVALIDDATA;
++                }
+@@ -485,2 +499 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if (!s->keyframe) {
+-            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);
++        if (!s->keyframe) {            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);

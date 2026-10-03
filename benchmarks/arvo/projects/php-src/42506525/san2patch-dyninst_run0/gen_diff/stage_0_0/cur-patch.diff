@@ -1,0 +1,14 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..a109489498f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2154 +2154,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (result & ZEND_HASH_APPLY_REMOVE) {
++// FIXME: Crash CWE-416: Use After Free
++ 			if (result & ZEND_HASH_APPLY_REMOVE) {
+@@ -2156 +2157,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				/* Validate pointer before use to prevent use-after-free */
++				if (p >= ht->arData && p < ht->arData + ht->nNumUsed) {
++					_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				}

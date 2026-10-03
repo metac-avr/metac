@@ -1,0 +1,22 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..624856f42 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1203,4 +1203,13 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++      /* CWE-416 prevention: do not unlink/free pages that contain objects
++         still referenced by pending GC structures (ivar tables, identity
++         maps, gray/black stacks). Retain such pages until the next GC cycle. */
++      if (!gc_has_pending_references(mrb, gc, page)) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      }
++      else {
++        page->old = FALSE;
++        page = page->next;
++      }

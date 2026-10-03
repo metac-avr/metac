@@ -1,0 +1,24 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..e3df07a32 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -353,0 +354 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  
+@@ -357 +358,3 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-  ci->stack = ci[-1].stack + push_stacks;
++  if (ci > c->cibase) {
++    ci->stack = ci[-1].stack + push_stacks;
++  }
+@@ -2710 +2713,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
++      if (mrb->c->ci >= mrb->c->cibase + mrb->c->ciacc) {
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++        goto L_RAISE;
++      }
+@@ -2722 +2729,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

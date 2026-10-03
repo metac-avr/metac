@@ -1,0 +1,31 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..ab94eba8e 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -213,0 +214,7 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
++    /* Check if string is currently being used in hash computation */
++    if (mrb->gc_state & GC_STATE_HASHING) {
++      /* Add to deferred free list instead of immediate free */
++      shared->next_free = mrb->deferred_frees;
++      mrb->deferred_frees = shared;
++      return;
++    }
+@@ -224 +230,0 @@ str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
+-
+diff --git a/src/gc.c b/src/gc.c
+index 823297612..24bc03ed3 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -824 +824,2 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -826 +827,7 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-    mrb_gc_free_str(mrb, (struct RString*)obj);
++    /* Prevent use-after-free during hash computation */
++    if (mrb->_gc_flags & GC_IN_HASH_COMPUTATION) {
++      /* Add to deferred free list instead of immediate free */
++      mrb_gc_defer_string_free(mrb, (struct RString*)obj);
++    } else {
++      mrb_gc_free_str(mrb, (struct RString*)obj);
++    }

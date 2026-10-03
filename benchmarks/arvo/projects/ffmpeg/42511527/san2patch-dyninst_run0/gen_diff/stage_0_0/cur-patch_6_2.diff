@@ -1,0 +1,31 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..2a3c78c544 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -349,6 +348,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -357 +351,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++    // Fixed: Validate pointer validity before use after realloc operations
++     if (s->is_keyframe) {
+@@ -358,0 +354 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        uint8_t *old_keyframedata = s->keyframedata;  // Store old pointer for safety
+@@ -361 +357,3 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        // Ensure keyframedata is valid before memcpy
++        if (s->keyframedata && avpkt->data && avpkt->size > 0)
++            memcpy(s->keyframedata, avpkt->data, avpkt->size);
+@@ -418 +416 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-                    }
++                     }
+@@ -431,0 +430,5 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++                    // Validate keyframe pointer is still valid after potential realloc
++                    if (!s->keyframe) {
++                        av_log(avctx, AV_LOG_ERROR, "Keyframe buffer corrupted after realloc\n");
++                        return AVERROR_INVALIDDATA;
++                    }

@@ -1,0 +1,44 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..4187d27a46 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,8 +2017,20 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
++#define WRITE_FRAME(DIRECT, PIXEL)
++static void write_frame_DIRECT_##PIXEL(Jpeg2000DecoderContext *s, AVFrame *picture,
++                                 int tile_index, int compno)
++{
++    int x, y, pixel_size;
++    uint8_t *line;
++    PIXEL *dp;
++    const Jpeg2000Component *comp = s->tile[tile_index].comp + compno;
++    
++    pixel_size = sizeof(PIXEL);
++    line = picture->data[comp->dc_scale_factor] +
++           comp->coord.y * picture->linesize[comp->dc_scale_factor] +
++           comp->coord.x * pixel_size;
++
++    for (y = 0; y < comp->height; y++) {
++        dp = (PIXEL *)line;
++        for (x = 0; x < comp->width; x++) {
++            *dp++ = comp->data[y * comp->width + x];
++        }
++        line += picture->linesize[comp->dc_scale_factor];
+@@ -2025,0 +2038 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
++}
+@@ -2031,8 +2043,0 @@ WRITE_FRAME(16, uint16_t)
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-

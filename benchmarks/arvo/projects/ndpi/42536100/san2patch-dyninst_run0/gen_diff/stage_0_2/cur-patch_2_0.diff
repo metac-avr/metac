@@ -1,0 +1,20 @@
+diff --git a/src/lib/protocols/zoom.c b/src/lib/protocols/zoom.c
+index 4ffad391a..e22936630 100644
+--- a/src/lib/protocols/zoom.c
++++ b/src/lib/protocols/zoom.c
+@@ -204,0 +205,2 @@ static void ndpi_search_zoom(struct ndpi_detection_module_struct *ndpi_struct,
++    // Ensure we have enough bytes to read ip_len (at offset 24)
++    if (packet->payload_packet_len < 28) return;
+@@ -206,2 +208,6 @@ static void ndpi_search_zoom(struct ndpi_detection_module_struct *ndpi_struct,
+-
+-    if(24 + 4 + ip_len + 4 < packet->payload_packet_len) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++    // Check if we have enough bytes to read uuid_len at computed offset
++    if(24 + 4 + ip_len + 4 <= packet->payload_packet_len) {
++      // Verify that the uuid_len field location is valid
++      if (24 + 4 + ip_len + 4 > packet->payload_packet_len) return;
+@@ -210 +216,2 @@ static void ndpi_search_zoom(struct ndpi_detection_module_struct *ndpi_struct,
+-      if(packet->payload_packet_len == 24 + 4 + ip_len + 4 + uuid_len + 4) {
++      // Additional validation to prevent integer overflow in final comparison
++      if(uuid_len <= packet->payload_packet_len && packet->payload_packet_len == 24 + 4 + ip_len + 4 + uuid_len + 4) {

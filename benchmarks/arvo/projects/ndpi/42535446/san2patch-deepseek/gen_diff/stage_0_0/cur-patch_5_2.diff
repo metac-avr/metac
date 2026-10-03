@@ -1,0 +1,41 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..9c37bcb62 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1024,0 +1025,23 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
++static void ndpi_check_http_header(struct ndpi_detection_module_struct *ndpi_struct,
++                                       struct ndpi_flow_struct *flow)
++{
++  if(flow->packet.http.response.ptr != NULL && flow->packet.http.response.len > 0) {
++    const char *suspicious_headers[] = {"content-type", "location", "host", "server", "x-powered-by", "set-cookie", "connection", "transfer-encoding", "content-length"};
++    struct ndpi_int_one_line_struct packet_line;
++    char buf[64], msg[128];
++    size_t i;
++
++    if(flow->packet.http.response.ptr == NULL ||
++       flow->packet.http.response.len < 4 ||
++       memcmp(flow->packet.http.response.ptr, "HTTP", 4) != 0) {
++      return;
++    }
++
++    packet_line.ptr = (char *)ndpi_flow_malloc(ndpi_struct, flow->packet.http.response.len + 1);
++    if(packet_line.ptr == NULL) {
++      return;
++    }
++
++    memcpy(packet_line.ptr, flow->packet.http.response.ptr, flow->packet.http.response.len);
++    packet_line.ptr[flow->packet.http.response.len] = '\0';
++    packet_line.len = flow->packet.http.response.len;
+@@ -1026,4 +1049,4 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	  snprintf(msg, sizeof(msg), "Expected %s, found %s",
+-		   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
+-	  ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);
+-        }
++    for(i = 0; i < sizeof(suspicious_headers) / sizeof(suspicious_headers[0]); i++) {
++      if(is_a_suspicious_header(suspicious_headers, packet_line)) {
++        snprintf(msg, sizeof(msg), "Suspicious %s header", suspicious_headers[i]);
++        ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);
+@@ -1032,0 +1056 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
++    ndpi_free(packet_line.ptr);
+@@ -1046 +1069,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-

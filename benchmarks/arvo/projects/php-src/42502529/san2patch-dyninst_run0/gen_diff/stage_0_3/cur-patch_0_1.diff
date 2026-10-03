@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..a89f1dcd009 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1830,0 +1831 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++		if (UNEXPECTED(!p->val.value.ptr)) continue;
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..b396769eb7a 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74,2 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
++	if (ref && !GC_IS_REFCOUNTED(ref)) return;
+@@ -82 +83,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +86,11 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (!zval_ptr) return;
++	if (Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && GC_IS_REFCOUNTED(ref) && !GC_HAS_CONSTANT_INDEX(ref)) {
++			i_zval_ptr_dtor(zval_ptr);
++		} else {
++			return;
++		}
++	} else {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -94,2 +106 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

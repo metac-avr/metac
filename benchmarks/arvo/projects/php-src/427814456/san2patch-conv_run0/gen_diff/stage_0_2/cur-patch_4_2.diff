@@ -1,0 +1,48 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..532ad874beb 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1445,9 +1445 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			EG(exit_status) = 255;
+-		}
+-	}
+-}
+-/* }}} */
+-
+-static ZEND_COLD void zend_error_va_list(
+-		int orig_type, zend_string *error_filename, uint32_t error_lineno,
+-		const char *format, va_list args)
++static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+@@ -1455,12 +1447,6 @@ static ZEND_COLD void zend_error_va_list(
+-	zend_string *message = zend_vstrpprintf(0, format, args);
+-	zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
+-	zend_string_release(message);
+-}
+-
+-static ZEND_COLD void get_filename_lineno(int type, zend_string **filename, uint32_t *lineno) {
+-	/* Obtain relevant filename and lineno */
+-	switch (type) {
+-		case E_CORE_ERROR:
+-		case E_CORE_WARNING:
+-			*filename = NULL;
+-			*lineno = 0;
++	CHECK_ZVAL_STRING(str);
++	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
++	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
++	efree(str);
++}			*lineno = 0;
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..2f6a6111738 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -64,0 +65,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Fixed CWE-416: Use After Free - Ensure no dangling pointers exist */
++	if (str->h.type_hint != NULL) {
++		str->h.type_hint = NULL;
++	}
+@@ -77 +80,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

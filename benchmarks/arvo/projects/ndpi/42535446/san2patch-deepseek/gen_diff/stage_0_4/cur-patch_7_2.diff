@@ -1,0 +1,33 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..fd02c8e11 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1025,6 +1025,6 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+-	  snprintf(msg, sizeof(msg), "Expected %s, found %s",
+-		   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
+-	  ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);
+-        }
+-      }
++static bool ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndpi_struct, struct ndpi_flow_struct *flow, const char *subprotocol)
++{
++  if(subprotocol) {
++    if(strcasestr(subprotocol, "mozilla") != NULL) {
++      ndpi_set_detected_protocol(ndpi_struct, flow, NDPI_PROTOCOL_HTTP_MOZILLA, NDPI_PROTOCOL_HTTP);
++      return true;
+@@ -1032,7 +1031,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+-  }
+-
+-  ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
+-
+-  if(hostname_just_set && strlen(flow->host_server_name) > 0) {
+-    ndpi_check_dga_name(ndpi_struct, flow, flow->host_server_name, 1, 0);
+@@ -1041,4 +1034 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  if(flow->guessed_protocol_id == NDPI_PROTOCOL_UNKNOWN)
+-    flow->guessed_protocol_id = NDPI_PROTOCOL_HTTP;
+-
+-  ndpi_check_http_header(ndpi_struct, flow);
++  return false;
+@@ -1046 +1035,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-

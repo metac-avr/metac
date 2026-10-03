@@ -1,0 +1,33 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 42cc33c1b..fae578237 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -11518,0 +11519,8 @@ static ndpi_risk_enum __get_flowrisk_id(const char *flowrisk_name_or_id)
++  char safe_flowrisk_name_or_id[128];
++
++  /* Prevent buffer overflow by limiting input length */
++  if(flowrisk_name_or_id == NULL || strlen(flowrisk_name_or_id) >= sizeof(safe_flowrisk_name_or_id))
++    return NDPI_NO_RISK;
++  
++  strncpy(safe_flowrisk_name_or_id, flowrisk_name_or_id, sizeof(safe_flowrisk_name_or_id) - 1);
++  safe_flowrisk_name_or_id[sizeof(safe_flowrisk_name_or_id) - 1] = '\0';
+@@ -11522 +11530,2 @@ static ndpi_risk_enum __get_flowrisk_id(const char *flowrisk_name_or_id)
+-     others characters after the number */
++// FIXME: Crash CWE-125: Out-of-bounds Read
++      others characters after the number */
+@@ -11524 +11533 @@ static ndpi_risk_enum __get_flowrisk_id(const char *flowrisk_name_or_id)
+-  val = strtol(flowrisk_name_or_id, &endptr, 10);
++  val = strtol(safe_flowrisk_name_or_id, &endptr, 10);
+@@ -11533 +11542 @@ static ndpi_risk_enum __get_flowrisk_id(const char *flowrisk_name_or_id)
+-    if(strcmp(ndpi_risk_shortnames[i], flowrisk_name_or_id) == 0)
++    if(strcmp(ndpi_risk_shortnames[i], safe_flowrisk_name_or_id) == 0)
+@@ -11774 +11783 @@ static ndpi_cfg_error _set_param_flowrisk_enable_disable(struct ndpi_detection_m
+-    memcpy(param, _param, ndpi_min(strlen(_param) - 5, sizeof(param))); /* Strip trailing ".info" */
++    memcpy(param, _param, ndpi_min(strlen(_param) - 5, sizeof(param)-1)); /* Strip trailing ".info" and ensure null termination */
+@@ -11776 +11785,2 @@ static ndpi_cfg_error _set_param_flowrisk_enable_disable(struct ndpi_detection_m
+-    strncpy(param, _param, sizeof(param));
++    strncpy(param, _param, sizeof(param)-1);
++  param[sizeof(param)-1] = '\0'; /* Ensure null termination */
+@@ -11791 +11801 @@ static ndpi_cfg_error _set_param_flowrisk_enable_disable(struct ndpi_detection_m
+-  }
++   }

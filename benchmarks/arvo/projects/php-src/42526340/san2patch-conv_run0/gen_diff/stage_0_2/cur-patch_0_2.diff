@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..c4f898c141b 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1251 +1251,9 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
++#ifndef ZEND_TYPES_H
++#define ZEND_TYPES_H
++
++#if defined(HAVE_GC_GUARD) && defined(ZEND_GUARD_PAGE)
++# define ZEND_RC_MOD_CHECK(p) \
++	zend_gc_guard_page_check((void *)p)
++# define GC_MAKE_PERSISTENT_LOCAL(p) \
++	do { \
++		GC_SET_FLAGS(p, GC_PERSISTENT_LOCAL); \
+@@ -1273,0 +1282,5 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	ZEND_RC_MOD_CHECK(p);
++	return --(p->refcount);
++}}
++
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..79febb2d792 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Mark object as completely invalid to prevent expired pointer dereference */
++		GC_TYPE(object) = IS_NULL;

@@ -1,0 +1,80 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..09d8ded57a 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -153,5 +153,9 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    s->zstream.next_in   = src;
+-    s->zstream.avail_in  = size;
+-    s->zstream.next_out  = s->tmpblock;
+-    s->zstream.avail_out = s->block_size * 3;
+-    inflate(&s->zstream, Z_SYNC_FLUSH);
++    if (s->tmpblock) {
++        s->zstream.next_in   = src;
++        s->zstream.avail_in  = size;
++        s->zstream.next_out  = s->tmpblock;
++        s->zstream.avail_out = s->block_size * 3;
++        inflate(&s->zstream, Z_SYNC_FLUSH);
++    } else {
++        return AVERROR_INVALIDDATA;
++    }
+@@ -161,5 +165,10 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    zs.next_in   = s->tmpblock;
+-    zs.avail_in  = s->block_size * 3 - s->zstream.avail_out;
+-    zs.next_out  = s->deflate_block;
+-    zs.avail_out = s->deflate_block_size;
+-    deflate(&zs, Z_SYNC_FLUSH);
++    if (s->tmpblock) {
++        zs.next_in   = s->tmpblock;
++        zs.avail_in  = s->block_size * 3 - s->zstream.avail_out;
++        zs.next_out  = s->deflate_block;
++        zs.avail_out = s->deflate_block_size;
++        deflate(&zs, Z_SYNC_FLUSH);
++    } else {
++        deflateEnd(&zs);
++        return AVERROR_INVALIDDATA;
++    }
+@@ -173,5 +182,9 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    s->zstream.next_in   = s->deflate_block;
+-    s->zstream.avail_in  = s->deflate_block_size - zs.avail_out;
+-    s->zstream.next_out  = s->tmpblock;
+-    s->zstream.avail_out = s->block_size * 3;
+-    inflate(&s->zstream, Z_SYNC_FLUSH);
++    if (s->deflate_block && s->tmpblock) {
++        s->zstream.next_in   = s->deflate_block;
++        s->zstream.avail_in  = s->deflate_block_size - zs.avail_out;
++        s->zstream.next_out  = s->tmpblock;
++        s->zstream.avail_out = s->block_size * 3;
++        inflate(&s->zstream, Z_SYNC_FLUSH);
++    } else {
++        return AVERROR_INVALIDDATA;
++    }
+@@ -349,6 +361,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -357 +364,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -358,0 +367,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        void *old_data = s->keyframedata;
++        size_t old_size = avpkt->size;
++        
++        // Validate input before reallocation
++        if (!avpkt->data || avpkt->size == 0) {
++            return AVERROR_INVALIDDATA;
++        }
++        
+@@ -361 +377,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
++            
++        // Check if reallocation succeeded and pointer is valid
++        if (s->keyframedata != NULL) {
++            memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        } else if (old_data != s->keyframedata) {
++            // Reallocation freed the old buffer, ensure we don't access it
++            return AVERROR(ENOMEM);
++        }

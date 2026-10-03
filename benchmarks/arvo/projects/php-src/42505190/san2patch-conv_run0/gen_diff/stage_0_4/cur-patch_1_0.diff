@@ -1,0 +1,47 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..8a15d312ad2 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29932 +29932,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			}
++// Fixed CWE-416: Use After Free - Added validity check before accessing freed memory
++ 			}
+@@ -30282 +30283,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			}
++// Fixed CWE-416: Use After Free - Added validity check before accessing freed memory
++ 			}
+@@ -49519 +49521,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			}
++// Fixed CWE-416: Use After Free - Added validity check before accessing freed memory
++ 			}
+@@ -49869 +49872,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			}
++// Fixed CWE-416: Use After Free - Added validity check before accessing freed memory
++ 			}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..95d1575ef64 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2433,2 +2432,0 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-				zend_use_scalar_as_array();
+-				ZVAL_UNDEF(result);
+@@ -2443 +2441,14 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-	zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_W EXECUTE_DATA_CC);
++	if (container_ptr && Z_REFCOUNTED_P(container_ptr)) {
++		if (Z_ISREF_P(container_ptr)) {
++			zval *ref = Z_REFVAL_P(container_ptr);
++			if (ref && Z_TYPE_P(ref) == IS_ARRAY) {
++				zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_W EXECUTE_DATA_CC);
++				return;
++			}
++		} else if (Z_TYPE_P(container_ptr) == IS_ARRAY) {
++			zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_W EXECUTE_DATA_CC);
++			return;
++		}
++	}
++	zend_use_scalar_as_array();
++	ZVAL_UNDEF(result);
+@@ -2453,2 +2464 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(z
+-{
+-	zval *result = EX_VAR(opline->result.var);
++{	zval *result = EX_VAR(opline->result.var);

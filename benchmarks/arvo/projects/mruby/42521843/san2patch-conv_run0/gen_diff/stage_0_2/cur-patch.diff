@@ -1,0 +1,22 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..352e6c212 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -148,0 +150,4 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  /* Defensive check for pointer validity */
++  if (!t->ptr) return 0;
++  volatile void* ptr_check = t->ptr; /* Create volatile reference to detect changes */
++  
+@@ -155 +160 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-  if (pos < t->alloc) {
++  if (pos < t->alloc && pos >= 0) { /* Bounds check */
+@@ -158,0 +164 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++        if (ptr_check != t->ptr) return 0; /* Check if pointer was invalidated */
+@@ -166,0 +173 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (pos >= t->alloc || pos < 0) return 0; /* Bounds validation */
+@@ -168,0 +176 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++      if (ptr_check != t->ptr) return 0; /* Revalidate pointer before use */

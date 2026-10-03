@@ -1,0 +1,49 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..0bf31edb5 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -791,0 +792,5 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  // Validate object pointer before adding to gray list
++  if (((uintptr_t)obj & (sizeof(void*)-1)) != 0) return; // Check alignment
++  if ((uintptr_t)obj < 0x1000) return; // Check for invalid low addresses
++  
+@@ -799,2 +804 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1252,6 +1255,0 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    /* unknown state */
+-    mrb_assert(0);
+-    return 0;
+-  }
+-}
+-
+@@ -1260,0 +1259,3 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
++  /* Validate GC state before processing to prevent expired pointer dereference */
++  if (gc == NULL || mrb == NULL) return;
++  
+@@ -1261,0 +1263,5 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
++    /* Add safety check to ensure we don't process invalid pointers */
++    if (gc->state >= MRB_GC_STATE_MAX) {
++      gc->state = MRB_GC_STATE_ROOT;  /* Reset to safe state */
++      break;
++    }
+@@ -1264,10 +1270 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
+-}
+-
+-static void
+-incremental_gc_step(mrb_state *mrb, mrb_gc *gc)
+-{
+-  size_t limit = 0, result = 0;
+-  limit = (GC_STEP_SIZE/100) * gc->step_ratio;
+-  while (result < limit) {
+-    result += incremental_gc(mrb, gc, limit);
+-    if (gc->state == MRB_GC_STATE_ROOT)
++}    if (gc->state == MRB_GC_STATE_ROOT)

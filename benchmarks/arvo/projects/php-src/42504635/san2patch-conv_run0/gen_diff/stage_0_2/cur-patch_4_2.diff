@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..33fa321093a 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,7 +46,0 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+-	/* IS_OBJECT       */ (zend_rc_dtor_func_t)zend_objects_store_del,
+-	/* IS_RESOURCE     */ (zend_rc_dtor_func_t)zend_list_free,
+-	/* IS_REFERENCE    */ (zend_rc_dtor_func_t)zend_reference_destroy,
+-	/* IS_CONSTANT_AST */ (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+-
+@@ -56,0 +50,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (GC_FLAGS(p) & GC_BLACK) return;
++	zend_bool old_flags = GC_FLAGS(p);
++	GC_FLAGS(p) = old_flags | GC_BLACK;
+@@ -58,11 +54,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-{
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++	GC_FLAGS(p) = old_flags;
++}}
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..540d8fac614 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -42,0 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++		if (GC_FLAGS(ref) & GC_IMMUTABLE) return;
+@@ -43,0 +45,2 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++			zend_bool old_flags = GC_FLAGS(ref);
++			GC_FLAGS(ref) = old_flags | GC_IMMUTABLE;
+@@ -44,0 +48 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++			GC_FLAGS(ref) = old_flags;

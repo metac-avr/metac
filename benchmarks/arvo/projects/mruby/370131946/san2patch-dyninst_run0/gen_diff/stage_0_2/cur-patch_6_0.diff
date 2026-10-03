@@ -1,0 +1,29 @@
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..0335f105f 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2878 +2878 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-    mrb_str_modify(mrb, mrb_str_ptr(str));
++     mrb_str_modify(mrb, mrb_str_ptr(str));
+@@ -2880 +2880,16 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-  return mrb_str_cat(mrb, str, RSTRING_PTR(str2), RSTRING_LEN(str2));
++  
++  /* Check if str2 is a valid string object before accessing its data */
++  if (mrb_type(str2) != MRB_TT_STRING) {
++    mrb_raise(mrb, E_TYPE_ERROR, "expected String");
++  }
++  
++  /* Validate that the string data is properly aligned and not null */
++  const char *str2_ptr = RSTRING_PTR(str2);
++  mrb_int str2_len = RSTRING_LEN(str2);
++  
++  /* Additional check for null pointer to prevent expired pointer dereference */
++  if (str2_ptr == NULL && str2_len > 0) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "invalid string data");
++  }
++  
++  return mrb_str_cat(mrb, str, str2_ptr, str2_len);
+@@ -2890,2 +2905 @@ mrb_str_append(mrb_state *mrb, mrb_value str1, mrb_value str2)
+-/*
+- * call-seq:
++/* * call-seq:

@@ -1,0 +1,50 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..e57b46a0 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -593,6 +592,0 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
+-        return 0;
+-
+-    return ((1 << child->type) & CHILD_MASK_DTD) != 0;
+-}
+-
+@@ -601 +595,5 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++// FIXME: Crash CWE-416: Use After Free
++     xmlNodePtr cur = node;
++
++    if (cur == NULL)
++        return NULL;
+@@ -603 +601,4 @@ nodeGetTree(xmlNodePtr node) {
+-    while (cur->parent)
++    while (cur->parent) {
++        /* Check for freed/dangling node */
++        if (((uintptr_t)cur & 0x1) != 0)  /* Basic sanity check */
++            return NULL;
+@@ -604,0 +606 @@ nodeGetTree(xmlNodePtr node) {
++    }
+@@ -606,9 +608 @@ nodeGetTree(xmlNodePtr node) {
+-}
+-
+-/*
+- * This function is called whenever a reference to a node is removed.
+- * It checks whether the node is still reachable and frees unreferenced
+- * nodes.
+- *
+- * A node is reachable if its tree, identified by the root node,
+- * is reachable. If a non-document tree is unreachable, it can be
++} * is reachable. If a non-document tree is unreachable, it can be
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..4d3f9498 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6882 +6882 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6884,2 +6884,3 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	prop->children = NULL;
+-	prop->last = NULL;
++	    prop->children = NULL;
++	    prop->last = NULL;
++	}

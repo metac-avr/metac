@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..4f3ba1bdeb5 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-416: Use After Free
++		zend_gc_clean_dtor_run(object);
+@@ -203,0 +205 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		ptr = ((char*)object) - object->handlers->offset;
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..ad286d8a2b1 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -216 +216,6 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		return ZEND_HASH_APPLY_REMOVE;
++		/* Validate object before removal to prevent UAF */
++		zend_object *obj = Z_OBJ_P(zv);
++		if (obj != NULL && !(obj->gc.u.smart & 0x01)) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
++		return ZEND_HASH_APPLY_KEEP;

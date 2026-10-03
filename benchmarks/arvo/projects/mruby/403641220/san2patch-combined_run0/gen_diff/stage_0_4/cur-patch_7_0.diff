@@ -1,0 +1,30 @@
+diff --git a/src/range.c b/src/range.c
+index fc126be80..8ce49e958 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -391,0 +392 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
++          if (i >= RARRAY_LEN(ary)) break;
+@@ -397 +398,2 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      else {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       else {
+@@ -398,0 +401 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
++          if (i >= RARRAY_LEN(ary)) break;
+diff --git a/src/array.c b/src/array.c
+index a02a1306d..7a5c599ca 100644
+--- a/src/array.c
++++ b/src/array.c
+@@ -57,4 +56,0 @@ ary_new_capa(mrb_state *mrb, mrb_int capa)
+-    a->as.heap.aux.capa = capa;
+-    a->as.heap.len = 0;
+-  }
+-
+@@ -65 +61,2 @@ MRB_API mrb_value
+-mrb_ary_new_capa(mrb_state *mrb, mrb_int capa)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ mrb_ary_new_capa(mrb_state *mrb, mrb_int capa)
+@@ -67 +64,3 @@ mrb_ary_new_capa(mrb_state *mrb, mrb_int capa)
+-  struct RArray *a = ary_new_capa(mrb, capa);
++  struct RArray *a;
++  if (capa > MRB_INT_MAX) capa = MRB_INT_MAX;  // Prevent integer overflow
++  a = ary_new_capa(mrb, capa);

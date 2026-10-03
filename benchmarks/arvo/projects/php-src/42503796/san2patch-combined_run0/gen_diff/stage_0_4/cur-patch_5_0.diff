@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..1081e3ffdc7 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,7 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+@@ -1153 +1146,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1155 +1149,2 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	if (p && ((zend_refcounted_h*)p)->refcount != 0xDEADBEEF) return p->refcount;
++	return 0;
+@@ -1165,2 +1160 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
+-}
++	return ++(p->refcount);}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..9666135dbed 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54422 +54422,2 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		if (UNEXPECTED(!OPLINE)) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (UNEXPECTED(!OPLINE || EG(exit_status) != 0)) {

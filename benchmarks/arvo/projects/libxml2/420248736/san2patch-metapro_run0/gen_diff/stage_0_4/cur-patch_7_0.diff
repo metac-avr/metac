@@ -1,0 +1,27 @@
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..503fa38d 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1173 +1173,2 @@ xmlAddElementDecl(xmlValidCtxt *ctxt,
+-        int res;
++// FIXME: Crash CWE-416: Use After Free
++         int res;
+@@ -1186,0 +1188 @@ xmlAddElementDecl(xmlValidCtxt *ctxt,
++	    ret = NULL;  // Set pointer to NULL after freeing to prevent use-after-free
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4..2a5a8b02 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -3589,3 +3589,5 @@ LLVMFuzzerTestOneInput(const char *data, size_t size) {
+-
+-        vars->nodes[i] = NULL;
+-        dropNode(node);
++// Fixed CWE-416: Use After Free by adding null check
++        if (vars->nodes[i] != NULL) {
++            vars->nodes[i] = NULL;
++            dropNode(node);
++        }
+@@ -3601,2 +3603 @@ size_t
+-LLVMFuzzerCustomMutator(char *data, size_t size, size_t maxSize,
+-                        unsigned seed) {
++LLVMFuzzerCustomMutator(char *data, size_t size, size_t maxSize,                        unsigned seed) {

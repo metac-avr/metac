@@ -1,0 +1,14 @@
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..d352fc680 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2862 +2862,8 @@ mrb_str_cat(mrb_state *mrb, mrb_value str, const char *ptr, size_t len)
+-  memcpy(RSTR_PTR(s) + RSTR_LEN(s), ptr, len);
++  
++  /* Validate pointer alignment before memory operations */
++  char* dest_ptr = RSTR_PTR(s) + RSTR_LEN(s);
++  if (((uintptr_t)dest_ptr) % __alignof__(char) != 0) {
++    mrb_raisef(mrb, E_RUNTIME_ERROR, "misaligned destination pointer: %p", dest_ptr);
++  }
++  
++  memcpy(dest_ptr, ptr, len);

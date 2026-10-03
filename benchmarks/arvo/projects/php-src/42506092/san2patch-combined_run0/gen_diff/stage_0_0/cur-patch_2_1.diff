@@ -1,0 +1,50 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..4b5520a6cb1 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756,9 +755,0 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
+-	}
+-	return zend_hash_lookup(ht, offset_key);
+-
+-num_index:
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
+-}
+-
+@@ -767 +758,34 @@ static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int typ
+-	zend_long offset;
++	try_again:
++	switch(Z_TYPE_P(dim)) {
++		case IS_LONG:
++			return Z_LVAL_P(dim);
++		case IS_DOUBLE:
++			return zend_dval_to_lval(Z_DVAL_P(dim));
++		case IS_STRING:
++			if (Z_STRLEN_P(dim) == 0) {
++				return 0;
++			}
++			/* Handle numeric strings */
++			{
++				zend_long lval;
++				double dval;
++				zend_uchar type;
++				
++				type = is_numeric_string(Z_STRVAL_P(dim), Z_STRLEN_P(dim), &lval, &dval, 0);
++				if (type == IS_LONG) {
++					return lval;
++				} else if (type == IS_DOUBLE) {
++					return zend_dval_to_lval(dval);
++				}
++				/* Fall through to default behavior */
++			}
++			/* break missing intentionally */
++		default:
++			if (UNEXPECTED(Z_TYPE_P(dim) == IS_REFERENCE)) {
++				/* Unwrap reference and try again */
++				dim = Z_REFVAL_P(dim);
++				goto try_again;
++			}
++			return zval_get_long_func(dim, /* is_strict */ false);
++	}
++}	zend_long offset;

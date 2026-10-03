@@ -1,0 +1,24 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..14e0f4679 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -643 +643 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -651 +651,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   case MRB_TT_OBJECT:
+@@ -1133,0 +1135 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++          /* Ensure pointer is cleared after freeing */
+@@ -1156 +1158,9 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
++      /* Clear references before freeing page */
++      if (page->freelist) {
++        RVALUE *free_p = (RVALUE*)page->freelist;
++        while (free_p) {
++          free_p->as.basic.iv = NULL;
++          free_p = (RVALUE*)free_p->as.free.next;
++        }
++      }
++       unlink_heap_page(gc, page);

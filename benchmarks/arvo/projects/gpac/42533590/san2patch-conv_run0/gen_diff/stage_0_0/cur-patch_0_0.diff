@@ -1,0 +1,26 @@
+diff --git a/src/utils/error.c b/src/utils/error.c
+index 957e7dc9b..3d499a9cd 100644
+--- a/src/utils/error.c
++++ b/src/utils/error.c
+@@ -2187,3 +2187,4 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-       //basically a memmem clone (we don't use for portability reasons)
+-       while (1) {
+-               char *next = memchr(data, pat[0], data_size);
++        // Fixed: Ensure we don't read beyond buffer boundaries
++        u32 search_size = data_size;
++       while (search_size >= len_pat) {
++               char *next = memchr(data, pat[0], search_size);
+@@ -2191 +2192,3 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-               u32 left = data_size - (u32) (next-data);
++               u32 offset = (u32) (next-data);
++               if (offset >= search_size) return NULL;
++               u32 left = search_size - offset;
+@@ -2194,3 +2197,5 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-               //left is always at least 1
+-               data_size = left-1;
+-               data = next+1;
++               // Move to next position
++               u32 advance = offset + 1;
++               if (advance >= data_size) return NULL;
++               data = data + advance;
++               search_size = data_size - advance;

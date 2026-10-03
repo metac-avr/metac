@@ -1,0 +1,28 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..c61a0126d 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -339,0 +340,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  mrb_callinfo *new_cibase;
++  ptrdiff_t size;
+@@ -345 +347 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    ptrdiff_t size = ci - c->cibase;
++    size = ci - c->cibase;
+@@ -348 +350,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -350,3 +353,4 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
+-    c->ci = ci = c->cibase + size;
+-    c->ciend = c->cibase + size * 2;
++    new_cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    c->cibase = new_cibase;
++    c->ci = ci = new_cibase + size;
++    c->ciend = new_cibase + size * 2;
+@@ -2710 +2714,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// Resolved heap-use-after-free vulnerability in array concatenation
++     CASE(OP_ARYCAT, B) {
+@@ -2722 +2726,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

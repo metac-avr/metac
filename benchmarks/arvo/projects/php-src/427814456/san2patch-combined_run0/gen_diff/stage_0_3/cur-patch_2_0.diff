@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..0b7db4c7036 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -64,0 +65 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Patched CWE-416: Use After Free vulnerability */
+@@ -66,0 +68,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Ensure no pending references before destruction */
++	while (GC_REFCOUNT(str) > 0) {
++		GC_DELREF(str);
++	}
+@@ -77 +81,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

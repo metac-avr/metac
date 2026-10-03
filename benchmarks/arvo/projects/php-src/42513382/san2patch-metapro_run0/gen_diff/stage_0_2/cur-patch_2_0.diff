@@ -1,0 +1,25 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..7cba40f6eff 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6964 +6964 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
++if (zend_parse_parameters_none() == FAILURE) {
+@@ -6972 +6972,11 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-
++	// Fixed CWE-125: Out-of-bounds Read by adding null check before memory access
++	if (Z_TYPE(ref->value) != IS_OBJECT) {
++		zend_throw_error(NULL, "Enum case value is not an object");
++		RETURN_THROWS();
++	}
++	zend_object *obj = Z_OBJ(ref->value);
++	if (obj == NULL) {
++		zend_throw_error(NULL, "Enum case object is null");
++		RETURN_THROWS();
++	}
++ 
+@@ -6974 +6984 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	zval *member_p = zend_enum_fetch_case_value(Z_OBJ(ref->value));
++	zval *member_p = zend_enum_fetch_case_value(obj);
+@@ -6984 +6993,0 @@ ZEND_METHOD(ReflectionFiber, __construct)
+-

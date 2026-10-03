@@ -1,0 +1,20 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..b4e23e5b6 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -777,0 +778,15 @@ str_index_str(mrb_state *mrb, mrb_value str, mrb_value str2, mrb_int offset)
++  if (len < (mrb_int)sizeof(uint64_t) || RSTRING_LEN(str) - offset - len + 1 < (mrb_int)sizeof(uint64_t)) {
++    const char *h = RSTRING_PTR(str);
++    mrb_int hlen = RSTRING_LEN(str);
++    mrb_int i;
++    if (offset < 0) {
++      offset += hlen;
++      if (offset < 0) offset = 0;
++    }
++    if (offset > hlen - len) return -1;
++    for (i = offset; i <= hlen - len; i++) {
++      if (memcmp(h + i, ptr, len) == 0) return i;
++    }
++    return -1;
++  }
++

@@ -1,0 +1,45 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..797650b7 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2736,0 +2737 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    xmlIDPtr id;
+@@ -2743 +2744,4 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
++
++    id = attr->id;
++    if (id == NULL || id->value == NULL) return(-1);
+@@ -2745 +2749 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++    if (xmlHashRemoveEntry(table, id->value, xmlFreeIDTableEntry) < 0)
+diff --git a/hash.c b/hash.c
+index 33e8581e..47e8eb30 100644
+--- a/hash.c
++++ b/hash.c
+@@ -1274,10 +1274,13 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
+-
+-    if ((dealloc != NULL) && (entry->payload != NULL))
+-        dealloc(entry->payload, entry->key);
+-    if (hash->dict == NULL) {
+-        if (entry->key)
+-            xmlFree(entry->key);
+-        if (entry->key2)
+-            xmlFree(entry->key2);
+-        if (entry->key3)
+-            xmlFree(entry->key3);
++// Fixed CWE-416: Use After Free by adding defensive checks before memory access
++ 
++    if (entry != NULL) {
++        if ((dealloc != NULL) && (entry->payload != NULL))
++            dealloc(entry->payload, entry->key);
++        if (hash->dict == NULL) {
++            if (entry->key)
++                xmlFree(entry->key);
++            if (entry->key2)
++                xmlFree(entry->key2);
++            if (entry->key3)
++                xmlFree(entry->key3);
++        }
+@@ -1289,0 +1293 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
++    if (entry == NULL) return(-1);

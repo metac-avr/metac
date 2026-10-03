@@ -1,0 +1,40 @@
+diff --git a/src/range.c b/src/range.c
+index fc126be80..0ca7ba8b7 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -392 +392,2 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-          ptr[i++] = mrb_int_value(mrb, (mrb_int)a);
++          ptr[i] = mrb_int_value(mrb, (mrb_int)a);
++          i++;
+@@ -393,0 +395 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
++          if (i >= RARRAY_LEN(ary)) break;
+@@ -397 +399,2 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      else {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       else {
+@@ -399 +402,2 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-          ptr[i++] = mrb_int_value(mrb, (mrb_int)a);
++          ptr[i] = mrb_int_value(mrb, (mrb_int)a);
++          i++;
+@@ -400,0 +405 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
++          if (i >= RARRAY_LEN(ary)) break;
+diff --git a/src/array.c b/src/array.c
+index a02a1306d..881760442 100644
+--- a/src/array.c
++++ b/src/array.c
+@@ -57,4 +56,0 @@ ary_new_capa(mrb_state *mrb, mrb_int capa)
+-    a->as.heap.aux.capa = capa;
+-    a->as.heap.len = 0;
+-  }
+-
+@@ -65 +61,2 @@ MRB_API mrb_value
+-mrb_ary_new_capa(mrb_state *mrb, mrb_int capa)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ mrb_ary_new_capa(mrb_state *mrb, mrb_int capa)
+@@ -67 +64,5 @@ mrb_ary_new_capa(mrb_state *mrb, mrb_int capa)
+-  struct RArray *a = ary_new_capa(mrb, capa);
++  struct RArray *a;
++  if (capa < 0 || capa > MRB_INT_MAX) {
++    capa = (capa < 0) ? 0 : MRB_INT_MAX;  // Clamp invalid capacities
++  }
++  a = ary_new_capa(mrb, capa);

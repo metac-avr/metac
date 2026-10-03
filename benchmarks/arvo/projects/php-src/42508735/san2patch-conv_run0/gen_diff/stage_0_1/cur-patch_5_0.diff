@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..91287d5befc 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-416: Use After Free
++ 		ptr = ((char*)object) - object->handlers->offset;
+@@ -204,0 +206 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		EG(objects_store).object_buckets[handle] = NULL;  /* Explicitly nullify the bucket to prevent reuse */
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..37d513266f9 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -539,0 +540,5 @@ static void gc_grow_root_buffer(void)
++// FIXME: Crash CWE-416: Use After Free
++		/* Safety check for dangling pointer access */
++		if (GC_G(buf) == NULL || GC_G(buf_size) == 0) {
++			return;
++		}

@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..746c21f0501 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352 +1352,2 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
++// FIXME: Crash CWE-416: Use After Free
++ 		ZVAL_COPY_VALUE(&tmp, &p->val);
+@@ -1354 +1355,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ht->pDestructor(&tmp);
++		if (!Z_ISREF(tmp) || Z_COUNTED(tmp)) {
++			ht->pDestructor(&tmp);
++		}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..7e7d02a1fcb 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -275 +274 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
++	
+@@ -276,0 +276,2 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
++		/* Force garbage collection cycle before hash table destruction to prevent dangling pointer access */
++		zend_gc_collect_cycles();
+@@ -282,2 +283 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-		} else {
+-			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
++		} else {			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {

@@ -1,0 +1,135 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..2d7224b9f 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1703,15 +1703,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-    {
+-      mrb_callinfo *ci = mrb->c->ci;
+-      mrb_method_t m;
+-      struct RClass *cls;
+-      mrb_value recv, blk;
+-
+-      ARGUMENT_NORMALIZE(a, &c, insn);
+-
+-      recv = regs[a];
+-      cls = mrb_class(mrb, recv);
+-      m = mrb_method_search_vm(mrb, &cls, mid);
+-      if (MRB_METHOD_UNDEF_P(m)) {
+-        m = prepare_missing(mrb, recv, mid, &cls, a, &c, blk, 0);
+-        mid = MRB_SYM(method_missing);
+-      }
++{
++  mrb_callinfo *ci = mrb->c->ci;
++  mrb_method_t m;
++  struct RClass *cls;
++  mrb_value recv, blk;
+@@ -1719,2 +1709 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      /* push callinfo */
+-      ci = cipush(mrb, a, 0, cls, NULL, mid, c);
++  ARGUMENT_NORMALIZE(a, &c, insn);
+@@ -1722,38 +1711,41 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      if (MRB_METHOD_CFUNC_P(m)) {
+-        if (MRB_METHOD_PROC_P(m)) {
+-          struct RProc *p = MRB_METHOD_PROC(m);
+-          CI_PROC_SET(ci, p);
+-          recv = p->body.func(mrb, recv);
+-        }
+-        else {
+-          if (MRB_METHOD_NOARG_P(m)) {
+-            check_method_noarg(mrb, ci);
+-          }
+-          recv = MRB_METHOD_FUNC(m)(mrb, recv);
+-        }
+-        mrb_gc_arena_shrink(mrb, ai);
+-        if (mrb->exc) goto L_RAISE;
+-        ci = mrb->c->ci;
+-        if (mrb_proc_p(blk)) {
+-          struct RProc *p = mrb_proc_ptr(blk);
+-          if (p && !MRB_PROC_STRICT_P(p) && MRB_PROC_ENV(p) == CI_ENV(&ci[-1])) {
+-            p->flags |= MRB_PROC_ORPHAN;
+-          }
+-        }
+-        if (!ci->u.target_class) { /* return from context modifying method (resume/yield) */
+-          if (ci->cci == CINFO_RESUMED) {
+-            mrb->jmp = prev_jmp;
+-            return recv;
+-          }
+-          else {
+-            mrb_assert(!MRB_PROC_CFUNC_P(ci[-1].proc));
+-            proc = ci[-1].proc;
+-            irep = proc->body.irep;
+-            pool = irep->pool;
+-            syms = irep->syms;
+-          }
+-        }
+-        ci->stack[0] = recv;
+-        /* pop stackpos */
+-        ci = cipop(mrb);
+-        pc = ci->pc;
++  if (a >= mrb->c->stend - regs) {
++    mrb_raise(mrb, E_RANGE_ERROR, "stack register index too large");
++    goto L_RAISE;
++  }
++
++  recv = regs[a];
++  cls = mrb_class(mrb, recv);
++  m = mrb_method_search_vm(mrb, &cls, mid);
++  if (MRB_METHOD_UNDEF_P(m)) {
++    m = prepare_missing(mrb, recv, mid, &cls, a, &c, blk, 0);
++    mid = MRB_SYM(method_missing);
++  }
++
++  /* push callinfo */
++  ci = cipush(mrb, a, 0, cls, NULL, mid, c);
++
++  if (MRB_METHOD_CFUNC_P(m)) {
++    if (MRB_METHOD_PROC_P(m)) {
++      struct RProc *p = MRB_METHOD_PROC(m);
++      CI_PROC_SET(ci, p);
++      recv = p->body.func(mrb, recv);
++    }
++    else {
++      if (MRB_METHOD_NOARG_P(m)) {
++        check_method_noarg(mrb, ci);
++      }
++      recv = MRB_METHOD_FUNC(m)(mrb, recv);
++    }
++    mrb_gc_arena_shrink(mrb, ai);
++    if (mrb->exc) goto L_RAISE;
++    ci = mrb->c->ci;
++    if (mrb_proc_p(blk)) {
++      struct RProc *p = mrb_proc_ptr(blk);
++      if (p && !MRB_PROC_STRICT_P(p) && MRB_PROC_ENV(p) == CI_ENV(&ci[-1])) {
++        p->flags |= MRB_PROC_ORPHAN;
++      }
++    }
++    if (!ci->u.target_class) { /* return from context modifying method (resume/yield) */
++      if (ci->cci == CINFO_RESUMED) {
++        mrb->jmp = prev_jmp;
++        return recv;
+@@ -1762,3 +1754,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        /* setup environment for calling method */
+-        proc = MRB_METHOD_PROC(m);
+-        CI_PROC_SET(ci, proc);
++        mrb_assert(!MRB_PROC_CFUNC_P(ci[-1].proc));
++        proc = ci[-1].proc;
+@@ -1768,2 +1758,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        mrb_stack_extend(mrb, (irep->nregs < 4) ? 4 : irep->nregs);
+-        pc = irep->iseq;
+@@ -1771,0 +1761,16 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++    ci->stack[0] = recv;
++    /* pop stackpos */
++    ci = cipop(mrb);
++    pc = ci->pc;
++  }
++  else {
++    /* setup environment for calling method */
++    proc = MRB_METHOD_PROC(m);
++    CI_PROC_SET(ci, proc);
++    irep = proc->body.irep;
++    pool = irep->pool;
++    syms = irep->syms;
++    mrb_stack_extend(mrb, (irep->nregs < 4) ? 4 : irep->nregs);
++    pc = irep->iseq;
++  }
++}

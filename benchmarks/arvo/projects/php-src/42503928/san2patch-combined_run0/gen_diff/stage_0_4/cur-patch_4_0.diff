@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..ad1eb956311 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -44 +44,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-			rc_dtor_func(ref);
++			if (!GC_HAS_DESTRUCTED(ref)) {
++				rc_dtor_func(ref);
++			}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..ef269aad08d 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -391 +391,5 @@ void shutdown_executor(void) /* {{{ */
+-	zend_shutdown_executor_values(fast_shutdown);
++	/* Synchronize garbage collector and executor shutdown to prevent use-after-free */
++	zend_bool gc_was_active = GC_G(gc_active);
++	if (!gc_was_active) {
++		zend_shutdown_executor_values(fast_shutdown);
++	}

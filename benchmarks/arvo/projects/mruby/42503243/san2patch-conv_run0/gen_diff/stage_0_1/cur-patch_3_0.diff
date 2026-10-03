@@ -1,0 +1,20 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..33db61cc6 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1380 +1380,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_sym sym = syms[b];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_sym sym = syms[b];
+@@ -1383 +1384,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      regs[a] = val;
++      if (a < mrb->c->stend - mrb->c->stack) {
++        regs[a] = val;
++      }
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..ed2042464 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -808,0 +809,2 @@ mrb_vm_const_get(mrb_state *mrb, mrb_sym sym)
++  if (!mrb || !sym) return mrb_nil_value();
++  

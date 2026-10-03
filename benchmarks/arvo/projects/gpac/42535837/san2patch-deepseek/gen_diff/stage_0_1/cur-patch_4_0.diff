@@ -1,0 +1,40 @@
+diff --git a/src/filters/isoffin_load.c b/src/filters/isoffin_load.c
+index 31f8c8458..71e922318 100644
+--- a/src/filters/isoffin_load.c
++++ b/src/filters/isoffin_load.c
+@@ -1831,5 +1830,0 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-	case GF_ISOM_CBCS_SCHEME:
+-	case GF_ISOM_CENC_SCHEME:
+-	case GF_ISOM_PIFF_SCHEME:
+-	case 0:
+-		break;
+@@ -1839,2 +1833,0 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-
+-
+@@ -1842,9 +1835,14 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-	if (!esd) {
+-		switch (item_type) {
+-		case GF_ISOM_SUBTYPE_HVT1:
+-			item_codecid = GF_CODECID_HEVC_TILES;
+-			break;
+-		default:
+-			//unsupported item, try next
+-			item_idx++;
+-			goto retry;
++	if (!esd || !esd->decoderConfig || !esd->decoderConfig->decoderSpecificInfo || !esd->decoderConfig->decoderSpecificInfo->data) {
++		if (!esd) {
++			switch (item_type) {
++			case GF_ISOM_SUBTYPE_HVT1:
++				item_codecid = GF_CODECID_HEVC_TILES;
++				break;
++			default:
++				//unsupported item, try next
++				item_idx++;
++				goto retry;
++			}
++		} else {
++			// Missing or invalid decoder-specific information
++			return GF_FALSE;
+@@ -1852 +1850 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-	} else {
++	}	} else {

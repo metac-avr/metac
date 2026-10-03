@@ -1,0 +1,17 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..f48c94c4f 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -204 +204,7 @@ static GF_Err id3_parse_tag(char *data, u32 length, char **output, u32 *output_s
+-			add_text(output, output_size, output_pos, text, fsize);
++			// Prevent out-of-bounds read by checking buffer limits
++			if (tpos <= length && fsize <= length - tpos) {
++				add_text(output, output_size, output_pos, text, fsize);
++			} else {
++				// Skip this frame to prevent buffer overflow
++				GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[MPEG-2 TS] Skipping ID3 frame due to buffer bounds violation\n"));
++			}
+@@ -207 +213,2 @@ static GF_Err id3_parse_tag(char *data, u32 length, char **output, u32 *output_s
+-		}
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		}

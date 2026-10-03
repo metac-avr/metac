@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..2500e477825 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,3 +202,9 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
++// Fixed CWE-416: Use After Free by ensuring object validity before accessing
++		if (object && GC_TYPE(object) != IS_NULL) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++		} else {
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++			return;
++		}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index eb7ef1624b9..8f8c455362a 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272 +3272,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					/* Check if the zval is still valid before attempting to destroy it */
++					zval *result_var = EX_VAR(throw_op->result.var);
++					if (result_var && Z_REFCOUNTED_P(result_var)) {
++						zval_ptr_dtor_nogc(result_var);
++					}

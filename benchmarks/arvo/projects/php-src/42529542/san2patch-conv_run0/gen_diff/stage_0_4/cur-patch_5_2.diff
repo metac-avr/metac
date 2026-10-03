@@ -1,0 +1,93 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index feeff659bd5..8111a4e8129 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -634 +634 @@ ZEND_API zend_string *zend_get_executed_filename_ex(void) /* {{{ */
+-ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
++static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+@@ -636,3 +636,10 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-	zend_long lineno_override = EG(lineno_override);
+-	if (lineno_override != -1) {
+-		return lineno_override;
++	const zend_execute_data *execute_data = EG(current_execute_data);
++	zend_string *cv;
++
++	if (execute_data == NULL || 
++	    (EX(func) == NULL) || 
++	    (EX(func)->op_array.vars == NULL) ||
++	    (EX_VAR_TO_NUM(var) >= EX(func)->op_array.last_var)) {
++		/* Context is expired/invalid, use safe fallback */
++		zend_error(E_WARNING, "Undefined variable encountered");
++		return (EG(exception) == NULL) ? 1 : 0;
+@@ -641,18 +648,3 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-	zend_execute_data *ex = EG(current_execute_data);
+-
+-	while (ex && (!ex->func || !ZEND_USER_CODE(ex->func->type))) {
+-		ex = ex->prev_execute_data;
+-	}
+-	if (ex) {
+-		if (!ex->opline) {
+-			/* Missing SAVE_OPLINE()? Falling back to first line of function */
+-			return ex->func->op_array.opcodes[0].lineno;
+-		}
+-		if (EG(exception) && ex->opline->opcode == ZEND_HANDLE_EXCEPTION &&
+-		    ex->opline->lineno == 0 && EG(opline_before_exception)) {
+-			return EG(opline_before_exception)->lineno;
+-		}
+-		return ex->opline->lineno;
+-	} else {
+-		return 0;
+-	}
++	cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++	zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++	return (EG(exception) == NULL) ? 1 : 0;
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..b688568506d 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -333,6 +333 @@ static zval* ZEND_FASTCALL zend_jit_symtable_lookup_w(HashTable *ht, zend_string
+-	} while (0);
+-
+-	return zend_hash_lookup(ht, str);
+-}
+-
+-static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
++ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+@@ -340,6 +335,4 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	const zend_execute_data *execute_data = EG(current_execute_data);
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+-
+-	zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
+-	return EG(exception) == NULL;
+-}
++	zend_long lineno_override = EG(lineno_override);
++	if (lineno_override != -1) {
++		return lineno_override;
++	}
+@@ -347,4 +340 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint32_t var)
+-{
+-	const zend_execute_data *execute_data = EG(current_execute_data);
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++	zend_execute_data *ex = EG(current_execute_data);
+@@ -352,3 +342,17 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint3
+-	/* The array may be destroyed while throwing the notice.
+-	 * Temporarily increase the refcount to detect this situation. */
+-	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
++	while (ex && (!ex->func || !ZEND_USER_CODE(ex->func->type))) {
++		ex = ex->prev_execute_data;
++	}
++	if (ex) {
++		if (!ex->opline) {
++			/* Missing SAVE_OPLINE()? Falling back to first line of function */
++			return ex->func->op_array.opcodes[0].lineno;
++		}
++		if (EG(exception) && ex->opline->opcode == ZEND_HANDLE_EXCEPTION &&
++		    ex->opline->lineno == 0 && EG(opline_before_exception)) {
++			return EG(opline_before_exception)->lineno;
++		}
++		return ex->opline->lineno;
++	} else {
++		return 0;
++	}
++}	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {

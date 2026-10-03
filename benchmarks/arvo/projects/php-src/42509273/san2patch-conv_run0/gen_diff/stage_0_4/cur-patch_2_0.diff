@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 6e809c87341..c33e1401969 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -296 +296 @@ ZEND_API HashTable* ZEND_FASTCALL zend_new_pair(zval *val1, zval *val2)
+-	return ht;
++return ht;
+@@ -305,2 +305,13 @@ ZEND_API void ZEND_FASTCALL zend_hash_packed_grow(HashTable *ht)
+-	ht->nTableSize += ht->nTableSize;
+-	HT_SET_DATA_ADDR(ht, perealloc2(HT_GET_DATA_ADDR(ht), HT_PACKED_SIZE_EX(ht->nTableSize, HT_MIN_MASK), HT_PACKED_USED_SIZE(ht), GC_FLAGS(ht) & IS_ARRAY_PERSISTENT));
++	uint32_t old_table_size = ht->nTableSize;
++	uint32_t new_table_size = old_table_size * 2;
++	if (new_table_size < old_table_size) {
++		zend_error_noreturn(E_ERROR, "Integer overflow in hash table size calculation");
++	}
++	ht->nTableSize = new_table_size;
++	void *current_data = HT_GET_DATA_ADDR(ht);
++	size_t required_size = HT_PACKED_SIZE_EX(ht->nTableSize, HT_MIN_MASK);
++	size_t actual_used = HT_PACKED_USED_SIZE(ht);
++	if (required_size < actual_used) {
++		zend_error_noreturn(E_ERROR, "Memory size calculation underflow in hash table");
++	}
++	HT_SET_DATA_ADDR(ht, perealloc2(current_data, required_size, actual_used, GC_FLAGS(ht) & IS_ARRAY_PERSISTENT));
+@@ -316 +326,0 @@ ZEND_API void ZEND_FASTCALL zend_hash_real_init(HashTable *ht, bool packed)
+-

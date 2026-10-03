@@ -1,0 +1,27 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..fa1b341b8 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -480,0 +481,2 @@ static void dump_mdcv(FILE *dump, GF_BitStream *bs, Bool isMPEG)
++	
++	// Check available data before each read operation to prevent buffer overflow
+@@ -481,0 +484,4 @@ static void dump_mdcv(FILE *dump, GF_BitStream *bs, Bool isMPEG)
++		if (gf_bs_available(bs) < 4) { // Need at least 4 bytes for two 16-bit reads
++			inspect_printf(dump, " Insufficient data for mdcv");
++			return;
++		}
+@@ -484,0 +491,6 @@ static void dump_mdcv(FILE *dump, GF_BitStream *bs, Bool isMPEG)
++	
++	if (gf_bs_available(bs) < 8) { // Need at least 8 bytes for remaining reads
++		inspect_printf(dump, " Insufficient data for mdcv");
++		return;
++	}
++	
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..3ac506043 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -464 +464,2 @@ static u8 BS_ReadByte(GF_BitStream *bs)
+-				res = bs->original[bs->position++];
++				res = bs->original[bs->position];
++				if (bs->position < bs->size) bs->position++;

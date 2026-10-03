@@ -1,0 +1,24 @@
+diff --git a/src/lib/ndpi_serializer.c b/src/lib/ndpi_serializer.c
+index 63877cd69..18b9675b5 100644
+--- a/src/lib/ndpi_serializer.c
++++ b/src/lib/ndpi_serializer.c
+@@ -223 +222,0 @@ int ndpi_init_serializer_ll(ndpi_serializer *_serializer,
+-
+@@ -231 +230,2 @@ int ndpi_init_serializer_ll(ndpi_serializer *_serializer,
+-int ndpi_init_serializer(ndpi_serializer *_serializer,
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ int ndpi_init_serializer(ndpi_serializer *_serializer,
+@@ -233 +233,8 @@ int ndpi_init_serializer(ndpi_serializer *_serializer,
+-  return(ndpi_init_serializer_ll(_serializer, fmt, NDPI_SERIALIZER_DEFAULT_BUFFER_SIZE));
++  union {
++    ndpi_private_serializer s;
++    max_align_t alignment;
++  } aligned_serializer;
++  int rc = ndpi_init_serializer_ll((ndpi_serializer *)&aligned_serializer.s, fmt, NDPI_SERIALIZER_DEFAULT_BUFFER_SIZE);
++  if(rc == 0)
++    memcpy(_serializer, &aligned_serializer.s, sizeof(ndpi_private_serializer));
++  return(rc);
+@@ -243,2 +250 @@ static inline int ndpi_extend_serializer_buffer(ndpi_private_serializer_buffer *
+-    if(buffer->initial_size < NDPI_SERIALIZER_DEFAULT_BUFFER_INCR) {
+-      if(min_len < buffer->initial_size)
++    if(buffer->initial_size < NDPI_SERIALIZER_DEFAULT_BUFFER_INCR) {      if(min_len < buffer->initial_size)

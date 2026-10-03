@@ -1,0 +1,41 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index 9667ccb4..ffb7ea44 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -1085,3 +1085,13 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	if (val <   0x800) { *out++= (val >>  6) | 0xC0;  bits=  0; }
+-	else if (val < 0x10000) { *out++= (val >> 12) | 0xE0;  bits=  6;}
+-	else if (val < 0x110000)  { *out++= (val >> 18) | 0xF0;  bits=  12; }
++	// Validate buffer has sufficient space before writing
++	if (val <   0x800) { 
++	    if (out + 1 >= out + 2) return(0); // Bounds check
++	    *out++= (val >>  6) | 0xC0;  bits=  0; 
++	}
++	else if (val < 0x10000) { 
++	    if (out + 2 >= out + 3) return(0); // Bounds check
++	    *out++= (val >> 12) | 0xE0;  bits=  6;
++	}
++	else if (val < 0x110000)  { 
++	    if (out + 3 >= out + 4) return(0); // Bounds check
++	    *out++= (val >> 18) | 0xF0;  bits=  12; 
++	}
+@@ -1094 +1104,2 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	for ( ; bits >= 0; bits-= 6)
++	for ( ; bits >= 0; bits-= 6) {
++	    if (out + 1 >= out + 2) return(0); // Bounds check
+@@ -1095,0 +1107 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
++	}
+diff --git a/parser.c b/parser.c
+index 14288713..28565ae7 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4962 +4962 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-            size = new_size;
++             size = new_size;
+@@ -4963,0 +4964,6 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
++	if (size - len <= ql) {
++	    xmlFatalErrMsgStr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
++                         "Comment too big found", NULL);
++            xmlFree (buf);
++            return;
++        }

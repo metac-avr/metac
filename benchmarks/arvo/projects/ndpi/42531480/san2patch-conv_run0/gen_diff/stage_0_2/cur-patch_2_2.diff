@@ -1,0 +1,159 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..a1578acc1 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -1268,56 +1268,4 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-	if((handshake_len + 12) == block_len) {
+-          packet->payload = &block[13];
+-          packet->payload_packet_len = block_len;
+-          processTLSBlock(ndpi_struct, flow);
+-	} else if(handshake_len + 12 > block_len) {
+-	  int rc;
+-
+-#ifdef DEBUG_TLS
+-          printf("[TLS] DTLS fragment off %d len %d\n", handshake_frag_off, handshake_frag_len);
+-#endif
+-          if(handshake_frag_len + 12 > block_len) {
+-#ifdef DEBUG_TLS
+-            printf("[TLS] DTLS fragment invalid len %d + 12 > %d\n", handshake_frag_len, block_len);
+-#endif
+-            no_dtls = 1;
+-            break;
+-	  }
+-
+-          if(handshake_frag_off == 0) {
+-            rc = ndpi_search_tls_memory(ndpi_struct, flow,  &block[13],
+-					handshake_frag_len + 12,
+-					handshake_frag_off, message);
+-	  } else {
+-            rc = ndpi_search_tls_memory(ndpi_struct, flow,  &block[13 + 12],
+-					handshake_frag_len,
+-					handshake_frag_off + 12, message);
+-	  }
+-	  if(rc == -1) {
+-            no_dtls = 1;
+-            break;
+-	  }
+-#ifdef DEBUG_TLS
+-          printf("[TLS] DTLS reassembled len %d vs %d\n",
+-                 message->buffer_used, handshake_len + 12);
+-#endif
+-
+-          if(handshake_len + 12 == message->buffer_used) {
+-            packet->payload = message->buffer;
+-            packet->payload_packet_len = message->buffer_used;
+-            processTLSBlock(ndpi_struct, flow);
+-
+-            ndpi_free(message->buffer);
+-            memset(message, '\0', sizeof(*message));
+-            message = NULL;
+-          } else {
+-            /* No break, next fragments might be in the same packet */
+-          }
+-
+-        } else {
+-#ifdef DEBUG_TLS
+-          printf("[TLS] DTLS invalid handshake_len %d, %d\n",
+-                 handshake_len, block_len);
+-#endif
+-          no_dtls = 1;
+-          break;
+-        }
++	static void ndpi_int_tls_add_connection(struct ndpi_detection_module_struct *ndpi_struct, struct ndpi_flow_struct *flow)
++{
++  ndpi_set_detected_protocol(ndpi_struct, flow, NDPI_PROTOCOL_TLS, NDPI_PROTOCOL_UNKNOWN);
++}
+@@ -2381,3 +2329,11 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
++void processDTLSHandshake(struct ndpi_detection_module_struct *ndpi_struct, struct ndpi_flow_struct *flow, const unsigned char *block, size_t block_len)
++{
++  // Existing logic with proper bounds checking
++  if((handshake_len + 12) == block_len) {
++    if (13 <= block_len) {  // Bounds check for &block[13]
++      packet->payload = &block[13];
++      packet->payload_packet_len = block_len;
++      processTLSBlock(ndpi_struct, flow);
++    }
++  } else if(handshake_len + 12 > block_len) {
++    int rc;
+@@ -2385 +2341,10 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++#ifdef DEBUG_TLS
++    printf("[TLS] DTLS fragment off %d len %d\n", handshake_frag_off, handshake_frag_len);
++#endif
++    if(handshake_frag_len + 12 > block_len) {
++#ifdef DEBUG_TLS
++      printf("[TLS] DTLS fragment invalid len %d + 12 > %d\n", handshake_frag_len, block_len);
++#endif
++      no_dtls = 1;
++      return; // Changed from break to return
++    }
+@@ -2387,5 +2352,31 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++    if(handshake_frag_off == 0) {
++      // Bounds checking for memory access
++      if (13 + handshake_frag_len + 12 <= block_len) {
++        rc = ndpi_search_tls_memory(ndpi_struct, flow, &block[13],
++                                    handshake_frag_len + 12,
++                                    handshake_frag_off, message);
++      } else {
++        no_dtls = 1;
++        return; // Changed from break to return
++      }
++    } else {
++      // Bounds checking for memory access
++      if (13 + 12 + handshake_frag_len <= block_len) {
++        rc = ndpi_search_tls_memory(ndpi_struct, flow, &block[13 + 12],
++                                    handshake_frag_len,
++                                    handshake_frag_off + 12, message);
++      } else {
++        no_dtls = 1;
++        return; // Changed from break to return
++      }
++    }
++    
++    if(rc == -1) {
++      no_dtls = 1;
++      return; // Changed from break to return
++    }
++    
++#ifdef DEBUG_TLS
++    printf("[TLS] DTLS reassembled len %d vs %d\n",
++           message->buffer_used, handshake_len + 12);
++#endif
+@@ -2393,2 +2384,4 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
+-		}
++    if(handshake_len + 12 == message->buffer_used) {
++      packet->payload = message->buffer;
++      packet->payload_packet_len = message->buffer_used;
++      processTLSBlock(ndpi_struct, flow);
+@@ -2396,2 +2389,6 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++      ndpi_free(message->buffer);
++      memset(message, '\0', sizeof(*message));
++      message = NULL;
++    } else {
++      /* No break, next fragments might be in the same packet */
++    }
+@@ -2399,4 +2396,9 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++  } else {
++#ifdef DEBUG_TLS
++    printf("[TLS] DTLS invalid handshake_len %d, %d\n",
++           handshake_len, block_len);
++#endif
++    no_dtls = 1;
++    return; // Changed from break to return
++  }
++}		    continue;

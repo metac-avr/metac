@@ -1,0 +1,31 @@
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..520cf3f1ee 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -524,0 +525,12 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
++        // Check for reasonable size to prevent buffer overflow
++        if (size > 1024) {
++            av_log(s, AV_LOG_ERROR, "channel layout size too large: %"PRId64"\n", size);
++            return AVERROR_INVALIDDATA;
++        }
++        
++        // Ensure we have enough data for all channel descriptions
++        if (num_descr > 0 && size / 20 < num_descr) {
++            av_log(s, AV_LOG_ERROR, "insufficient data for %d channel descriptions\n", num_descr);
++            return AVERROR_INVALIDDATA;
++        }
++
+diff --git a/libavformat/aiffdec.c b/libavformat/aiffdec.c
+index 5314d159ef..e9ab4127e7 100644
+--- a/libavformat/aiffdec.c
++++ b/libavformat/aiffdec.c
+@@ -335 +335,2 @@ static int aiff_read_header(AVFormatContext *s)
+-            break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             break;
+@@ -336,0 +338,5 @@ static int aiff_read_header(AVFormatContext *s)
++            if (size <= 0 || size > 4096) {
++                av_log(s, AV_LOG_WARNING, "Invalid CHAN chunk size: %d\n", size);
++                avio_skip(pb, size);
++                break;
++            }

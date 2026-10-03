@@ -1,0 +1,27 @@
+diff --git a/src/isomedia/box_funcs.c b/src/isomedia/box_funcs.c
+index 84310399e..b2378662f 100644
+--- a/src/isomedia/box_funcs.c
++++ b/src/isomedia/box_funcs.c
+@@ -2128,2 +2128,2 @@ void gf_isom_box_del_parent(GF_List **child_boxes, GF_Box*b)
+-	if (child_boxes) {
+-		gf_list_del_item(*child_boxes, b);
++	if (child_boxes && *child_boxes) {
++		while (gf_list_del_item(*child_boxes, b) >= 0) { }
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index 753cff17d..45e212d34 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -4028 +4028,2 @@ GF_Err audio_sample_entry_box_read(GF_Box *s, GF_BitStream *bs)
+-		if (GF_4CC((u32)data[i+4], (u8)data[i+5], (u8)data[i+6], (u8)data[i+7]) == GF_ISOM_BOX_TYPE_ESDS) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (GF_4CC((u32)data[i+4], (u8)data[i+5], (u8)data[i+6], (u8)data[i+7]) == GF_ISOM_BOX_TYPE_ESDS) {
+@@ -4030 +4031,8 @@ GF_Err audio_sample_entry_box_read(GF_Box *s, GF_BitStream *bs)
+-			if (ptr->esd) gf_isom_box_del_parent(&ptr->child_boxes, (GF_Box *)ptr->esd);
++			if (ptr->esd) {
++				while (ptr->child_boxes && gf_list_del_item(ptr->child_boxes, ptr->esd) >= 0) {}
++				if (ptr->child_boxes && !gf_list_count(ptr->child_boxes)) {
++					gf_list_del(ptr->child_boxes);
++					ptr->child_boxes = NULL;
++				}
++				ptr->esd = NULL;
++			}

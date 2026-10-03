@@ -1,0 +1,17 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..bcf8e294f 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -302,0 +303,5 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
++	
++	// Nullify the entry in the demuxer's ess array before freeing to prevent dangling pointer
++	if (ts && es && (es->pid < GF_M2TS_MAX_PIDS))
++		ts->ess[es->pid] = NULL;
++		
+@@ -3113 +3118,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++  	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3115 +3121 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-		if (ts->ess[i] && (ts->ess[i]->pid==i)) {
++		if (ts->ess[i] && (ts->ess[i]->pid==i) && ts->ess[i]) {

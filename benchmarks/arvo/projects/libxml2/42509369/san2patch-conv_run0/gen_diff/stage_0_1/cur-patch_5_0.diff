@@ -1,0 +1,33 @@
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 7b44bf60..4993d676 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -10637 +10637,3 @@ xmlSchemaAddSchemaDoc(xmlSchemaParserCtxtPtr pctxt,
+-	if (schemaLocation != NULL) {
++	/* Use flag to indicate dictionary usage for proper cleanup */
++	int has_shared_dict = ((pctxt->dict != NULL) && (parserCtxt->dict != NULL) && (pctxt->dict == parserCtxt->dict));
++  	if (schemaLocation != NULL) {
+@@ -10683,0 +10686,4 @@ xmlSchemaAddSchemaDoc(xmlSchemaParserCtxtPtr pctxt,
++	/* Clear dictionary reference if shared to prevent double-free issues */
++	if (has_shared_dict) {
++	    parserCtxt->dict = NULL;
++	}
+@@ -21453,5 +21459,5 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-	ctxt->constructor = xmlSchemaConstructionCtxtCreate(ctxt->dict);
+-	if (ctxt->constructor == NULL)
+-	    return(NULL);
+-	/* Take ownership of the constructor to be able to free it. */
+-	ctxt->ownsConstructor = 1;
++    ctxt->constructor = xmlSchemaConstructionCtxtCreate(ctxt->dict);
++    if (ctxt->constructor == NULL)
++	return(NULL);
++    /* Take ownership of the constructor to be able to free it. */
++    ctxt->ownsConstructor = 1;
+@@ -21461 +21467,2 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-    * Locate and add the schema document.
++     * Locate and add the schema document.
++     * Validate node allocation sources before cleanup.
+@@ -21473,2 +21480 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-	if (ctxt->URL)
+-	    xmlSchemaCustomErr(ACTXT_CAST ctxt, XML_SCHEMAP_FAILED_LOAD,
++	if (ctxt->URL)	    xmlSchemaCustomErr(ACTXT_CAST ctxt, XML_SCHEMAP_FAILED_LOAD,

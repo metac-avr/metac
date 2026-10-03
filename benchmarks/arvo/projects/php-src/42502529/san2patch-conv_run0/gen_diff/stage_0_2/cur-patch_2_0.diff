@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..12e9e43ffe2 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -44 +44,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-			rc_dtor_func(ref);
++			if (ref && !GC_HAS_DESTRUCTOR_RUN(ref)) {
++				rc_dtor_func(ref);
++			}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..212e87640ec 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1946 +1946,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-		if (result & ZEND_HASH_APPLY_REMOVE) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (result & ZEND_HASH_APPLY_REMOVE) {
+@@ -1948 +1949,3 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++			if (Z_REFCOUNTED(p->val) && Z_COUNTED_P(&p->val)) { /* Validate reference counted before deletion */
++				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++			}

@@ -1,0 +1,25 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..1fc368cd 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3697,2 +3697,5 @@ xmlFreeNode(xmlNodePtr cur) {
+-        if (cur->properties != NULL)
+-            xmlFreePropList(cur->properties);
++        if (cur->properties != NULL) {
++            xmlAttrPtr properties = cur->properties;
++            cur->properties = NULL;  /* Prevent use-after-free */
++             xmlFreePropList(properties);
++        }
+@@ -8449,0 +8453,4 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
++    /* Check for use-after-free condition - validate namespace pointer */
++    if (ns->href == NULL && ns->prefix == NULL)
++        return (-1);
++
+@@ -8452 +8459,2 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * Handle XML namespace.
++// FIXME: Crash CWE-416: Use After Free
++     * Handle XML namespace.
+@@ -8464,2 +8472 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * If the search should be done in ancestors only and no
+-    * @elem (the first ancestor) was specified, then skip the search.
++    * If the search should be done in ancestors only and no    * @elem (the first ancestor) was specified, then skip the search.

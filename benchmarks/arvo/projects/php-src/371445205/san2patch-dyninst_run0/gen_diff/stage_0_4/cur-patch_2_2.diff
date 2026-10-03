@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..0bd7e5b5007 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -291 +291 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-
++	
+@@ -292,0 +293,6 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		zend_string *str_key;
++		ZEND_HASH_FOREACH_STR_KEY(named_params, str_key) {
++			if (str_key) {
++				zend_string_release(str_key);
++			}
++		} ZEND_HASH_FOREACH_END();
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..c366033ef05 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -344 +344,2 @@ static zend_always_inline void zend_string_efree(zend_string *s)
+-static zend_always_inline void zend_string_release(zend_string *s)
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline void zend_string_release(zend_string *s)
+@@ -347 +348 @@ static zend_always_inline void zend_string_release(zend_string *s)
+-		if (GC_DELREF(s) == 0) {
++		if (GC_DELREF(s) == 0 && s != NULL) {

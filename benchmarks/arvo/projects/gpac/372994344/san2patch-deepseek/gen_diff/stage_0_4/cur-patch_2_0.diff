@@ -1,0 +1,17 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..b57ee6b80 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -3113 +3113,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++ 	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3115,2 +3116,6 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-		if (ts->ess[i] && (ts->ess[i]->pid==i)) {
+-			gf_m2ts_es_del(ts->ess[i], ts);
++		if (ts->ess[i]) {
++			GF_M2TS_ES *es = ts->ess[i];
++			ts->ess[i] = NULL;
++			if (es->pid==i) {
++				gf_m2ts_es_del(es, ts);
++			}

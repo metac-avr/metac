@@ -1,0 +1,30 @@
+diff --git a/libavcodec/bitstream_template.h b/libavcodec/bitstream_template.h
+index 0308e3a924..78aeb14692 100644
+--- a/libavcodec/bitstream_template.h
++++ b/libavcodec/bitstream_template.h
+@@ -114,0 +115,8 @@ static inline int BS_FUNC(init)(BSCTX *bc, const uint8_t *buffer,
++    // Validate buffer size against minimum required for VLC decoding
++    if (buffer_size < 8) { // Minimum 8 bytes needed for safe VLC operations
++        bc->buffer     = NULL;
++        bc->ptr        = NULL;
++        bc->bits_valid = 0;
++        return AVERROR_INVALIDDATA;
++    }
++
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..4326634500 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -634 +634 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-        return AVERROR_INVALIDDATA;
++    return AVERROR_INVALIDDATA;
+@@ -642 +642,4 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-    p->flags |= AV_FRAME_FLAG_KEY;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++    if (s->nb_slices <= 0 || s->nb_slices > MAX_SLICES) // Validate slice count
++        return AVERROR_INVALIDDATA;
++     p->flags |= AV_FRAME_FLAG_KEY;
+@@ -654,2 +657 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-        avctx->pix_fmt == AV_PIX_FMT_GBRAP10||
+-        avctx->pix_fmt == AV_PIX_FMT_GBRAP12||
++        avctx->pix_fmt == AV_PIX_FMT_GBRAP10||        avctx->pix_fmt == AV_PIX_FMT_GBRAP12||

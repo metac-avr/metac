@@ -1,0 +1,30 @@
+diff --git a/src/range.c b/src/range.c
+index fc126be80..483cfe191 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -387 +387,16 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      ary = mrb_ary_new_capa(mrb, (mrb_int)(b - a) + 1);
++      
++      mrb_float float_range = b - a;
++      if (float_range > MRB_INT_MAX) {
++        return mrb_ary_new_capa(mrb, 0);
++      }
++      
++      mrb_int calculated_size = (mrb_int)float_range;
++      if (!RANGE_EXCL(r)) {
++        calculated_size += 1;
++      }
++      
++      if (calculated_size < 0) {
++        return mrb_ary_new_capa(mrb, 0);
++      }
++      
++      ary = mrb_ary_new_capa(mrb, calculated_size);
+@@ -391 +406 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-        while (a < b) {
++        while (a < b && i < calculated_size) {
+@@ -397,2 +412,2 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      else {
+-        while (a <= b) {
++       else {
++        while (a <= b && i < calculated_size) {

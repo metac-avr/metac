@@ -1,0 +1,29 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..3d2faee64 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,6 +2380,0 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
+-
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+-
+@@ -2388,0 +2383 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -2391 +2386,6 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++
++		  if(s_offset + i*2 + 1 < total_len) {
++		    ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++		  } else {
++		    break;
++		  }
+@@ -2396,6 +2396 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+-
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
++#endif

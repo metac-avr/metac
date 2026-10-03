@@ -1,0 +1,36 @@
+diff --git a/libavcodec/speexdec.c b/libavcodec/speexdec.c
+index 35270e6723..b456b3868c 100644
+--- a/libavcodec/speexdec.c
++++ b/libavcodec/speexdec.c
+@@ -586,0 +587,2 @@ static void iir_mem(const float *x, const float *den,
++    if (ord <= 0) return;
++    if (N <= 0) return;
+@@ -1555 +1557,13 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
+-    dst = (float *)frame->extended_data[0];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     dst = (float *)frame->extended_data[0];
++    
++    // Add comprehensive bounds checking
++    if (!dst || frame->nb_samples <= 0) {
++        return AVERROR_INVALIDDATA;
++    }
++    
++    // Validate that we won't exceed buffer boundaries
++    if ((int64_t)s->frames_per_packet * s->frame_size > frame->nb_samples) {
++        return AVERROR_INVALIDDATA;
++    }
++    
+@@ -1557 +1571,9 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
+-        ret = speex_modes[s->mode].decode(avctx, &s->st[s->mode], &s->gb, dst + i * s->frame_size);
++        float *frame_start = dst + i * s->frame_size;
++        
++        // Bounds check for current frame
++        if (frame_start < dst || frame_start >= dst + frame->nb_samples || 
++            frame_start + s->frame_size > dst + frame->nb_samples) {
++            return AVERROR_INVALIDDATA;
++        }
++        
++        ret = speex_modes[s->mode].decode(avctx, &s->st[s->mode], &s->gb, frame_start);
+@@ -1561 +1583 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
+-            speex_decode_stereo(dst + i * s->frame_size, s->frame_size, &s->stereo);
++            speex_decode_stereo(frame_start, s->frame_size, &s->stereo);

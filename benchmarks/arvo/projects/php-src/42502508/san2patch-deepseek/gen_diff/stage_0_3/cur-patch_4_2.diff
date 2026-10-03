@@ -1,0 +1,46 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..0fd12bcf82d 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -24,8 +23,0 @@
+-#include "zend_types.h"
+-#include "zend_gc.h"
+-
+-BEGIN_EXTERN_C()
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p);
+-ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-
+@@ -33,7 +24,0 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
+-	}
+-}
+-
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+@@ -43 +28 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (zend_gc_is_live(ref) && !GC_DELREF(ref)) {
+@@ -45 +30,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		}
++	}
++}		} else {
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..b3a7f4bea8f 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,8 +1208,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+@@ -1229,2 +1221 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++	} while (0)#elif SIZEOF_SIZE_T == 8

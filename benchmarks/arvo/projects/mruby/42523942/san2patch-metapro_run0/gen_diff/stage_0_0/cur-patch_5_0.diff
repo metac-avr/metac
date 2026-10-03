@@ -1,0 +1,17 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..594c13b36 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1097,2 +1097,4 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if ((obj->color & MRB_GC_RED) == 0) {
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    }
+@@ -1202,0 +1205,5 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Ensure no expired pointers remain in marking queue before freeing */
++      if (gc->gray_list) {
++        /* Process remaining gray objects before page removal */
++        mrb_gc_process_gray_list_before_sweep(mrb, gc, page);
++      }

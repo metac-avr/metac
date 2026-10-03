@@ -1,0 +1,42 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..717fed93 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1162 +1162,5 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		switch (set->nodeTab[i]->type) {
++		/* Validate node pointer before use to prevent use-after-free */
++		xmlNodePtr node = set->nodeTab[i];
++		if (node == NULL)
++		    continue;
++		switch (node->type) {
+@@ -1175 +1179 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-	                xmlNodePtr tmp, cur = set->nodeTab[i];
++			xmlNodePtr tmp, cur = node;
+@@ -1178,0 +1183,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			    /* Ensure cur is valid before accessing its members */
++			    if (cur == NULL) break;
+@@ -1216 +1222 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-			                              set->nodeTab[i]);
++					      node);
+@@ -1218,5 +1224,8 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    /* Validate node is still accessible before copying */
++		    if (node != NULL) {
++			xmlAddNextSibling(last,
++				  xmlXIncludeCopyNode(ctxt, target, source,
++						      node));
++			if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2275 +2284,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-416: Use After Free
++          */
+@@ -2277,0 +2288 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	/* Node freed, avoid dangling pointer */
+@@ -2292,0 +2304 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++            /* Child node freed, avoid dangling pointer */

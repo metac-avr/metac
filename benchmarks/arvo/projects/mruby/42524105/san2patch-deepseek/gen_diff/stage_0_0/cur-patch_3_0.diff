@@ -1,0 +1,35 @@
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..250232950 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -325,0 +326 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
++    mrb_gc_protect(mrb, key);
+@@ -343 +344,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-416: Use After Free
++     break;
+@@ -345,0 +348 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
++      mrb_gc_protect(mrb, key);
+@@ -1236,5 +1238,0 @@ mrb_hash_fetch(mrb_state *mrb, mrb_value hash, mrb_value key, mrb_value def)
+-  }
+-  /* not found */
+-  return def;
+-}
+-
+@@ -1244,2 +1242,3 @@ mrb_hash_set(mrb_state *mrb, mrb_value hash, mrb_value key, mrb_value val)
+-  hash_modify(mrb, hash);
+-  key = h_key_for(mrb, key);
++  mrb_value key_root = key;
++  hash_modify(mrb, key_root);
++  key = h_key_for(mrb, key_root);
+@@ -1249,9 +1248 @@ mrb_hash_set(mrb_state *mrb, mrb_value hash, mrb_value key, mrb_value val)
+-}
+-
+-/* 15.2.13.4.16 */
+-/*
+- *  call-seq:
+- *     Hash.new                          -> new_hash
+- *     Hash.new(obj)                     -> new_hash
+- *     Hash.new {|hash, key| block }     -> new_hash
+- *
++} *

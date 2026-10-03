@@ -1,0 +1,30 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..8338f1678 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -791,0 +792,3 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  // Validate object before marking to prevent use-after-free
++  if (mrb == NULL || obj == NULL) return;
+@@ -799,2 +802 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1202 +1204,10 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-
++      /* Validate and clean up GC references before freeing the page */
++      if (gc->gray_list) {
++        RVALUE *obj = (RVALUE*)gc->gray_list;
++        while (obj) {
++          if (is_on_page(obj, page)) {
++            obj->as.basic.tt = MRB_TT_FREE;
++          }
++          obj = (RVALUE*)obj->as.free.next;
++        }
++      }

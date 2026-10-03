@@ -1,0 +1,31 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..63bc8c59b 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,5 +2381,6 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
+-
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++static void ndpi_search_tls(struct ndpi_detection_module_struct *ndpi_struct,
++			      struct ndpi_flow_struct *flow,
++			      const u_int8_t *payload,
++			      u_int32_t payload_len)
++{
++  // ... existing code ...
+@@ -2390 +2391,5 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-					 "%02X", packet->payload[s_offset+i]);
++					 "%%02X", packet->payload[s_offset+i]);
++		  /* Fix: Validate bounds before accessing payload to prevent out-of-bounds read */
++		  if (s_offset + i*2 + 1 >= packet->payload_packet_len) {
++		    break; /* Skip if accessing beyond payload bounds */
++		  }
+@@ -2397,6 +2402 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+-
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++  // ... rest of existing code ...		    continue;

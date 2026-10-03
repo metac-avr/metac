@@ -1,0 +1,25 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..6b92e96493e 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -277,2 +277,10 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
+-	*gc_data = &intern->obj;
+-	*gc_data_count = 1;
++	
++	/* Prevent out-of-bounds read by validating intern pointer */
++	if (intern == NULL || &intern->obj == NULL) {
++		*gc_data = NULL;
++		*gc_data_count = 0;
++	} else {
++		*gc_data = &intern->obj;
++		*gc_data_count = 1;
++	}
++	
+@@ -283 +291,2 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
+-static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
+@@ -295,2 +304 @@ static zval *reflection_instantiate(zend_class_entry *pce, zval *object) /* {{{
+-{
+-	object_init_ex(object, pce);
++{	object_init_ex(object, pce);

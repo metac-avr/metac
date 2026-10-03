@@ -1,0 +1,34 @@
+diff --git a/src/filters/isoffin_read_ch.c b/src/filters/isoffin_read_ch.c
+index 225c8ef15..80786796e 100644
+--- a/src/filters/isoffin_read_ch.c
++++ b/src/filters/isoffin_read_ch.c
+@@ -301,0 +302,5 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
++	
++	// Store previous state to detect changes
++	u32 old_alloc_size = ch->static_sample->alloc_size;
++	char* old_data_ptr = ch->sample->data;
++	
+@@ -303,0 +309,6 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
++	// Validate that pointers are still valid after extraction
++	if (ch->sample->data == NULL) {
++		ch->last_state = GF_OUT_OF_MEM;
++		return;
++	}
++
+diff --git a/src/filters/isoffin_read.c b/src/filters/isoffin_read.c
+index 2f08cf8f9..4d810fa73 100644
+--- a/src/filters/isoffin_read.c
++++ b/src/filters/isoffin_read.c
+@@ -1474 +1474 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-		//eos not sent on this channel, we are active
++        //eos not sent on this channel, we are active
+@@ -1482 +1482,2 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1484 +1485,4 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-				isor_reader_get_sample_from_item(ch);
++				GF_Err err = isor_reader_get_sample_from_item(ch);
++				if (err != GF_OK) {
++					continue;
++				}

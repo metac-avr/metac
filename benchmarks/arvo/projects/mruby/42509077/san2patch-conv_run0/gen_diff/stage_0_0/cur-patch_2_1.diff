@@ -1,0 +1,42 @@
+diff --git a/src/string.c b/src/string.c
+index 7cc9c4ff3..8080a151a 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -44,6 +43,0 @@ str_init_normal_capa(mrb_state *mrb, struct RString *s,
+-static struct RString*
+-str_init_normal(mrb_state *mrb, struct RString *s, const char *p, mrb_int len)
+-{
+-  return str_init_normal_capa(mrb, s, p, len, len);
+-}
+-
+@@ -53,2 +47,3 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-  if (p) memcpy(RSTR_EMBED_PTR(s), p, len);
+-  RSTR_EMBED_PTR(s)[len] = '\0';
++  if (len < 0) return NULL;
++  if (p && len > 0) memcpy(RSTR_EMBED_PTR(s), p, len);
++  RSTR_EMBED_PTR(s)[len < 0 ? 0 : len] = '\0';
+@@ -56 +51 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-  RSTR_SET_EMBED_LEN(s, len);
++  RSTR_SET_EMBED_LEN(s, len < 0 ? 0 : len);
+@@ -58,8 +53 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-}
+-
+-static struct RString*
+-str_init_nofree(struct RString *s, const char *p, mrb_int len)
+-{
+-  s->as.heap.ptr = (char *)p;
+-  s->as.heap.len = len;
+-  s->as.heap.aux.capa = 0;             /* nofree */
++}  s->as.heap.aux.capa = 0;             /* nofree */
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 1edaac93b..70bb7414c 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -1584,0 +1585 @@ mrb_pack_unpack(mrb_state *mrb, mrb_value str)
++  if (RSTRING_LEN(str) < 0) return mrb_nil_value();
+@@ -1590,0 +1592 @@ mrb_pack_unpack1(mrb_state *mrb, mrb_value str)
++  if (RSTRING_LEN(str) < 0) return mrb_nil_value();
+@@ -1595,2 +1597 @@ void
+-mrb_mruby_pack_gem_init(mrb_state *mrb)
+-{
++mrb_mruby_pack_gem_init(mrb_state *mrb){

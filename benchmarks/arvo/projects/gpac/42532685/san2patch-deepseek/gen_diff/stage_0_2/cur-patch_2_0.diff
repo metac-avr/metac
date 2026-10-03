@@ -1,0 +1,41 @@
+diff --git a/src/filters/reframe_img.c b/src/filters/reframe_img.c
+index 9eb787203..694ffef7c 100644
+--- a/src/filters/reframe_img.c
++++ b/src/filters/reframe_img.c
+@@ -346,0 +347,3 @@ GF_Err img_process(GF_Filter *filter)
++			if (irow < 0 || out_stride < 0 || irow >= INT_MAX - out_stride + 1) {
++				return GF_NON_COMPLIANT_BITSTREAM;
++			}
+@@ -356,0 +360 @@ GF_Err img_process(GF_Filter *filter)
++
+diff --git a/src/filter_core/filter.c b/src/filter_core/filter.c
+index 026c5f0d6..ca1639319 100644
+--- a/src/filter_core/filter.c
++++ b/src/filter_core/filter.c
+@@ -2969 +2969,2 @@ static void gf_filter_process_task(GF_FSTask *task)
+-	else
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	else
+@@ -2971 +2972,21 @@ static void gf_filter_process_task(GF_FSTask *task)
+-		e = filter->freg->process(filter);
++	{
++		if (filter->freg->process) {
++			if (filter->freg->process == img_process) {
++				GF_FilterPid *pid = gf_list_get(filter->output_pids, 0);
++				if (pid && pid->width > 0 && pid->height > 0 && pid->stride > 0) {
++					u64 span = (u64)pid->height * (u64)pid->stride;
++					if (span <= (u64)INT_MAX) {
++						e = filter->freg->process(filter);
++					} else {
++						e = GF_NON_COMPLIANT_BITSTREAM;
++					}
++				} else {
++					e = GF_NON_COMPLIANT_BITSTREAM;
++				}
++			} else {
++				e = filter->freg->process(filter);
++			}
++		} else {
++			e = GF_NON_COMPLIANT_BITSTREAM;
++		}
++	}

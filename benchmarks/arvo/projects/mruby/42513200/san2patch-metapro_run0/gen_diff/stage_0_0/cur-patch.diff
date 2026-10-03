@@ -1,0 +1,28 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..cc433ea50 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -500,4 +500,13 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    if (j%2)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
+-    else
+-      q.p[j/2] |= qhat;
++    if (j%2) {
++      // Bounds check to prevent integer overflow
++      size_t idx = j/2;
++      if (idx < q.p_size && idx >= 0) {
++        q.p[idx] |= qhat << HALFDIGITBITS;
++      }
++    } else {
++      // Bounds check to prevent integer overflow
++      size_t idx = j/2;
++      if (idx < q.p_size && idx >= 0) {
++        q.p[idx] |= qhat;
++      }
++    }
+@@ -540,0 +550,5 @@ mpz_mmod(mrb_state *mrb, mpz_t *r, mpz_t *x, mpz_t *y)
++  /* Validate inputs to prevent integer overflow in udiv */
++  if (!x || !y || y->sn == 0) {
++    zero(r);
++    return;
++  }

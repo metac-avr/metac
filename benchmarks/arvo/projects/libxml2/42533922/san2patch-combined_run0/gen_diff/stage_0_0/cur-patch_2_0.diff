@@ -1,0 +1,28 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..61a78636 100644
+--- a/tree.c
++++ b/tree.c
+@@ -792,2 +792,9 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++    // Defensive null checking to prevent use-after-free vulnerabilities
++    if (cur->href) {
++        xmlFree((char *) cur->href);
++        cur->href = NULL;
++    }
++    if (cur->prefix) {
++        xmlFree((char *) cur->prefix);
++        cur->prefix = NULL;
++    }
+@@ -804,2 +811 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;
+@@ -3698,2 +3704,2 @@ xmlFreeNode(xmlNodePtr cur) {
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
++             xmlFreePropList(cur->properties);
++        if (cur->nsDef != NULL) {
+@@ -3700,0 +3707,2 @@ xmlFreeNode(xmlNodePtr cur) {
++        }
++        cur->nsDef = NULL;

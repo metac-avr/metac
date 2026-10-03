@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..5906df7dde8 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -275 +274,4 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
++	if (zend_executor_globals && zend_executor_globals->symbol_table) {
++		zend_hash_graceful_reverse_destroy(&EG(symbol_table));
++	}
++ 
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..96e0e6059c8 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -82,7 +82,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-{
+-	i_zval_ptr_dtor(zval_ptr);
+-}
+-/* }}} */
+-
+-ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -93,2 +88,12 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
++		if (!(GC_FLAGS(ref) & IS_OBJ_DESTRUCTOR_CALLED)) {
++			if (GC_DELREF(ref) == 0) {
++				if (Z_TYPE_P(zval_ptr) == IS_STRING) {
++					zend_string_release(Z_STR_P(zval_ptr));
++				} else {
++					rc_dtor_func(ref);
++				}
++			}
++		}
++	}
++}
++/* }}} */

@@ -1,0 +1,38 @@
+diff --git a/parser.c b/parser.c
+index c3068cad..1e5a9031 100644
+--- a/parser.c
++++ b/parser.c
+@@ -9911 +9911 @@ xmlParseContentInternal(xmlParserCtxtPtr ctxt) {
+-
++ 
+@@ -9912,0 +9913 @@ xmlParseContentInternal(xmlParserCtxtPtr ctxt) {
++	    xmlNodePtr node_before = ctxt->node;
+@@ -9913,0 +9915,4 @@ xmlParseContentInternal(xmlParserCtxtPtr ctxt) {
++	    /* Ensure node context hasn't been corrupted during reference parsing */
++	    if ((node_before != NULL) && (ctxt->node != node_before)) {
++	        ctxt->node = node_before;
++	    }
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 7b44bf60..241a5726 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -21453,5 +21453,5 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-	ctxt->constructor = xmlSchemaConstructionCtxtCreate(ctxt->dict);
+-	if (ctxt->constructor == NULL)
+-	    return(NULL);
+-	/* Take ownership of the constructor to be able to free it. */
+-	ctxt->ownsConstructor = 1;
++    ctxt->constructor = xmlSchemaConstructionCtxtCreate(ctxt->dict);
++    if (ctxt->constructor == NULL)
++	return(NULL);
++    /* Take ownership of the constructor to be able to free it. */
++    ctxt->ownsConstructor = 1;
+@@ -21461,2 +21461,6 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-    * Locate and add the schema document.
+-    */
++     * Locate and add the schema document.
++     * Track node allocation origins explicitly to prevent invalid pointer freeing.
++     */
++    if (ctxt->doc != NULL) {
++        ctxt->doc->_private = NULL;  /* Mark as valid allocation root */
++    }

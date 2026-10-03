@@ -1,0 +1,29 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..9dfec2627 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -109 +109,4 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Safe initialization with null checks to prevent expired pointer access */
++  if (c->stbase) {
++    memset(c->stbase, 0, (c->stend - c->stbase) * sizeof(mrb_value));
++  }
+@@ -113 +116,3 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  if (c->cibase) {
++    memset(c->cibase, 0, (c->ciend - c->cibase) * sizeof(mrb_callinfo));
++  }
+@@ -1121 +1126,2 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-
++  mrb_value *current_ci_stack;
++ 
+@@ -1126,0 +1133 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
++  current_ci_stack = c->ci->stack;
+@@ -1128,2 +1135,5 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-  stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
+-  c->ci->stack[0] = self;
++  if (c->ci->stack != current_ci_stack) {
++    current_ci_stack = c->ci->stack;
++  }
++  stack_clear(current_ci_stack + stack_keep, nregs - stack_keep);
++  current_ci_stack[0] = self;

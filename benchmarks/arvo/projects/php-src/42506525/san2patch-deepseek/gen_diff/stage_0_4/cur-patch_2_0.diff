@@ -1,0 +1,42 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..e2da890c9eb 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1376,0 +1377,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
++	Bucket *current;
++
++	current = HT_HASH_TO_BUCKET(ht, idx);
+@@ -1378 +1381 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		Z_NEXT(prev->val) = Z_NEXT(p->val);
++		Z_NEXT(prev->val) = Z_NEXT(current->val);
+@@ -1380 +1383 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		HT_HASH(ht, p->h | ht->nTableMask) = Z_NEXT(p->val);
++		HT_HASH(ht, current->h | ht->nTableMask) = Z_NEXT(current->val);
+@@ -1383 +1386 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-	ht->nNumOfElements--;
++	h->nNumOfElements--;
+@@ -1397 +1400 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-			ht->nInternalPointer = new_idx;
++			h->nInternalPointer = new_idx;
+@@ -1403 +1406 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-			ht->nNumUsed--;
++			h->nNumUsed--;
+@@ -1405 +1408 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ht->nInternalPointer = MIN(ht->nInternalPointer, ht->nNumUsed);
++		h->nInternalPointer = MIN(ht->nInternalPointer, ht->nNumUsed);
+@@ -1409,3 +1412,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
+-		ZVAL_UNDEF(&p->val);
+-		ht->pDestructor(&tmp);
++		ZVAL_COPY_VALUE(&tmp, &current->val);
++		ZVAL_UNDEF(&current->val);
++		h->pDestructor(&tmp);
+@@ -1413 +1416 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_UNDEF(&p->val);
++		ZVAL_UNDEF(&current->val);
+@@ -1433,0 +1437,5 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++	p = HT_HASH_TO_BUCKET(ht, idx);
++	if (prev == p) {
++		prev = NULL;
++	}
++

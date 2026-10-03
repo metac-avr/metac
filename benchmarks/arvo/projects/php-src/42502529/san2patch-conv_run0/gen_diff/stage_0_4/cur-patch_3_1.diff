@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..b86ac1a07a9 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,2 +1172,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+@@ -1185 +1183,4 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	return --(p->refcount);
++	if (p->refcount > 0) {  
++		return --(p->refcount);
++	}
++	return 0;
+@@ -1192,3 +1193 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..52381e138eb 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1830,0 +1831 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++		if (UNEXPECTED(GC_REFCOUNTED(Z_COUNTED(p->val))) && UNEXPECTED(GC_IS_DTOR_CALLED(GC_BASE(Z_COUNTED(p->val))))) continue;

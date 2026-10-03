@@ -1,0 +1,36 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..768fdb0f9 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -345,0 +346 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *new_cibase;
+@@ -348 +349,15 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
++    new_cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    
++    // Adjust all pointers that reference the old cibase
++    if (new_cibase != c->cibase) {
++      ptrdiff_t ci_offset = c->ci - c->cibase;
++      ptrdiff_t i;
++      
++      for (i = 0; i <= ci_offset; i++) {
++        if (new_cibase[i].stack >= c->cibase && new_cibase[i].stack < (c->cibase + size)) {
++          new_cibase[i].stack = new_cibase + (new_cibase[i].stack - c->cibase);
++        }
++      }
+@@ -350 +365,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    
++    c->cibase = new_cibase;
+@@ -2710 +2726,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
+@@ -2711,0 +2729,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
++      // Ensure register validity after GC-triggered stack operations
++      MRB_GC_AWARENESS(regs);
+@@ -2722 +2740,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

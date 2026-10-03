@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..6deabcd76c1 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -36 +37,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && GC_TYPE(ref) != 0 && GC_TYPE(ref) <= 0x10) {
++			rc_dtor_func(ref);
++		}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..b2e171e1d16 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3190 +3190,4 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-		zend_observer_fcall_end(execute_data, NULL);
++		zend_execute_data *current_execute_data = execute_data;  // Store reference before potential cleanup
++		if (current_execute_data) {
++			zend_observer_fcall_end(current_execute_data, NULL);
++		}

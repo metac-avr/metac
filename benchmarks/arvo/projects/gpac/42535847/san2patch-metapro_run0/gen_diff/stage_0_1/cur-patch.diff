@@ -1,0 +1,30 @@
+diff --git a/src/filters/isoffin_read_ch.c b/src/filters/isoffin_read_ch.c
+index 225c8ef15..30e9b214b 100644
+--- a/src/filters/isoffin_read_ch.c
++++ b/src/filters/isoffin_read_ch.c
+@@ -300 +300,2 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
+-	ch->sample->duration = 1000;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	ch->sample->duration = 1000;
+@@ -302 +303,6 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
+-	gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &ch->sample->data, &ch->sample->dataLength, &ch->static_sample->alloc_size, NULL, GF_FALSE);
++	if (ch->owner && ch->owner->mov) {
++		GF_Err result = gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &ch->sample->data, &ch->sample->dataLength, &ch->static_sample->alloc_size, NULL, GF_FALSE);
++		if (result != GF_OK) {
++			ch->last_state = result;
++		}
++	}
+diff --git a/src/isomedia/meta.c b/src/isomedia/meta.c
+index 65660dcba..1f62ed751 100644
+--- a/src/isomedia/meta.c
++++ b/src/isomedia/meta.c
+@@ -374 +374,2 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-					hvcc->config->write_annex_b = GF_FALSE;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 					hvcc->config->write_annex_b = GF_FALSE;
+@@ -376 +377 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-				nalu_size_length = hvcc->config->nal_unit_size;
++				if (hvcc->config != NULL) nalu_size_length = hvcc->config->nal_unit_size;
+@@ -387 +388 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-				nalu_size_length = avcc->config->nal_unit_size;
++				if (avcc->config != NULL) nalu_size_length = avcc->config->nal_unit_size;

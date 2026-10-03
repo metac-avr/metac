@@ -1,0 +1,28 @@
+diff --git a/src/filters/in_file.c b/src/filters/in_file.c
+index 9ebe87921..500933fb1 100644
+--- a/src/filters/in_file.c
++++ b/src/filters/in_file.c
+@@ -237,0 +238,7 @@ static GF_Err filein_initialize_ex(GF_Filter *filter)
++static GF_Err filein_initialize_ex(GF_Filter *filter)
++{
++	GF_FileInCtx *ctx = (GF_FileInCtx *) gf_filter_get_udta(filter);
++#ifdef GPAC_HAS_FD
++	ctx->fd = -1;
++#endif
++
+@@ -248 +255,3 @@ static GF_Err filein_initialize_ex(GF_Filter *filter)
+-		ctx->block = gf_malloc(ctx->block_size +1);
++		// Ensure block_size doesn't cause overflow when adding 1
++		if (ctx->block_size > 0xFFFFFFFF - 1) ctx->block_size = 0xFFFFFFFF - 1;
++		ctx->block = gf_malloc(ctx->block_size + 1);
+@@ -251,9 +260 @@ static GF_Err filein_initialize_ex(GF_Filter *filter)
+-}
+-
+-static GF_Err filein_initialize(GF_Filter *filter)
+-{
+-	GF_FileInCtx *ctx = (GF_FileInCtx *) gf_filter_get_udta(filter);
+-#ifdef GPAC_HAS_FD
+-	ctx->fd = -1;
+-#endif
+-	return filein_initialize_ex(filter);
++}	return filein_initialize_ex(filter);

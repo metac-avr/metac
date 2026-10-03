@@ -1,0 +1,17 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 2c4324f14..96411e890 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -3632,0 +3633,4 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
++			if ((u32)size < pctx->nalu_size_length) {
++				inspect_printf(dump, "   <!-- NALU is corrupted: insufficient data for NAL unit size -->\n");
++				break;
++			}
+@@ -3641 +3645,6 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-				gf_inspect_dump_nalu_internal(dump, data, nal_size, pctx->has_svcc ? 1 : 0, pctx->hevc_state, pctx->avc_state, pctx->vvc_state, pctx->nalu_size_length, ctx->crc, pctx->is_cenc_protected, ctx->analyze, pctx);
++				if (nal_size <= size) {
++					gf_inspect_dump_nalu_internal(dump, data, nal_size, pctx->has_svcc ? 1 : 0, pctx->hevc_state, pctx->avc_state, pctx->vvc_state, pctx->nalu_size_length, ctx->crc, pctx->is_cenc_protected, ctx->analyze, pctx);
++				} else {
++					inspect_printf(dump, "   <!-- NALU is corrupted: buffer overflow in NAL unit data -->\n");
++					break;
++				}

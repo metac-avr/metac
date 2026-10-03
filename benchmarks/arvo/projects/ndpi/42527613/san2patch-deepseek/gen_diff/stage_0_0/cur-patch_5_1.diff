@@ -1,0 +1,24 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 41e4fb539..c930966fe 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -3403 +3403,2 @@ int ndpi_match_custom_category(struct ndpi_detection_module_struct *ndpi_str,
+-  return(id != NDPI_PROTOCOL_UNKNOWN ? 0 : -1);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   return(id != NDPI_PROTOCOL_UNKNOWN ? 0 : -1);
+@@ -3405 +3406,12 @@ int ndpi_match_custom_category(struct ndpi_detection_module_struct *ndpi_str,
+-  u_int16_t rc = ndpi_domain_classify_contains(ndpi_str->custom_categories.sc_hostnames, name);
++  u_int16_t rc;
++  char *safe_name;
++
++  safe_name = (char *)ndpi_malloc(name_len + 1);
++  if(safe_name == NULL)
++    return(-1);
++
++  strncpy(safe_name, name, name_len);
++  safe_name[name_len] = '\0';
++
++  rc = ndpi_domain_classify_contains(ndpi_str->custom_categories.sc_hostnames, safe_name);
++  ndpi_free(safe_name);
+@@ -3415,0 +3428 @@ int ndpi_match_custom_category(struct ndpi_detection_module_struct *ndpi_str,
++

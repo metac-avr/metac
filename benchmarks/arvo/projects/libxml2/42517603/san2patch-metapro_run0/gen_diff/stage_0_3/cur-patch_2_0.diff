@@ -1,0 +1,35 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..da331432 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2279,4 +2279,7 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            if ((ctxt->incTab[i]->inc != NULL) ||
+-                (ctxt->incTab[i]->emptyFb != 0)) {	/* (empty fallback) */
+-                xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
+-                ctxt->incTab[i]->replace = 0;
++// FIXME: Crash CWE-416: Use After Free
++             if ((ctxt->incTab[i]->inc != NULL) ||
++                (ctxt->incTab[i]->emptyFb != 0)) {    /* (empty fallback) */
++                if (ctxt->incTab[i] != NULL && ctxt->incTab[i]->inc != NULL) {
++                    xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++                    ctxt->incTab[i]->replace = 0;
++                }
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..825c86be 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1364,3 +1364,11 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Add safety check for XInclude processing before freeing */
++		if (tmp->type != XML_XINCLUDE_START && tmp->type != XML_XINCLUDE_END) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		} else {
++		    xmlUnlinkNode(tmp);
++		    tmp->children = NULL;
++		    tmp->last = NULL;
++		    xmlTextReaderFreeNode(reader, tmp);
++		}

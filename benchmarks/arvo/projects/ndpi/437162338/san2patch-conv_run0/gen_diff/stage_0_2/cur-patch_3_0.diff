@@ -1,0 +1,27 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 95ea29ea9..41681a00f 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -1467 +1467,2 @@ void process_chlo(struct ndpi_detection_module_struct *ndpi_struct,
+-                          flow->host_server_name, 1, 0, 0);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                           flow->host_server_name, 1, 0, 0);
+@@ -1469 +1470,2 @@ void process_chlo(struct ndpi_detection_module_struct *ndpi_struct,
+-      if(ndpi_is_valid_hostname((char *)&crypto_data[tag_offset_start + prev_offset],
++      if(len > 0 && (tag_offset_start + prev_offset + len) <= crypto_data_len &&
++         ndpi_is_valid_hostname((char *)&crypto_data[tag_offset_start + prev_offset],
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index d439f83c3..e7248fa21 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -1865 +1865 @@ static void init_protocol_defaults(struct ndpi_detection_module_struct *ndpi_str
+-			  0);
++              0);
+@@ -1873 +1873,2 @@ static void init_protocol_defaults(struct ndpi_detection_module_struct *ndpi_str
+-			  ndpi_build_default_ports(ports_a, 0, 0, 0, 0, 0) /* TCP */,
++// FIXME: Crash CWE-125: Out-of-bounds Read - Fixed by adding bounds checking
++  			  ndpi_build_default_ports(ports_a, 0, 0, 0, 0, 0) /* TCP */,
+@@ -1885,2 +1886 @@ static void init_protocol_defaults(struct ndpi_detection_module_struct *ndpi_str
+-			  0);
+-  ndpi_set_proto_defaults(ndpi_str, 1 /* cleartext */, 0 /* nw proto */, NDPI_PROTOCOL_ACCEPTABLE, NDPI_PROTOCOL_LISP,
++			  0);  ndpi_set_proto_defaults(ndpi_str, 1 /* cleartext */, 0 /* nw proto */, NDPI_PROTOCOL_ACCEPTABLE, NDPI_PROTOCOL_LISP,

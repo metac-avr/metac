@@ -1,0 +1,28 @@
+diff --git a/src/isomedia/box_funcs.c b/src/isomedia/box_funcs.c
+index 84310399e..04b9f7851 100644
+--- a/src/isomedia/box_funcs.c
++++ b/src/isomedia/box_funcs.c
+@@ -1801 +1801,2 @@ void gf_isom_box_del(GF_Box *a)
+-	if (!a) return;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	if (!a) return;
+@@ -1814 +1815,4 @@ void gf_isom_box_del(GF_Box *a)
+-		gf_isom_box_array_del(child_boxes);
++		// Add null check and validation before accessing child_boxes
++		if (child_boxes != NULL && gf_list_get_count(child_boxes) != -1) {
++			gf_isom_box_array_del(child_boxes);
++		}
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index 753cff17d..3a8d5b354 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -1253,2 +1253,7 @@ void esds_box_del(GF_Box *s)
+-	if (ptr == NULL)	return;
+-	if (ptr->desc) gf_odf_desc_del((GF_Descriptor *)ptr->desc);
++	// FIXME: Crash CWE-825: Expired Pointer Dereference
++	if (ptr == NULL) return;
++	if (ptr->desc) {
++		gf_odf_desc_del((GF_Descriptor *)ptr->desc);
++	}
++	// Clear the pointer to prevent use-after-free
++	*((void**)&ptr->desc) = NULL;

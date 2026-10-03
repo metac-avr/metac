@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..6919a8b0c 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1076 +1076,5 @@ mrb_yield_with_class(mrb_state *mrb, mrb_value b, mrb_int argc, const mrb_value
+-    val = mrb_run(mrb, p, self);
++    if (mrb->c->ci != ci) {
++      val = mrb_nil_value();
++    } else {
++      val = mrb_run(mrb, p, self);
++    }
+@@ -2710 +2714,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
+@@ -2717 +2722,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-        mrb_ary_concat(mrb, regs[a], splat);
++        // Add safety check to prevent expired pointer dereference
++        if (mrb_immediate_p(regs[a]) || (mrb_basic_ptr(regs[a]) && mrb_type(regs[a]) == MRB_TT_ARRAY)) {
++          mrb_ary_concat(mrb, regs[a], splat);
++        }
+@@ -2722 +2729,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

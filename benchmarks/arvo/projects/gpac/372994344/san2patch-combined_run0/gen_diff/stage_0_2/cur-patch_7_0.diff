@@ -1,0 +1,23 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..44cb62885 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1342 +1342,2 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-		case GF_M2TS_HLS_EC3_CRYPT:
++// FIXME: Crash CWE-416: Use After Free
++ 		case GF_M2TS_HLS_EC3_CRYPT:
+@@ -1354,2 +1355,3 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-			break;
+-		case GF_M2TS_PRIVATE_DATA:
++			// Initialize ES state to track allocation status
++			es->state = GF_M2TS_ES_STATE_ACTIVE;
++			break;		case GF_M2TS_PRIVATE_DATA:
+@@ -3113 +3115,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++  	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3116 +3119,3 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-			gf_m2ts_es_del(ts->ess[i], ts);
++			GF_M2TS_ES *es = ts->ess[i];
++			ts->ess[i] = NULL; // Nullify before deletion to prevent use-after-free
++			gf_m2ts_es_del(es, ts);

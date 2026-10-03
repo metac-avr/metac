@@ -1,0 +1,18 @@
+diff --git a/libavformat/aiffdec.c b/libavformat/aiffdec.c
+index 5314d159ef..e2f401385f 100644
+--- a/libavformat/aiffdec.c
++++ b/libavformat/aiffdec.c
+@@ -335 +335,2 @@ static int aiff_read_header(AVFormatContext *s)
+-            break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             break;
+@@ -337,2 +338,7 @@ static int aiff_read_header(AVFormatContext *s)
+-            if ((ret = ff_mov_read_chan(s, pb, st, size)) < 0)
+-                return ret;
++            if (size > 0 && size <= 263168) {  // Validate size bounds before processing
++                if ((ret = ff_mov_read_chan(s, pb, st, size)) < 0)
++                    return ret;
++            } else {
++                av_log(s, AV_LOG_WARNING, "Invalid CHAN chunk size: %d\n", size);
++                avio_skip(pb, size);
++            }

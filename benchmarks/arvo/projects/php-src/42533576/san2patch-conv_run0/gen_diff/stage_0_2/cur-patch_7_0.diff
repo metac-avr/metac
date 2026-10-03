@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index c07fdfe7acf..e644287d15f 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35 +36 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++	if (zval_ptr != NULL && Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 4714ab37101..807493eca6e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3229 +3229,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-	cleanup_unfinished_calls(execute_data, throw_op_num);
++	/* Check if execute_data and its function context are valid before cleanup */
++	if (execute_data != NULL && EX(func) != NULL) {
++		cleanup_unfinished_calls(execute_data, throw_op_num);
++	}

@@ -1,0 +1,30 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index eee917756..e7b7ae5a3 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -500 +500,6 @@ static GF_Err gsfdmx_parse_pid_info(GF_Filter *filter, GSF_DemuxCtx *ctx, GSF_St
+-		char *pname = gf_malloc(sizeof(char)*(len+1));
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		char *pname = NULL;
++		if (len <= GF_UINT_MAX >> 1) {
++			pname = gf_malloc(sizeof(char)*(len+1));
++		}
++		if (!pname) return GF_OUT_OF_MEM;
+@@ -1160 +1165 @@ static GF_Err gsfdmx_demux(GF_Filter *filter, GSF_DemuxCtx *ctx, char *data, u32
+-	 						append = GF_FALSE;
++							append = GF_FALSE;
+@@ -1172,4 +1177,10 @@ static GF_Err gsfdmx_demux(GF_Filter *filter, GSF_DemuxCtx *ctx, char *data, u32
+-							//append fragment
+-							memcpy(gpck->output + block_offset, ctx->buffer + cur_pos, pck_len);
+-
+-							gsfdmx_packet_append_frag(gpck, pck_len, block_offset);
++							// Check if gpck and gpck->output are valid before memcpy
++							if (gpck == NULL || gpck->output == NULL) {
++								GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[GSFDemux] null pointer dereference detected\n"));
++								e = GF_NON_COMPLIANT_BITSTREAM;
++							} else {
++								//append fragment
++								memcpy(gpck->output + block_offset, ctx->buffer + cur_pos, pck_len);
++
++								gsfdmx_packet_append_frag(gpck, pck_len, block_offset);
++							}

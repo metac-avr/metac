@@ -1,0 +1,25 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..0974829a4 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -500,4 +500,16 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    if (j%2)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
+-    else
+-      q.p[j/2] |= qhat;
++    if (j%2) {
++      uint32_t temp = qhat << HALFDIGITBITS;
++      if (temp >= qhat && q.p[j/2] <= UINT32_MAX - temp) {
++        q.p[j/2] |= temp;
++      } else {
++        // Handle overflow
++        return;
++      }
++    } else {
++      if (q.p[j/2] <= UINT32_MAX - qhat) {
++        q.p[j/2] |= qhat;
++      } else {
++        // Handle overflow
++        return;
++      }
++    }

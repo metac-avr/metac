@@ -1,0 +1,27 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..c71f33879 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1096,3 +1096,9 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc->gray_list = obj->gcnext;
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    // Validate object before accessing
++    if (obj && obj != (struct RBasic*)0x1) {  // Basic null/sentinel check
++      gc->gray_list = obj->gcnext;
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    } else {
++      gc->gray_list = obj->gcnext;
++      tried_marks++;
++    }
+@@ -1203,3 +1209,6 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Add safety check to prevent accessing freed memory */
++      if (page != NULL) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }

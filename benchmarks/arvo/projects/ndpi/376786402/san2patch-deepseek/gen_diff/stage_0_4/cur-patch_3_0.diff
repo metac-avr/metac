@@ -1,0 +1,42 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..4798ea929 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1034 +1034,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      size_t content_len;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t content_len;
+@@ -1039,2 +1040,22 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      if(content != NULL) {
+-	char *double_dot = strchr((char*)content, ':');
++      if(content_len == 0) {
++	if(content != NULL) {
++	  ndpi_free(content);
++	}
++      } else if(content != NULL) {
++	u_char *terminated_content = (u_char*)ndpi_malloc(content_len + 1);
++
++	if(terminated_content == NULL) {
++	  ndpi_free(content);
++	} else {
++	  memcpy(terminated_content, content, content_len);
++	  terminated_content[content_len] = '\0';
++	  ndpi_free(content);
++	  content = terminated_content;
++
++	  char *double_dot = strchr((char*)content, ':');
++
++	  if(double_dot) {
++	    double_dot[0] = '\0';
++	    flow->http.username = ndpi_strdup((char*)content);
++	    flow->http.password = ndpi_strdup(&double_dot[1]);
++	  }
+@@ -1042,4 +1063 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	if(double_dot) {
+-	  double_dot[0] = '\0';
+-	  flow->http.username = ndpi_strdup((char*)content);
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
++	  ndpi_free(content);
+@@ -1047,2 +1064,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	
+-	ndpi_free(content);

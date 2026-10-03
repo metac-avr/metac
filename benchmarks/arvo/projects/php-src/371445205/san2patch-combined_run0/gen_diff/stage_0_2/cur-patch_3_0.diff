@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..6d7416598db 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -344 +344,2 @@ static zend_always_inline void zend_string_efree(zend_string *s)
+-static zend_always_inline void zend_string_release(zend_string *s)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zend_string_release(zend_string *s)
+@@ -347 +348 @@ static zend_always_inline void zend_string_release(zend_string *s)
+-		if (GC_DELREF(s) == 0) {
++		if (GC_REFCOUNT(s) > 0 && GC_DELREF(s) == 0) {
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..b6b4db5b1ee 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -251,0 +252 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		zend_string_addref(filename); // Add reference to prevent premature freeing
+@@ -291 +292 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-
++ 
+@@ -298,0 +300 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		zend_string_release(filename); // Release the reference we added

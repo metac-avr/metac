@@ -1,0 +1,18 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..07289e694 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -764 +764,12 @@ mrb_str_index(mrb_state *mrb, mrb_value str, const char *sptr, mrb_int slen, mrb
+-  pos = mrb_memsearch(sptr, slen, s, len);
++  if (len >= slen && slen >= sizeof(size_t)) {
++    pos = mrb_memsearch(sptr, slen, s, len);
++  }
++  else {
++    pos = -1;
++    for (mrb_int i = 0; i <= len - slen; i++) {
++      if (memcmp(s + i, sptr, slen) == 0) {
++        pos = i;
++        break;
++      }
++    }
++  }

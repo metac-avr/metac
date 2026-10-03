@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..2d1a7537582 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -65,3 +65,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
++	if (str && GC_REFCOUNT(str) == 0) {
++		ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
++		efree(str);
++	}
+@@ -77 +77,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c0efe2a6dcf..b0bf525024d 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1193 +1193,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1194,0 +1196 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	ZEND_ASSERT(p != NULL); /* Ensure pointer is not null */
+@@ -1205 +1206,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-

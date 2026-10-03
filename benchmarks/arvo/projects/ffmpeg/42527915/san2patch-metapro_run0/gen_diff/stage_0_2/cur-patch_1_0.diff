@@ -1,0 +1,28 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..d69d03ef51 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239,3 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
+-        if (codes != localbuf)
+-            av_free(codes);
++     } else {
+@@ -243,0 +242,2 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++            if (codes != localbuf)
++                av_free(codes);
+@@ -245,0 +246,2 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++        if (codes != localbuf)
++            av_free(codes);
+@@ -495 +497 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -499,2 +501,7 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        goto fail;
+-    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++        goto fail_post_vlc_end;
++    ret = vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    if (buf != localbuf)
++        av_free(buf);
++    return ret;
++fail_post_vlc_end:
++    vlc_common_end(vlc, nb_bits, j, buf, flags, localbuf);

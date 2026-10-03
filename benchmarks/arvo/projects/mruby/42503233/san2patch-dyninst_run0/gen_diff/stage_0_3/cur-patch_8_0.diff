@@ -1,0 +1,81 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..669ae2b66 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -197,0 +198 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++// FIXME: Crash CWE-787: Out-of-bounds Write
+@@ -198,0 +200 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++  if (room <= 0) return; /* Early exit for non-positive room */
+@@ -478,0 +481,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    // Add bounds checking before stack operations
++    if (argc > 0x100000) {  // Reasonable limit for argument count
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "argument count too large");
++    }
++    
+@@ -480,0 +489,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    // Validate stack extension request
++    if ((argc + 3) > 0x100000) {  // Prevent excessive stack extension
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "stack extension too large");
++    }
+@@ -481,0 +495 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
+@@ -482,0 +497,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      if (argc > 0x10000) {  // Limit array size
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "argument array too large");
++      }
+@@ -484,0 +502,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      // Bounds check before assignment
++      if ((n + 1) >= mrb->c->stend - mrb->c->stbase) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack index out of bounds");
++      }
+@@ -496,0 +518,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      
++      // Validate second stack extension
++      if ((n + 2) > 0x100000) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "second stack extension too large");
++      }
+@@ -497,0 +524,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      
++      // Bounds check before assignment
++      if ((n + 1) >= mrb->c->stend - mrb->c->stbase) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack index out of bounds");
++      }
+@@ -506,0 +538,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++        // Validate irep register count
++        if (p->body.irep->nregs > 0x10000) {
++          mrb_raise(mrb, E_ARGUMENT_ERROR, "irep register count too large");
++        }
++        if ((p->body.irep->nregs + argc) > 0x100000) {
++          mrb_raise(mrb, E_ARGUMENT_ERROR, "total register count too large");
++        }
+@@ -510,0 +549,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      // Validate offset before pointer arithmetic
++      if (voff >= mrb->c->stend - mrb->c->stbase) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "invalid stack offset");
++      }
+@@ -512,0 +555,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    // Bounds check before stack assignments
++    if (mrb->c->ci->stack >= mrb->c->stend) {
++      mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow");
++    }
+@@ -515 +562,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++      if (argc > 0) {
++        // Validate copy operation bounds
++        if ((ci->stack + 1 + argc) > mrb->c->stend) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack copy would overflow");
++        }
+@@ -516,0 +568,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      }
++      // Validate final assignment bounds
++      if ((argc + 1) >= mrb->c->stend - ci->stack) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "final stack assignment out of bounds");
++      }
+@@ -519,0 +576,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      // Validate alternative assignment bounds
++      if (2 >= mrb->c->stend - ci->stack) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "alternative stack assignment out of bounds");
++      }

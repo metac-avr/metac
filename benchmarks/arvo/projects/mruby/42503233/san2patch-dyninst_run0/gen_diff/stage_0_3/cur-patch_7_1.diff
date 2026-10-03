@@ -1,0 +1,32 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..2464f9997 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -197,0 +198 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++// FIXME: Crash CWE-787: Out-of-bounds Write
+@@ -199,0 +201,3 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    if (room > MRB_STACK_MAX - (mrb->c->ci->stack ? (mrb->c->stend - mrb->c->ci->stack) : 0)) {
++      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err)); /* Prevent overflow */
++    }
+@@ -478,0 +483,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    // Validate stack extension size to prevent buffer overflow
++    if (argc > MRB_INT_MAX - 3) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "too many arguments");
++    }
++    
+@@ -482,0 +493,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      // Validate array creation to prevent overflow
++      if (argc > MRB_INT_MAX) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "too many arguments");
++      }
+@@ -496,0 +511,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      // Validate stack extension size
++      if (n > MRB_INT_MAX - 2) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "stack extension too large");
++      }
+@@ -506,0 +525,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++        // Validate irep nregs to prevent overflow
++        if (p->body.irep->nregs > MRB_INT_MAX - argc) {
++          mrb_raise(mrb, E_ARGUMENT_ERROR, "too many registers");
++        }

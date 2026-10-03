@@ -1,0 +1,14 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..1a92a58884f 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -64,0 +65,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Fixed CWE-416: Use After Free - Check if string is being used by JIT before destroying */
++	if (UNEXPECTED(ZSTR_IS_JIT_LOCKED(str))) {
++		return; /* Defer destruction until JIT is done with it */
++	}
+@@ -77 +80,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

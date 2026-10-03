@@ -1,0 +1,37 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..c934cdbe6d 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -437,0 +438,3 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    // Initialize table entries safely to prevent use-after-free
++    memset(table, 0, (1 << numbits) * sizeof(*table));
++
+@@ -439,3 +442,5 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++        if (single && single->table) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        }
+@@ -444,2 +449,5 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    add_level(table, nb_elems, nb_codes, numbits, buf,
+-              0, 0, numbits, 0, minbits, max, count, &info);
++    // Only proceed with add_level if buffers are valid
++    if (table && single && buf) {
++        add_level(table, nb_elems, nb_codes, numbits, buf,
++                  0, 0, numbits, 0, minbits, max, count, &info);
++    }
+@@ -495 +503 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -500 +508,7 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    if (multi && multi->table) {
++        return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    } else {
++        if (buf != localbuf)
++            av_free(buf);
++        return AVERROR(ENOMEM);
++    }

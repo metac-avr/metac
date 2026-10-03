@@ -1,0 +1,23 @@
+diff --git a/libavcodec/vvc/vvcdec.c b/libavcodec/vvc/vvcdec.c
+index 608d497cb7..9cc2ef04cc 100644
+--- a/libavcodec/vvc/vvcdec.c
++++ b/libavcodec/vvc/vvcdec.c
+@@ -821 +821 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-                s->eos = 1;
++                 s->eos = 1;
+@@ -823,5 +823,7 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-            ret = decode_nal_unit(s, fc, nal, unit);
+-            if (ret < 0) {
+-                av_log(s->avctx, AV_LOG_WARNING,
+-                        "Error parsing NAL unit #%d.\n", i);
+-                goto fail;
++            if (fc && fc->ref) {  // Add null check to prevent out-of-bounds access
++                ret = decode_nal_unit(s, fc, nal, unit);
++                if (ret < 0) {
++                    av_log(s->avctx, AV_LOG_WARNING,
++                            "Error parsing NAL unit #%d.\n", i);
++                    goto fail;
++                }
+@@ -834 +836 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-    if (fc->ref)
++    if (fc && fc->ref)

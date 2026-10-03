@@ -1,0 +1,48 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..5676b468c 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779,22 +779 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
+-    break;
+-  }
+-}
+-
+-MRB_API void
+-mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
+-  if (obj == 0) return;
+-  if (!is_white(obj)) return;
+-  if (is_red(obj)) return;
+-  mrb_assert((obj)->tt != MRB_TT_FREE);
+-  add_gray_list(mrb, &mrb->gc, obj);
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++mrb_gc_mark  case MRB_TT_OBJECT:
+@@ -1202,0 +1182,19 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Process all objects in page to remove from marking structures */
++      for (int i = 0; i < MRB_HEAP_PAGE_SIZE; i++) {
++        RVALUE *obj = &objects(page)[i];
++        if (obj->as.basic.tt != MRB_TT_FREE) {
++          /* Ensure object is not in gray list */
++          struct RBasic *current = gc->gray_list;
++          struct RBasic **prev = &gc->gray_list;
++          while (current) {
++            if (current == &obj->as.basic) {
++              *prev = current->gcnext;
++              current->gcnext = NULL;
++              break;
++            }
++            prev = &current->gcnext;
++            current = current->gcnext;
++          }
++        }
++      }
++

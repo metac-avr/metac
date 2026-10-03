@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..5321a30035a 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -275 +275,3 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-				zend_hash_add_new(named_params, attribute_data->args[i].name, &val);
++				if (attribute_data->args[i].name->gc.refcount > 0) {
++					zend_hash_add_new(named_params, attribute_data->args[i].name, &val);
++				}
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..8a73c547f8f 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -362 +362,4 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-				efree(s);
++				/* Validate pointer before deallocation to prevent use-after-free */
++				if (s != NULL) {
++					efree(s);
++				}

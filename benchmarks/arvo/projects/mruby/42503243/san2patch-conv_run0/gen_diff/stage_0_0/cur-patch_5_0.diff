@@ -1,0 +1,29 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..a26aeab44 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -109 +109 @@ stack_init(mrb_state *mrb)
+-  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE, sizeof(mrb_value));
++  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE + 8/sizeof(mrb_value), sizeof(mrb_value));
+@@ -1380,2 +1380,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_sym sym = syms[b];
+-
++      mrb_sym sym;
++      
++      if (b < 0) goto L_RAISE_SYMBOL_ERROR;
++      if (b >= irep->syms_len) goto L_RAISE_SYMBOL_ERROR;
++      
++      sym = syms[b];
+@@ -1384,0 +1389,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      
++      L_RAISE_SYMBOL_ERROR:
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid symbol index");
++      NEXT;
+@@ -1387,0 +1396,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      if (b < 0 || b >= irep->syms_len) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid symbol index");
++      }
+@@ -1392,2 +1403 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-    CASE(OP_GETMCNST, BB) {
+-      mrb_value val;
++    CASE(OP_GETMCNST, BB) {      mrb_value val;

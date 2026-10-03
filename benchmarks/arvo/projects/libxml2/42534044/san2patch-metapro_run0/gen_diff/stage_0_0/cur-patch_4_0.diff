@@ -1,0 +1,26 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..1b88ac5a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6882 +6882 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6884 +6884,2 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	prop->children = NULL;
++	    prop->children = NULL;  /* Prevent use-after-free */
++	}
+@@ -6904 +6905 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	return(prop);
++return(prop);
+@@ -6907 +6908 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-    * No equal attr found; create a new one.
++     * No equal attr found; create a new one.
+@@ -6908,0 +6910,4 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++    /* Prevent use-after-free by ensuring prop is valid before proceeding */
++    if (prop == NULL || (prop->type != XML_ATTRIBUTE_NODE)) {
++        return(xmlNewPropInternal(node, ns, name, value, 0));
++    }
+@@ -6914,2 +6919 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-/**
+- * xmlNodeIsText:
++/** * xmlNodeIsText:

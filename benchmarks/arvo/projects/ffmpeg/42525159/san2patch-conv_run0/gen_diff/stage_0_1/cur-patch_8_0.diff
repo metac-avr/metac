@@ -1,0 +1,29 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..e5a80679a0 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2025 +2025,6 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-    }
++// Fixed CWE-787: Out-of-bounds Write - Implemented bounds checking before pixel write
++        ptrdiff_t remaining_bytes = ((uint8_t*)picture->data[plane] + picture->linesize[plane] * picture->height) - (uint8_t*)dst; \
++        if (remaining_bytes >= sizeof(PIXEL)) {                                                  \
++            *(PIXEL*)dst = *i_datap;                                                              \
++        }                                                                                         \
++     }
+@@ -2501 +2506,15 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-    avctx->execute2(avctx, jpeg2000_decode_tile, picture, NULL, s->numXtiles * s->numYtiles);
++    // Prevent integer overflow and validate tile count before execution
++    if (s->numXtiles >= 0 && s->numYtiles >= 0) {
++        // Check for potential integer overflow in multiplication
++        if (s->numXtiles > 0 && s->numYtiles > 0 && 
++            s->numXtiles > INT_MAX / s->numYtiles) {
++            av_log(avctx, AV_LOG_ERROR, "Tile count overflow detected\n");
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }
++        avctx->execute2(avctx, jpeg2000_decode_tile, picture, NULL, s->numXtiles * s->numYtiles);
++    } else {
++        av_log(avctx, AV_LOG_ERROR, "Negative tile dimensions detected\n");
++        ret = AVERROR_INVALIDDATA;
++        goto end;
++    }

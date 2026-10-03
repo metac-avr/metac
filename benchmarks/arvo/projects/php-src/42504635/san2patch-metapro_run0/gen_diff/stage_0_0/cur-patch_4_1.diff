@@ -1,0 +1,46 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..43bf67b3019 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,7 +46,0 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+-	/* IS_OBJECT       */ (zend_rc_dtor_func_t)zend_objects_store_del,
+-	/* IS_RESOURCE     */ (zend_rc_dtor_func_t)zend_list_free,
+-	/* IS_REFERENCE    */ (zend_rc_dtor_func_t)zend_reference_destroy,
+-	/* IS_CONSTANT_AST */ (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+-
+@@ -54,0 +48 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++// FIXME: Crash CWE-416: Use After Free
+@@ -55,0 +50 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p || GC_TYPE(p) > IS_CONSTANT_AST) return;
+@@ -58,11 +53 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-{
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++}}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..8eab6420a97 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1760 +1760,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF && (!Z_REFCOUNTED(p->val) || Z_COUNTED(p->val)))) {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1764 +1766,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF && (!Z_REFCOUNTED(p->val) || Z_COUNTED(p->val)))) {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1771 +1775 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
++					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF && (!Z_REFCOUNTED(p->val) || Z_COUNTED(p->val)))) {

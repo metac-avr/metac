@@ -1,0 +1,34 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index e9084950..6b37f705 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3361 +3361 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
+-    int len = 0;
++            int len = 0;
+@@ -3371 +3371,2 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
+-    if ((RAW == '<') && (NXT(1) == '?')) {
++    if ((ctxt->input->cur < ctxt->input->end) && (RAW == '<') &&
++        (ctxt->input->cur + 1 < ctxt->input->end) && (NXT(1) == '?')) {
+@@ -3381,0 +3383,22 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
++	 */
++        target = ctxt->input->cur;
++        count = 0;
++        while ((ctxt->input->cur < ctxt->input->end) &&
++               (RAW != '>') && (RAW != '?') &&
++               (count < 100)) {
++            ctxt->input->cur++;
++            count++;
++        }
++        if (count == 100) {
++            htmlParseErr(ctxt, XML_ERR_PI_NOT_FINISHED,
++                         "PI: too long target\n", NULL, NULL);
++        }
++        if ((ctxt->input->cur < ctxt->input->end) && (RAW == '?')) {
++            ctxt->input->cur++;
++            if ((ctxt->input->cur < ctxt->input->end) && (RAW == '>')) {
++                ctxt->input->cur++;
++            }
++        }
++        ctxt->instate = state;
++        return;
++    }

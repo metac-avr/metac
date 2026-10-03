@@ -1,0 +1,36 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index b8b6bd23..c4fccf59 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3014 +3014,4 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
+-        if (err == 0)
++        if (err == 0) {
++            size_t max_len = (INPUT_END - (BASE_PTR + startPosition));
++            if (len > max_len)
++                len = max_len;
+@@ -3015,0 +3019 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
++        }
+@@ -3303 +3307 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	}
++        }
+@@ -3305 +3309,9 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	URI = htmlParseSystemLiteral(ctxt);
++	
++	/* Fix: Add bounds checking before calling htmlParseSystemLiteral */
++	if (ctxt->input->cur < ctxt->input->end) {
++	    URI = htmlParseSystemLiteral(ctxt);
++	} else {
++	    htmlParseErr(ctxt, XML_ERR_INVALID_URI,
++	                 "Invalid URI in SYSTEM literal\n", NULL, NULL);
++	    URI = NULL;
++	}
+@@ -3327 +3339,8 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	    URI = htmlParseSystemLiteral(ctxt);
++	    /* Fix: Add bounds checking before calling htmlParseSystemLiteral */
++	    if (ctxt->input->cur < ctxt->input->end) {
++	        URI = htmlParseSystemLiteral(ctxt);
++	    } else {
++	        htmlParseErr(ctxt, XML_ERR_INVALID_URI,
++	                     "Invalid URI in SYSTEM literal\n", NULL, NULL);
++	        URI = NULL;
++	    }

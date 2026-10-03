@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..0352ffe833b 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -195,2 +195,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+-		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
++		// Validate bucket before accessing to prevent use-after-free
++		if (EG(objects_store).object_buckets[handle] == object) {
++			EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
++		}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..a2e6c2e16f0 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2167 +2167,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++// FIXME: Crash CWE-416: Use After Free
++ 			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;

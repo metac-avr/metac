@@ -1,0 +1,40 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..fef7a40ad2b 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,5 +6769,0 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
+@@ -6778,0 +6774 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	zend_object *attr_obj;
+@@ -6783,0 +6780,10 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	attr_obj = Z_OBJ(obj);
++	if (attr_obj && attr_obj->ce) {
++		zend_string *class_name = attr_obj->ce->name;
++		if (class_name && !ZSTR_IS_INTERNED(class_name)) {
++			if (GC_DELREF(class_name) == 0) {
++				zend_string_release(class_name);
++			}
++		}
++	}
++	
+@@ -6790,2 +6796 @@ ZEND_METHOD(ReflectionEnum, __construct)
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++	if (EG(exception)) {		RETURN_THROWS();
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..2af10c36b2e 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1838,2 +1838,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
+-					if (EXPECTED(p->key)) {
++// FIXME: Crash CWE-416: Use After Free
++ 					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(p->key) && ZSTR_IS_VALID(p->key)) {
+@@ -1847 +1848 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						if (EXPECTED(p->key)) {
++						if (EXPECTED(p->key) && ZSTR_IS_VALID(p->key)) {

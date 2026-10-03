@@ -1,0 +1,38 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..246c7e37 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6835,2 +6835,7 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr ret = xmlSetNsProp(node, ns, localname, value);
++            /* Validate node is still accessible after property setting */
++            if (node == NULL || (node->type != XML_ELEMENT_NODE && node->type != XML_DOCUMENT_NODE))
++                return(NULL);
++            return(ret);
++        }
+@@ -6839 +6844,5 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr ret = xmlSetNsProp(node, NULL, name, value);
++    /* Validate node is still accessible after property setting */
++    if (node == NULL || (node->type != XML_ELEMENT_NODE && node->type != XML_DOCUMENT_NODE))
++        return(NULL);
++    return(ret);
+@@ -6904 +6913 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	return(prop);
++    return(prop);
+@@ -6907,3 +6916,6 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-    * No equal attr found; create a new one.
+-    */
+-    return(xmlNewPropInternal(node, ns, name, value, 0));
++     * No equal attr found; create a new one.
++     */
++    if (node != NULL && name != NULL) {
++        return(xmlNewPropInternal(node, ns, name, value, 0));
++    }
++    return(NULL);
+@@ -6914,2 +6926 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-/**
+- * xmlNodeIsText:
++/** * xmlNodeIsText:

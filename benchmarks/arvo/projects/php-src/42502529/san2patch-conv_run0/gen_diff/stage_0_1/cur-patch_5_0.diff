@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..a9aae29be20 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1830,0 +1831,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++		/* Validate bucket pointer before deletion */
++		if (UNEXPECTED((char*)p < (char*)HT_GET_DATA_ADDR(ht))) break;
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..508b30a66c8 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -67 +67,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
++	/* Prevent use-after-free by validating pointer before efree */
++	if (str) {
++		efree(str);
++	}
+@@ -77 +79,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

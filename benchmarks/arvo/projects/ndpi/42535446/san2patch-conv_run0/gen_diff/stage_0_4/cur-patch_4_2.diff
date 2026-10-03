@@ -1,0 +1,29 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..a7aef95d7 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1440,0 +1441,5 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
++  static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct, struct ndpi_flow_struct *flow)
++{
++  struct ndpi_packet_struct *packet = &flow->packet;
++  int filename_start;
++
+@@ -1469 +1474,8 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    process_request(ndpi_struct, flow, filename_start);
++    /* Check minimum packet length required for HTTP processing to prevent out-of-bounds access */
++    if(packet->payload_packet_len >= 4) {
++      process_request(ndpi_struct, flow, filename_start);
++    } else {
++      NDPI_LOG_DBG2(ndpi_struct, "Packet too short for HTTP processing\n");
++      NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++      return;
++    }
+@@ -1534,0 +1547 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
++}
+@@ -1547 +1560,5 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
+-  ndpi_check_http_tcp(ndpi_struct, flow);
++  
++  /* Check packet payload bounds to prevent out-of-bounds access */
++  if(flow->packet.payload_packet_len >= sizeof(uint32_t)) {
++    ndpi_check_http_tcp(ndpi_struct, flow);
++  }

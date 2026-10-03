@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_opcode.c b/Zend/zend_opcode.c
+index 38ba89db2ba..cf41d1f0685 100644
+--- a/Zend/zend_opcode.c
++++ b/Zend/zend_opcode.c
+@@ -791,0 +792,4 @@ static void emit_live_range(
++			if (block_start_op <= op_array->opcodes) {
++				return;
++			}
++
+@@ -793,0 +798,3 @@ static void emit_live_range(
++				if (block_start_op <= op_array->opcodes) {
++					break;
++				}
+@@ -803 +810,5 @@ static void emit_live_range(
+-				use_opline--;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 				use_opline--;
++				if (use_opline < op_array->opcodes) {
++					return;
++				}
+@@ -896 +907,2 @@ static void zend_calc_live_ranges(
+-					num = opnum - (opline->opcode == ZEND_OP_DATA);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 					num = opnum - (opline->opcode == ZEND_OP_DATA);
+@@ -898 +910,3 @@ static void zend_calc_live_ranges(
+-					emit_live_range(op_array, var_num, num, last_use[var_num], needs_live_range);
++					if (num < op_array->last && last_use[var_num] < op_array->last) {
++						emit_live_range(op_array, var_num, num, last_use[var_num], needs_live_range);
++					}

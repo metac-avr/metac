@@ -1,0 +1,32 @@
+diff --git a/valid.c b/valid.c
+index e11d2c95..c088d3aa 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364,11 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++// FIXME: Crash CWE-416: Use After Free
++             return(0);
++
++	/* Validate elem and its namespace before use */
++	if (elem != NULL) {
++	    if ((elem->ns != NULL) && 
++	        ((elem->ns->href == NULL) || (elem->ns->prefix == NULL))) {
++	        /* Clear invalid namespace reference */
++	        elem->ns = NULL;
++	    }
++	}
+@@ -2376 +2386 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..cfce62ee 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2263 +2263,2 @@ xmlSAX2StartElementNs(void *ctx,
+-    if (nodePush(ctxt, ret) < 0) {
++// FIXME: Crash CWE-416: Use After Free
++     if (nodePush(ctxt, ret) < 0) {
+@@ -2265,0 +2267 @@ xmlSAX2StartElementNs(void *ctx,
++        ctxt->node = NULL;  /* Clear context node to prevent dangling reference */
+@@ -2275 +2276,0 @@ xmlSAX2StartElementNs(void *ctx,
+-

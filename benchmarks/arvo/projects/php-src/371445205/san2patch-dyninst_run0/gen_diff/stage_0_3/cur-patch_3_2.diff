@@ -1,0 +1,29 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..1b9745ecfe1 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,5 +6770 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
++		}
+@@ -6777,0 +6774 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	// FIXME: Crash CWE-416: Use After Free
+@@ -6778,0 +6776 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	ZVAL_UNDEF(&obj); // Initialize zval to prevent use of uninitialized value
+@@ -6790,2 +6788 @@ ZEND_METHOD(ReflectionEnum, __construct)
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++	if (EG(exception)) {		RETURN_THROWS();
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..68c8f1157a1 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -362 +362,4 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-				efree(s);
++				/* Prevent use-after-free by checking if string is still referenced */
++				if (GC_REFCOUNT(s) == 0) {
++					efree(s);
++				}

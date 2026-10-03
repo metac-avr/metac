@@ -1,0 +1,33 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index 241329cd14af91295bfb27328efef48b9000e786..cf7a9e0a8fd3cd5b2734305b1fb091ca62965766 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -1352,8 +1352,15 @@ xmlSwitchInputEncoding(xmlParserCtxtPtr ctxt, xmlParserInputPtr input,
+      * Is there already some content down the pipe to convert ?
+      */
+     if (xmlBufIsEmpty(in->buffer) == 0) {
++        xmlBufPtr buf;
+         size_t processed;
+ 
++        buf = xmlBufCreate();
++        if (buf == NULL) {
++            xmlErrMemory(ctxt, NULL);
++            return(-1);
++        }
++
+         /*
+          * Shrink the current input buffer.
+          * Move it as the raw buffer and create a new input buffer
+@@ -1362,11 +1369,7 @@ xmlSwitchInputEncoding(xmlParserCtxtPtr ctxt, xmlParserInputPtr input,
+         xmlBufShrink(in->buffer, processed);
+         input->consumed += processed;
+         in->raw = in->buffer;
+-        in->buffer = xmlBufCreate();
+-        if (in->buffer == NULL) {
+-            xmlErrMemory(ctxt, NULL);
+-            return(-1);
+-        }
++        in->buffer = buf;
+         in->rawconsumed = processed;
+ 
+         nbchars = xmlCharEncInput(in);

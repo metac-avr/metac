@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_iterators.c b/Zend/zend_iterators.c
+index f67033b1116..c2779de59aa 100644
+--- a/Zend/zend_iterators.c
++++ b/Zend/zend_iterators.c
+@@ -56,7 +55,0 @@ static const zend_object_handlers iterator_object_handlers = {
+-
+-ZEND_API void zend_register_iterator_wrapper(void)
+-{
+-	INIT_CLASS_ENTRY(zend_iterator_class_entry, "__iterator_wrapper", NULL);
+-	zend_iterator_class_entry.default_object_handlers = &iterator_object_handlers;
+-}
+-
+@@ -64,10 +57,2 @@ static void iter_wrapper_free(zend_object *object)
+-{
+-	zend_object_iterator *iter = (zend_object_iterator*)object;
+-	iter->funcs->dtor(iter);
+-}
+-
+-static void iter_wrapper_dtor(zend_object *object)
+-{
+-}
+-
+-static HashTable *iter_wrapper_get_gc(zend_object *object, zval **table, int *n) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -75,2 +60,2 @@ static HashTable *iter_wrapper_get_gc(zend_object *object, zval **table, int *n)
+-	if (iter->funcs->get_gc) {
+-		return iter->funcs->get_gc(iter, table, n);
++	if (iter && iter->funcs) {
++		iter->funcs->dtor(iter);
+@@ -77,0 +63 @@ static HashTable *iter_wrapper_get_gc(zend_object *object, zval **table, int *n)
++}	}

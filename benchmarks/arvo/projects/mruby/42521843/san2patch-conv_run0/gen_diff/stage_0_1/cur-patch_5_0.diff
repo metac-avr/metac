@@ -1,0 +1,75 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..32c5a130e 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -148,0 +150,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  /* Validate table structure before accessing */
++  if (t->ptr == NULL) return 0;
+@@ -150,0 +154,4 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  
++  /* Validate memory access pattern */
++  if ((char*)keys <= (char*)vals) return 0;  /* Basic sanity check */
++  
+@@ -155 +162 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-  if (pos < t->alloc) {
++  if (pos < t->alloc && pos >= 0) {
+@@ -157,2 +164,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-    if (key) {
+-      if (MT_KEY_SYM(key) == sym) {
++    if (key != MT_EMPTY && MT_KEY_SYM(key) == sym) {
++      if (pp != NULL) {  /* Validate output parameter */
+@@ -166,0 +174 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (pos < 0 || pos >= t->alloc) return 0;  /* Bounds validation */
+@@ -169 +177,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      *pp = vals[pos];
++      if (pp != NULL) {  /* Validate pointer before use */
++        *pp = vals[pos];
+@@ -171,3 +180,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      if (pos < 0x100) {
+-        mt_cache[cpos] = pos;
+-      }
++        if (pos < 0x100) {
++          mt_cache[cpos] = pos;
++        }
+@@ -175 +184,4 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      return key;
++        return key;
++      } else {
++        return 0;
++      }
+diff --git a/src/vm.c b/src/vm.c
+index 6f6b9b001..7094ff817 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1763 +1763,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      recv = regs[0];
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       recv = regs[0];
++      /* Prevent expired pointer dereference by validating critical pointers */
++      if (mrb == NULL || ci == NULL) {
++        goto L_RAISE;
++      }
+@@ -1764,0 +1770,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      if (ci->u.target_class == NULL) {
++        goto L_RAISE;
++      }
+@@ -1777,0 +1786,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++          if (p == NULL) {
++            goto L_RAISE;
++          }
+@@ -1797,0 +1809,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++            if (proc == NULL || proc->body.irep == NULL) {
++              goto L_RAISE;
++            }
+@@ -1805,0 +1820,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        if (ci == NULL) {
++          goto L_RAISE;
++        }
+@@ -1810,0 +1828,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        if (proc == NULL || proc->body.irep == NULL) {
++          goto L_RAISE;
++        }

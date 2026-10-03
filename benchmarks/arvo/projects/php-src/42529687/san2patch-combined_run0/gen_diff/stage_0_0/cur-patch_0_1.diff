@@ -1,0 +1,60 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..219e775b681 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1368,9 +1368,2 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++static zend_always_inline uint32_t zval_delref_p(zval* pz)
++{
+@@ -1379,11 +1372 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-}
+-
+-#if SIZEOF_SIZE_T == 4
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++}#elif SIZEOF_SIZE_T == 8
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..eafaf9586c6 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -25,8 +24,0 @@
+-#include "zend_gc.h"
+-#include "zend_hash.h"
+-
+-BEGIN_EXTERN_C()
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p);
+-ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-
+@@ -35,8 +27 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
+-	}
+-}
+-
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+@@ -44 +29 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref) {
+@@ -46 +31,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		}
++	}
++}		} else {

@@ -1,0 +1,69 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..0eef4ca342d 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -755,0 +756,20 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
++static zend_never_inline zval *zend_fetch_dimension_address_read(zval *container, zval *dim, int type)
++{
++	zval *retval;
++	HashTable *ht;
++	zend_ulong hval = 0;
++	zend_string *offset_key = NULL;
++
++	if (UNEXPECTED(Z_TYPE_P(container) == IS_STRING)) {
++		if (Z_TYPE_P(dim) == IS_LONG) {
++			zend_long offset = Z_LVAL_P(dim);
++			if (UNEXPECTED(offset < 0 || offset >= (zend_long)Z_STRLEN_P(container))) {
++				if (type == BP_VAR_R || type == BP_VAR_RW) {
++					zend_throw_error(NULL, "Cannot access offset of type %s on string", zend_get_type_by_const(Z_TYPE_P(container)));
++				}
++				return NULL;
++			}
++			retval = zend_fetch_dimension_str_address_read(&Z_STR_P(container), offset);
++			ZVAL_STRINGL(retval, Z_STRVAL_P(container) + offset, 1);
++			return retval;
++		}
+@@ -758 +778,8 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	return zend_hash_lookup(ht, offset_key);
++	Z_TRY_ADDREF_P(dim);
++	retval = zend_hash_lookup(ht, offset_key);
++	if (UNEXPECTED(!retval)) {
++		zval_ptr_dtor(dim);
++		return NULL;
++	}
++	zval_ptr_dtor(dim);
++	return retval;
+@@ -766,0 +794,33 @@ static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int typ
++	if (UNEXPECTED(Z_TYPE_P(dim) == IS_STRING)) {
++		goto try_again;
++	}
++	try_again:
++		switch (Z_TYPE_P(dim)) {
++			case IS_UNDEF:
++			case IS_NULL:
++			case IS_FALSE:
++				return 0;
++			case IS_TRUE:
++				return 1;
++			case IS_RESOURCE:
++				if (EXPECTED(zend_check_resource(dim))) {
++					return Z_RES_HANDLE_P(dim);
++				}
++				break;
++			case IS_LONG:
++				return Z_LVAL_P(dim);
++			case IS_DOUBLE:
++				return zend_dval_to_lval_safe(Z_DVAL_P(dim));
++			case IS_STRING: {
++				zend_long value;
++				if (UNEXPECTED(!zend_string_numeric_ex(Z_STR_P(dim), &value, NULL, 0))) {
++					goto try_again;
++				}
++				return value;
++			}
++			case IS_ARRAY:
++			case IS_OBJECT:
++				break;
++		}
++		return zval_get_long_func(dim, /* is_strict */ false);
++}

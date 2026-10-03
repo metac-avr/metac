@@ -1,0 +1,17 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..6f70d6a22a 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -656 +656,2 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    }
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     }
+@@ -708,0 +710,8 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
++    /* Bounds checking to prevent out-of-bounds write */
++    if (dst_offset * pixel_size + h * frame->linesize[0] > frame->linesize[0] * frame->height ||
++        w * pixel_size > frame->linesize[0]) {
++        av_log(avctx, AV_LOG_ERROR, "Buffer overflow detected in DNG JPEG decoding\n");
++        av_frame_unref(s->jpgframe);
++        return AVERROR_INVALIDDATA;
++    }
++

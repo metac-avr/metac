@@ -1,0 +1,22 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..5ba77356b4 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -349,6 +348,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -357 +351,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -359 +354,3 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
++        void *temp_ptr = s->keyframedata;
++        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0) {
++            s->keyframedata = temp_ptr; // Restore original pointer on failure
+@@ -360,0 +358 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        }

@@ -1,0 +1,22 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..a2d1c8d80 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1097,2 +1097,4 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj != NULL && ((uintptr_t)obj & ~(sizeof(void*)-1)) != 0) {
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    }
+diff --git a/src/range.c b/src/range.c
+index fc126be80..1b0e9a499 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -397 +397,2 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      else {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       else {
+@@ -403,0 +405,2 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
++      /* Ensure array is properly marked before returning */
++      mrb_gc_protect(mrb, ary);

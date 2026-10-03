@@ -1,0 +1,49 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..2be614edaed 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -333,5 +332,0 @@ static zval* ZEND_FASTCALL zend_jit_symtable_lookup_w(HashTable *ht, zend_string
+-	} while (0);
+-
+-	return zend_hash_lookup(ht, str);
+-}
+-
+@@ -341,2 +336,9 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+-
++	// FIXME: Crash CWE-825: Expired Pointer Dereference
++	zend_string *cv;
++	
++	if (execute_data == NULL || EX(func) == NULL) {
++		zend_error(E_WARNING, "Undefined variable");
++		return EG(exception) == NULL;
++	}
++	
++	cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+@@ -345,10 +347 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-}
+-
+-static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint32_t var)
+-{
+-	const zend_execute_data *execute_data = EG(current_execute_data);
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+-
+-	/* The array may be destroyed while throwing the notice.
+-	 * Temporarily increase the refcount to detect this situation. */
+-	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
++}	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 46da1ebd21e..6e5143e8852 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1564,2 +1564,8 @@ static ZEND_COLD void get_filename_lineno(int type, zend_string **filename, uint
+-				*filename = zend_get_executed_filename_ex();
+-				*lineno = zend_get_executed_lineno();
++				zend_execute_data *exec_data = EG(current_execute_data);
++				if (exec_data != NULL && exec_data->func != NULL) {
++					*filename = zend_get_executed_filename_ex();
++					*lineno = zend_get_executed_lineno();
++				} else {
++					*filename = NULL;
++					*lineno = 0;
++				}

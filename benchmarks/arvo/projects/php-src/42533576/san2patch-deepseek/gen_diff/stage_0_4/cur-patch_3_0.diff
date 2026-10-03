@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index c07fdfe7acf..138fa5f71f7 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35,2 +36,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++	if (zval_ptr >= ZEND_VM_STACK_BOTTOM && zval_ptr < ZEND_VM_STACK_TOP) {
++		if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++			rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		}
+diff --git a/sapi/fuzzer/fuzzer-execute-common.h b/sapi/fuzzer/fuzzer-execute-common.h
+index 3ecd27d3fd9..a9f899ed188 100644
+--- a/sapi/fuzzer/fuzzer-execute-common.h
++++ b/sapi/fuzzer/fuzzer-execute-common.h
+@@ -56,0 +57,3 @@ static void fuzzer_execute_ex(zend_execute_data *execute_data) {
++		if (EG(current_execute_data) == NULL || execute_data == NULL) {
++			return;
++		}

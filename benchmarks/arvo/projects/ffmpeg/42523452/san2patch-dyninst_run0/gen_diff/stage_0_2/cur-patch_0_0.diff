@@ -1,0 +1,16 @@
+diff --git a/libavcodec/hevc_ps.c b/libavcodec/hevc_ps.c
+index 348e4d8de2..fa10d407b2 100644
+--- a/libavcodec/hevc_ps.c
++++ b/libavcodec/hevc_ps.c
+@@ -1558 +1558,2 @@ static inline int setup_pps(AVCodecContext *avctx, GetBitContext *gb,
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
+@@ -1570,2 +1571,5 @@ static inline int setup_pps(AVCodecContext *avctx, GetBitContext *gb,
+-    if (pps->uniform_spacing_flag) {
+-        if (!pps->column_width) {
++    // Validate array bounds to prevent buffer overflow
++    if (pps->num_tile_columns >= INT_MAX || pps->num_tile_rows >= INT_MAX || sps->ctb_width >= INT_MAX)
++        return AVERROR_INVALIDDATA;
++
++    if (pps->uniform_spacing_flag) {        if (!pps->column_width) {

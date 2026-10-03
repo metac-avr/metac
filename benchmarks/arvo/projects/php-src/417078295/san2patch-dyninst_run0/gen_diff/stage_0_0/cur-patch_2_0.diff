@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..5fee249022b 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40406,2 +40406,17 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
+-			ZVAL_REF(variable_ptr, Z_REF_P(value));
++			if (Z_REFCOUNTED_P(value) && Z_REF_P(value) != NULL) {
++				zend_object *obj = Z_REF_P(value)->val.value.obj;
++				if (obj != NULL && !(GC_FLAGS(obj) & IS_OBJ_DESTRUCTOR_CALLED)) {
++					Z_ADDREF_P(value);
++					ZVAL_REF(variable_ptr, Z_REF_P(value));
++				} else {
++					zend_reference *new_ref = (zend_reference*)emalloc(sizeof(zend_reference));
++					GC_SET_REFCOUNT(new_ref, 1);
++					GC_TYPE_INFO(new_ref) = GC_REFERENCE;
++					ZVAL_COPY(&new_ref->val, value);
++					new_ref->sources.ptr = NULL;
++					ZVAL_REF(variable_ptr, new_ref);
++				}
++			} else {
++				Z_ADDREF_P(value);
++				ZVAL_REF(variable_ptr, Z_REF_P(value));
++			}

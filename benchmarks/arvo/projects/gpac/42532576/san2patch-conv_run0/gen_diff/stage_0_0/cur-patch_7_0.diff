@@ -1,0 +1,43 @@
+diff --git a/src/media_tools/m3u8.c b/src/media_tools/m3u8.c
+index 5f570e30a..7cc0e95e8 100644
+--- a/src/media_tools/m3u8.c
++++ b/src/media_tools/m3u8.c
+@@ -333 +333 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			u32 spaces = 0;
++			s32 spaces = 0;
+@@ -338 +338 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			while (line[start+spaces] == ' ')
++			while ((start+spaces < len) && (line[start+spaces] == ' '))
+@@ -340 +340 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			if ((sz-spaces<=1) && (line[start+spaces]==',')) {
++			if ((sz-spaces<=1) && (start+spaces < len) && (line[start+spaces]==',')) {
+@@ -343 +343,2 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-				if (!strncmp(&line[start+spaces], "\t", sz-spaces) || !strncmp(&line[start+spaces], "\n", sz-spaces)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 				if ((start+spaces < len) && sz-spaces > 0 && (!strncmp(&line[start+spaces], "\t", sz-spaces) || !strncmp(&line[start+spaces], "\n", sz-spaces))) {
+@@ -346 +347,4 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-					strncpy(ret[curr_attribute], &(line[start+spaces]), sz-spaces);
++					if (sz-spaces > 0) {
++						strncpy(ret[curr_attribute], &(line[start+spaces]), sz-spaces);
++					}
++					ret[curr_attribute][sz-spaces] = '\0';
+@@ -722,3 +726,16 @@ static char** parse_attributes(const char *line, s_accumulated_attributes *attri
+-				attributes->name = gf_strdup(ret[i]+5+1);
+-				u32 len = (u32) strlen(attributes->name);
+-				if (len) attributes->name[len-1]=0;
++				char *name_attr = ret[i]+5+1;
++				if (name_attr && strlen(name_attr) > 0) {
++					// Check if the attribute value is properly bounded
++					char *end_quote = strchr(name_attr, '"');
++					if (end_quote) {
++						*end_quote = '\0'; // Temporarily null terminate
++						attributes->name = gf_strdup(name_attr);
++						*end_quote = '"'; // Restore quote
++					} else {
++						attributes->name = gf_strdup(name_attr);
++						u32 len = (u32) strlen(attributes->name);
++						if (len) attributes->name[len-1]=0;
++					}
++				} else {
++					attributes->name = gf_strdup("");
++				}

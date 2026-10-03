@@ -1,0 +1,25 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..ddd9230a 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2188,0 +2189 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    int list_freed = 0;
+@@ -2218,3 +2219,7 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		       "XInclude error: would result in multiple root nodes\n",
+-			   NULL);
+-            xmlFreeNodeList(list);
++// FIXME: Crash CWE-416: Use After Free
++ 		       "XInclude error: would result in multiple root nodes\n",
++		       NULL);
++            if (!list_freed && list != NULL) {
++                xmlFreeNodeList(list);
++                list_freed = 1;
++            }
+@@ -2257,2 +2262,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-			   "failed to build node\n", NULL);
+-            xmlFreeNodeList(list);
++		   "failed to build node\n", NULL);
++            if (!list_freed && list != NULL) {
++                xmlFreeNodeList(list);
++                list_freed = 1;
++            }

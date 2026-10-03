@@ -1,0 +1,33 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..3791493857b 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2140,4 +2140,4 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-						}
+-						break;
+-					default:
+-						break;
++					}
++					break;
++				default:
++					break;
+@@ -2147,0 +2148 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -2149,3 +2150,10 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-		quit_loop_3:
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-			tptr += (bptr - hunk_begin);
++			if (bptr < hunk_begin) {
++				goto quit_loop_2;
++			}
++			size_t copy_len = (size_t)(bptr - hunk_begin);
++			if (copy_len > (size_t)(buf_end - tptr)) {
++				goto quit_loop_2;
++			}
++	quit_loop_3:
++			memcpy(tptr, hunk_begin, copy_len);
++			tptr += copy_len;
+@@ -2160,2 +2168 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-				switch (inc_len) {
+-					case 0:
++				switch (inc_len) {					case 0:

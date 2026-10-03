@@ -1,0 +1,22 @@
+diff --git a/libavcodec/hevc_ps.c b/libavcodec/hevc_ps.c
+index 348e4d8de2..dd83aab00f 100644
+--- a/libavcodec/hevc_ps.c
++++ b/libavcodec/hevc_ps.c
+@@ -1363 +1363,5 @@ static void colour_mapping_table(GetBitContext *gb, HEVCPPS *pps)
+-    pps->num_cm_ref_layers_minus1 = get_ue_golomb_long(gb);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     pps->num_cm_ref_layers_minus1 = get_ue_golomb_long(gb);
++    if (pps->num_cm_ref_layers_minus1 > sizeof(pps->cm_ref_layer_id) / sizeof(pps->cm_ref_layer_id[0]) - 1) {
++        pps->num_cm_ref_layers_minus1 = sizeof(pps->cm_ref_layer_id) / sizeof(pps->cm_ref_layer_id[0]) - 1;
++    }
+@@ -1697 +1701,2 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
+-    AVBufferRef *pps_buf;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     AVBufferRef *pps_buf;
+@@ -1702,0 +1708,4 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
++    // Initialize critical fields to safe defaults to prevent uninitialized access
++    pps->num_cm_ref_layers_minus1 = 0;
++    pps->colour_mapping_table_present_flag = 0;
++
+@@ -1709 +1717,0 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
+-

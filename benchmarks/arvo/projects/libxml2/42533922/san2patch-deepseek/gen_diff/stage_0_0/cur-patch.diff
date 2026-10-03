@@ -1,0 +1,26 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..37ff2568 100644
+--- a/tree.c
++++ b/tree.c
+@@ -8733 +8733,2 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-		* Acquire a normalized ns-decl and add it to the map.
++// FIXME: Crash CWE-416: Use After Free
++ 		* Acquire a normalized ns-decl and add it to the map.
+@@ -8735,7 +8736,10 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-		if (xmlDOMWrapNSNormAcquireNormalizedNs(doc, curElem,
+-			cur->ns, &ns,
+-			&nsMap, depth,
+-			ancestorsOnly,
+-			(cur->type == XML_ATTRIBUTE_NODE) ? 1 : 0) == -1)
+-		    ret = -1;
+-		cur->ns = ns;
++		if ((cur->ns != NULL) &&
++		    (xmlGetNsList(doc, curElem) != NULL)) {
++		    if (xmlDOMWrapNSNormAcquireNormalizedNs(doc, curElem,
++			    cur->ns, &ns,
++			    &nsMap, depth,
++			    ancestorsOnly,
++			    (cur->type == XML_ATTRIBUTE_NODE) ? 1 : 0) == -1)
++			ret = -1;
++		    cur->ns = ns;
++		}

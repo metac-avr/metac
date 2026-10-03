@@ -1,0 +1,17 @@
+diff --git a/tree.c b/tree.c
+index a93f2e31..423f91ec 100644
+--- a/tree.c
++++ b/tree.c
+@@ -616,0 +617 @@ xmlFreeNsList(xmlNs *cur) {
++        memset(cur, 0, sizeof(xmlNs));  /* Zero out freed memory to prevent use-after-free */
+@@ -3453,3 +3454,7 @@ xmlFreeNode(xmlNode *cur) {
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
+-            xmlFreeNsList(cur->nsDef);
++             xmlFreePropList(cur->properties);
++        if (cur->nsDef != NULL) {
++            /* Fix use-after-free: nullify pointer before freeing namespace list */
++            xmlNsPtr ns_list = cur->nsDef;
++            cur->nsDef = NULL;
++            xmlFreeNsList(ns_list);
++        }

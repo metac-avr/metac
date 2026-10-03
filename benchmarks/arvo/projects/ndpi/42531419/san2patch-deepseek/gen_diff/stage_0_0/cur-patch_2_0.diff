@@ -1,0 +1,15 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 0b8674f38..5a81205e9 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -1379 +1379,9 @@ void process_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-  packet->payload_packet_len = crypto_data_len;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   packet->payload_packet_len = crypto_data_len;
++
++  if(crypto_data_len < 2 || packet->payload == NULL) {
++    NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++    packet->payload = p;
++    packet->payload_packet_len = p_len;
++    return;
++  }

@@ -1,0 +1,45 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..56f5add63 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -334 +334 @@ mrb_vm_ci_env_clear(mrb_state *mrb, mrb_callinfo *ci)
+-static inline mrb_callinfo*
++    static inline mrb_callinfo*
+@@ -365,0 +366 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++
+@@ -2702,16 +2703,11 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      NEXT;
+-    }
+-    CASE(OP_ARRAY2, BBB) {
+-      regs[a] = ary_new_from_regs(mrb, c, b);
+-      mrb_gc_arena_restore(mrb, ai);
+-      NEXT;
+-    }
+-
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
+-      if (mrb_nil_p(regs[a])) {
+-        regs[a] = splat;
+-      }
+-      else {
+-        mrb_assert(mrb_array_p(regs[a]));
+-        mrb_ary_concat(mrb, regs[a], splat);
++      CASE(OP_ARYCAT, B) {
++        mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
++        if (mrb_nil_p(regs[a])) {
++          regs[a] = splat;
++        }
++        else {
++          mrb_assert(mrb_array_p(regs[a]));
++          mrb_ary_concat(mrb, regs[a], splat);
++        }
++        mrb_gc_arena_restore(mrb, ai);
++        NEXT;
+@@ -2719,3 +2715,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      mrb_gc_arena_restore(mrb, ai);
+-      NEXT;
+-    }
++
++      // The original NEXT continues execution. Do not insert new statements after
++      // NEXT because the dispatch table labels following this macro may depend on
++      // the exact next token.

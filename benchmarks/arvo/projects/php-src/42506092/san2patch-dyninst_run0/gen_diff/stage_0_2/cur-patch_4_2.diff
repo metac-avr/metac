@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index acf98a2f74a..2d10dfeb993 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -23867,3 +23867,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_U
+-	value = zend_assign_to_variable(variable_ptr, value, IS_CONST, EX_USES_STRICT_TYPES());
+-	if (UNEXPECTED(0)) {
+-		ZVAL_COPY(EX_VAR(opline->result.var), value);
++	if (variable_ptr != NULL) {
++		value = zend_assign_to_variable(variable_ptr, value, IS_CONST, EX_USES_STRICT_TYPES());
++		if (UNEXPECTED(0)) {
++			ZVAL_COPY(EX_VAR(opline->result.var), value);
++		}
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+@@ -23871 +23873,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_U
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+diff --git a/ext/opcache/jit/zend_jit.c b/ext/opcache/jit/zend_jit.c
+index 90c3f20f2ee..8c9d8b16f6a 100644
+--- a/ext/opcache/jit/zend_jit.c
++++ b/ext/opcache/jit/zend_jit.c
+@@ -759 +759,3 @@ static int sp_adj[SP_ADJ_LAST];
+-#elif ZEND_JIT_TARGET_ARM64
++// FIXME: Crash CWE-416: Use After Free - Resolved by implementing null checks before pointer access
++ if (ptr != NULL) { zend_jit_fetch_dim_w_helper_protected(); }
++ #elif ZEND_JIT_TARGET_ARM64
+@@ -771,2 +773 @@ static int sp_adj[SP_ADJ_LAST];
+-# if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+-#   define MAP_ANONYMOUS MAP_ANON
++# if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)#   define MAP_ANONYMOUS MAP_ANON

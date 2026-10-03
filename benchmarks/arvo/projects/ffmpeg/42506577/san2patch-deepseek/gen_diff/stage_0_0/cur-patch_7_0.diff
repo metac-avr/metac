@@ -1,0 +1,18 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..188d1a482e 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -2561,2 +2561,7 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
+-                s->progressive && s->cur_scan && s->got_picture)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
++                s->progressive && s->cur_scan && s->got_picture &&
++                s->picture_ptr->data[0] &&
++                s->picture_ptr->linesize[0] > 0 &&
++                s->picture_ptr->linesize[0] >= s->width &&
++                s->picture_ptr->linesize[0] >= (s->width + 7))
+@@ -2573,2 +2578 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-                if (s->bottom_field == !s->interlace_polarity)
+-                    break;
++                if (s->bottom_field == !s->interlace_polarity)                    break;

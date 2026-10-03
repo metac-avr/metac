@@ -1,0 +1,39 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 42d0fa67d..4ca64f071 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -3247 +3247,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  p = hostname;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   p = hostname;
+@@ -3249,2 +3250,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  while (p[idx] && (idx < len)) {
+-    if(*p == '.') {
++  while ((idx < len) && p[idx] != '\0') {
++    if(p[idx] == '.') {
+@@ -3261 +3262 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-    if(!(isalnum((unsigned char)*p) || *p == '-'))
++    if(!(isalnum((unsigned char)p[idx]) || p[idx] == '-'))
+@@ -3266 +3267 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-      if(!isalnum((unsigned char)*p))
++      if(!isalnum((unsigned char)p[idx]))
+@@ -3278,2 +3279,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  if(label_len == 0)
+-    return(false); /* Ends with a dot */
++  if(idx == 0 || label_len == 0)
++    return(false); /* Ends with a dot or empty */
+@@ -3281 +3282 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  if(!isalnum(p[idx-1]))
++  if(!isalnum((unsigned char)p[idx-1]))
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 535a0c5bd..35092fd88 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1752 +1752,2 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    process_request(ndpi_struct, flow, filename_start);
++    if(filename_start < packet->payload_len)
++      process_request(ndpi_struct, flow, filename_start);
+@@ -1775 +1776,2 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-        process_request(ndpi_struct, flow, filename_start);
++        if(filename_start < packet->payload_len)
++          process_request(ndpi_struct, flow, filename_start);

@@ -1,0 +1,44 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..d3e954f2bc5 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -880,11 +880,12 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				(zend_jit_op_array_trace_extension*)ZEND_FUNC_INFO(op_array);
+-			if (UNEXPECTED(!jit_extension)
+-			 || UNEXPECTED(!(jit_extension->func_info.flags & ZEND_FUNC_JIT_ON_HOT_TRACE))) {
+-				stop = ZEND_JIT_TRACE_STOP_INTERPRETER;
+-				break;
+-			}
+-			offset = jit_extension->offset;
+-			if (!op_array->function_name
+-			 || (op_array->fn_flags & ZEND_ACC_CLOSURE)) {
+-				op_array = jit_extension->op_array;
+-			}
++                                (zend_jit_op_array_trace_extension*)ZEND_FUNC_INFO(op_array);
++                        if (UNEXPECTED(!jit_extension)
++                         || UNEXPECTED(!(jit_extension->func_info.flags & ZEND_FUNC_JIT_ON_HOT_TRACE))) {
++                                stop = ZEND_JIT_TRACE_STOP_INTERPRETER;
++                                break;
++                        }
++                        offset = jit_extension->offset;
++                        if (!op_array->function_name
++ /* Fixed UAF: Validate pointer before dereference */
++                         || (op_array->fn_flags & ZEND_ACC_CLOSURE && jit_extension->op_array)) {
++                                op_array = jit_extension->op_array;
++                        }
+@@ -893 +894 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			if (execute_data->prev_execute_data == prev_execute_data) {
++                        if (execute_data->prev_execute_data == prev_execute_data) {
+@@ -895,3 +896,3 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			if (rc == 0) {
+-				/* pass */
+-			} else if (rc == 1) {
++                        if (rc == 0) {
++                                /* pass */
++                        } else if (rc == 1) {
+@@ -899,3 +900,2 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				/* Enter into function */
+-				prev_call = NULL;
+-				if (level > ZEND_JIT_TRACE_MAX_CALL_DEPTH) {
++                                /* Enter into function */
++                                prev_call = NULL;				if (level > ZEND_JIT_TRACE_MAX_CALL_DEPTH) {

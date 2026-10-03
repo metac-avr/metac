@@ -1,0 +1,43 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..6a9c9cff7 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348,9 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
++    {
++      mrb_callinfo *new_cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++      if (new_cibase == NULL) {
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++      }
++      c->cibase = new_cibase;
+@@ -350 +357,0 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
+@@ -2702,8 +2708,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      NEXT;
+-    }
+-    CASE(OP_ARRAY2, BBB) {
+-      regs[a] = ary_new_from_regs(mrb, c, b);
+-      mrb_gc_arena_restore(mrb, ai);
+-      NEXT;
+-    }
+-
+@@ -2712,2 +2711,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      if (mrb_nil_p(regs[a])) {
+-        regs[a] = splat;
++      mrb_value *fresh_regs;
++      fresh_regs = mrb->c->stack;
++      if (mrb_nil_p(fresh_regs[a])) {
++        fresh_regs[a] = splat;
+@@ -2716,2 +2717,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-        mrb_assert(mrb_array_p(regs[a]));
+-        mrb_ary_concat(mrb, regs[a], splat);
++        mrb_assert(mrb_array_p(fresh_regs[a]));
++        mrb_ary_concat(mrb, fresh_regs[a], splat);
+@@ -2721,3 +2722 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    }
+-
+-    CASE(OP_ARYPUSH, BB) {
++    }    CASE(OP_ARYPUSH, BB) {

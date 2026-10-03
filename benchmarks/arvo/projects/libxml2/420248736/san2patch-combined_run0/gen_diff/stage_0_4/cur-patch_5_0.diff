@@ -1,0 +1,36 @@
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..2c480a11 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1067,6 +1067,9 @@ xmlFreeElement(xmlElementPtr elem) {
+-    xmlUnlinkNode((xmlNodePtr) elem);
+-    xmlFreeDocElementContent(elem->doc, elem->content);
+-    if (elem->name != NULL)
+-	xmlFree((xmlChar *) elem->name);
+-    if (elem->prefix != NULL)
+-	xmlFree((xmlChar *) elem->prefix);
++    /* Prevent double-free by marking element as freed */
++    if (!((unsigned long)elem & 0x1)) {
++        *(unsigned long*)&elem = (unsigned long)elem | 0x1;
++        xmlUnlinkNode((xmlNodePtr) elem);
++        xmlFreeDocElementContent(elem->doc, elem->content);
++        if (elem->name != NULL)
++	    xmlFree((xmlChar *) elem->name);
++        if (elem->prefix != NULL)
++	    xmlFree((xmlChar *) elem->prefix);
+@@ -1074,2 +1077,2 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem->contModel != NULL)
+-	xmlRegFreeRegexp(elem->contModel);
++        if (elem->contModel != NULL)
++	    xmlRegFreeRegexp(elem->contModel);
+@@ -1077 +1080,2 @@ xmlFreeElement(xmlElementPtr elem) {
+-    xmlFree(elem);
++        xmlFree(elem);
++    }
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4..29446755 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -667 +667 @@ dropNode(xmlNodePtr node) {
+-        if (nodeGetTree(other) == tree)
++        if (tree != NULL && nodeGetTree(other) == tree)

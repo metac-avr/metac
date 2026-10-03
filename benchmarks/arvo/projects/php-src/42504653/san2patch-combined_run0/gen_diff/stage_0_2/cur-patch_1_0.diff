@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..310770fe649 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *temp_ptr = EX_VAR(opline->op2.var);
++		if (temp_ptr) {
++			if (Z_TYPE_P(temp_ptr) != IS_UNDEF) {
++				zval_ptr_dtor_nogc(temp_ptr);
++			}
++			ZVAL_UNDEF(temp_ptr);
++		}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..c68613652b2 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1184,0 +1186 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (UNEXPECTED(GC_FLAGS(p) & GC_PURGED)) return 0;  // Check if memory was already purged
+@@ -1193 +1194,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-

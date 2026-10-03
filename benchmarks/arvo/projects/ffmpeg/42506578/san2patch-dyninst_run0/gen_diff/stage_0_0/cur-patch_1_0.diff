@@ -1,0 +1,48 @@
+diff --git a/libavutil/frame.c b/libavutil/frame.c
+index 0912ad9131..0d6a3390cd 100644
+--- a/libavutil/frame.c
++++ b/libavutil/frame.c
+@@ -443 +443 @@ void av_frame_unref(AVFrame *frame)
+-
++ 
+@@ -445 +445,4 @@ void av_frame_unref(AVFrame *frame)
+-        av_buffer_unref(&frame->buf[i]);
++        if (frame->buf[i] && av_buffer_is_writable(frame->buf[i]))
++            av_buffer_unref(&frame->buf[i]);
++        else
++            frame->buf[i] = NULL;
+@@ -447 +450,4 @@ void av_frame_unref(AVFrame *frame)
+-        av_buffer_unref(&frame->extended_buf[i]);
++        if (frame->extended_buf[i] && av_buffer_is_writable(frame->extended_buf[i]))
++            av_buffer_unref(&frame->extended_buf[i]);
++        else
++            frame->extended_buf[i] = NULL;
+@@ -451,4 +457,13 @@ void av_frame_unref(AVFrame *frame)
+-    av_buffer_unref(&frame->hw_frames_ctx);
+-
+-    av_buffer_unref(&frame->opaque_ref);
+-    av_buffer_unref(&frame->private_ref);
++    if (frame->hw_frames_ctx && av_buffer_is_writable(frame->hw_frames_ctx))
++        av_buffer_unref(&frame->hw_frames_ctx);
++    else
++        frame->hw_frames_ctx = NULL;
++
++    if (frame->opaque_ref && av_buffer_is_writable(frame->opaque_ref))
++        av_buffer_unref(&frame->opaque_ref);
++    else
++        frame->opaque_ref = NULL;
++    if (frame->private_ref && av_buffer_is_writable(frame->private_ref))
++        av_buffer_unref(&frame->private_ref);
++    else
++        frame->private_ref = NULL;
+diff --git a/libavutil/mem.c b/libavutil/mem.c
+index 194d880587..740491e1e7 100644
+--- a/libavutil/mem.c
++++ b/libavutil/mem.c
+@@ -248 +248,2 @@ void av_free(void *ptr)
+-    _aligned_free(ptr);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++    if (ptr != NULL) _aligned_free(ptr);
+@@ -250 +251 @@ void av_free(void *ptr)
+-    free(ptr);
++    if (ptr != NULL) free(ptr);

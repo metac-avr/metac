@@ -1,0 +1,45 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..58627f598d 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -785,0 +786,10 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
++    // Add bounds checking to prevent out-of-bounds write
++    if (dist->alphabet_size <= 0 || dist->alphabet_size > 32768)
++        return AVERROR_INVALIDDATA;
++    
++    // Validate that level2_codecounts will not cause negative indices
++    for (int i = 0; i < 16; i++) {
++        if (level2_codecounts[i] < 0)
++            return AVERROR_INVALIDDATA;
++    }
++
+@@ -786,0 +797,4 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
++        if (level2_lens[i] < 0 || level2_lens[i] >= 16)
++            return AVERROR_INVALIDDATA;
++        if (level2_codecounts[level2_lens[i]] <= 0)
++            return AVERROR_INVALIDDATA;
+@@ -787,0 +802,2 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
++        if (idx < 0 || idx >= 32768)
++            return AVERROR_INVALIDDATA;
+@@ -798 +813,0 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
+-
+@@ -850,0 +866,2 @@ static int read_distribution_bundle(GetBitContext *gb, JXLEntropyDecoder *dec,
++        if (!bundle->dists || bundle->num_clusters <= 0)
++            return AVERROR_INVALIDDATA;
+@@ -860 +877,3 @@ static int read_distribution_bundle(GetBitContext *gb, JXLEntropyDecoder *dec,
+-        }
++            if (dist->log_alphabet_size < 0 || dist->alphabet_size <= 0)
++                return AVERROR_INVALIDDATA;
++         }
+@@ -861,0 +881,2 @@ static int read_distribution_bundle(GetBitContext *gb, JXLEntropyDecoder *dec,
++            if (i >= bundle->num_clusters)
++                return AVERROR_INVALIDDATA;
+@@ -868,0 +890,2 @@ static int read_distribution_bundle(GetBitContext *gb, JXLEntropyDecoder *dec,
++        if (!bundle->dists || bundle->num_clusters <= 0)
++            return AVERROR_INVALIDDATA;
+@@ -869,0 +893,2 @@ static int read_distribution_bundle(GetBitContext *gb, JXLEntropyDecoder *dec,
++            if (i >= bundle->num_clusters)
++                return AVERROR_INVALIDDATA;
+@@ -876,0 +902,2 @@ static int read_distribution_bundle(GetBitContext *gb, JXLEntropyDecoder *dec,
++            if (i >= bundle->num_clusters)
++                return AVERROR_INVALIDDATA;

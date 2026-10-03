@@ -1,0 +1,25 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..a9e78ba2c 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1040 +1040 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
++	char *double_dot = (char*)memchr(content, ':', content_len);
+@@ -1043,3 +1043,14 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	  double_dot[0] = '\0';
+-	  flow->http.username = ndpi_strdup((char*)content);
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
++	  size_t username_len = (size_t)(double_dot - (char*)content);
++	  char *username = (char*)ndpi_malloc(username_len + 1);
++	  char *password = (char*)ndpi_malloc(content_len - username_len);
++
++	  if(username != NULL) {
++	    memcpy(username, content, username_len);
++	    username[username_len] = '\0';
++	    flow->http.username = username;
++	  }
++	  if(password != NULL) {
++	    memcpy(password, double_dot + 1, content_len - username_len - 1);
++	    password[content_len - username_len - 1] = '\0';
++	    flow->http.password = password;
++	  }

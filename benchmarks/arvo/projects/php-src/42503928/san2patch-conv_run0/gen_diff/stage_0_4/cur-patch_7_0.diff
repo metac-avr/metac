@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..a6f8d7d08aa 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -195,0 +196,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		
++		/* Clear object reference before any potential free operations */
++		zend_object *old_object = EG(objects_store).object_buckets[handle];
+@@ -196,0 +200,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		
++		/* Remove from GC buffer immediately after clearing reference */
++		GC_REMOVE_FROM_BUFFER(old_object);
++		
+@@ -203 +209,0 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		GC_REMOVE_FROM_BUFFER(object);
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..dd112a7c90c 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,0 +57,8 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	/* Validate object is not already freed before accessing */
++	if (GC_TYPE(p) == IS_OBJECT) {
++		zend_object *obj = (zend_object*)p;
++		/* Check if object memory is valid before proceeding */
++		if (UNEXPECTED((zend_uintptr_t)obj < 0x1000)) {
++			return; /* Invalid pointer - likely already freed */
++		}
++	}

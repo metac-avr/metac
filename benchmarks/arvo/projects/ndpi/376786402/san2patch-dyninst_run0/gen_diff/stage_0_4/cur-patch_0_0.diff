@@ -1,0 +1,28 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..3ead6ec63 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -956 +956 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++ 
+@@ -958 +958 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-  pos = out = ndpi_malloc(olen);
++  pos = out = ndpi_malloc(olen + 1); // Allocate extra byte for null termination
+@@ -992,0 +993 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++  *pos = '\0'; // Null terminate the buffer
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..a39ede84d 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1038,3 +1038,8 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+-      if(content != NULL) {
+-	char *double_dot = strchr((char*)content, ':');
++ 
++      if(content != NULL && content_len > 0) {
++	char *double_dot = NULL;
++	/* Ensure null termination for string operations */
++	if(content_len < packet->authorization_line.len - len) {
++	  content[content_len] = '\0';
++	  double_dot = strchr((char*)content, ':');
++	}

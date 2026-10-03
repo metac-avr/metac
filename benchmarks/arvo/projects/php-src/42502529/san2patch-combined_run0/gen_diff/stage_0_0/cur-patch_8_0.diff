@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..52ef94aab9f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1374 +1374 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}
+@@ -1377 +1377,4 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	_zend_hash_del_el_ex(ht, idx, p, prev);
++	/* Add validation to prevent use-after-free during hash table deletion */
++	if (p && !((Z_TYPE_INFO(p->val) & Z_TYPE_MASK) == IS_UNDEF)) {
++		_zend_hash_del_el_ex(ht, idx, p, prev);
++	}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..c56829bdfd4 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -249,0 +250 @@ void shutdown_destructors(void) /* {{{ */
++		zend_objects_store_call_destructors(&EG(objects_store));
+@@ -254 +254,0 @@ void shutdown_destructors(void) /* {{{ */
+-		zend_objects_store_call_destructors(&EG(objects_store));

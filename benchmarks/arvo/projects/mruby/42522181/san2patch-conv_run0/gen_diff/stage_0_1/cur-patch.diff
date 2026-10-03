@@ -1,0 +1,51 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..5e91caea4 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1229,25 +1229,4 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-  switch (gc->state) {
+-  case MRB_GC_STATE_ROOT:
+-    root_scan_phase(mrb, gc);
+-    gc->state = MRB_GC_STATE_MARK;
+-    flip_white_part(gc);
+-    return 0;
+-  case MRB_GC_STATE_MARK:
+-    if (gc->gray_list) {
+-      return incremental_marking_phase(mrb, gc, limit);
+-    }
+-    else {
+-      final_marking_phase(mrb, gc);
+-      prepare_incremental_sweep(mrb, gc);
+-      return 0;
+-    }
+-  case MRB_GC_STATE_SWEEP: {
+-     size_t tried_sweep = 0;
+-     tried_sweep = incremental_sweep_phase(mrb, gc, limit);
+-     if (tried_sweep == 0)
+-       gc->state = MRB_GC_STATE_ROOT;
+-     return tried_sweep;
+-  }
+-  default:
+-    /* unknown state */
+-    mrb_assert(0);
++  static int
++iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++{
++  if (!mrb_nil_p(v) && mrb_obj_is_dead(mrb, v)) {
+@@ -1255,0 +1235,3 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
++  mrb_gc_mark_value(mrb, v);
++  return 0;
++}
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..45ed04268 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -238 +238,2 @@ static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+@@ -240 +241,3 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (mrb_obj_is_alive(mrb, v)) {
++    mrb_gc_mark_value(mrb, v);
++  }

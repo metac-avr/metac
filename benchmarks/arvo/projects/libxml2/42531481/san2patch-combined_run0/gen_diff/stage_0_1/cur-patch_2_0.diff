@@ -1,0 +1,80 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..a7a292b1 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++        /* Prevent UAF by validating namespace pointer before access */
++        xmlNsPtr ns = NULL;
+@@ -4272,13 +4273,15 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree.
+-             *
+-             * TODO: Searching the original tree seems unnecessary. We
+-             * already have a namespace URI.
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
++        /* Check if node->ns points to valid memory before dereferencing */
++        if (node->ns != NULL) {
++            ns = xmlSearchNs(doc, ret, node->ns->prefix);
++            if (ns == NULL) {
++                /*
++                 * Humm, we are copying an element whose namespace is defined
++                 * out of the new tree scope. Search it in the original tree
++                 * and add it at the top of the new tree.
++                 *
++                 * TODO: Searching the original tree seems unnecessary. We
++                 * already have a namespace URI.
++                 */
++                ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++                if (ns != NULL) {
++                    xmlNodePtr root = ret;
+@@ -4286,2 +4289,7 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                    while (root->parent != NULL) root = root->parent;
++                    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                } else {
++                    ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++                }
++                if (ret->ns == NULL)
++                    goto error;
+@@ -4289,10 +4297,7 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-                ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
+-	    }
+-            if (ret->ns == NULL)
+-                goto error;
+-	} else {
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
+-	}
++                /*
++                 * reference the existing namespace definition in our own tree.
++                 */
++                ret->ns = ns;
++            }
++        }
++        /* Skip namespace processing if node->ns is invalid */
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..8e59e156 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346 +1346,9 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++		/* Check if node has valid namespace before freeing */
++		if (tmp->ns != NULL) {
++		    /* Validate namespace pointer */
++		    if (tmp->ns->type != XML_LOCAL_NAMESPACE && 
++		        tmp->ns->type != XML_GLOBAL_NAMESPACE) {
++		        tmp->ns = NULL; /* Clear invalid reference */
++		    }
++		}

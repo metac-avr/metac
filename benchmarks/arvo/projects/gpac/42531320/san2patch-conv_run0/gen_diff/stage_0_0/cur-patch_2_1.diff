@@ -1,0 +1,66 @@
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..e3150d0e7 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -534,2 +534 @@ static u32 bits_mask[] = {0x0, 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, 0x7F};
+-GF_EXPORT
+-u8 gf_bs_read_bit(GF_BitStream *bs)
++static void dump_mdcv(FILE *dump, GF_BitStream *bs, Bool isMPEG)
+@@ -537,11 +536,16 @@ u8 gf_bs_read_bit(GF_BitStream *bs)
+-	if (bs->nbBits == 8) {
+-		bs->current = BS_ReadByte(bs);
+-		bs->nbBits = 0;
+-	}
+-#ifdef NO_OPTS
+-	{
+-		s32 ret;
+-		bs->current <<= 1;
+-		bs->nbBits++;
+-		ret = (bs->current & 0x100) >> 8;
+-		return (u8) ret;
++	u8 c;
++	u16 display_primaries_x[3];
++	u16 display_primaries_y[3];
++	u16 white_point_x;
++	u16 white_point_y;
++	u32 max_display_mastering_luminance;
++	u32 min_display_mastering_luminance;
++	
++	if (!bs) return;
++	
++	// Check if we have enough bytes available (24 bytes needed total)
++	if (bs->size < 24 || bs->position > bs->size - 24) return;
++	
++	for(c=0;c<3;c++) {
++		display_primaries_x[c] = gf_bs_read_int(bs, 16);
++		display_primaries_y[c] = gf_bs_read_int(bs, 16);
+@@ -549,3 +553,15 @@ u8 gf_bs_read_bit(GF_BitStream *bs)
+-#else
+-	return (u8) (bs->current & bit_mask[bs->nbBits++]) ? 1 : 0;
+-#endif
++	white_point_x = gf_bs_read_int(bs, 16);
++	white_point_y = gf_bs_read_int(bs, 16);
++	max_display_mastering_luminance = gf_bs_read_int(bs, 32);
++	min_display_mastering_luminance = gf_bs_read_int(bs, 32);
++	inspect_printf(dump, " display_primaries_x=\"%.04f %.04f %.04f\" display_primaries_y=\"%.04f %.04f %.04f\" white_point_x=\"%.04f\" white_point_y=\"%.04f\" max_display_mastering_luminance=\"%.04f\" min_display_mastering_luminance=\"%.04f\"",
++			   display_primaries_x[0]*1.0/(isMPEG?50000:65536),
++			   display_primaries_x[1]*1.0/(isMPEG?50000:65536),
++			   display_primaries_x[2]*1.0/(isMPEG?50000:65536),
++			   display_primaries_y[0]*1.0/(isMPEG?50000:65536),
++			   display_primaries_y[1]*1.0/(isMPEG?50000:65536),
++			   display_primaries_y[2]*1.0/(isMPEG?50000:65536),
++			   white_point_x*1.0/(isMPEG?50000:65536),
++			   white_point_y*1.0/(isMPEG?50000:65536),
++			   max_display_mastering_luminance*1.0/(isMPEG?10000:256),
++			   min_display_mastering_luminance*1.0/(isMPEG?10000:(1<<14)));
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..3949359e6 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -480,0 +481,6 @@ static void dump_mdcv(FILE *dump, GF_BitStream *bs, Bool isMPEG)
++	
++	if (!bs) return;
++	
++	// Check if we have enough bytes available (24 bytes needed total)
++	if (gf_bs_bytes_available(bs) < 24) return;
++	

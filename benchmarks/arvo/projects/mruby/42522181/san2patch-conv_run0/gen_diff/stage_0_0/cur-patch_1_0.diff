@@ -1,0 +1,30 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..efd4b6c12 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -238 +238,2 @@ static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++// FIXME: Crash CWE-416: Use After Free
++ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+@@ -239,0 +241,2 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++  if (mrb_immediate_p(v)) return 0;
++  if (!mrb_obj_ptr(v)) return 0;
+@@ -246,0 +250 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
++  if (!t) return;
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..0ae4706a3 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1203,3 +1203,9 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Delay freeing pages that might still be accessed during marking phase */
++      if (gc->marking_phase_complete) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      } else {
++        /* Mark page for deferred deletion */
++        page->deferred_free = TRUE;
++      }

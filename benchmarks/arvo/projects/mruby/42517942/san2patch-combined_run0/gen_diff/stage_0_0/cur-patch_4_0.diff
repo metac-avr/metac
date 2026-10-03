@@ -1,0 +1,59 @@
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..e8d5de192 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -1516,0 +1517 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
++    if (srcidx < 0 || srcidx > srclen) srcidx = srclen;
+@@ -1518 +1519,2 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-    switch (dir) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     switch (dir) {
+@@ -1520 +1522 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      srcidx += unpack_hex(mrb, sptr, srclen - srcidx, result, count, flags);
++      if (srcidx <= srclen) srcidx += unpack_hex(mrb, sptr, srclen - srcidx, result, count, flags);
+@@ -1523 +1525 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      srcidx += unpack_str(mrb, sptr, srclen - srcidx, result, count, flags);
++      if (srcidx <= srclen) srcidx += unpack_str(mrb, sptr, srclen - srcidx, result, count, flags);
+@@ -1526 +1528 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      srcidx += unpack_base64(mrb, sptr, srclen - srcidx, result);
++      if (srcidx <= srclen) srcidx += unpack_base64(mrb, sptr, srclen - srcidx, result);
+@@ -1529 +1531 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      srcidx += unpack_qenc(mrb, sptr, srclen - srcidx, result);
++      if (srcidx <= srclen) srcidx += unpack_qenc(mrb, sptr, srclen - srcidx, result);
+@@ -1542,0 +1545 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
++      if (srcidx < 0 || srcidx > srclen) srcidx = srclen;
+@@ -1546 +1549 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_char(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx <= srclen) srcidx += unpack_char(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1549 +1552 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_short(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx <= srclen) srcidx += unpack_short(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1552 +1555 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_long(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx <= srclen) srcidx += unpack_long(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1555 +1558 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_quad(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx <= srclen) srcidx += unpack_quad(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1558 +1561 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_BER(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx <= srclen) srcidx += unpack_BER(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1562 +1565 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx <= srclen) srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1565 +1568 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx <= srclen) srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1569 +1572 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_utf8(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx <= srclen) srcidx += unpack_utf8(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1591 +1594,5 @@ mrb_pack_unpack(mrb_state *mrb, mrb_value str)
+-  return pack_unpack(mrb, str, 0);
++  mrb_int len;
++  if (mrb_string_p(str) && (len = RSTRING_LEN(str)) > 0) {
++    return pack_unpack(mrb, str, 0);
++  }
++  return mrb_nil_value();
+@@ -1601,2 +1608 @@ void
+-mrb_mruby_pack_gem_init(mrb_state *mrb)
+-{
++mrb_mruby_pack_gem_init(mrb_state *mrb){

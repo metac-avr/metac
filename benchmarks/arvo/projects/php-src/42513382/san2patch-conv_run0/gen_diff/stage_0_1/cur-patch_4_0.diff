@@ -1,0 +1,51 @@
+diff --git a/Zend/zend_enum.h b/Zend/zend_enum.h
+index 797eb0c8ab5..bca9c73f034 100644
+--- a/Zend/zend_enum.h
++++ b/Zend/zend_enum.h
+@@ -45 +44,0 @@ ZEND_API zend_result zend_enum_get_case_by_value(zend_object **result, zend_clas
+-
+@@ -55,0 +55 @@ static zend_always_inline zval *zend_enum_fetch_case_value(zend_object *zobj)
++	if (zobj->properties_table == NULL) return NULL;
+@@ -61 +61 @@ END_EXTERN_C()
+-#endif /* ZEND_ENUM_H */
++#endif /* ZEND_ENUM_H */
+\ No newline at end of file
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..bf418ba55bb 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6964,8 +6964,4 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
+-		RETURN_THROWS();
+-	}
+-	GET_REFLECTION_OBJECT_PTR(ref);
+-
+-	if (Z_TYPE(ref->value) == IS_CONSTANT_AST) {
+-		zval_update_constant_ex(&ref->value, ref->ce);
+-	}
++    if (zend_parse_parameters_none() == FAILURE) {
++        RETURN_THROWS();
++    }
++    GET_REFLECTION_OBJECT_PTR(ref);
+@@ -6973,2 +6969,3 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	ZEND_ASSERT(intern->ce->enum_backing_type != IS_UNDEF);
+-	zval *member_p = zend_enum_fetch_case_value(Z_OBJ(ref->value));
++    if (Z_TYPE(ref->value) == IS_CONSTANT_AST) {
++        zval_update_constant_ex(&ref->value, ref->ce);
++    }
+@@ -6976 +6973,8 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	ZVAL_COPY_OR_DUP(return_value, member_p);
++    ZEND_ASSERT(intern->ce->enum_backing_type != IS_UNDEF);
++    zend_object *obj = Z_OBJ(ref->value);
++    if (obj && obj->ce && obj->ce->default_properties_count > 1) {
++        zval *member_p = zend_enum_fetch_case_value(obj);
++        ZVAL_COPY_OR_DUP(return_value, member_p);
++    } else {
++        RETURN_NULL();
++    }
+@@ -6982,3 +6986,2 @@ ZEND_METHOD(ReflectionFiber, __construct)
+-	zval *fiber, *object;
+-	reflection_object *intern;
+-
++    zval *fiber, *object;
++    reflection_object *intern;

@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..4c1d967378e 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1684 +1684,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1685,0 +1687 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	ht = NULL;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..76281dee781 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16731,2 +16731,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-			value = zend_fetch_dimension_address_inner(Z_ARRVAL_P(container), dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);
+-			ZVAL_COPY_DEREF(EX_VAR(opline->result.var), value);
++			{
++				zend_array *temp_array = Z_ARRVAL_P(container);
++				value = zend_fetch_dimension_address_inner(temp_array, dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);
++				ZVAL_COPY_DEREF(EX_VAR(opline->result.var), value);
++			}

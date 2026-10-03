@@ -1,0 +1,46 @@
+diff --git a/src/lib/ndpi_domain_classify.c b/src/lib/ndpi_domain_classify.c
+index 8b66c940e..bd2b52e7e 100644
+--- a/src/lib/ndpi_domain_classify.c
++++ b/src/lib/ndpi_domain_classify.c
+@@ -388 +388 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-					char *domain) {
++				char *domain) {
+@@ -392 +392,2 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-
++  char safe_domain[45]; /* Maximum buffer size */
++ 
+@@ -394,2 +395,11 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-  if((len = strlen(domain)) == 0)                         return(0);
+-  if((dot = strrchr(domain, '.')) == NULL)                return(0);
++  
++  /* Fix: Validate input length and ensure proper null termination */
++  len = 0;
++  while(len < 44 && domain[len] != '\0') { /* Leave space for null terminator */
++    safe_domain[len] = domain[len];
++    len++;
++  }
++  safe_domain[len] = '\0';
++  
++  if(len == 0)                         return(0);
++  if((dot = strrchr(safe_domain, '.')) == NULL)                return(0);
+@@ -399 +409 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-  if(isdigit(domain[len-1]) && isdigit(domain[0])) {
++  if(isdigit(safe_domain[len-1]) && isdigit(safe_domain[0])) {
+@@ -401 +411 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-    printf("[contains] %s INVALID\n", domain);
++    printf("[contains] %s INVALID\n", safe_domain);
+@@ -407 +417 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-  if(!is_valid_domain_char(domain[0])) {
++  if(!is_valid_domain_char(safe_domain[0])) {
+@@ -409 +419 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-    printf("[contains] %s INVALID\n", domain);
++    printf("[contains] %s INVALID\n", safe_domain);
+@@ -419 +429 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-      snprintf(buf, sizeof(buf), "%s", domain);
++      snprintf(buf, sizeof(buf), "%s", safe_domain);
+@@ -423 +433 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-	printf("[contains] %s = %d\n", domain, s->class[i]->class_id);
++	printf("[contains] %s = %d\n", safe_domain, s->class[i]->class_id);
+@@ -431 +441 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-  printf("[contains] %s NOT FOUND\n", domain);
++  printf("[contains] %s NOT FOUND\n", safe_domain);

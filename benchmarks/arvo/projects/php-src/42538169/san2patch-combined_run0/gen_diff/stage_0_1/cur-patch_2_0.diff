@@ -1,0 +1,57 @@
+diff --git a/Zend/zend_iterators.c b/Zend/zend_iterators.c
+index f67033b1116..2c0f3e84746 100644
+--- a/Zend/zend_iterators.c
++++ b/Zend/zend_iterators.c
+@@ -56,7 +55,0 @@ static const zend_object_handlers iterator_object_handlers = {
+-
+-ZEND_API void zend_register_iterator_wrapper(void)
+-{
+-	INIT_CLASS_ENTRY(zend_iterator_class_entry, "__iterator_wrapper", NULL);
+-	zend_iterator_class_entry.default_object_handlers = &iterator_object_handlers;
+-}
+-
+@@ -64,10 +57,2 @@ static void iter_wrapper_free(zend_object *object)
+-{
+-	zend_object_iterator *iter = (zend_object_iterator*)object;
+-	iter->funcs->dtor(iter);
+-}
+-
+-static void iter_wrapper_dtor(zend_object *object)
+-{
+-}
+-
+-static HashTable *iter_wrapper_get_gc(zend_object *object, zval **table, int *n) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -75,2 +60,5 @@ static HashTable *iter_wrapper_get_gc(zend_object *object, zval **table, int *n)
+-	if (iter->funcs->get_gc) {
+-		return iter->funcs->get_gc(iter, table, n);
++	if (iter && iter->funcs) {
++		zend_object_iterator_funcs *funcs = iter->funcs;
++		if (funcs->dtor) {
++			funcs->dtor(iter);
++		}
+@@ -77,0 +66 @@ static HashTable *iter_wrapper_get_gc(zend_object *object, zval **table, int *n)
++}	}
+diff --git a/Zend/zend_property_hooks.c b/Zend/zend_property_hooks.c
+index 9cfa15ecafa..c6a282a1f2b 100644
+--- a/Zend/zend_property_hooks.c
++++ b/Zend/zend_property_hooks.c
+@@ -208,0 +209,2 @@ static void zho_it_dtor(zend_object_iterator *iter)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	if (iter == NULL) return;
+@@ -210,6 +212,8 @@ static void zho_it_dtor(zend_object_iterator *iter)
+-	zval_ptr_dtor(&iter->data);
+-	zval_ptr_dtor(&hooked_iter->declared_props);
+-	zval_ptr_dtor_nogc(&hooked_iter->current_key);
+-	zval_ptr_dtor(&hooked_iter->current_data);
+-	if (hooked_iter->dynamic_prop_it != (uint32_t) -1) {
+-		zend_hash_iterator_del(hooked_iter->dynamic_prop_it);
++	if (iter) zval_ptr_dtor(&iter->data);
++	if (hooked_iter) {
++		if (&hooked_iter->declared_props) zval_ptr_dtor(&hooked_iter->declared_props);
++		if (&hooked_iter->current_key) zval_ptr_dtor_nogc(&hooked_iter->current_key);
++		if (&hooked_iter->current_data) zval_ptr_dtor(&hooked_iter->current_data);
++		if (hooked_iter->dynamic_prop_it != (uint32_t) -1) {
++			zend_hash_iterator_del(hooked_iter->dynamic_prop_it);
++		}

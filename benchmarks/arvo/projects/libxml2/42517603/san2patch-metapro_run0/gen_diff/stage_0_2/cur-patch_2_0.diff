@@ -1,0 +1,27 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..e39f5c5a 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2109,2 +2109,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-            xmlUnlinkNode(child);
+-            xmlFreeNode(child);
++            if (child->type != XML_DTD_NODE) {
++                xmlUnlinkNode(child);
++                xmlFreeNode(child);
++            }
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..7e0f6a2b 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -443,0 +444,4 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
++	/* Fix use-after-free: Add safety check for XInclude processing */
++	if (reader->xincTab != NULL && reader->xincNr > 0) {
++	    cur->type = XML_XINCLUDE_END;
++	}
+@@ -448,5 +452 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-}
+-
+-/**
+- * xmlTextReaderFreeDoc:
+- * @reader:  the xmlTextReaderPtr used
++} * @reader:  the xmlTextReaderPtr used

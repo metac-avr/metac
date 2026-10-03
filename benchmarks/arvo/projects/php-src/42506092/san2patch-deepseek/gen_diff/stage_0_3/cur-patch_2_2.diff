@@ -1,0 +1,56 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..bcade78a0bf 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756,9 +755,0 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
+-	}
+-	return zend_hash_lookup(ht, offset_key);
+-
+-num_index:
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
+-}
+-
+@@ -767 +758,40 @@ static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int typ
+-	zend_long offset;
++try_again:
++	switch(Z_TYPE_P(dim)) {
++		case IS_UNDEF:
++			zend_throw_error(NULL, "Cannot access offset of type %s on string", zend_get_type_by_const(IS_UNDEF));
++			return 0;
++		case IS_NULL:
++			zend_throw_error(NULL, "Cannot access offset of type %s on string", zend_get_type_by_const(IS_NULL));
++			return 0;
++		case IS_FALSE:
++			return 0;
++		case IS_TRUE:
++			return 1;
++		case IS_LONG:
++			return Z_LVAL_P(dim);
++		case IS_DOUBLE:
++			return zend_dval_to_lval_safe(Z_DVAL_P(dim));
++		case IS_STRING: {
++			zend_long num;
++			if (ZEND_HANDLE_NUMERIC_STR(Z_STRVAL_P(dim), Z_STRLEN_P(dim), num)) {
++				return num;
++			}
++			zend_throw_error(NULL, "Cannot access offset of type %s on string", zend_get_type_by_const(IS_STRING));
++			return 0;
++		}
++		case IS_ARRAY:
++			zend_throw_error(NULL, "Cannot access offset of type %s on string", zend_get_type_by_const(IS_ARRAY));
++			return 0;
++		case IS_OBJECT:
++			zend_throw_error(NULL, "Cannot access offset of type %s on string", zend_get_type_by_const(IS_OBJECT));
++			return 0;
++		case IS_RESOURCE:
++			zend_throw_error(NULL, "Cannot access offset of type %s on string", zend_get_type_by_const(IS_RESOURCE));
++			return 0;
++		case IS_REFERENCE:
++			ZVAL_DEREF(dim);
++			goto try_again;
++		EMPTY_SWITCH_DEFAULT_CASE()
++	}
++	return 0;
++}	zend_long offset;

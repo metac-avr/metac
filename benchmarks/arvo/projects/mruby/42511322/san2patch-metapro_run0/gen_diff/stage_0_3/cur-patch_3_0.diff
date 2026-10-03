@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..eabd6c084 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -99 +99,2 @@ static inline void
+-stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+@@ -101 +102,3 @@ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+-  memcpy(dst, src, sizeof(mrb_value)*size);
++  if (dst && src) {
++    memcpy(dst, src, sizeof(mrb_value)*size);
++  }
+@@ -189,7 +192,5 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-
+-  /* Raise an exception if the new stack size will be too large,
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+-  if (size > MRB_STACK_MAX) {
+-    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+-  }
+-}
++  
++  /* Update ci stack pointers to point to the new stack */
++  mrb_callinfo *ci = mrb->c->ci;
++  while (ci >= mrb->c->cibase) {
++    if (ci->stack

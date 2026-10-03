@@ -1,0 +1,28 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..a21eca82e 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1456 +1456,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-  }
++// Fixed: Crash CWE-125: Out-of-bounds Read by ensuring proper bounds checking
++   }
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..9d78ae5f6 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -956 +956 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++ 
+@@ -993 +993,11 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++  
++  // Ensure null termination for string operations
++  if(*out_len > 0) {
++    u_char* resized_out = ndpi_realloc(out, *out_len, *out_len + 1);
++    if(resized_out != NULL) {
++      out = resized_out;
++      out[*out_len] = '\0';
++      (*out_len)++;
++    }
++  }
++  

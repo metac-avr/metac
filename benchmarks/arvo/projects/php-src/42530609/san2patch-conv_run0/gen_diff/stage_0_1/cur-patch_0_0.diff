@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index f2f538a2c2c..58ed1614f68 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1340 +1340,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1342 +1343 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
++	ZEND_ASSERT(p != NULL && p->refcount > 0);
+@@ -1352 +1352,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..9e4766f6dc1 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,2 +56,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p != NULL) {
++		ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

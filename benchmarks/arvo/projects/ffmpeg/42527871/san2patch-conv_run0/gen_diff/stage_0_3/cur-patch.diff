@@ -1,0 +1,37 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..7e95b9885a 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -450 +450,2 @@ static int populate_distribution(GetBitContext *gb, JXLSymbolDistribution *dist,
+-            num_same = same[i] - 1;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             num_same = same[i] - 1;
+@@ -461,0 +463,4 @@ static int populate_distribution(GetBitContext *gb, JXLSymbolDistribution *dist,
++                // Bounds checking to prevent out-of-bounds read
++                if (shift < 0 || logcounts[i] < 1) {
++                    return AVERROR_INVALIDDATA;
++                }
+@@ -462,0 +468,4 @@ static int populate_distribution(GetBitContext *gb, JXLSymbolDistribution *dist,
++                // Additional validation for calculated values
++                if (bitcount < 0 || (logcounts[i] - 1 - bitcount) < 0) {
++                    return AVERROR_INVALIDDATA;
++                }
+@@ -1309 +1318,2 @@ static int skip_boxes(JXLParseContext *ctx, const uint8_t *buf, int buf_size)
+-        int head_size = 4;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         int head_size = 4;
+@@ -1311,4 +1321,10 @@ static int skip_boxes(JXLParseContext *ctx, const uint8_t *buf, int buf_size)
+-        if (bytestream2_peek_le16(&gb) == FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
+-            break;
+-        if (bytestream2_peek_le64(&gb) == FF_JPEGXL_CONTAINER_SIGNATURE_LE)
+-            break;
++        if (bytestream2_get_bytes_left(&gb) < 2 || bytestream2_peek_le16(&gb) == FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
++            if (bytestream2_get_bytes_left(&gb) >= 2 && bytestream2_peek_le16(&gb) == FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
++                break;
++            else if (bytestream2_get_bytes_left(&gb) < 2)
++                return AVERROR_BUFFER_TOO_SMALL;
++        if (bytestream2_get_bytes_left(&gb) < 8 || bytestream2_peek_le64(&gb) == FF_JPEGXL_CONTAINER_SIGNATURE_LE)
++            if (bytestream2_get_bytes_left(&gb) >= 8 && bytestream2_peek_le64(&gb) == FF_JPEGXL_CONTAINER_SIGNATURE_LE)
++                break;
++            else if (bytestream2_get_bytes_left(&gb) < 8)
++                return AVERROR_BUFFER_TOO_SMALL;

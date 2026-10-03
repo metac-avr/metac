@@ -1,0 +1,12 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..bce7b6ffec3 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1968 +1968,6 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			if (Z_REFCOUNT_P(result) == 1 && !ZSTR_IS_INTERNED(Z_STR_P(result))) {
++				result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			} else {
++				result_str = zend_string_alloc(result_len, 0);
++				memcpy(ZSTR_VAL(result_str), Z_STRVAL_P(op1), op1_len);
++			}

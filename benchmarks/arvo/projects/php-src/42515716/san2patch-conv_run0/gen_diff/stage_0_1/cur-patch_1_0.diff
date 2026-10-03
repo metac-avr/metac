@@ -1,0 +1,33 @@
+diff --git a/ext/date/lib/timelib.c b/ext/date/lib/timelib.c
+index d42c69bbd6f..2ce8adcf05a 100644
+--- a/ext/date/lib/timelib.c
++++ b/ext/date/lib/timelib.c
+@@ -156,0 +157 @@ void timelib_error_container_dtor(timelib_error_container *errors)
++// FIXME: Crash CWE-416: Use After Free
+@@ -159,2 +160,10 @@ void timelib_error_container_dtor(timelib_error_container *errors)
+-	for (i = 0; i < errors->warning_count; i++) {
+-		timelib_free(errors->warning_messages[i].message);
++	if (!errors) return;
++
++	if (errors->warning_messages) {
++		for (i = 0; i < errors->warning_count; i++) {
++			if (errors->warning_messages[i].message) {
++				timelib_free(errors->warning_messages[i].message);
++			}
++		}
++		timelib_free(errors->warning_messages);
++		errors->warning_messages = NULL;
+@@ -162,3 +171,8 @@ void timelib_error_container_dtor(timelib_error_container *errors)
+-	timelib_free(errors->warning_messages);
+-	for (i = 0; i < errors->error_count; i++) {
+-		timelib_free(errors->error_messages[i].message);
++	if (errors->error_messages) {
++		for (i = 0; i < errors->error_count; i++) {
++			if (errors->error_messages[i].message) {
++				timelib_free(errors->error_messages[i].message);
++			}
++		}
++		timelib_free(errors->error_messages);
++		errors->error_messages = NULL;
+@@ -166 +179,0 @@ void timelib_error_container_dtor(timelib_error_container *errors)
+-	timelib_free(errors->error_messages);

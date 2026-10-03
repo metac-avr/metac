@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..11f3dede8 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -349,0 +351 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *old_cibase = c->cibase;
+@@ -2710 +2712,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
++      /* Refresh ci pointer after potential realloc in mrb_ary_splat */
++      mrb_callinfo *old_ci = mrb->c->ci;
+@@ -2711,0 +2717,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
++      /* Check if ci was reallocated and refresh if needed */
++      if (old_ci != mrb->c->ci) {
++        ci = mrb->c->ci;
++      }
+@@ -2722 +2730,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

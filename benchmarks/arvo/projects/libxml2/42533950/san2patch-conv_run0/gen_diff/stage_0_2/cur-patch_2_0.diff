@@ -1,0 +1,46 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..30023530 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4247 +4247,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }
++// FIXME: Crash CWE-416: Use After Free
++     }
+@@ -4249,3 +4250,22 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        ret->properties = xmlCopyPropList(ret, node->properties);
+-        if (ret->properties == NULL)
+-            goto error;
++        /* Create a safe copy by checking for freed namespaces */
++        xmlAttrPtr safe_props = NULL;
++        xmlAttrPtr prop = node->properties;
++        xmlAttrPtr last_safe = NULL;
++        
++        /* Pre-validate all properties before copying */
++        while (prop != NULL) {
++            if (prop->ns != NULL && prop->ns->type == XML_LOCAL_NAMESPACE) {
++                /* This namespace reference might be valid */
++                if (safe_props == NULL) {
++                    safe_props = prop;
++                    last_safe = prop;
++                }
++            }
++            prop = prop->next;
++        }
++        
++        if (safe_props != NULL) {
++            ret->properties = xmlCopyPropList(ret, safe_props);
++            if (ret->properties == NULL)
++                goto error;
++        }
+@@ -4415 +4435 @@ xmlStaticCopyNodeList(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4423 +4443 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+-    xmlNodePtr ret;
++     xmlNodePtr ret;
+@@ -4424,0 +4445 @@ xmlCopyNode(xmlNodePtr node, int extended) {
++    if (node == NULL) return NULL;
+@@ -4435,2 +4456 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
+- *
++ *		if 2 copy properties and namespaces (when applicable) *

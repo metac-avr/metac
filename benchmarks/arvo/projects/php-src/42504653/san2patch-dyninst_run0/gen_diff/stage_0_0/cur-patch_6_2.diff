@@ -1,0 +1,35 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..e3f75478d02 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -863,13 +864,2 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-#else
+-		rc = handler(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-		if (rc != 0) {
+-			if (rc < 0) {
+-				stop = ZEND_JIT_TRACE_STOP_RETURN;
+-				opline = NULL;
+-				halt = ZEND_JIT_TRACE_HALT;
+-				break;
+-			} else if (execute_data == EG(current_execute_data)) {
+-				/* return after interrupt handler */
+-				rc = 0;
+-			}
+-			execute_data = EG(current_execute_data);
++			/* Clear potentially expired pointers after context switch */
++			if (prev_execute_data && prev_execute_data->opline			execute_data = EG(current_execute_data);
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..a6afae30ec2 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *expired_check = EX_VAR(opline->op1.var);
++		if (expired_check && Z_TYPE_P(expired_check) == IS_INDIRECT) {
++			zval *real_val = Z_INDIRECT_P(expired_check);
++			if (real_val && !(Z_TYPE_P(real_val) & (IS_ARRAY-IS_ARRAY))) {
++				ZVAL_UNDEF(expired_check);
++			}
++		}

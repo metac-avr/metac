@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..fd4c32f92fd 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1781,0 +1782,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Prevent use-after-free by checking JIT reference count */
++	if (ht->u.flags & HASH_FLAG_PACKED_JIT) {
++		/* Decrement JIT reference counter before freeing */
++		if (--ht->u.jit_reference_count > 0) {
++			return; /* Still referenced by JIT, defer destruction */
++		}
++	}
+@@ -1783 +1790,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1786,6 +1794 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	IS_CONSISTENT(ht);
+-	HT_ASSERT_RC1(ht);
++}	HT_ASSERT_RC1(ht);

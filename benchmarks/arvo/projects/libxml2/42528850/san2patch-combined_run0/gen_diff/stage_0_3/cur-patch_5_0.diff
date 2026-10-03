@@ -1,0 +1,45 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..769cdfe1 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++	 xmlNsPtr ns;
+@@ -4211,8 +4211,12 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
+-
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-		} else {
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	    if (node->ns->prefix != NULL) {
++	        ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	        if (ns != NULL) {
++	            xmlNodePtr root = ret;
++
++		    while (root->parent != NULL) root = root->parent;
++		    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++	        } else {
++		    ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	        }
++	    } else {
++	        ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..5b3f0c3e 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1280 +1280 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-        if ((reader->preserves > 0) &&
++	        if ((reader->preserves > 0) &&
+@@ -1299,3 +1299,6 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Add null check to prevent use-after-free when accessing namespaces */
++		if (tmp != NULL) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		}

@@ -1,0 +1,18 @@
+diff --git a/src/utils/xml_parser.c b/src/utils/xml_parser.c
+index 30f4e3e69..746b4c0c6 100644
+--- a/src/utils/xml_parser.c
++++ b/src/utils/xml_parser.c
+@@ -1144 +1144,12 @@ GF_Err gf_xml_sax_init(GF_SAXParser *parser, unsigned char *BOM)
+-	if (parser->unicode_type >= 0) return gf_xml_sax_parse(parser, BOM);
++	if (parser->unicode_type >= 0) {
++		if (parser->current_size && !memchr(BOM, 0, parser->current_size)) {
++			unsigned char *tmp = gf_malloc(parser->current_size + 1);
++			if (!tmp) return GF_OUT_OF_MEM;
++			memcpy(tmp, BOM, parser->current_size);
++			tmp[parser->current_size] = 0;
++			GF_Err e = gf_xml_sax_parse(parser, tmp);
++			gf_free(tmp);
++			return e;
++		}
++		return gf_xml_sax_parse(parser, BOM);
++	}

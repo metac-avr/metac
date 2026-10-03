@@ -1,0 +1,95 @@
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index bd4fcf27f..cddd80309 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -6037,3 +6037,3 @@ static void avc_compute_poc(AVCSliceInfo *si)
+-	{
+-		u32 i;
+-		s32 abs_frame_num, expected_delta_per_poc_cycle, expected_poc;
++{
++	u32 i;
++	s32 abs_frame_num, expected_delta_per_poc_cycle, expected_poc;
+@@ -6041,4 +6041,2 @@ static void avc_compute_poc(AVCSliceInfo *si)
+-		if (si->sps->poc_cycle_length)
+-			abs_frame_num = si->frame_num_offset + si->frame_num;
+-		else
+-			abs_frame_num = 0;
++	if (!si->sps->poc_cycle_length)
++		return;
+@@ -6046 +6044,4 @@ static void avc_compute_poc(AVCSliceInfo *si)
+-		if (!si->nal_ref_idc && (abs_frame_num > 0)) abs_frame_num--;
++	if (si->sps->poc_cycle_length)
++		abs_frame_num = si->frame_num_offset + si->frame_num;
++	else
++		abs_frame_num = 0;
+@@ -6048,3 +6049 @@ static void avc_compute_poc(AVCSliceInfo *si)
+-		expected_delta_per_poc_cycle = 0;
+-		for (i = 0; i < si->sps->poc_cycle_length; i++)
+-			expected_delta_per_poc_cycle += si->sps->offset_for_ref_frame[i];
++	if (!si->nal_ref_idc && (abs_frame_num > 0)) abs_frame_num--;
+@@ -6052,3 +6051,3 @@ static void avc_compute_poc(AVCSliceInfo *si)
+-		if (abs_frame_num > 0) {
+-			const u32 poc_cycle_cnt = (abs_frame_num - 1) / si->sps->poc_cycle_length;
+-			const u32 frame_num_in_poc_cycle = (abs_frame_num - 1) % si->sps->poc_cycle_length;
++	expected_delta_per_poc_cycle = 0;
++	for (i = 0; i < si->sps->poc_cycle_length; i++)
++		expected_delta_per_poc_cycle += si->sps->offset_for_ref_frame[i];
+@@ -6056,7 +6055,3 @@ static void avc_compute_poc(AVCSliceInfo *si)
+-			expected_poc = poc_cycle_cnt * expected_delta_per_poc_cycle;
+-			for (i = 0; i <= frame_num_in_poc_cycle; i++)
+-				expected_poc += si->sps->offset_for_ref_frame[i];
+-		}
+-		else {
+-			expected_poc = 0;
+-		}
++	if (abs_frame_num > 0) {
++		const u32 poc_cycle_cnt = (abs_frame_num - 1) / si->sps->poc_cycle_length;
++		const u32 frame_num_in_poc_cycle = (abs_frame_num - 1) % si->sps->poc_cycle_length;
+@@ -6064 +6059,9 @@ static void avc_compute_poc(AVCSliceInfo *si)
+-		if (!si->nal_ref_idc) expected_poc += si->sps->offset_for_non_ref_pic;
++		expected_poc = poc_cycle_cnt * expected_delta_per_poc_cycle;
++		for (i = 0; i <= frame_num_in_poc_cycle; i++)
++			expected_poc += si->sps->offset_for_ref_frame[i];
++	}
++	else {
++		expected_poc = 0;
++	}
++
++	if (!si->nal_ref_idc) expected_poc += si->sps->offset_for_non_ref_pic;
+@@ -6066,3 +6069,10 @@ static void avc_compute_poc(AVCSliceInfo *si)
+-		field_poc[0] = expected_poc + si->delta_poc[0];
+-		field_poc[1] = field_poc[0] + si->sps->offset_for_top_to_bottom_field;
+-		if (pic_type == AVC_PIC_FRAME) field_poc[1] += si->delta_poc[1];
++	field_poc[0] = expected_poc + si->delta_poc[0];
++	field_poc[1] = field_poc[0] + si->sps->offset_for_top_to_bottom_field;
++	if (pic_type == AVC_PIC_FRAME) field_poc[1] += si->delta_poc[1];
++}
++/*ISO 14496-10 N.11084 8.2.1.3*/
++else if (si->sps->poc_type == 2)
++{
++	int poc;
++	if (si->nal_unit_type == GF_AVC_NALU_IDR_SLICE) {
++		poc = 0;
+@@ -6070,14 +6080,4 @@ static void avc_compute_poc(AVCSliceInfo *si)
+-	/*ISO 14496-10 N.11084 8.2.1.3*/
+-	else if (si->sps->poc_type == 2)
+-	{
+-		int poc;
+-		if (si->nal_unit_type == GF_AVC_NALU_IDR_SLICE) {
+-			poc = 0;
+-		}
+-		else {
+-			const int abs_frame_num = si->frame_num_offset + si->frame_num;
+-			poc = 2 * abs_frame_num;
+-			if (!si->nal_ref_idc) poc -= 1;
+-		}
+-		field_poc[0] = poc;
+-		field_poc[1] = poc;
++	else {
++		const int abs_frame_num = si->frame_num_offset + si->frame_num;
++		poc = 2 * abs_frame_num;
++		if (!si->nal_ref_idc) poc -= 1;
+@@ -6084,0 +6085,3 @@ static void avc_compute_poc(AVCSliceInfo *si)
++	field_poc[0] = poc;
++	field_poc[1] = poc;
++}

@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..9d8879f1b52 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -195,0 +196,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		
++		/* Remove from GC buffer before freeing to prevent UAF */
++		GC_REMOVE_FROM_BUFFER(object);
++		
+@@ -203 +206,0 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		GC_REMOVE_FROM_BUFFER(object);
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..918d309cb10 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,0 +57,7 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (UNEXPECTED(GC_TYPE(p) == IS_OBJECT)) {
++		zend_object *obj = (zend_object*)p;
++		if (UNEXPECTED(GC_FLAGS(obj) & GC_FLAGS_DTOR_CALLED)) {
++			return; /* Prevent double destruction and UAF */
++		}
++		GC_SET_FLAGS(obj, GC_FLAGS(obj) | GC_FLAGS_DTOR_CALLED);
++	}

@@ -1,0 +1,43 @@
+diff --git a/src/media_tools/dash_client.c b/src/media_tools/dash_client.c
+index 6b1f874df..6094f21a2 100644
+--- a/src/media_tools/dash_client.c
++++ b/src/media_tools/dash_client.c
+@@ -4904,0 +4905 @@ static GF_Err gf_dash_download_init_segment(GF_DashClient *dash, GF_DASH_Group *
++		/* Validate memory allocation before string operations */
+@@ -4909,0 +4911,5 @@ static GF_Err gf_dash_download_init_segment(GF_DashClient *dash, GF_DASH_Group *
++		/* Ensure base_init_url is valid before proceeding */
++		if (!base_init_url) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[DASH] Resolved URL is NULL\n"));
++			return GF_BAD_PARAM;
++		}
+@@ -4914,0 +4921 @@ static GF_Err gf_dash_download_init_segment(GF_DashClient *dash, GF_DASH_Group *
++		/* Add validation for tmp_url allocation */
+@@ -4916 +4923,5 @@ static GF_Err gf_dash_download_init_segment(GF_DashClient *dash, GF_DASH_Group *
+-		if (tmp_url) gf_free(tmp_url);
++		if (tmp_url) {
++			/* Validate tmp_url before freeing */
++			gf_free(tmp_url);
++			tmp_url = NULL;
++		}
+diff --git a/src/utils/error.c b/src/utils/error.c
+index 23c5105d6..3626fc2b8 100644
+--- a/src/utils/error.c
++++ b/src/utils/error.c
+@@ -2166,0 +2167 @@ GF_Err gf_dynstrcat(char **str, const char *to_append, const char *sep)
++	char	*new_str;
+@@ -2172,5 +2173,10 @@ GF_Err gf_dynstrcat(char **str, const char *to_append, const char *sep)
+-	if (l1) (*str) = gf_realloc((*str), sizeof(char)*(l1+l2+lsep+1));
+-	else (*str) = gf_realloc((*str), sizeof(char)*(l2+lsep+1));
+-
+-	if (! (*str) )
+-		return GF_OUT_OF_MEM;
++	
++	if (l1) {
++		new_str = gf_realloc((*str), sizeof(char)*(l1+l2+lsep+1));
++		if (!new_str) return GF_OUT_OF_MEM;
++		(*str) = new_str;
++	} else {
++		new_str = gf_realloc((*str), sizeof(char)*(l2+lsep+1));
++		if (!new_str) return GF_OUT_OF_MEM;
++		(*str) = new_str;
++	}

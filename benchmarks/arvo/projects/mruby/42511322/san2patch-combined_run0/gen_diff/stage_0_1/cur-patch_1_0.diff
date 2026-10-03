@@ -1,0 +1,34 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..cdcdee577 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -99 +99,2 @@ static inline void
+-stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+@@ -100,0 +102,2 @@ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
++  if (!dst || !src) return;
++  if (size == 0) return;
+@@ -109 +112 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Allocate stack with validation */
+@@ -111,0 +115,7 @@ stack_init(mrb_state *mrb)
++  
++  /* Validate stack allocation */
++  if (c->stbase == NULL || c->stend == NULL) {
++    c->stbase = NULL;
++    c->stend = NULL;
++    return;
++  }
+@@ -113 +123 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  /* Allocate callinfo with validation */
+@@ -116,0 +127,8 @@ stack_init(mrb_state *mrb)
++  
++  /* Validate callinfo allocation */
++  if (c->cibase == NULL || c->ciend == NULL) {
++    c->cibase = NULL;
++    c->ciend = NULL;
++    return;
++  }
++  

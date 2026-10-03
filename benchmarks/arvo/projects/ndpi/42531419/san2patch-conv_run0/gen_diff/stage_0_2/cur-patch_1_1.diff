@@ -1,0 +1,299 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..0d022f7e2 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,3 +2381,124 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
++static void ndpi_int_tls_detect_protocol(struct ndpi_detection_module_struct *ndpi_struct,
++                             struct ndpi_flow_struct *flow, u_int32_t quic_version) {
++
++  struct ndpi_packet_struct *packet = &flow->packet;
++  u_int8_t ja3_struct_ready = 0;
++  struct ja3_struct ja;
++  u_int16_t dport = 0, sport = 0;
++  u_int32_t s_offset, tot_extension_len, i, j, id, tot_signature_algorithms_len;
++  u_int8_t ja3_extra_processing = 0;
++  u_int16_t server_certificate_len = 0;
++  u_int16_t extensions_len;
++  u_int16_t extensions_offset;
++  u_int16_t sa_size;
++  u_int16_t last_signature = 0;
++  u_int8_t duplicate_found = 0;
++  u_int16_t extension_id, extension_len;
++  u_int32_t total_len = packet->payload_packet_len;
++  u_int16_t elliptic_curve_point_formats_len;
++  u_int8_t elliptic_curve_point_formats_list[MAX_ELLIPTIC_CURVES_POINT_FORMATS];
++  u_int16_t elliptic_curves_list[MAX_ELLIPTIC_CURVES];
++  u_int16_t elliptic_curves_len = 0;
++  u_int16_t signature_algorithms_list[MAX_SIGNATURE_ALGORITHMS];
++  u_int16_t signature_algorithms_len = 0;
++  u_int8_t application_layer_protocol_negotiation_len;
++  char application_layer_protocol_negotiation_str[MAX_APPLICATION_LAYER_PROTOCOL_NEGOTIATION_STR_LEN];
++  u_int8_t status_request_len;
++  char status_request_str[MAX_STATUS_REQUEST_STR_LEN];
++  u_int8_t supported_groups_len;
++  u_int16_t supported_groups_list[MAX_SUPPORTED_GROUPS];
++  u_int8_t ec_point_formats_len;
++  u_int8_t ec_point_formats_list[MAX_EC_POINT_FORMATS];
++  u_int8_t psk_key_exchange_modes_len;
++  u_int8_t psk_key_exchange_modes_list[MAX_PSK_KEY_EXCHANGE_MODES];
++  u_int8_t key_share_len;
++  u_int16_t key_share_group;
++  u_int16_t key_share_key_exchange_len;
++  u_int8_t psk_identity_len;
++  char psk_identity_str[MAX_PSK_IDENTITY_STR_LEN];
++  u_int16_t psk_identity_len_total;
++  u_int32_t psk_binder_len;
++  u_int8_t early_data_len;
++  u_int8_t pre_shared_key_len;
++  u_int16_t pre_shared_key_identity_len;
++  u_int32_t pre_shared_key_binder_len;
++  u_int8_t certificate_compression_algorithms_len;
++  u_int16_t certificate_compression_algorithms_list[MAX_CERTIFICATE_COMPRESSION_ALGORITHMS];
++  u_int8_t delegated_credentials_len;
++  u_int16_t delegated_credentials_list[MAX_DELEGATED_CREDENTIALS];
++  u_int8_t key_share_client_hello_len;
++  u_int16_t key_share_client_hello_group;
++  u_int16_t key_share_client_hello_key_exchange_len;
++  u_int8_t psk_key_exchange_modes_client_hello_len;
++  u_int8_t psk_key_exchange_modes_client_hello_list[MAX_PSK_KEY_EXCHANGE_MODES_CLIENT_HELLO];
++  u_int8_t supported_versions_len;
++  u_int16_t supported_versions_list[MAX_SUPPORTED_VERSIONS];
++  u_int8_t cookie_len;
++  char cookie_str[MAX_COOKIE_STR_LEN];
++  u_int8_t psk_key_exchange_modes_server_hello_len;
++  u_int8_t psk_key_exchange_modes_server_hello_list[MAX_PSK_KEY_EXCHANGE_MODES_SERVER_HELLO];
++  u_int8_t key_share_server_hello_len;
++  u_int16_t key_share_server_hello_group;
++  u_int16_t key_share_server_hello_key_exchange_len;
++  u_int8_t supported_versions_server_hello_len;
++  u_int16_t supported_versions_server_hello_list[MAX_SUPPORTED_VERSIONS_SERVER_HELLO];
++  u_int8_t psk_identity_binders_len;
++  u_int8_t psk_identity_binders_list[MAX_PSK_IDENTITY_BINDERS];
++  u_int8_t obfuscated_ticket_age_len;
++  u_int32_t obfuscated_ticket_age_list[MAX_OBFUSCATED_TICKET_AGE];
++  u_int8_t ticket_nonce_len;
++  char ticket_nonce_str[MAX_TICKET_NONCE_STR_LEN];
++  u_int8_t ticket_age_add_len;
++  u_int32_t ticket_age_add_list[MAX_TICKET_AGE_ADD];
++  u_int8_t ticket_len;
++  char ticket_str[MAX_TICKET_STR_LEN];
++  u_int8_t early_data_indication_len;
++  u_int8_t early_data_indication_list[MAX_EARLY_DATA_INDICATION];
++  u_int8_t psk_key_exchange_modes_len_total;
++  u_int8_t psk_key_exchange_modes_list_total[MAX_PSK_KEY_EXCHANGE_MODES_TOTAL];
++  u_int8_t key_share_len_total;
++  u_int16_t key_share_group_total;
++  u_int16_t key_share_key_exchange_len_total;
++  u_int8_t psk_identity_len_total_total;
++  char psk_identity_str_total[MAX_PSK_IDENTITY_STR_LEN_TOTAL];
++  u_int16_t psk_identity_len_total_total_total;
++  u_int32_t psk_binder_len_total;
++  u_int8_t early_data_len_total;
++  u_int8_t pre_shared_key_len_total;
++  u_int16_t pre_shared_key_identity_len_total;
++  u_int32_t pre_shared_key_binder_len_total;
++  u_int8_t certificate_compression_algorithms_len_total;
++  u_int16_t certificate_compression_algorithms_list_total[MAX_CERTIFICATE_COMPRESSION_ALGORITHMS_TOTAL];
++  u_int8_t delegated_credentials_len_total;
++  u_int16_t delegated_credentials_list_total[MAX_DELEGATED_CREDENTIALS_TOTAL];
++  u_int8_t key_share_client_hello_len_total;
++  u_int16_t key_share_client_hello_group_total;
++  u_int16_t key_share_client_hello_key_exchange_len_total;
++  u_int8_t psk_key_exchange_modes_client_hello_len_total;
++  u_int8_t psk_key_exchange_modes_client_hello_list_total[MAX_PSK_KEY_EXCHANGE_MODES_CLIENT_HELLO_TOTAL];
++  u_int8_t supported_versions_len_total;
++  u_int16_t supported_versions_list_total[MAX_SUPPORTED_VERSIONS_TOTAL];
++  u_int8_t cookie_len_total;
++  char cookie_str_total[MAX_COOKIE_STR_LEN_TOTAL];
++  u_int8_t psk_key_exchange_modes_server_hello_len_total;
++  u_int8_t psk_key_exchange_modes_server_hello_list_total[MAX_PSK_KEY_EXCHANGE_MODES_SERVER_HELLO_TOTAL];
++  u_int8_t key_share_server_hello_len_total;
++  u_int16_t key_share_server_hello_group_total;
++  u_int16_t key_share_server_hello_key_exchange_len_total;
++  u_int8_t supported_versions_server_hello_len_total;
++  u_int16_t supported_versions_server_hello_list_total[MAX_SUPPORTED_VERSIONS_SERVER_HELLO_TOTAL];
++  u_int8_t psk_identity_binders_len_total;
++  u_int8_t psk_identity_binders_list_total[MAX_PSK_IDENTITY_BINDERS_TOTAL];
++  u_int8_t obfuscated_ticket_age_len_total;
++  u_int32_t obfuscated_ticket_age_list_total[MAX_OBFUSCATED_TICKET_AGE_TOTAL];
++  u_int8_t ticket_nonce_len_total;
++  char ticket_nonce_str_total[MAX_TICKET_NONCE_STR_LEN_TOTAL];
++  u_int8_t ticket_age_add_len_total;
++  u_int32_t ticket_age_add_list_total[MAX_TICKET_AGE_ADD_TOTAL];
++  u_int8_t ticket_len_total;
++  char ticket_str_total[MAX_TICKET_STR_LEN_TOTAL];
++  u_int8_t early_data_indication_len_total;
++  u_int8_t early_data_indication_list_total[MAX_EARLY_DATA_INDICATION_TOTAL];
++
++  if(packet->detected_protocol_stack[0] != NDPI_PROTOCOL_TLS)
++    return;
+@@ -2385 +2506,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++  if(packet->payload_packet_len < 5)
++    return;
+@@ -2387,5 +2509 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++  memset(&ja, 0, sizeof(ja));
+@@ -2393,2 +2511,14 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
+-		}
++  ja.version = packet->payload[1] << 8 | packet->payload[2];
++
++  s_offset = 5;
++
++  while(s_offset+4 < packet->payload_packet_len) {
++    u_int16_t field_len = ntohs(*(u_int16_t*)&packet->payload[s_offset]);
++
++    s_offset += 2;
++
++    if(field_len == 0 || s_offset+field_len > packet->payload_packet_len)
++      break;
++
++    if(s_offset+field_len > packet->payload_packet_len)
++      break;
+@@ -2396,2 +2526,44 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++    if(memcmp(&packet->payload[s_offset], "\x00\x00", 2) == 0) {
++      /* Server hello */
++      s_offset += 2;
++      field_len -= 2;
++
++      if(field_len >= 2) {
++        ja.version = ntohs(*(u_int16_t*)&packet->payload[s_offset]);
++        s_offset += 2;
++        field_len -= 2;
++      }
++
++      if(field_len >= 32) {
++        memcpy(ja.random, &packet->payload[s_offset], 32);
++        s_offset += 32;
++        field_len -= 32;
++      }
++
++      if(field_len >= 1) {
++        u_int8_t session_id_len = packet->payload[s_offset];
++        s_offset += 1;
++        field_len -= 1;
++
++        if(session_id_len > 0 && session_id_len <= 32) {
++          if(field_len >= session_id_len) {
++            memcpy(ja.session_id, &packet->payload[s_offset], session_id_len);
++            ja.session_id_len = session_id_len;
++            s_offset += session_id_len;
++            field_len -= session_id_len;
++          } else
++            break;
++        }
++      }
++
++      if(field_len >= 2) {
++        ja.cipher_suite = ntohs(*(u_int16_t*)&packet->payload[s_offset]);
++        s_offset += 2;
++        field_len -= 2;
++      }
++
++      if(field_len >= 1) {
++        ja.compression_method = packet->payload[s_offset];
++        s_offset += 1;
++        field_len -= 1;
++      }
+@@ -2399,3 +2571,88 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
++      if(field_len >= 2) {
++        extensions_len = ntohs(*(u_int16_t*)&packet->payload[s_offset]);
++        s_offset += 2;
++        field_len -= 2;
++
++        if(extensions_len > 0 && field_len >= extensions_len) {
++          extensions_offset = s_offset;
++          tot_extension_len = extensions_len;
++
++          while(tot_extension_len >= 4 && s_offset+4 < packet->payload_packet_len) {
++            extension_id = ntohs(*(u_int16_t*)&packet->payload[s_offset]);
++            s_offset += 2;
++            extension_len = ntohs(*(u_int16_t*)&packet->payload[s_offset]);
++            s_offset += 2;
++            tot_extension_len -= 4;
++
++            if(extension_len > tot_extension_len)
++              break;
++
++            if(s_offset + extension_len > packet->payload_packet_len)
++              break;
++
++            if(extension_id == 10 /* supported_groups */) {
++              if(extension_len >= 2) {
++                supported_groups_len = ntohs(*(u_int16_t*)&packet->payload[s_offset]);
++
++                if(supported_groups_len <= extension_len - 2) {
++                  for(i=0, j=0; i<supported_groups_len && s_offset+2+i<packet->payload_packet_len; i+=2, j++) {
++                    if(j < MAX_ELLIPTIC_CURVES)
++                      elliptic_curves_list[j] = ntohs(*(u_int16_t*)&packet->payload[s_offset+2+i]);
++                  }
++                  elliptic_curves_len = j;
++                }
++              }
++            } else if(extension_id == 11 /* ec_point_formats */) {
++              if(extension_len >= 1) {
++                ec_point_formats_len = packet->payload[s_offset];
++
++                if(ec_point_formats_len <= extension_len - 1) {
++                  for(i=0; i<ec_point_formats_len && s_offset+1+i<packet->payload_packet_len; i++) {
++                    if(i < MAX_EC_POINT_FORMATS)
++                      ec_point_formats_list[i] = packet->payload[s_offset+1+i];
++                  }
++                }
++              }
++            } else if(extension_id == 13 /* signature_algorithms */) {
++              if(extension_len >= 2) {
++                sa_size = ntohs(*(u_int16_t*)&packet->payload[s_offset])/2;
++
++#ifdef DEBUG_TLS
++                NDPI_LOG_DBG2(ndpi_struct, "sa_size=%d\n", sa_size);
++#endif
++
++                tot_signature_algorithms_len = ndpi_min(extension_len-2, sa_size*2);
++
++                if(sa_size <= MAX_SIGNATURE_ALGORITHMS) {
++                  memcpy(signature_algorithms_list, 
++                         &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
++                }
++#endif
++
++                ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++
++                for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
++                  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++                                         sizeof(ja.client.signature_algorithms_str)-i*2,
++                                        "%02X", packet->payload[s_offset+i]);
++                  if(s_offset + i*2 < total_len && s_offset + i*2 + 1 < total_len) {
++                    ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++                  }
++
++                  if(rc < 0) break;
++                }
++
++                for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
++                  if(s_offset + i < packet->payload_packet_len && s_offset + i + 1 < packet->payload_packet_len) {
++                    u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++
++                    if(last_signature == signature_algo) {
++                      /* Consecutive duplication */
++                      duplicate_found = 1;
++                    } else {
++                      last_signature = signature_algo;
++                    }
++                  }
++                }
++              }
++            } else if(extension_id == 16 /* application_layer_protocol_negotiation */ &&

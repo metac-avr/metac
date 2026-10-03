@@ -1,0 +1,27 @@
+diff --git a/libavcodec/bitstream_template.h b/libavcodec/bitstream_template.h
+index 0308e3a924..93e71590fe 100644
+--- a/libavcodec/bitstream_template.h
++++ b/libavcodec/bitstream_template.h
+@@ -122 +122,4 @@ static inline int BS_FUNC(init)(BSCTX *bc, const uint8_t *buffer,
+-    BS_FUNC(priv_refill_64)(bc);
++    // Check if buffer is valid and has sufficient size before refill
++    if (buffer_size > 0 && bc->ptr < bc->buffer_end) {
++        BS_FUNC(priv_refill_64)(bc);
++    }
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..f2de7433de 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -634 +634 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-        return AVERROR_INVALIDDATA;
++    return AVERROR_INVALIDDATA;
+@@ -642 +642,4 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-    p->flags |= AV_FRAME_FLAG_KEY;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++    if (!avpkt->data || avpkt->size == 0) // Validate packet data before processing
++        return AVERROR_INVALIDDATA;
++     p->flags |= AV_FRAME_FLAG_KEY;
+@@ -654,2 +657 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-        avctx->pix_fmt == AV_PIX_FMT_GBRAP10||
+-        avctx->pix_fmt == AV_PIX_FMT_GBRAP12||
++        avctx->pix_fmt == AV_PIX_FMT_GBRAP10||        avctx->pix_fmt == AV_PIX_FMT_GBRAP12||

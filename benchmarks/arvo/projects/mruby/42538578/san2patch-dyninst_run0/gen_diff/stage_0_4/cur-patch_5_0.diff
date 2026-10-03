@@ -1,0 +1,36 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..7c21d697f 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -339,0 +340,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  struct RProc *saved_blk = blk; /* Save parameters that might be affected */
++  mrb_sym saved_mid = mid;
+@@ -345,0 +348 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *saved_ci = c->ci; /* Save ci before realloc */
+@@ -348 +351,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -352,0 +357,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    /* Recalculate stack using saved_ci */
++    push_stacks = ci->stack - saved_ci->stack;
+@@ -354 +360 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-  ci->mid = mid;
++  ci->mid = saved_mid;
+@@ -356,2 +362,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-  ci->blk = blk;
+-  ci->stack = ci[-1].stack + push_stacks;
++  ci->blk = saved_blk;
++  ci->stack = c->ci->stack + push_stacks; /* Use current ci for stack calculation */
+@@ -2710 +2716,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
+@@ -2717 +2724,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-        mrb_ary_concat(mrb, regs[a], splat);
++        // Check for expired pointer by validating array type tag
++        if (mrb_type(regs[a]) == MRB_TT_ARRAY) {
++          mrb_ary_concat(mrb, regs[a], splat);
++        }
+@@ -2722 +2731,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

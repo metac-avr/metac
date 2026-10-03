@@ -1,0 +1,25 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..eabca670 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1217,6 +1217,14 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		else {
++		    xmlNodePtr copied_node = NULL;
++		    if (set->nodeTab[i] != NULL && 
++		        set->nodeTab[i]->type != XML_NAMESPACE_DECL &&
++		        set->nodeTab[i]->type != XML_ATTRIBUTE_NODE) {
++		        copied_node = xmlXIncludeCopyNode(ctxt, target, source,
++								  set->nodeTab[i]);
++		    }
++		    if (copied_node != NULL) {
++		        xmlAddNextSibling(last, copied_node);
++		        if (last->next != NULL)
++			    last = last->next;
++		    }

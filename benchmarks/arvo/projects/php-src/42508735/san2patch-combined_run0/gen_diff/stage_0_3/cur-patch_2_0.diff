@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..e8d3e352ef3 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1175,7 +1174,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+@@ -1183 +1176,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1184,0 +1179,2 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	zend_atomic_bool expected = 1;
++	if (!p || !atomic_load_explicit(&p->refcount, memory_order_acquire)) return 0;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..e431b4032ff 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// Fixed CWE-825: Expired Pointer Dereference - Validate pointer before freeing
++ 		ptr = ((char*)object) - object->handlers->offset;
+@@ -204 +205,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		efree(ptr);
++		if (ptr != NULL) {
++			efree(ptr);
++		}

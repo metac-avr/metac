@@ -1,0 +1,94 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..506c4efd6f8 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,5 +6770,20 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
++ZEND_METHOD(ReflectionAttribute, newInstance)
++{
++	zend_object *instance;
++	reflection_object *intern_new;
++	zval *obj_ptr = NULL;
++
++	if (zend_parse_parameters_none() == FAILURE) {
++		RETURN_THROWS();
++	}
++
++	instance = Z_OBJ_P(ZEND_THIS);
++	intern_new = (reflection_object*)instance;
++
++	zend_attribute_method_call *attr = (zend_attribute_method_call *) intern_new->ptr;
++	zend_class_entry *ce_new = Z_CE(intern_new->obj);
++
++	if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
++		if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
++			zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
++			RETURN_THROWS();
+@@ -6778,0 +6794 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	zend_bool is_valid_attr = 1;
+@@ -6780 +6796 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
++	if (SUCCESS != zend_get_attribute_object(&obj, ce_new, attr->data, attr->scope, attr->filename)) {
+@@ -6784,2 +6800,9 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	RETURN_COPY_VALUE(&obj);
+-}
++	if (Z_TYPE(obj) == IS_OBJECT && Z_OBJ(obj)) {
++		zend_object *obj_ptr = Z_OBJ(obj);
++		if (obj_ptr->ce && obj_ptr->ce->name) {
++			zend_string *name_check = obj_ptr->ce->name;
++			if (name_check && GC_TYPE(name_check) != IS_STRING) {
++				is_valid_attr = 0;
++			}
++		}
++	}
+@@ -6787,4 +6810,3 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-ZEND_METHOD(ReflectionEnum, __construct)
+-{
+-	reflection_class_object_ctor(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+-	if (EG(exception)) {
++	if (!is_valid_attr) {
++		zval_ptr_dtor(&obj);
++		zend_throw_error(NULL, "Invalid attribute object reference");
+@@ -6793,0 +6816,4 @@ ZEND_METHOD(ReflectionEnum, __construct)
++	RETURN_COPY_VALUE(&obj);
++}		RETURN_THROWS();
++	}
++
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..9772dd6afd2 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1827,0 +1828,17 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++		} static void i_zend_hash_destroy_ind(HashTable *ht)
++{
++	if (ht->nNumUsed) {
++		if (HT_HAS_STATIC_KEYS_ONLY(ht)) {
++			Bucket *p = ht->arData;
++			Bucket *end = p + ht->nNumUsed;
++			if (EXPECTED(ht->nNumOfElements == ht->nNumUsed)) {
++				do {
++					i_zval_ptr_dtor(&p->val);
++				} while (++p != end);
++			} else {
++				do {
++					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
++						i_zval_ptr_dtor(&p->val);
++					}
++				} while (++p != end);
++			}
+@@ -1840 +1857,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						zend_string_release_ex(p->key, 0);
++						if (p->key->gc.u.v.type != IS_UNDEF) {
++							zend_string_release_ex(p->key, 0);
++						}
+@@ -1848 +1867,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-							zend_string_release_ex(p->key, 0);
++							if (p->key->gc.u.v.type != IS_UNDEF) {
++								zend_string_release_ex(p->key, 0);
++							}
+@@ -1853,0 +1875 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	}

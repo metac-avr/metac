@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..bc80b9745ba 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352 +1352,2 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
++// FIXME: Crash CWE-416: Use After Free
++ 		ZVAL_COPY_VALUE(&tmp, &p->val);
+@@ -1354 +1355,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ht->pDestructor(&tmp);
++		if (Z_TYPE(tmp) != IS_UNDEF) {
++			ht->pDestructor(&tmp);
++		}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..c6c385c892b 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -218 +218,5 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-		zv = Z_INDIRECT_P(zv);
++		if (zv && Z_INDIRECT_P(zv)) {
++			zv = Z_INDIRECT_P(zv);
++		} else {
++			return;
++		}

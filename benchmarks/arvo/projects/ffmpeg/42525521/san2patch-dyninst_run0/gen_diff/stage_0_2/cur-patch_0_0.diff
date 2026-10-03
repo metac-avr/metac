@@ -1,0 +1,78 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..9d08a4b581 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -282,2 +282,5 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step) {
++                    if (w < (linesize[i] / 2)) {
++                        dest_pcm[i][w] = src[idx];
++                    }
++                }
+@@ -300,2 +303,5 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step) {
++                    if (w < (linesize[i] / 2)) {
++                        dest_pcm[i][w] = src[idx];
++                    }
++                }
+diff --git a/libavcodec/h263dec.c b/libavcodec/h263dec.c
+index f4e7048a5f..f666db42f7 100644
+--- a/libavcodec/h263dec.c
++++ b/libavcodec/h263dec.c
+@@ -256,14 +256,21 @@ static int decode_slice(MpegEncContext *s)
+-                    ff_mpv_reconstruct_mb(s, s->block);
+-                    if (s->loop_filter)
+-                        ff_h263_loop_filter(s);
+-
+-                    ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
+-                                    s->mb_x, s->mb_y, ER_MB_END & part_mask);
+-
+-                    s->padding_bug_score--;
+-
+-                    if (++s->mb_x >= s->mb_width) {
+-                        s->mb_x = 0;
+-                        ff_mpeg_draw_horiz_band(s, s->mb_y * mb_size, mb_size);
+-                        ff_mpv_report_decode_progress(s);
+-                        s->mb_y++;
++                    // Bounds check before reconstruction to prevent buffer overflow
++                    if (s->mb_x >= 0 && s->mb_x < s->mb_width && s->mb_y >= 0 && s->mb_y < s->mb_height) {
++                        ff_mpv_reconstruct_mb(s, s->block);
++                        if (s->loop_filter)
++                            ff_h263_loop_filter(s);
++
++                        ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
++                                        s->mb_x, s->mb_y, ER_MB_END & part_mask);
++
++                        s->padding_bug_score--;
++
++                        if (++s->mb_x >= s->mb_width) {
++                            s->mb_x = 0;
++                            ff_mpeg_draw_horiz_band(s, s->mb_y * mb_size, mb_size);
++                            ff_mpv_report_decode_progress(s);
++                            s->mb_y++;
++                        }
++                        return 0;
++                    } else {
++                        av_log(s->avctx, AV_LOG_ERROR, "Invalid macroblock coordinates: %d,%d\n", s->mb_x, s->mb_y);
++                        return AVERROR_INVALIDDATA;
+@@ -271 +277,0 @@ static int decode_slice(MpegEncContext *s)
+-                    return 0;
+@@ -286,0 +293,10 @@ static int decode_slice(MpegEncContext *s)
++             }
++
++            // Bounds check before reconstruction to prevent buffer overflow
++            if (s->mb_x >= 0 && s->mb_x < s->mb_width && s->mb_y >= 0 && s->mb_y < s->mb_height) {
++                ff_mpv_reconstruct_mb(s, s->block);
++                if (s->loop_filter)
++                    ff_h263_loop_filter(s);
++            } else {
++                av_log(s->avctx, AV_LOG_ERROR, "Invalid macroblock coordinates: %d,%d\n", s->mb_x, s->mb_y);
++                return AVERROR_INVALIDDATA;
+@@ -288,4 +303,0 @@ static int decode_slice(MpegEncContext *s)
+-
+-            ff_mpv_reconstruct_mb(s, s->block);
+-            if (s->loop_filter)
+-                ff_h263_loop_filter(s);

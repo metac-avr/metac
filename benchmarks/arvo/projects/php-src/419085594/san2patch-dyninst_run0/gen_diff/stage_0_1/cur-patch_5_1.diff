@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..c61590eceb8 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45977 +45977 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-		dim = NULL;
++ 		dim = NULL;
+@@ -46006 +46006,13 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-			zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			
++			if (var_ptr) {
++				zval *check_ptr = var_ptr;
++				if (UNEXPECTED(Z_ISREF_P(check_ptr))) {
++					check_ptr = Z_REFVAL_P(check_ptr);
++				}
++				if (UNEXPECTED(Z_TYPE_P(check_ptr) == IS_UNDEF)) {
++					ZVAL_NULL(check_ptr);
++				}
++				zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			} else {
++				zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			}

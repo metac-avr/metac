@@ -1,0 +1,55 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index e71cdca50..1c95c01a8 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -2417,9 +2417,5 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-		for (j = 0; pres && j < gf_list_count(pres->substream_groups); j++) {
+-			group = gf_list_get(pres->substream_groups, j);
+-			if (!group || !group->substreams) {
+-				continue;
+-			}
+-
+-			for (s = 0; group && s < gf_list_count(group->substreams); s++) {
+-				subs = gf_list_get(group->substreams, s);
+-				if (!subs) {
++		// FIXME: Crash CWE-416: Use After Free - Fixed by defensive programming: check if pres is valid before inner loop
++		if (pres) {
++			for (j = 0; j < gf_list_count(pres->substream_groups); j++) {
++				group = gf_list_get(pres->substream_groups, j);
++				if (!group || !group->substreams) {
+@@ -2429 +2425,10 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-				gf_free(subs);
++				for (s = 0; s < gf_list_count(group->substreams); s++) {
++					subs = gf_list_get(group->substreams, s);
++					if (!subs) {
++						continue;
++					}
++
++					gf_free(subs);
++				}
++				gf_list_del(group->substreams);
++				gf_free(group);
+@@ -2431,2 +2436,2 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-			gf_list_del(group->substreams);
+-			gf_free(group);
++			gf_list_del(pres->substream_groups);
++			gf_free(pres);
+@@ -2434,2 +2438,0 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-		gf_list_del(pres->substream_groups);
+-		gf_free(pres);
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index cdccbad35..ad5d84fdd 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -16009 +16009 @@ Bool gf_ac4_parser_bs(GF_BitStream *bs, GF_AC4Config *hdr, Bool full_parse)
+-	// clean the GF_List data if exits
++	// Ensure the header structure is valid before cleaning
+@@ -16011 +16011,4 @@ Bool gf_ac4_parser_bs(GF_BitStream *bs, GF_AC4Config *hdr, Bool full_parse)
+-		gf_odf_ac4_cfg_clean_list(hdr);
++		if (hdr && hdr->streams) { // Additional validation check
++			gf_odf_ac4_cfg_clean_list(hdr);
++			hdr->streams = NULL; // Nullify pointer after freeing
++		}
+@@ -16016 +16019 @@ Bool gf_ac4_parser_bs(GF_BitStream *bs, GF_AC4Config *hdr, Bool full_parse)
+-		GF_LOG(GF_LOG_ERROR, GF_LOG_CODING, ("[AC4] Wrong sync word detected (0x%X - expecting 0xAC40 or 0xAC41).\n", sync_word));
++		GF_LOG(GF_LOG_ERROR, GF_LOG_CODING, ("[AC4] Wrong sync word detected (0x%X - expecting 0xxAC40 or 0xAC41).\n", sync_word));

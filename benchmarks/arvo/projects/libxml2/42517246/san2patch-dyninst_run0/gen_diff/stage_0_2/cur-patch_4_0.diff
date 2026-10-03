@@ -1,0 +1,51 @@
+diff --git a/dict.c b/dict.c
+index 5c9ca719..53b3960c 100644
+--- a/dict.c
++++ b/dict.c
+@@ -879,3 +879,8 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    if (len < 0)
+-        l = strlen((const char *) name);
+-    else
++    /* Add safety check for expired pointer dereference */
++    if (len < 0) {
++        /* Use a safer approach to determine string length */
++        const char *p = (const char *) name;
++        l = 0;
++        while (*p++ && l < INT_MAX / 2) l++;
++        if (l >= INT_MAX / 2) return(NULL);
++    } else {
+@@ -882,0 +888 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
++    }
+@@ -890,2 +896 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);
+diff --git a/tree.c b/tree.c
+index 6a42f118..3c48d111 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4310,4 +4310,16 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    else if (node->name != NULL) {
+-        if ((doc != NULL) && (doc->dict != NULL))
+-	    ret->name = xmlDictLookup(doc->dict, node->name, -1);
+-	else
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     else if (node->name != NULL) {
++        if ((doc != NULL) && (doc->dict != NULL)) {
++            /* Add safety check to prevent accessing expired/invalid pointers */
++            xmlChar *safe_name = node->name;
++            size_t name_len = 0;
++            /* Calculate string length safely */
++            const xmlChar *p = safe_name;
++            while (p && *p) p++;
++            if (p) {
++                name_len = p - safe_name;
++                ret->name = xmlDictLookup(doc->dict, safe_name, name_len);
++            } else {
++                ret->name = xmlStrdup(safe_name);
++            }
++        } else
+@@ -4322,2 +4334 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }else{
+-      if (node->type == XML_ELEMENT_NODE)
++    }else{      if (node->type == XML_ELEMENT_NODE)

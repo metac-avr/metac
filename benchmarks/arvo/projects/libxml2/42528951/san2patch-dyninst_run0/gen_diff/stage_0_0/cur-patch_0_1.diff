@@ -1,0 +1,22 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index 9667ccb4..a578494a 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -1084,0 +1085,17 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
++	int bytes_needed;
++	
++	// Calculate bytes needed for UTF-8 encoding
++	if (val < 0x800) bytes_needed = 2;
++	else if (val < 0x10000) bytes_needed = 3;
++	else if (val < 0x110000) bytes_needed = 4;
++	else {
++	    xmlErrEncodingInt(NULL, XML_ERR_INVALID_CHAR,
++		    "Internal error, xmlCopyCharMultiByte 0x%X out of bound\n",
++			      val);
++	    return(0);
++	}
++	
++	// Check if we have enough space (assuming caller ensures at least 4 bytes)
++	// This is a simplified check - in practice, caller should ensure sufficient space
++	if (bytes_needed > 4) return(0);
++	

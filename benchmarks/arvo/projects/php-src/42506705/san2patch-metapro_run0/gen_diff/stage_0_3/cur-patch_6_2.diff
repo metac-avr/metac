@@ -1,0 +1,34 @@
+diff --git a/ext/opcache/jit/zend_jit.c b/ext/opcache/jit/zend_jit.c
+index 5143b977ed9..91cd8acfc54 100644
+--- a/ext/opcache/jit/zend_jit.c
++++ b/ext/opcache/jit/zend_jit.c
+@@ -426,11 +426,18 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
+-						return 1;
+-					}
+-					return 0;
+-			}
+-			opline++;
+-			ssa_op++;
+-		}
+-
+-		return 1;
+-	} else {
+-		const zend_op *end = call_info->caller_call_opline;
++                        return 1;
++                    }
++                    return 0;
++// Fixed CWE-416: Use After Free - Added validation check before accessing array data
++                    if (call_info && call_info->caller_call_opline) {
++                        // Ensure we don't access freed memory
++                        if (ZEND_CALL_INFO(call_info->caller_call_opline) & ZEND_CALL_FREE_BIT) {
++                            return 0;
++                        }
++                    }
++                }
++                opline++;
++                ssa_op++;
++            }
++
++            return 1;
++        } else {
++            const zend_op *end = call_info->caller_call_opline;

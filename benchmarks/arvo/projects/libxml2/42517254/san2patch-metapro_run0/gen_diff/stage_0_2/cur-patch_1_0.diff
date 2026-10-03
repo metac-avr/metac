@@ -1,0 +1,60 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..4ec53c33 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1189,4 +1189,6 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
++				    if (tmp != NULL) {
++				        if (last == NULL) {
++					    list = last = tmp;
++				        } else {
++					    last = xmlAddNextSibling(last, tmp);
++				        }
+@@ -1214,2 +1216,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
++		if (last == NULL) {
++		    xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
+@@ -1217,6 +1219,10 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    if (new_node != NULL)
++		        list = last = new_node;
++		} else {
++		    xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
++			                set->nodeTab[i]);
++		    if (new_node != NULL) {
++		        xmlAddNextSibling(last, new_node);
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2502 +2508,2 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-    for (i = ctxt->incBase;i < ctxt->incNr; i++) {
++    i = ctxt->incBase;
++    while (i < ctxt->incNr) {
+@@ -2504 +2511 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-            (ctxt->incTab[i]->xptr != NULL) ||
++             (ctxt->incTab[i]->xptr != NULL) ||
+@@ -2506,0 +2514,7 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++        /* Remove processed node from incTab to prevent use-after-free */
++        if (i < ctxt->incNr - 1) {
++            memmove(&ctxt->incTab[i], &ctxt->incTab[i + 1], 
++                    (ctxt->incNr - i - 1) * sizeof(xmlXIncludeRefPtr));
++        }
++        ctxt->incNr--;
++        /* Do not increment i since we shifted elements */
+@@ -2512,6 +2526 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-}
+-
+-/**
+- * xmlXIncludeSetFlags:
+- * @ctxt:  an XInclude processing context
+- * @flags: a set of xmlParserOption used for parsing XML includes
++} * @flags: a set of xmlParserOption used for parsing XML includes

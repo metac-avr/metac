@@ -1,0 +1,31 @@
+diff --git a/libavcodec/jrevdct.c b/libavcodec/jrevdct.c
+index 7f1863515f..574ec4ee0c 100644
+--- a/libavcodec/jrevdct.c
++++ b/libavcodec/jrevdct.c
+@@ -1161,7 +1160,0 @@ void ff_j_rev_dct1(DCTBLOCK data){
+-
+-void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-{
+-    ff_j_rev_dct(block);
+-    ff_put_pixels_clamped_c(block, dest, line_size);
+-}
+-
+@@ -1169 +1162,2 @@ void ff_jref_idct_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
+@@ -1171,2 +1165,4 @@ void ff_jref_idct_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-    ff_add_pixels_clamped_c(block, dest, line_size);
+-}
++    if (block && dest && line_size > 0) {
++        ff_add_pixels_clamped_c(block, dest, line_size);
++    }
++}
+\ No newline at end of file
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 7216afb094..e605591557 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -153 +153 @@ void ff_add_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-    for (i = 0; i < 8; i++) {
++    for (i = 0; i < 8 && line_size >= 8; i++) {  // Validate line_size before loop

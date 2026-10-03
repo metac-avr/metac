@@ -1,0 +1,32 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..e508e0de18a 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7865 +7865 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
++if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+@@ -7879,8 +7879 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	return (orig_opline == t->opline && EX(opline) == orig_opline);
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++	return (orig_opline == t->opline && EX(opline) == orig_opline);		case ZEND_FAST_CALL:
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..ab53b26d1c2 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -32 +32,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -34,2 +35,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
++		if (!Z_DELREF_P(zval_ptr)) {
++			rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		}

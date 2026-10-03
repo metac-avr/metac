@@ -1,0 +1,41 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..6cc3be9e 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -441,4 +441,10 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(reader->ctxt->freeElemsNr < MAX_FREE_NODES)) {
+-	cur->next = reader->ctxt->freeElems;
+-	reader->ctxt->freeElems = cur;
+-	reader->ctxt->freeElemsNr++;
++static void
++xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur)
++{
++    if (cur == NULL)
++        return;
++    if ((reader != NULL) && (reader->ctxt != NULL) &&
++        (reader->ctxt->freeElemsNr < MAX_FREE_NODES)) {
++        cur->next = reader->ctxt->freeElems;
++        reader->ctxt->freeElems = cur;
++        reader->ctxt->freeElemsNr++;
+@@ -446 +452 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	xmlFree(cur);
++        xmlFree(cur);
+@@ -452,0 +459,18 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
++ * @cur:     pointer to the document
++ *
++ * Free up the document used by the reader.
++ */
++static void
++xmlTextReaderFreeDoc(xmlTextReaderPtr reader, xmlDocPtr cur)
++{
++    if (cur == NULL)
++        return;
++    if ((reader != NULL) && (reader->ctxt != NULL) &&
++        (reader->ctxt->freeElemsNr < MAX_FREE_NODES)) {
++        cur->next = (xmlNodePtr) reader->ctxt->freeElems;
++        reader->ctxt->freeElems = (xmlNodePtr) cur;
++        reader->ctxt->freeElemsNr++;
++    } else {
++        xmlFreeDoc(cur);
++    }
++} * @reader:  the xmlTextReaderPtr used

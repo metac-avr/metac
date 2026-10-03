@@ -1,0 +1,22 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..bf3b6de86 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1203,4 +1203,13 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++      /* CWE-416 prevention: objects on a dead page may still be referenced by
++         ivar tables or objectspace identity maps. Before freeing the page,
++         conservatively prevent reclamation when such references are active. */
++      if (!gc_page_contains_referenced_object(mrb, gc, page)) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      }
++      else {
++        page->old = FALSE;
++        page = page->next;
++      }

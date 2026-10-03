@@ -1,0 +1,47 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..edafb643 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2221 +2221 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-    cur = ctxt->incTab[nr]->ref;
++cur = ctxt->incTab[nr]->ref;
+@@ -2229 +2229 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	(ctxt->incTab[nr]->xptr != NULL)) {
++ 	(ctxt->incTab[nr]->xptr != NULL)) {
+@@ -2232 +2232 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		                    ctxt->incTab[nr]->xptr);
++		            ctxt->incTab[nr]->xptr);
+@@ -2239,0 +2240,19 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    /*
++     * Protect against dictionary-owned strings from the included document
++     * becoming stale after that document is freed. When a destination
++     * dictionary exists, explicitly copy the included nodes into it, so
++     * the copied content is fully owned by the destination document and no
++     * references to the source dictionary survive.
++     */
++    if ((list != NULL) && (ctxt->doc != NULL) && (ctxt->doc->dict != NULL)) {
++        xmlNodePtr nodes;
++        for (nodes = list; nodes != NULL; nodes = nodes->next) {
++            xmlNodePtr copied = xmlDocCopyNode(nodes, ctxt->doc, 1);
++            if (copied != NULL) {
++                xmlReplaceNode(nodes, copied);
++                xmlFreeNode(nodes);
++                nodes = copied;
++            }
++        }
++    }
++
+diff --git a/tree.c b/tree.c
+index 6a42f118..db428fa7 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2010,0 +2011,9 @@ xmlNewNsPropEatName(xmlNodePtr node, xmlNsPtr ns, xmlChar *name,
++    if ((node != NULL) && (node->doc != NULL) &&
++        ((node->doc->dict == NULL) ||
++         (xmlDictOwns(node->doc->dict, name) == 0))) {
++        xmlChar *tmp = xmlStrdup(name);
++        if (tmp == NULL)
++            return(NULL);
++        name = tmp;
++    }
++

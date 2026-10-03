@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..ed750c4b9 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -115 +115 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Stack initialization with null pointer checks */
+@@ -116,0 +117 @@ stack_init(mrb_state *mrb)
++  if (!c->stbase) return; /* Prevent null pointer dereference */
+@@ -119 +120 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  /* Call info initialization with null pointer checks */
+@@ -120,0 +122 @@ stack_init(mrb_state *mrb)
++  if (!c->cibase) return; /* Prevent null pointer dereference */
+@@ -1707 +1709,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1710,0 +1714,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      if ((mrb_int)(a) < 0 || regs + a >= mrb->c->stend) {
++        mrb_raise(mrb, E_RANGE_ERROR, "register access out of range");
++      }
+@@ -1755,0 +1762,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        if (ci->stack + 0 < mrb->c->stack || ci->stack + 0 >= mrb->c->stend) {
++          mrb_raise(mrb, E_RANGE_ERROR, "stack write out of bounds");
++        }

@@ -1,0 +1,25 @@
+diff --git a/src/range.c b/src/range.c
+index fc126be80..4042da53a 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -387 +387,11 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      ary = mrb_ary_new_capa(mrb, (mrb_int)(b - a) + 1);
++      
++      // Pre-calculate exact size to prevent buffer overflow
++      mrb_int size = (mrb_int)(b - a);
++      if (RANGE_EXCL(r)) {
++        if (size < 0) size = 0;
++      } else {
++        size += 1;
++        if (size <= 0) size = 0; // Handle potential overflow
++      }
++      
++      ary = mrb_ary_new_capa(mrb, size);
+@@ -389,0 +400 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
++      
+@@ -391 +402 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-        while (a < b) {
++        while (a < b && i < size) {  // Add bounds check
+@@ -398 +409 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-        while (a <= b) {
++        while (a <= b && i < size) {  // Add bounds check

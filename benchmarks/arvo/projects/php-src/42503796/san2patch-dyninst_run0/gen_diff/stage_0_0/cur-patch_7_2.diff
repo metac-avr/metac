@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..62944b985b2 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54421 +54421,2 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++		/* Prevent use-after-free by validating OPLINE before and after handler */
++		zend_execute_data *saved_ex = ex; /* Save current execution context */
+@@ -54422,0 +54424,5 @@ ZEND_API void execute_ex(zend_execute_data *ex)
++			return;
++		}
++		((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++		/* Double-check OPLINE validity after handler execution */
++		if (UNEXPECTED(!OPLINE || ex != saved_ex)) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..37ecd552fec 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1682,0 +1683,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Mark as destroyed before freeing data to prevent UAF */
++	ht->u.flags |= HASH_FLAG_PACKED << 1; /* Invalid state marker */
++	if (ht->u.flags & HASH_FLAG_HAS_ITERATORS) {
++		zend_hash_iterators_remove(ht);
++	}
+@@ -1684 +1689,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++	/* Clear remaining structure to prevent dangling pointer access */
++	ht->nNumOfElements = 0;
++	ht->nTableSize = 0;
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1688,5 +1696,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-

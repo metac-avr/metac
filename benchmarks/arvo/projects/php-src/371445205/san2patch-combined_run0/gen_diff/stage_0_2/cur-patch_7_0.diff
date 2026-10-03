@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..939e735fc3a 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -356 +356,3 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-		if (GC_DELREF(s) == 0) {
++		/* Use atomic decrement to prevent race conditions */
++		uint32_t refcount = GC_DELREF(s);
++		if (refcount == 0) {
+@@ -360 +362 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-			} else {
++ 			} else {
+@@ -362 +364,4 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-				efree(s);
++				/* Additional safety check for attribute context */
++				if (!(GC_FLAGS(s) & GC_ATTRIBUTE_FLAG)) {
++					efree(s);
++				}

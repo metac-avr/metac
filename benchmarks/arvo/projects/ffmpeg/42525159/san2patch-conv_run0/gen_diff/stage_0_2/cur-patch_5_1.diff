@@ -1,0 +1,63 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..3fa5cdce7d 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,3 +2017,38 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
++#define WRITE_FRAME(DIRECT, PIXEL)
++    static void write_frame_##DIRECT##_##PIXEL(Jpeg2000DecoderContext *s, AVFrame *picture, int tile_index, int component) \
++    {                                                                                             \
++        int x, y, pixel_size, max_x, max_y;                                                       \
++        int *src = s->tile[tile_index].comp[component].data;                                      \
++        PIXEL *dst;                                                                               \
++        PIXEL *yuv_row;                                                                           \
++        int *i_datap;                                                                             \
++        int *line;                                                                                \
++        int plane = s->cdef[component].alpha ? s->ncomps : component;                              \
++                                                                                                  \
++        pixel_size = DIRECT / 8;                                                                 \
++        max_x = FFMIN(s->tile[tile_index].comp[component].coord[0][1] - s->image_offset_x,        \
++                      s->width - s->image_offset_x);                                             \
++        max_y = FFMIN(s->tile[tile_index].comp[component].coord[1][1] - s->image_offset_y,        \
++                      s->height - s->image_offset_y);                                            \
++                                                                                                  \
++        yuv_row = (PIXEL*)picture->data[plane] +                                                 \
++                  (s->tile[tile_index].comp[component].coord[1][0] - s->image_offset_y) *       \
++                   picture->linesize[plane] / sizeof(PIXEL) +                                     \
++                  (s->tile[tile_index].comp[component].coord[0][0] - s->image_offset_x) *        \
++                   pixel_size;                                                                    \
++                                                                                                  \
++        for (y = s->tile[tile_index].comp[component].coord[1][0];                                 \
++             y < max_y;                                                                           \
++             y += s->tile[tile_index].comp[component].step_y) {                                  \
++            i_datap = src + (y - s->tile[tile_index].comp[component].coord[1][0]) *              \
++                      s->tile[tile_index].comp[component].step_x;                                 \
++            dst = yuv_row;                                                                        \
++            line = (int *)(picture->data[plane] + y * picture->linesize[plane]);                 \
++                                                                                                  \
++            for (x = s->tile[tile_index].comp[component].coord[0][0];                             \
++                 x < max_x;                                                                       \
++                 x += s->tile[tile_index].comp[component].step_x) {                              \
++                if ((uint8_t*)dst - (uint8_t*)picture->data[plane] >= 0 &&                        \
++                    (uint8_t*)dst - (uint8_t*)picture->data[plane] <                              \
++                    picture->linesize[plane] * picture->height - sizeof(PIXEL)) {                \
++                    *(PIXEL *)dst = *i_datap;                                                     \
+@@ -2021 +2056,2 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
++                i_datap++;                                                                        \
++                dst += pixel_size;                                                                \
+@@ -2022,0 +2059 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
++            yuv_row += picture->linesize[plane] / sizeof(PIXEL);                                  \
+@@ -2024 +2060,0 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                                                                                                  \
+@@ -2031,8 +2066,0 @@ WRITE_FRAME(16, uint16_t)
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-

@@ -1,0 +1,46 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..f3f2a21f 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1189,4 +1189,6 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
++				    if (tmp != NULL) {
++				        if (last == NULL) {
++					    list = last = tmp;
++				        } else {
++					    last = xmlAddNextSibling(last, tmp);
++				        }
+@@ -1214,9 +1216,11 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		if (set->nodeTab[i] != NULL) {
++		    if (last == NULL)
++		        list = last = xmlXIncludeCopyNode(ctxt, target, source,
++				                          set->nodeTab[i]);
++		    else {
++		        xmlAddNextSibling(last,
++			        xmlXIncludeCopyNode(ctxt, target, source,
++				                    set->nodeTab[i]));
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2504 +2508,2 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-            (ctxt->incTab[i]->xptr != NULL) ||
++// FIXME: Crash CWE-416: Use After Free
++             (ctxt->incTab[i]->xptr != NULL) ||
+@@ -2506 +2511,4 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-	    xmlXIncludeIncludeNode(ctxt, i);
++	    {
++	        int result = xmlXIncludeIncludeNode(ctxt, i);
++	        if (result < 0) break;  /* Stop processing on error */
++	    }

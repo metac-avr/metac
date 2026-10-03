@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..5eb9a93e81f 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -258 +258,2 @@ void shutdown_destructors(void) /* {{{ */
+-		do {
++// FIXME: Crash CWE-416: Use After Free
++ 		do {
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..3e42aac1e07 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// FIXME: Crash CWE-416: Use After Free
++		if (EG(objects_store).object_buckets[handle] == SET_OBJ_INVALID(object)) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}

@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 797ac66c96d..9ca29ec909b 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40109,0 +40110,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_OBJ_W_SPEC_CV_CONST_HAND
++	if (UNEXPECTED(Z_TYPE_P(container) != IS_OBJECT || !Z_OBJ_P(container))) {
++		zend_error(E_WARNING, "Cannot access property on non-object");
++		ZVAL_NULL(EX_VAR(opline->result.var));
++		ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++	}
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index dab57807796..2fa5c9679e0 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -280 +280,2 @@ static ZEND_COLD zend_never_inline void zend_forbidden_dynamic_property(
+-static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
++// Fixed: Crash CWE-416: Use After Free
++ static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
+@@ -281,0 +283,3 @@ static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
++	if (ce == NULL || member == NULL) {
++		return;
++	}
+@@ -292 +295,0 @@ static ZEND_COLD zend_never_inline void zend_readonly_property_modification_scop
+-

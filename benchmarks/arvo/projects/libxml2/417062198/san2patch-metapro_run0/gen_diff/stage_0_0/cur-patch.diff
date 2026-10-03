@@ -1,0 +1,28 @@
+diff --git a/xmlIO.c b/xmlIO.c
+index 4b3d2964..30e59b55 100644
+--- a/xmlIO.c
++++ b/xmlIO.c
+@@ -332 +332,9 @@ xmlEscapeText(const xmlChar *string, int flags) {
+-            repl = tempBuf;
++            // Copy tempBuf content to a dynamically allocated buffer before use
++            char *replCopy = xmlMalloc(replSize + 1);
++            if (replCopy == NULL) {
++                xmlFree(buffer);
++                return(NULL);
++            }
++            memcpy(replCopy, tempBuf, replSize);
++            replCopy[replSize] = '\0';
++            repl = replCopy;
+@@ -344,0 +353 @@ xmlEscapeText(const xmlChar *string, int flags) {
++                if (offset < 0) xmlFree((char*)repl);
+@@ -352,0 +362 @@ xmlEscapeText(const xmlChar *string, int flags) {
++                if (offset < 0) xmlFree((char*)repl);
+@@ -360 +370 @@ xmlEscapeText(const xmlChar *string, int flags) {
+-        memcpy(out, base, unescapedSize);
++         memcpy(out, base, unescapedSize);
+@@ -363,0 +374,5 @@ xmlEscapeText(const xmlChar *string, int flags) {
++        
++        // Free the copied buffer if it was allocated
++        if (offset < 0) {
++            xmlFree((char*)repl);
++        }

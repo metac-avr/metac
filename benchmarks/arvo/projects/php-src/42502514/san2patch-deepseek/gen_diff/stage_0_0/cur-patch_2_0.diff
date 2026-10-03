@@ -1,0 +1,24 @@
+diff --git a/Zend/Optimizer/dfa_pass.c b/Zend/Optimizer/dfa_pass.c
+index 9eddbde3b71..18a5f6c5384 100644
+--- a/Zend/Optimizer/dfa_pass.c
++++ b/Zend/Optimizer/dfa_pass.c
+@@ -242 +242,2 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
+-			ZEND_ASSERT(op_array == &ctx->script->main_op_array);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			ZEND_ASSERT(op_array == &ctx->script->main_op_array);
+@@ -244,2 +245,13 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
+-				*opline_num -= shiftlist[*opline_num];
+-				opline_num = &op_array->opcodes[*opline_num].result.opline_num;
++				uint32_t cur = *opline_num;
++				if (cur == (uint32_t)-1) {
++					break;
++				}
++				if (cur >= op_array->last) {
++					break;
++				}
++				cur -= shiftlist[cur];
++				*opline_num = cur;
++				if (cur >= op_array->last) {
++					break;
++				}
++				opline_num = &op_array->opcodes[cur].result.opline_num;

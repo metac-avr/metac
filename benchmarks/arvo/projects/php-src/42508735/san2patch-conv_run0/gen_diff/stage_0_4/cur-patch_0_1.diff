@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..87a8d08e5d3 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -198 +198,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++// FIXME: Crash CWE-416: Use After Free
++ 			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+@@ -200 +201,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			object->handlers->free_obj(object);
++			if (object->handlers->free_obj) {
++				object->handlers->free_obj(object);
++			}
+diff --git a/Zend/zend_generators.c b/Zend/zend_generators.c
+index a5fcad31dfe..468d867661d 100644
+--- a/Zend/zend_generators.c
++++ b/Zend/zend_generators.c
+@@ -425,0 +426,4 @@ static zend_object *zend_generator_create(zend_class_entry *class_type) /* {{{ *
++	/* Initialize reference count to prevent use-after-free during shutdown */
++	GC_SET_REFCOUNT(&generator->std, 1);
++	GC_TYPE_INFO(&generator->std) = IS_OBJECT;
++

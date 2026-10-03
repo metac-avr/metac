@@ -1,0 +1,25 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..f9364e755c5 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2025,0 +2026,2 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
++	/* Properly release the temporary zval to avoid dangling pointers */
++	if (Z_REFCOUNTED(tmp)) Z_DECREF(tmp);
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..b858d66f8b2 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -65 +65,7 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++	/* Patched CWE-416: Use After Free - Validate reference count safety */
++	zend_long refcount = GC_REFCOUNT(str);
++	if (refcount > 0) {
++		zend_atomic_bool_release(&str->gc.refcount, refcount - 1);
++		return;
++	}
++	ZEND_ASSERT(refcount == 0);
+@@ -77 +82,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

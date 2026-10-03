@@ -1,0 +1,34 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..101fdb58a1c 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -371 +371,2 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
+-					lval = zend_dval_to_lval_cap(dval);
++// FIXME: Crash CWE-416: Use After Free
++ 					lval = zend_dval_to_lval_cap(dval);
+@@ -373,3 +374,5 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
+-						zend_incompatible_string_to_long_error(Z_STR_P(op));
+-						if (UNEXPECTED(EG(exception))) {
+-							*failed = 1;
++						if (Z_STR_P(op) && !ZSTR_IS_INTERNED(Z_STR_P(op))) {
++							zend_incompatible_string_to_long_error(Z_STR_P(op));
++							if (UNEXPECTED(EG(exception))) {
++								*failed = 1;
++							}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..be0c6d0d0d1 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -689 +689,11 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_bw_and_helpe
+-		op_2 = ZVAL_UNDEFINED_OP2();
++		/* Validate string pointer before use to prevent use-after-free */
++		zend_bool valid_op2 = 1;
++		if (op_2 && Z_TYPE_P(op_2) == IS_STRING) {
++			zend_string *str_check = Z_STR_P(op_2);
++			if (!str_check || GC_REFCOUNT(str_check) == 0) {
++				valid_op2 = 0;
++			}
++		}
++		if (valid_op2) {
++			op_2 = ZVAL_UNDEFINED_OP2();
++		}

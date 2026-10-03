@@ -1,0 +1,29 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..e6f137639 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -140 +140 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-  if (RSTR_EMBEDDABLE_P(len)) {
++  if (len == 0 || RSTR_EMBEDDABLE_P(len)) {
+@@ -146 +146,5 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-  return str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++  struct RString *s = mrb_obj_alloc_string(mrb);
++  if (s) {
++    s->refs = 1;
++  }
++  return str_init_normal(mrb, s, p, len);
+@@ -253 +257,2 @@ mrb_gc_free_str(mrb_state *mrb, struct RString *str)
+-    /* no code */;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     /* no code */;
+@@ -256,2 +261,8 @@ mrb_gc_free_str(mrb_state *mrb, struct RString *str)
+-  else if (!RSTR_NOFREE_P(str) && !RSTR_FSHARED_P(str))
+-    mrb_free(mrb, str->as.heap.ptr);
++  else if (!RSTR_NOFREE_P(str) && !RSTR_FSHARED_P(str)) {
++    // Prevent immediate deallocation during hash operations
++    if (str->flags & 0x40000000) {  /* Hash operation in progress flag */
++      str->flags |= 0x20000000;     /* Mark for delayed free */
++    } else {
++      mrb_free(mrb, str->as.heap.ptr);
++    }
++  }

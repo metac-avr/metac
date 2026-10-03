@@ -1,0 +1,24 @@
+diff --git a/tree.c b/tree.c
+index a93f2e31..2d13ed9e 100644
+--- a/tree.c
++++ b/tree.c
+@@ -615 +615 @@ xmlFreeNsList(xmlNs *cur) {
+-    while (cur != NULL) {
++    do {
+@@ -616,0 +617 @@ xmlFreeNsList(xmlNs *cur) {
++        cur->next = NULL;  /* Clear next pointer to avoid dangling references */
+@@ -618,2 +619,2 @@ xmlFreeNsList(xmlNs *cur) {
+-	cur = next;
+-    }
++        cur = next;
++    } while (cur != NULL);
+@@ -3453,3 +3454,6 @@ xmlFreeNode(xmlNode *cur) {
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
+-            xmlFreeNsList(cur->nsDef);
++             xmlFreePropList(cur->properties);
++        /* Prevent use-after-free by clearing reference before freeing */
++        xmlNsPtr temp_nsDef = cur->nsDef;
++        cur->nsDef = NULL;
++        if (temp_nsDef != NULL)
++            xmlFreeNsList(temp_nsDef);

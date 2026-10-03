@@ -1,0 +1,31 @@
+diff --git a/src/array.c b/src/array.c
+index fc3b0a087..8e9364d34 100644
+--- a/src/array.c
++++ b/src/array.c
+@@ -147,2 +147,2 @@ ary_modify(mrb_state *mrb, struct RArray *a)
+-      if (p) {
+-        array_copy(ptr, p, a->as.heap.len);
++      if (p != NULL && a->as.heap.len > 0) {
++         array_copy(ptr, p, a->as.heap.len);
+@@ -988 +988,10 @@ mrb_ary_aset(mrb_state *mrb, mrb_value self)
+-      mrb_ary_splice(mrb, self, i, len, v2);
++      if (i >= 0 && len >= 0) {
++        mrb_int array_len = RARRAY_LEN(self);
++        if (len <= array_len && i <= array_len - len) {
++          mrb_ary_splice(mrb, self, i, len, v2);
++        } else {
++          mrb_raisef(mrb, E_RANGE_ERROR, "%v out of range", v1);
++        }
++      } else {
++        mrb_raisef(mrb, E_RANGE_ERROR, "%v out of range", v1);
++      }
+@@ -999 +1008,8 @@ mrb_ary_aset(mrb_state *mrb, mrb_value self)
+-  mrb_ary_splice(mrb, self, aget_index(mrb, v1), aget_index(mrb, v2), v3);
++  mrb_int idx = aget_index(mrb, v1);
++  mrb_int length = aget_index(mrb, v2);
++  mrb_int array_len = RARRAY_LEN(self);
++  if (idx >= 0 && length >= 0 && length <= array_len && idx <= array_len - length) {
++    mrb_ary_splice(mrb, self, idx, length, v3);
++  } else {
++    mrb_raisef(mrb, E_RANGE_ERROR, "index %i or length %i out of range", idx, length);
++  }

@@ -1,0 +1,31 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..d2bc3762aff 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -757,0 +758,12 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
++
++	if (Z_TYPE_P(dim) == IS_DOUBLE) {
++		hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++	} else {
++		ZVAL_LONG(&tmp, hval);
++		convert_to_long(&tmp);
++		hval = Z_LVAL(tmp);
++	}
++	if (UNEXPECTED(EG(exception))) {
++		zval_ptr_dtor(dim);
++		return NULL;
++	}
+@@ -758,0 +771 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
++// FIXME: Crash CWE-416: Use After Free
+@@ -760,0 +774,11 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
++	if (val_get_type(dim) == IS_DOUBLE) {
++		hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++	} else {
++		ZVAL_LONG(tmpval, hval);
++		convert_to_long(tmpval);
++		hval = Z_LVAL(tmpval);
++	}
++	if (UNEXPECTED(EG(exception))) {
++		zval_ptr_dtor(dim);
++		return NULL;
++	}

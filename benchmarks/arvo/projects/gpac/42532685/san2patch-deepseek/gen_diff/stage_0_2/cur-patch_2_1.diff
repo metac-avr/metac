@@ -1,0 +1,29 @@
+diff --git a/src/filters/reframe_img.c b/src/filters/reframe_img.c
+index 9eb787203..6a8b09ac7 100644
+--- a/src/filters/reframe_img.c
++++ b/src/filters/reframe_img.c
+@@ -345,10 +345,12 @@ GF_Err img_process(GF_Filter *filter)
+-		for (i=0; i<h; i++) {
+-			irow = (h-1-i)*out_stride;
+-			pix = data + fh.bfOffBits + i*in_stride;
+-			for (j=0; j<out_stride; j+=4) {
+-				output[j + irow] = pix[2];
+-				output[j+1 + irow] = pix[1];
+-				output[j+2 + irow] = pix[0];
+-				output[j+3 + irow] = pix[3];
+-				pix += 4;
+-			}
++	for (i=0; i<h; i++) {
++		irow = (h-1-i)*out_stride;
++		if (irow < 0 || out_stride < 0 || irow >= INT_MAX - out_stride + 1) {
++			return GF_NON_COMPLIANT_BITSTREAM;
++		}
++		pix = data + fh.bfOffBits + i*in_stride;
++		for (j=0; j<out_stride; j+=4) {
++			output[j + irow] = pix[2];
++			output[j+1 + irow] = pix[1];
++			output[j+2 + irow] = pix[0];
++			output[j+3 + irow] = pix[3];
++			pix += 4;
+@@ -356,0 +359 @@ GF_Err img_process(GF_Filter *filter)
++}

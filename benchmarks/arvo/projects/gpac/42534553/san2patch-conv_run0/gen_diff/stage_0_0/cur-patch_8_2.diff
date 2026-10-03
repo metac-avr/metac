@@ -1,0 +1,73 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..c5bac71b2 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -945,12 +945,32 @@ static void gf_netcap_load_pck_gpac(GF_NetcapFilter *nf)
+-static GF_Err pcapng_load_shb(GF_NetcapFilter *nf)
+-{
+-	u32 blen = gf_bs_read_u32(nf->cap_bs);
+-	u32 le_magic = gf_bs_read_u32(nf->cap_bs);
+-	if (le_magic == GF_4CC(0x1A, 0x2B, 0x3C, 0x4D)) {
+-	} else if (le_magic == GF_4CC(0x4D, 0x3C, 0x2B, 0x1A)) {
+-		nf->pcap_le = GF_TRUE;
+-		blen = ntohl(blen);
+-	} else {
+-		gf_net_close_capture();
+-		GF_LOG(GF_LOG_ERROR, GF_LOG_NETWORK, ("[NetCap] Corrrupted pacpng file\n"));
+-		return GF_NON_COMPLIANT_BITSTREAM;
++if (!nf->dst_port) {
++		nf->pck_flags=0;
++		nf->read_sock_selected = NULL;
++
++		if (nf->loops && !gf_bs_available(nf->cap_bs)) {
++			if (nf->loops>0)
++				nf->loops--;
++
++			gf_bs_seek(nf->cap_bs, 0);
++			nf->init_time = 0;
++			if (nf->cap_mode==NETCAP_PCAP)
++				gf_bs_skip_bytes(nf->cap_bs, 24);
++		}
++
++		if (nf->cap_mode==NETCAP_GPAC) {
++			if (nf->cap_bs && gf_bs_available(nf->cap_bs))
++				gf_netcap_load_pck_gpac(nf);
++		} else {
++			if (nf->cap_bs && gf_bs_available(nf->cap_bs))
++				gf_netcap_load_pck_pcap(nf);
++		}
++// FIXME: Crash CWE-416: Use After Free
++ 
++		//eof
++		if (!nf->dst_port) return;
++		//force discard
++		if ((nf->pck_flags & NETCAP_DROP)) {
++			if (nf->cap_bs && gf_bs_available(nf->cap_bs))
++				gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);
++			nf->dst_port = 0;
++			goto refetch;
++		}
+@@ -958,4 +977,0 @@ static GF_Err pcapng_load_shb(GF_NetcapFilter *nf)
+-	gf_bs_skip_bytes(nf->cap_bs, blen-12);
+-	nf->pcap_num_interfaces = 0;
+-	return GF_OK;
+-}
+@@ -1480,5 +1496,9 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
+-			gf_netcap_load_pck_pcap(nf);
+-
++		if (nf->cap_mode==NETCAP_GPAC) {
++			if (nf->cap_bs && gf_bs_available(nf->cap_bs))
++				gf_netcap_load_pck_gpac(nf);
++		} else {
++			if (nf->cap_bs && gf_bs_available(nf->cap_bs))
++				gf_netcap_load_pck_pcap(nf);
++		}
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1489 +1509,2 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-			gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);
++			if (nf->cap_bs && gf_bs_available(nf->cap_bs))
++				gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);

@@ -1,0 +1,26 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..497becd3 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270,7 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
++
++	/* Check if the namespace pointer is valid before use */
++	if (node->ns == NULL || 
++	    (node->ns->href == NULL && node->ns->prefix == NULL)) {
++	    goto error;
++	}
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..a4181dd9 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -403,2 +403,6 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Add defensive check to prevent use-after-free */
++        xmlNsPtr nsDefTemp = cur->nsDef;
++        cur->nsDef = NULL; /* Clear the pointer immediately */
++        xmlFreeNsList(nsDefTemp); /* Free the namespace list safely */
++    }

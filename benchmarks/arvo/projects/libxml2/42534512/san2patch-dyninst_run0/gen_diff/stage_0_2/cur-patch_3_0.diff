@@ -1,0 +1,33 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..c23a0756 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3609,0 +3610,13 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    /*
++	     * Clear child node references before freeing to prevent use-after-free
++	     * Ensure no dangling pointers exist in the node tree
++	     */
++	    if (cur->children != NULL) {
++	        xmlNodePtr child = cur->children;
++	        while (child != NULL) {
++	            child->parent = NULL;
++	            child = child->next;
++	        }
++	        cur->children = NULL;
++	    }
++
+@@ -6903,2 +6916,10 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	}
+-	if (prop->children != NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 	}
++	if (prop->children != NULL) {
++	    xmlNodePtr cur = prop->children;
++	    while (cur != NULL) {
++	        cur->parent = NULL;
++	        cur->next = NULL;
++	        cur->prev = NULL;
++	        cur = cur->next;
++	    }
+@@ -6905,0 +6927 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++	}

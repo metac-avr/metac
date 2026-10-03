@@ -1,0 +1,19 @@
+diff --git a/libavcodec/cbs_h266_syntax_template.c b/libavcodec/cbs_h266_syntax_template.c
+index 06f9f29e08..93ba12777f 100644
+--- a/libavcodec/cbs_h266_syntax_template.c
++++ b/libavcodec/cbs_h266_syntax_template.c
+@@ -498 +498,2 @@ static int FUNC(ref_pic_lists) (CodedBitstreamContext *ctx, RWContext *rw,
+-            } else if (i == 1 && !pps->pps_rpl1_idx_present_flag) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             } else if (i == 1 && !pps->pps_rpl1_idx_present_flag) {
+@@ -506,3 +507,7 @@ static int FUNC(ref_pic_lists) (CodedBitstreamContext *ctx, RWContext *rw,
+-            memcpy(&current->rpl_ref_list[i],
+-                   &sps->sps_ref_pic_list_struct[i][current->rpl_idx[i]],
+-                   sizeof(current->rpl_ref_list[i]));
++            // Validate array indices before memory copy operation
++            if (i >= 0 && i < MAX_REF_PIC_LISTS && 
++                current->rpl_idx[i] >= 0 && current->rpl_idx[i] < MAX_REF_PIC_LISTS_PER_SET) {
++                memcpy(&current->rpl_ref_list[i],
++                       &sps->sps_ref_pic_list_struct[i][current->rpl_idx[i]],
++                       sizeof(current->rpl_ref_list[i]));
++            }

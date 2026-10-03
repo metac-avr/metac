@@ -1,0 +1,16 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 8d2f4dd7f..404d7306a 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -3274 +3274,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		char buf[256], *tmp, *item;
++// FIXME: Crash CWE-416: Use After Free
++ 		char buf[256], *tmp, *item;
++		char local_buf[256];
+@@ -3276 +3278,5 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
++		/* Create a local copy to avoid use-after-free */
++		strncpy(local_buf, flow->protos.tls_quic.advertised_alpns, sizeof(local_buf) - 1);
++		local_buf[sizeof(local_buf) - 1] = '\0';
++
++		snprintf(buf, sizeof(buf), "%s", local_buf);

@@ -1,0 +1,23 @@
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..4201e397c 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -463,0 +464 @@ static u8 BS_ReadByte(GF_BitStream *bs)
++				if (bs->position >= bs->size) return res; // Prevent out-of-bounds access
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..190966d8d 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -1585,0 +1586 @@ static u64 gf_inspect_dump_obu_internal(FILE *dump, AV1State *av1, u8 *obu_ptr,
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -1586,0 +1588 @@ static u64 gf_inspect_dump_obu_internal(FILE *dump, AV1State *av1, u8 *obu_ptr,
++			if (obu_ptr_length <= hdr_size) break;
+@@ -1588 +1590,7 @@ static u64 gf_inspect_dump_obu_internal(FILE *dump, AV1State *av1, u8 *obu_ptr,
+-			u32 metadata_type = (u32)gf_av1_leb128_read(bs, NULL);
++			if (!bs) break;
++			u64 leb128_size = 0;
++			u32 metadata_type = (u32)gf_av1_leb128_read(bs, &leb128_size);
++			if (leb128_size > obu_ptr_length - hdr_size) {
++				gf_bs_del(bs);
++				break;
++			}

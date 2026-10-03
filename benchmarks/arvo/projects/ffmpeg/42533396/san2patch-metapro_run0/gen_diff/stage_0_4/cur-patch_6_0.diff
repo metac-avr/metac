@@ -1,0 +1,20 @@
+diff --git a/libavformat/demux.c b/libavformat/demux.c
+index 2e1d0ed66d..71e9e477d1 100644
+--- a/libavformat/demux.c
++++ b/libavformat/demux.c
+@@ -315 +315,12 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
+-    if (s->iformat->read_header)
++    // Add bounds checking before processing header to prevent out-of-bounds read
++    if (s->iformat && s->iformat->read_header) {
++        // Validate channel layout parameters before reading header
++        if (s->streams && s->streams[0] && s->streams[0]->codecpar) {
++            AVCodecParameters *par = s->streams[0]->codecpar;
++            if (par->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM && par->ch_layout.nb_channels > 32) {
++                av_log(s, AV_LOG_ERROR, "Invalid channel layout size detected\n");
++                ret = AVERROR_INVALIDDATA;
++                goto fail;
++            }
++        }
++        
+@@ -320,0 +332 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
++    }

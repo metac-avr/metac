@@ -1,0 +1,90 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..b463d8e67 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -500,0 +501 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
++			size_t section_data_size;
+@@ -507 +508,6 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
+-			section->data_size = sec->length - section_start;
++			section_data_size = (size_t)sec->length - section_start;
++			if ((sec->length <= section_start) || (section_data_size > 4096) || (section_data_size > (size_t)(sec->section_length - section_start))) {
++				gf_free(section);
++				return;
++			}
++			section->data_size = (u32)section_data_size;
+@@ -508,0 +515,4 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
++			if (!section->data) {
++				gf_free(section);
++				return;
++			}
+@@ -511,70 +520,0 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
+-
+-			if (t->section_number == 1) {
+-				status |= GF_M2TS_TABLE_START;
+-				if (t->last_version_number == t->version_number) {
+-					t->is_repeat = 1;
+-				} else {
+-					t->is_repeat = 0;
+-				}
+-				/*only update version number in the first section of the table*/
+-				t->last_version_number = t->version_number;
+-			}
+-
+-			if (t->is_init) {
+-				if (t->is_repeat) {
+-					status |=  GF_M2TS_TABLE_REPEAT;
+-				} else {
+-					status |=  GF_M2TS_TABLE_UPDATE;
+-				}
+-			} else {
+-				status |=  GF_M2TS_TABLE_FOUND;
+-			}
+-
+-			if (t->last_section_number == t->section_number) {
+-				u32 table_size;
+-
+-				status |= GF_M2TS_TABLE_END;
+-
+-				table_size = 0;
+-				for (i=0; i<gf_list_count(t->sections); i++) {
+-					GF_M2TS_Section *a_sec = gf_list_get(t->sections, i);
+-					table_size += a_sec->data_size;
+-				}
+-				if (t->is_repeat) {
+-					if (t->table_size != table_size) {
+-						status |= GF_M2TS_TABLE_UPDATE;
+-						GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[MPEG-2 TS] Repeated section found with different sizes (old table %d bytes, new table %d bytes)\n", t->table_size, table_size) );
+-
+-						t->table_size = table_size;
+-					}
+-				} else {
+-					t->table_size = table_size;
+-				}
+-
+-				t->is_init = 1;
+-				/*reset section number*/
+-				t->section_number = 0;
+-
+-				t->is_repeat = 0;
+-
+-			}
+-
+-			if (sec->process_individual) {
+-				/*send each section of the table and not the aggregated table*/
+-				if (sec->process_section)
+-					sec->process_section(ts, ses, t->sections, t->table_id, t->ex_table_id, t->version_number, (u8) (t->last_section_number - 1), status);
+-
+-				gf_m2ts_reset_sections(t->sections);
+-			} else {
+-				if (status&GF_M2TS_TABLE_END) {
+-					if (sec->process_section)
+-						sec->process_section(ts, ses, t->sections, t->table_id, t->ex_table_id, t->version_number, (u8) (t->last_section_number - 1), status);
+-
+-					gf_m2ts_reset_sections(t->sections);
+-				}
+-			}
+-
+-		} else {
+-			sec->cc = -1;
+-			t->section_number = 0;
+-		}

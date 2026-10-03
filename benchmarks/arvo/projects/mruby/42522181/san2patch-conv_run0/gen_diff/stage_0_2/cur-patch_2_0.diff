@@ -1,0 +1,30 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..199754e91 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -791,0 +792,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  /* Double-check object validity before marking */
++  if (mrb->gc.sweeping && obj >= mrb->gc.sweeps && obj < mrb->gc.sweeps + mrb->gc.nsweep) return;
+@@ -799,2 +801 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1203,3 +1204,9 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Prevent premature page freeing during incremental GC */
++      if (gc->state != MRB_GC_STATE_MARK) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      } else {
++        /* Defer freeing until mark phase completes */
++        page->old = TRUE;
++      }

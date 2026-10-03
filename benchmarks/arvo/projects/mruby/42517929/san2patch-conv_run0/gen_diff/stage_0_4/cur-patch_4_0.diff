@@ -1,0 +1,22 @@
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..243b6a081 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -1560 +1560,2 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-#ifndef MRB_NO_FLOAT
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ #ifndef MRB_NO_FLOAT
+@@ -1562 +1563,5 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
++        if (srclen - srcidx >= 4) {
++          srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
++        } else {
++          mrb_raise(mrb, E_ARGUMENT_ERROR, "buffer too small for float unpack");
++        }
+@@ -1565 +1570,5 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
++        if (srclen - srcidx >= 8) {
++          srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
++        } else {
++          mrb_raise(mrb, E_ARGUMENT_ERROR, "buffer too small for double unpack");
++        }

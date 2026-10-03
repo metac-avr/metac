@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..9f9281882a5 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -382 +382 @@ void shutdown_executor(void) /* {{{ */
+-	bool fast_shutdown = 0;
++    bool fast_shutdown = 0;
+@@ -384 +384 @@ void shutdown_executor(void) /* {{{ */
+-	bool fast_shutdown = is_zend_mm() && !EG(full_tables_cleanup);
++    bool fast_shutdown = is_zend_mm() && !EG(full_tables_cleanup);
+@@ -389,8 +389,3 @@ void shutdown_executor(void) /* {{{ */
+-	} zend_end_try();
+-
+-	zend_shutdown_executor_values(fast_shutdown);
+-
+-	zend_weakrefs_shutdown();
+-	zend_fiber_shutdown();
+-
+-	zend_try {
++		zend_shutdown_executor_values(0);
++		zend_weakrefs_shutdown();
++		zend_fiber_shutdown();
+@@ -401,2 +396 @@ void shutdown_executor(void) /* {{{ */
+-		/* Fast Request Shutdown
+-		 * =====================
++		/* Fast Request Shutdown		 * =====================
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..c60b930cec5 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,0 +57,7 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (GC_TYPE(p) == IS_OBJECT) {
++		zend_object *zobj = (zend_object *) p;
++		if (!(GC_FLAGS(zobj) & GC_IMMUTABLE) && zobj->handle != 0 && zend_objects_store_is_valid_handle(zobj->handle)) {
++			zend_rc_dtor_func[GC_TYPE(p)](p);
++		}
++		return;
++	}

@@ -1,0 +1,21 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..e187168ec9 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -108 +108,3 @@ static int vlc_common_init(VLC *vlc, int nb_bits, int nb_codes,
+-    }
++        // Ensure buffer is properly initialized to avoid use-after-free scenarios
++        memset(buf, 0, sizeof(*buf));
++     }
+@@ -427 +429,10 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-416: Use After Free
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
++
++    // Validate all input parameters to prevent use-after-free
++    if (!table || !single || !buf)
++        return AVERROR(EINVAL);
++    
++    // Check bounds before array access
++    if (nb_codes <= 0 || nb_codes > INT_MAX/2)
++        return AVERROR(EINVAL);

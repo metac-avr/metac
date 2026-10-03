@@ -1,0 +1,22 @@
+diff --git a/src/filters/reframe_mpgvid.c b/src/filters/reframe_mpgvid.c
+index 29e961a07..e97ffb5a4 100644
+--- a/src/filters/reframe_mpgvid.c
++++ b/src/filters/reframe_mpgvid.c
+@@ -997,7 +997,10 @@ GF_Err mpgviddmx_process(GF_Filter *filter)
+-						vosh_end = start - (u8 *)data + obj_size;
+-						vosh_end -= vosh_start;
+-						mpgviddmx_check_pid(filter, ctx,(u32)  vosh_end, data+vosh_start);
+-						skip_pck = GF_TRUE;
+-						assert(remain>=(s32) obj_size);
+-						start += obj_size;
+-						remain -= obj_size;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 						if (remain >= (s32)obj_size) { // Add bounds check before accessing memory
++							vosh_end = start - (u8 *)data + obj_size;
++							vosh_end -= vosh_start;
++							mpgviddmx_check_pid(filter, ctx,(u32)  vosh_end, data+vosh_start);
++							skip_pck = GF_TRUE;
++							assert(remain>=(s32) obj_size);
++							start += obj_size;
++							remain -= obj_size;
++						}

@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index dab57807796..572e1661082 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -280 +280,2 @@ static ZEND_COLD zend_never_inline void zend_forbidden_dynamic_property(
+-static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
++// FIXME: Crash CWE-416: Use After Free
++ static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
+@@ -281,0 +283,4 @@ static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
++	// Validate input parameters to prevent use-after-free
++	if (UNEXPECTED(ce == NULL || member == NULL)) {
++		return;
++	}
+@@ -292 +296,0 @@ static ZEND_COLD zend_never_inline void zend_readonly_property_modification_scop
+-
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..3de86df8948 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,9 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// FIXME: Crash CWE-416: Use After Free
++		if (EG(objects_store).object_buckets != NULL && handle < EG(objects_store).top) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		} else {
++			return;
++		}

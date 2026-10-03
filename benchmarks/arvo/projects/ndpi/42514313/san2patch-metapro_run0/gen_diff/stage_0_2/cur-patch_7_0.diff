@@ -1,0 +1,36 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 0f59ca608..6a4b2a481 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -238,3 +238,14 @@ void ndpi_free(void *ptr) {
+-  if(_ndpi_free) {
+-    if(ptr)
+-      _ndpi_free(ptr);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++   static void* freed_ptrs[1000];
++   static int freed_count = 0;
++   int i;
++   
++   if(!ptr) return;
++   
++   // Check if already freed
++   for(i = 0; i < freed_count; i++) {
++     if(freed_ptrs[i] == ptr) return;
++   }
++   
++   if(_ndpi_free) {
++    _ndpi_free(ptr);
+@@ -242,2 +253 @@ void ndpi_free(void *ptr) {
+-    if(ptr)
+-      free(ptr);
++    free(ptr);
+@@ -244,0 +255,5 @@ void ndpi_free(void *ptr) {
++  
++   // Mark as freed
++   if(freed_count < 1000) {
++     freed_ptrs[freed_count++] = ptr;
++   }
+@@ -250,2 +265 @@ void ndpi_flow_free(void *ptr) {
+-  if(_ndpi_flow_free)
+-    _ndpi_flow_free(ptr);
++  if(_ndpi_flow_free)    _ndpi_flow_free(ptr);

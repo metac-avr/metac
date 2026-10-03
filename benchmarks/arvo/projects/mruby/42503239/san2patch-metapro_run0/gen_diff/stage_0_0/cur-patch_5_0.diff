@@ -1,0 +1,54 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..31b87eb0c 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -485 +485,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if (&ci->stack[n+1] < mrb->c->stend) {
++        ci->stack[n+1] = args;
++      } else {
++        mrb_stack_extend(mrb, (mrb->c->stend - mrb->c->stbase) + 10);
++        ci->stack[n+1] = args;
++      }
+@@ -498 +503,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if (&ci->stack[n+1] < mrb->c->stend) {
++        ci->stack[n+1] = args;
++      } else {
++        mrb_stack_extend(mrb, (mrb->c->stend - mrb->c->stbase) + 10);
++        ci->stack[n+1] = args;
++      }
+@@ -513 +523,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    ci->stack[0] = self;
++    if (&ci->stack[0] < mrb->c->stend) {
++      ci->stack[0] = self;
++    } else {
++      mrb_stack_extend(mrb, (mrb->c->stend - mrb->c->stbase) + 10);
++      ci->stack[0] = self;
++    }
+@@ -515,3 +530,14 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
+-      ci->stack[argc+1] = blk;
++      if (argc > 0) {
++        if (&ci->stack[argc+1] <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_stack_extend(mrb, (mrb->c->stend - mrb->c->stbase) + argc + 10);
++          stack_copy(ci->stack+1, argv, argc);
++        }
++      }
++      if (&ci->stack[argc+1] < mrb->c->stend) {
++        ci->stack[argc+1] = blk;
++      } else {
++        mrb_stack_extend(mrb, (mrb->c->stend - mrb->c->stbase) + argc + 10);
++        ci->stack[argc+1] = blk;
++      }
+@@ -520 +546,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[2] = blk;
++      if (&ci->stack[2] < mrb->c->stend) {
++        ci->stack[2] = blk;
++      } else {
++        mrb_stack_extend(mrb, (mrb->c->stend - mrb->c->stbase) + 10);
++        ci->stack[2] = blk;
++      }

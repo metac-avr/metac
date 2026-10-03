@@ -1,0 +1,51 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..bef067b8de4 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1445,3 +1445,3 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			EG(exit_status) = 255;
+-		}
+-	}
++            EG(exit_status) = 255;
++        }
++    }
+@@ -1452,2 +1452,2 @@ static ZEND_COLD void zend_error_va_list(
+-		int orig_type, zend_string *error_filename, uint32_t error_lineno,
+-		const char *format, va_list args)
++        int orig_type, zend_string *error_filename, uint32_t error_lineno,
++        const char *format, va_list args)
+@@ -1455,3 +1455,7 @@ static ZEND_COLD void zend_error_va_list(
+-	zend_string *message = zend_vstrpprintf(0, format, args);
+-	zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
+-	zend_string_release(message);
++    zend_string *message = zend_vstrpprintf(0, format, args);
++    if (message && ZSTR_LEN(message) > 0) {
++        zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
++    }
++    if (message) {
++        zend_string_release(message);
++    }
+@@ -1461,5 +1465,5 @@ static ZEND_COLD void get_filename_lineno(int type, zend_string **filename, uint
+-	/* Obtain relevant filename and lineno */
+-	switch (type) {
+-		case E_CORE_ERROR:
+-		case E_CORE_WARNING:
+-			*filename = NULL;
++    /* Obtain relevant filename and lineno */
++    switch (type) {
++        case E_CORE_ERROR:
++        case E_CORE_WARNING:
++            *filename = NULL;
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..442307e3a6f 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -834 +834,2 @@ ZEND_API void ZEND_COLD zend_incompatible_double_to_long_error(double d)
+-ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string *s)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string *s)
+@@ -836 +837,3 @@ ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string
+-	zend_error(E_DEPRECATED, "Implicit conversion from float-string \"%s\" to int loses precision", ZSTR_VAL(s));
++	if (s) {
++		zend_error(E_DEPRECATED, "Implicit conversion from float-string \"%s\" to int loses precision", ZSTR_VAL(s));
++	}

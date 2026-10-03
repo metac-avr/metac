@@ -1,0 +1,196 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..0ee81e064 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -778,0 +779,121 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
++static void
++obj_free(mrb_state *mrb, struct RBasic *obj, int end)
++{
++  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
++  switch (obj->tt) {
++  case MRB_TT_FALSE:
++    if (!is_red(obj))
++      return;
++    break;
++  case MRB_TT_TRUE:
++    if (!is_red(obj))
++      return;
++    break;
++  case MRB_TT_FIXNUM:
++    if (!is_red(obj))
++      return;
++    break;
++  case MRB_TT_SYMBOL:
++    if (!is_red(obj))
++      return;
++    break;
++  case MRB_TT_UNDEF:
++    if (!is_red(obj))
++      return;
++    break;
++  case MRB_TT_FLOAT:
++    if (!is_red(obj))
++      return;
++    break;
++  case MRB_TT_CPTR:
++    if (!is_red(obj))
++      return;
++    break;
++  case MRB_TT_ENV:
++    {
++      mrb_state *mrb = obj->as.env.cxt->mrb;
++      struct REnv *e = (struct REnv*)obj;
++
++      if (!is_red(obj)) return;
++      if (e->stack) {
++        mrb_value *p = e->stack;
++        mrb_value *pend = p + e->stack len;
++        while (p < pend) {
++          if (mrb_immediate_p(*p)) {
++            p++;
++          }
++          else {
++            mrb_gc_mark_value(mrb, *p);
++            p++;
++          }
++        }
++      }
++      mrb_gc_mark(mrb, (struct RBasic*)e->cxt);
++    }
++    break;
++  case MRB_TT_ICLASS:
++    {
++      struct RClass *c = (struct RClass*)obj;
++
++      if (!is_red(obj)) return;
++      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      mrb_gc_mark(mrb, (struct RBasic*)c->c);
++      mrb_gc_mark(mrb, (struct RBasic*)c->mt);
++    }
++    break;
++  case MRB_TT_CLASS:
++  case MRB_TT_MODULE:
++  case MRB_TT_SCLASS:
++    {
++      struct RClass *c = (struct RClass*)obj;
++
++      if (!is_red(obj)) return;
++      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      mrb_gc_mark(mrb, (struct RBasic*)c->c);
++      mrb_gc_mark(mrb, (struct RBasic*)c->mt);
++    }
++    break;
++  case MRB_TT_OBJECT:
++    {
++      struct RObject *o = (struct RObject*)obj;
++
++      if (!is_red(obj)) return;
++      mrb_gc_mark(mrb, (struct RBasic*)o->c);
++      if (o->iv) {
++        mrb_gc_mark(mrb, (struct RBasic*)o->iv);
++      }
++    }
++    break;
++  case MRB_TT_CDATA:
++    {
++      struct RData *d = (struct RData*)obj;
++
++      if (!is_red(obj)) return;
++      if (d->c) {
++        mrb_gc_mark(mrb, (struct RBasic*)d->c);
++      }
++      if (d->iv) {
++        mrb_gc_mark(mrb, (struct RBasic*)d->iv);
++      }
++    }
++    break;
++  case MRB_TT_PROC:
++    {
++      struct RProc *p = (struct RProc*)obj;
++
++      if (!is_red(obj)) return;
++      mrb_gc_mark(mrb, (struct RBasic*)p->env);
++      mrb_gc_mark(mrb, (struct RBasic*)p->target_class);
++    }
++    break;
++  case MRB_TT_FIBER:
++    {
++      struct RFiber *f = (struct RFiber*)obj;
++
++      if (!is_red(obj)) return;
++      mrb_gc_mark(mrb, (struct RBasic*)f->cxt);
++    }
++    break;
++  case MRB_TT_ARRAY:
++    {
++      struct RArray *a = (struct RArray*)obj;
+@@ -779,0 +901,57 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
++      if (!is_red(obj)) return;
++      if (a->len > 0) {
++        mrb_value *p = a->ptr;
++        mrb_value *pend = p + a->len;
++        while (p < pend) {
++          if (mrb_immediate_p(*p)) {
++            p++;
++          }
++          else {
++            mrb_gc_mark_value(mrb, *p);
++            p++;
++          }
++        }
++      }
++    }
++    break;
++  case MRB_TT_HASH:
++    {
++      struct RHash *h = (struct RHash*)obj;
++
++      if (!is_red(obj)) return;
++      if (h->ht) {
++        mrb_gc_mark(mrb, (struct RBasic*)h->ht);
++      }
++    }
++    break;
++  case MRB_TT_STRING:
++    {
++      struct RString *s = (struct RString*)obj;
++
++      if (!is_red(obj)) return;
++      mrb_gc_mark(mrb, (struct RBasic*)s->c);
++    }
++    break;
++  case MRB_TT_RANGE:
++    {
++      struct RRange *r = (struct RRange*)obj;
++
++      if (!is_red(obj)) return;
++      if (mrb_immediate_p(r->edges->beg)) {
++        mrb_gc_mark(mrb, (struct RBasic*)r->edges->beg.value.p);
++      }
++      if (mrb_immediate_p(r->edges->end)) {
++        mrb_gc_mark(mrb, (struct RBasic*)r->edges->end.value.p);
++      }
++    }
++    break;
++  case MRB_TT_EXCEPTION:
++    {
++      struct RException *e = (struct RException*)obj;
++
++      if (!is_red(obj)) return;
++      if (e->mesg) {
++        mrb_gc_mark(mrb, (struct RBasic*)e->mesg);
++      }
++    }
++    break;
+@@ -790,0 +969 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (obj->tt == MRB_TT_FREE) return;
+@@ -793,8 +972 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++}  case MRB_TT_OBJECT:

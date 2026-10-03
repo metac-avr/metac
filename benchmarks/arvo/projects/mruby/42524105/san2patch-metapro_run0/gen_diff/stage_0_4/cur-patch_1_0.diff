@@ -1,0 +1,24 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..976090487 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1676 +1676 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-  while (s < send) {
++  while (s < send && s != NULL) {
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..4d5657e55 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326,7 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    if (mrb_string_p(key) && mrb_obj_ptr(key) && ((struct RString*)mrb_obj_ptr(key))->flags & MRB_STR_NOFREE) {
++      hash_code = mrb_str_hash(mrb, key);
++    } else if (mrb_string_p(key) && mrb_obj_ptr(key)) {
++      hash_code = mrb_str_hash(mrb, key);
++    } else {
++      hash_code = 0;
++    }
+@@ -343 +349,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-416: Use After Free
++     break;

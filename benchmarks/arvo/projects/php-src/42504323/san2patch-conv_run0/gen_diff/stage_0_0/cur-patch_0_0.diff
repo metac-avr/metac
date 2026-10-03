@@ -1,0 +1,32 @@
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index c9d23d11b7d..5a30442cbaf 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -1080,2 +1080,8 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++		char* opcode_base = (char*)op_array->opcodes;
++		size_t opcode_size = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++		char* literals_dest = opcode_base + opcode_size;
++		if (literals_dest >= opcode_base && 
++		    literals_dest + sizeof(zval) * op_array->last_literal <= 
++		    opcode_base + opcode_size + sizeof(zval) * op_array->last_literal) {
++			memcpy(literals_dest, op_array->literals, sizeof(zval) * op_array->last_literal);
++		}
+@@ -1083 +1089 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)(literals_dest);
+@@ -1191,2 +1197,8 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++		char* opcode_base = (char*)op_array->opcodes;
++		size_t opcode_size = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++		char* literals_dest = opcode_base + opcode_size;
++		if (literals_dest >= opcode_base && 
++		    literals_dest + sizeof(zval) * op_array->last_literal <= 
++		    opcode_base + opcode_size + sizeof(zval) * op_array->last_literal) {
++			memcpy(literals_dest, op_array->literals, sizeof(zval) * op_array->last_literal);
++		}
+@@ -1194 +1206 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)(literals_dest);

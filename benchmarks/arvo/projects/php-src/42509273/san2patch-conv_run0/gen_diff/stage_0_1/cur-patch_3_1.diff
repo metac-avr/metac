@@ -1,0 +1,53 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..27ecba4c11c 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -558,4 +558,4 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
+-#define IS_PTR						13
+-#define IS_ALIAS_PTR				14
+-#define _IS_ERROR					15
++#define IS_INDIRECT                     12
++#define IS_PTR                  13
++#define IS_ALIAS_PTR            14
++#define _IS_ERROR               15
+@@ -564,3 +564,4 @@ struct _zend_ast_ref {
+-#define _IS_BOOL					18
+-#define _IS_NUMBER					19
+-
++#define _IS_BOOL                18
++#define _IS_NUMBER              19
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -567,0 +569 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
++	if (!pz) return IS_UNDEF;
+@@ -577,3 +579,2 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
+-
++#define Z_TYPE(zval)            zval_get_type(&(zval))
++#define Z_TYPE_P(zval_p)        Z_TYPE(*(zval_p))
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..50f8b1b172c 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -890,0 +891,4 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
++			if ((char*)zv < (char*)ref || (char*)zv >= (char*)ref + sizeof(zend_object)) {
++				p++;
++				continue;
++			}
+@@ -892,0 +897,4 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
++				if ((char*)zv < (char*)ref || (char*)zv >= (char*)ref + sizeof(zend_object)) {
++					p++;
++					continue;
++				}
+@@ -901,0 +910,4 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
++						if ((char*)zv < (char*)ref || (char*)zv >= (char*)ref + sizeof(zend_object)) {
++							p++;
++							continue;
++						}
+@@ -903,0 +916,4 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
++							if ((char*)zv < (char*)ref || (char*)zv >= (char*)ref + sizeof(zend_object)) {
++								p++;
++								continue;
++							}

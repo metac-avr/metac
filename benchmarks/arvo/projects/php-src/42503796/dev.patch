@@ -1,0 +1,46 @@
+diff --git a/ext/opcache/jit/zend_jit_arm64.dasc b/ext/opcache/jit/zend_jit_arm64.dasc
+index 3d3c111d002fc..21d8392b6cb6e 100644
+--- a/ext/opcache/jit/zend_jit_arm64.dasc
++++ b/ext/opcache/jit/zend_jit_arm64.dasc
+@@ -3602,6 +3602,18 @@ static int zend_jit_escape_if_undef_r0(dasm_State **Dst, int var, uint32_t flags
+ 
+ 	ZEND_ASSERT(opline);
+ 
++	if ((opline-1)->opcode != ZEND_FETCH_CONSTANT
++	 && (opline-1)->opcode != ZEND_FETCH_LIST_R
++	 && ((opline-1)->op1_type & (IS_VAR|IS_TMP_VAR))
++	 && !(flags & ZEND_JIT_EXIT_FREE_OP1)) {
++		val_addr = ZEND_ADDR_MEM_ZVAL(ZREG_FP, (opline-1)->op1.var);
++
++		|	IF_NOT_ZVAL_REFCOUNTED val_addr, >2, ZREG_TMP1, ZREG_TMP2
++		|	GET_ZVAL_PTR TMP1, val_addr, TMP2
++		|	GC_ADDREF TMP1, TMP2w
++		|2:
++	}
++
+ 	|	LOAD_IP_ADDR (opline - 1)
+ 	|	b ->trace_escape
+ 	|1:
+diff --git a/ext/opcache/jit/zend_jit_x86.dasc b/ext/opcache/jit/zend_jit_x86.dasc
+index e3802ef5aec6f..07ca85a8c1a7f 100644
+--- a/ext/opcache/jit/zend_jit_x86.dasc
++++ b/ext/opcache/jit/zend_jit_x86.dasc
+@@ -3953,6 +3953,18 @@ static int zend_jit_escape_if_undef_r0(dasm_State **Dst, int var, uint32_t flags
+ 
+ 	ZEND_ASSERT(opline);
+ 
++	if ((opline-1)->opcode != ZEND_FETCH_CONSTANT
++	 && (opline-1)->opcode != ZEND_FETCH_LIST_R
++	 && ((opline-1)->op1_type & (IS_VAR|IS_TMP_VAR))
++	 && !(flags & ZEND_JIT_EXIT_FREE_OP1)) {
++		val_addr = ZEND_ADDR_MEM_ZVAL(ZREG_FP, (opline-1)->op1.var);
++
++		|	IF_NOT_ZVAL_REFCOUNTED val_addr, >2
++		|	GET_ZVAL_PTR r0, val_addr
++		|	GC_ADDREF r0
++		|2:
++	}
++
+ 	|	LOAD_IP_ADDR (opline - 1)
+ 	|	jmp ->trace_escape
+ 	|1:

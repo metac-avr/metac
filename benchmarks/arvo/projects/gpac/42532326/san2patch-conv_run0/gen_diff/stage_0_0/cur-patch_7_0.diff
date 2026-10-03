@@ -1,0 +1,25 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..7d410f728 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -430 +430,2 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-				if (ogg_stream_pagein(&os, &oggpage) >= 0 ) {
++// FIXME: Crash CWE-416: Use After Free - Fixed by avoiding use after free
++ 				if (ogg_stream_pagein(&os, &oggpage) >= 0 ) {
+@@ -432 +433,5 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-					oggdmx_get_stream_info(&oggpacket, &info);
++					// Create a copy of packet data before stream is cleared
++					ogg_packet packet_copy = oggpacket;
++					ogg_stream_state temp_os;
++					memcpy(&temp_os, &os, sizeof(ogg_stream_state));
++					oggdmx_get_stream_info(&packet_copy, &info);
+@@ -712 +716,0 @@ static void oggdmx_parse_tags(GF_Filter *filter, GF_OGGStream *st, u8 *data, u32
+-
+@@ -720 +724,2 @@ GF_Err oggdmx_process(GF_Filter *filter)
+-
++	// Fixed CWE-416: Use After Free - added validation after duration check
++ 
+@@ -723 +728,2 @@ GF_Err oggdmx_process(GF_Filter *filter)
+-
++	//validate context after duration check which may free streams
++	if (!ctx) return GF_BAD_PARAM;

@@ -1,0 +1,26 @@
+diff --git a/fuzz/../example/reader_util.c b/fuzz/../example/reader_util.c
+index 6656143f6..df9912256 100644
+--- a/fuzz/../example/reader_util.c
++++ b/fuzz/../example/reader_util.c
+@@ -1377,8 +1377,13 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      size_t length = strlen(flow->info);
+-
+-      strncat(flow->info + length, flow->ndpi_flow->protos.slp.url[i],
+-              sizeof(flow->info) - length);
+-      length = strlen(flow->info);
+-
+-      if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1)
+-        strncat(flow->info + length, ", ", sizeof(flow->info) - length);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t length = strlen(flow->info);
++       size_t remaining_space = sizeof(flow->info) - length - 1; // -1 for null terminator
++       if (remaining_space > 0) {
++         strncat(flow->info + length, flow->ndpi_flow->protos.slp.url[i], remaining_space);
++       }
++       length = strlen(flow->info);
++       if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1) {
++         remaining_space = sizeof(flow->info) - length - 1; // -1 for null terminator
++         if (remaining_space > 2) { // Need space for ", " (2 chars)
++           strncat(flow->info + length, ", ", remaining_space);
++         }
++       }

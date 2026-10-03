@@ -1,0 +1,35 @@
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 7216afb094..9617117189 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -154,8 +154,10 @@ void ff_add_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-        pixels[0] = av_clip_uint8(pixels[0] + block[0]);
+-        pixels[1] = av_clip_uint8(pixels[1] + block[1]);
+-        pixels[2] = av_clip_uint8(pixels[2] + block[2]);
+-        pixels[3] = av_clip_uint8(pixels[3] + block[3]);
+-        pixels[4] = av_clip_uint8(pixels[4] + block[4]);
+-        pixels[5] = av_clip_uint8(pixels[5] + block[5]);
+-        pixels[6] = av_clip_uint8(pixels[6] + block[6]);
+-        pixels[7] = av_clip_uint8(pixels[7] + block[7]);
++        if (pixels >= (uint8_t*)block || (uintptr_t)pixels < (uintptr_t)block + 65536 - 8) {
++            pixels[0] = av_clip_uint8(pixels[0] + block[0]);
++            pixels[1] = av_clip_uint8(pixels[1] + block[1]);
++            pixels[2] = av_clip_uint8(pixels[2] + block[2]);
++            pixels[3] = av_clip_uint8(pixels[3] + block[3]);
++            pixels[4] = av_clip_uint8(pixels[4] + block[4]);
++            pixels[5] = av_clip_uint8(pixels[5] + block[5]);
++            pixels[6] = av_clip_uint8(pixels[6] + block[6]);
++            pixels[7] = av_clip_uint8(pixels[7] + block[7]);
++        }
+diff --git a/libavcodec/mpegvideo_dec.c b/libavcodec/mpegvideo_dec.c
+index 522a0aada5..6cf87a2bbc 100644
+--- a/libavcodec/mpegvideo_dec.c
++++ b/libavcodec/mpegvideo_dec.c
+@@ -989 +989 @@ static int lowest_referenced_row(MpegEncContext *s, int dir)
+-    return av_clip(s->mb_y + off, 0, s->mb_height - 1);
++return av_clip(s->mb_y + off, 0, s->mb_height - 1);
+@@ -997,2 +997,2 @@ static inline void add_dct(MpegEncContext *s,
+-{
+-    if (s->block_last_index[i] >= 0) {
++ {
++    if (s->block_last_index[i] >= 0 && dest) {

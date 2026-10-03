@@ -1,0 +1,86 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..3a003492 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202,24 +4202,29 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
+-
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
+-
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-		} else {
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
+-	    }
+-	} else {
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
+-	}
++// Validate namespace pointer before use to prevent use-after-free
++         xmlNsPtr ns = NULL;
++
++	 /* Check if namespace is still valid by verifying it's properly linked */
++	 if ((node->type == XML_ELEMENT_NODE || node->type == XML_ATTRIBUTE_NODE) && 
++	     node->ns->href != NULL) {
++	     ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	     if (ns == NULL) {
++	         /*
++	          * Humm, we are copying an element whose namespace is defined
++	          * out of the new tree scope. Search it in the original tree
++	          * and add it at the top of the new tree
++	          */
++	         ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	         if (ns != NULL) {
++	             xmlNodePtr root = ret;
++
++		     while (root->parent != NULL) root = root->parent;
++		     ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		 } else {
++			 ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	         }
++	     } else {
++	         /*
++	          * reference the existing namespace definition in our own tree.
++	          */
++	         ret->ns = ns;
++	     }
++	 }
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..44936ec4 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1280 +1280 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-        if ((reader->preserves > 0) &&
++	if ((reader->preserves > 0) &&
+@@ -1299,3 +1299,17 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Add reference count check before freeing */
++		int can_free = 1;
++		if (tmp->type == XML_ELEMENT_NODE && tmp->nsDef != NULL) {
++		    xmlNsPtr ns = tmp->nsDef;
++		    while (ns != NULL) {
++		        if (ns->context != NULL) {
++			    can_free = 0;
++			    break;
++		        }
++		        ns = ns->next;
++		    }
++		}
++		if (can_free) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		}

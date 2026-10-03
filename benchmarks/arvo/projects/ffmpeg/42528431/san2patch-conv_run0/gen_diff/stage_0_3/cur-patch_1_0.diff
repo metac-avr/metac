@@ -1,0 +1,43 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..6c006e817e 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1128 +1128,2 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
+-    case VVC_RADL_NUT:
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     case VVC_RADL_NUT:
+@@ -1137,0 +1139,5 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
++            // Bounds check for slice data to prevent integer underflow
++            if (unit->data_size > INT_MAX) {
++                return AVERROR_INVALIDDATA;
++            }
++
+@@ -1148,5 +1154,7 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
+-            if (slice->header.sh_picture_header_in_slice_header_flag) {
+-                err = cbs_h266_replace_ph(ctx, unit, &slice->header.sh_picture_header);
+-                if (err < 0)
+-                    return err;
+-            }
++// Fixed: Validate slice data size calculation to prevent underflow
++             if (len >= 0 && pos >= 0 && pos / 8 <= len) {
++                if (slice->header.sh_picture_header_in_slice_header_flag) {
++                    err = cbs_h266_replace_ph(ctx, unit, &slice->header.sh_picture_header);
++                    if (err < 0)
++                        return err;
++                }
+@@ -1154,6 +1162,9 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
+-            slice->data_size = len - pos / 8;
+-            slice->data_ref  = av_buffer_ref(unit->data_ref);
+-            if (!slice->data_ref)
+-                return AVERROR(ENOMEM);
+-            slice->data = unit->data + pos / 8;
+-            slice->data_bit_start = pos % 8;
++                slice->data_size = len - pos / 8;
++                slice->data_ref  = av_buffer_ref(unit->data_ref);
++                if (!slice->data_ref)
++                    return AVERROR(ENOMEM);
++                slice->data = unit->data + pos / 8;
++                slice->data_bit_start = pos % 8;
++            } else {
++                return AVERROR_INVALIDDATA;
++            }

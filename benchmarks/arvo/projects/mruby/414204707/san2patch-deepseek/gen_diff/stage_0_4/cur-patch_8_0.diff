@@ -1,0 +1,30 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..375ebca9a 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1095 +1095 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    struct RBasic *obj = gc->gray_list;
++     struct RBasic *obj = gc->gray_list;
+@@ -1097,2 +1097,6 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (mrb_immediate_p(obj)) {
++      tried_marks++;
++    } else {
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    }
+diff --git a/include/mruby/value.h b/include/mruby/value.h
+index 6666a9c14..cb76acec9 100644
+--- a/include/mruby/value.h
++++ b/include/mruby/value.h
+@@ -345 +345,2 @@ MRB_INLINE mrb_value mrb_int_value(struct mrb_state *mrb, mrb_int i)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -347,0 +349,3 @@ MRB_INLINE mrb_value mrb_int_value(struct mrb_state *mrb, mrb_int i)
++  if (!mrb_immediate_p(v)) {
++    mrb_raise(mrb, E_TYPE_ERROR, "integer out of immediate range");
++  }
+@@ -357 +360,0 @@ MRB_INLINE mrb_value mrb_fixnum_value(mrb_int i)
+-

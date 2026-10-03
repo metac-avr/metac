@@ -1,0 +1,25 @@
+diff --git a/src/filter_core/filter_session.c b/src/filter_core/filter_session.c
+index ccb04e01d..ae76c9fca 100644
+--- a/src/filter_core/filter_session.c
++++ b/src/filter_core/filter_session.c
+@@ -2134 +2134 @@ static u32 gf_fs_thread_proc(GF_SessionThread *sess_thread)
+-		safe_int_inc(& fsess->tasks_in_process );
++        safe_int_inc(& fsess->tasks_in_process );
+@@ -2142 +2142,2 @@ static u32 gf_fs_thread_proc(GF_SessionThread *sess_thread)
+-		task->requeue_request = GF_FALSE;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		task->requeue_request = GF_FALSE;
+@@ -2144 +2145,8 @@ static u32 gf_fs_thread_proc(GF_SessionThread *sess_thread)
+-		task->run_task(task);
++		// Check if task and run_task are still valid before calling
++		if (task && task->run_task) {
++			task->run_task(task);
++		} else {
++			// Skip execution if pointers are invalid
++			goto skip_execution;
++		}
++		skip_execution:
+@@ -2154,2 +2162 @@ static u32 gf_fs_thread_proc(GF_SessionThread *sess_thread)
+-#ifdef CHECK_TASK_LIST_INTEGRITY
+-		prev_current_filter = task->filter;
++#ifdef CHECK_TASK_LIST_INTEGRITY		prev_current_filter = task->filter;

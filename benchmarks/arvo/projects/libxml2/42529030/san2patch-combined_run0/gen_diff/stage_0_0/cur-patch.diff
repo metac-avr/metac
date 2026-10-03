@@ -1,0 +1,32 @@
+diff --git a/parser.c b/parser.c
+index 19f2e615..cbfa5f5e 100644
+--- a/parser.c
++++ b/parser.c
+@@ -8267 +8267 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
+-    length = input->cur - input->base;
++length = input->cur - input->base;
+@@ -8274 +8274,7 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
+-    xmlBufResetInput(input->buf->buffer, input);
++    /* Check buffer integrity before reset to prevent use-after-free */
++    if (input->buf && input->buf->buffer) {
++        xmlBufResetInput(input->buf->buffer, input);
++    } else {
++        xmlFatalErr(ctxt, XML_ERR_INTERNAL_ERROR, "Buffer corruption detected");
++        goto error;
++    }
+@@ -8288 +8293,0 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
+-
+diff --git a/error.c b/error.c
+index 1b4fe767..2a6140ec 100644
+--- a/error.c
++++ b/error.c
+@@ -420 +420,3 @@ xmlReportError(xmlErrorPtr err, xmlParserCtxtPtr ctxt, const char *str,
+-        xmlParserPrintFileContextInternal(input, channel, data);
++        /* Check for valid pointers before calling xmlParserPrintFileContextInternal */
++        if (input != NULL && input->cur != ((void*)0) && input->base != ((void*)0))
++            xmlParserPrintFileContextInternal(input, channel, data);
+@@ -426 +428,3 @@ xmlReportError(xmlErrorPtr err, xmlParserCtxtPtr ctxt, const char *str,
+-            xmlParserPrintFileContextInternal(cur, channel, data);
++            /* Check for valid pointers before calling xmlParserPrintFileContextInternal */
++            if (cur->cur != ((void*)0) && cur->base != ((void*)0))
++                xmlParserPrintFileContextInternal(cur, channel, data);

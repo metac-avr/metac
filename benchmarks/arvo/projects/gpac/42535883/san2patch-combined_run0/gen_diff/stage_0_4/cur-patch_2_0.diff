@@ -1,0 +1,43 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..614307a44 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1188,0 +1189,3 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++	if (!cfg || !bs) return GF_BAD_PARAM;
++	if (!cfg->param_array) return GF_BAD_PARAM;
++
+@@ -1219,3 +1222,7 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			if (cfg->num_constraint_info) {
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++			if (cfg->num_constraint_info && cfg->general_constraint_info) {
++				if (cfg->num_constraint_info > 1) {
++					gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
++				}
++				if (cfg->num_constraint_info > 0) {
++					gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				}
+@@ -1234 +1241 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				if (cfg->ptl_sublayer_present_mask & (1<<idx))
++				if ((cfg->ptl_sublayer_present_mask & (1<<idx)) && cfg->sublayer_level_idc)
+@@ -1239 +1246 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			for (idx=0; idx<cfg->num_sub_profiles; idx++) {
++			for (idx=0; idx<cfg->num_sub_profiles && cfg->sub_profiles_idc; idx++) {
+@@ -1254,0 +1262,3 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++		if (!ar) continue;
++		if (!ar->nalus) continue;
++
+@@ -1268,0 +1279 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			if (!sl) continue;
+@@ -1274 +1285,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			gf_bs_write_data(bs, sl->data, sl->size);
++			if (sl->data && sl->size > 0)
++				gf_bs_write_data(bs, sl->data, sl->size);
+@@ -1284 +1296,3 @@ GF_Err gf_odf_vvc_cfg_write(GF_VVCConfig *cfg, u8 **outData, u32 *outSize)
+-	GF_BitStream *bs = gf_bs_new(NULL, 0, GF_BITSTREAM_WRITE);
++	GF_BitStream *bs;
++	
++	if (!outData || !outSize) return GF_BAD_PARAM;
+@@ -1286,0 +1301,2 @@ GF_Err gf_odf_vvc_cfg_write(GF_VVCConfig *cfg, u8 **outData, u32 *outSize)
++	if (!cfg) return GF_BAD_PARAM;
++	bs = gf_bs_new(NULL, 0, GF_BITSTREAM_WRITE);

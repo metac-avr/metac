@@ -1,0 +1,25 @@
+diff --git a/src/lib/ndpi_serializer.c b/src/lib/ndpi_serializer.c
+index 3cda728bd..1f9c805a2 100644
+--- a/src/lib/ndpi_serializer.c
++++ b/src/lib/ndpi_serializer.c
+@@ -2113 +2113 @@ int ndpi_serialize_string_string_len(ndpi_serializer *_serializer,
+-				      value, value_len));
++                                      value, value_len));
+@@ -2123 +2123,14 @@ int ndpi_serialize_string_string(ndpi_serializer *_serializer,
+-  return(ndpi_serialize_string_string_len(_serializer, key, value, strlen(value)));
++  /* Defensive programming: Check if the pointer is valid before strlen call */
++  volatile int dummy_check = 0;
++  if (value) {
++    /* Minimal safe access check - read first byte if possible */
++    dummy_check = *value;
++  }
++  
++  /* Only proceed with strlen if pointer seems valid */
++  size_t len = 0;
++  if (value && dummy_check >= 0) { /* Basic validity check */
++    len = strlen(value);
++  }
++  
++  return(ndpi_serialize_string_string_len(_serializer, key, value, len));
+@@ -2133 +2145,0 @@ int ndpi_serialize_string_raw(ndpi_serializer *_serializer,
+-

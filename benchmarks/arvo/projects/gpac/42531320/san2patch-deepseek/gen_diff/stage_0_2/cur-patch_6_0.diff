@@ -1,0 +1,16 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..8186e6021 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -3236 +3236,7 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			u32 hdr_size = 0;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 			u32 hdr_size = 0;
++
++			if (size < hdr_size) {
++				inspect_printf(dump, "   <!-- OBU is corrupted: not enough bytes for header -->\n");
++				break;
++			}
+@@ -3240 +3246 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			if (obu_size > size) {
++			if ((obu_size > size) || (hdr_size > size - obu_size)) {

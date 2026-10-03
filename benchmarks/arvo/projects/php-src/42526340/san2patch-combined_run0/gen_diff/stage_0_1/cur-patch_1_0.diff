@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..eea674bcc89 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// Fixed CWE-416: Use After Free by adding null check before pointer arithmetic
++		if (object != NULL) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index eb7ef1624b9..bdefd129df9 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272 +3272,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					/* Defer cleanup to after shutdown phase to prevent use-after-free */
++					zend_mark_zval_for_deferred_cleanup(EX_VAR(throw_op->result.var));

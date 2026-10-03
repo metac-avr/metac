@@ -1,0 +1,70 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..dee3c1d8389 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -290,2 +290,4 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-	efree(args);
+-
++	if (args) {
++		efree(args);
++	}
++ 
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..c6e23d0ff96 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6769,0 +6770,26 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++ZEND_METHOD(ReflectionAttribute, newInstance)
++{
++	reflector_reflection_object *attr = Z_REFLECTION_OBJECT_P(ZEND_THIS);
++	zend_class_entry *ce;
++
++	if (zend_parse_parameters_none() == FAILURE) {
++		RETURN_THROWS();
++	}
++
++	if ((ce = zend_lookup_class(attr->data->name)) == NULL) {
++		zend_throw_error(NULL, "Class \"%s\" does not exist", ZSTR_VAL(attr->data->name));
++		RETURN_THROWS();
++	}
++
++	if (!(ce->ce_flags & ZEND_ACC_ATTRIBUTE)) {
++		zend_throw_error(NULL, "Class \"%s\" is not an Attribute", ZSTR_VAL(attr->data->name));
++		RETURN_THROWS();
++	}
++
++	uint32_t flags = ce->ce_flags & ZEND_ACC_ATTR_GRP_MASK;
++	if (flags & ZEND_ATTRIBUTE_TARGETS_ALLOWED) {
++		uint32_t target = attr->data->flags & ZEND_ATTRIBUTE_TARGET_MASK;
++		if (!(flags & target)) {
++			zend_throw_error(NULL, "Attribute \"%s\" cannot be used here", ZSTR_VAL(attr->data->name));
++			RETURN_THROWS();
++		}
+@@ -6778,0 +6805,8 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	
++	zend_string *filename_to_use = NULL;
++	if (attr->filename) {
++		if (!ZSTR_IS_INTERNED(attr->filename)) {
++			zend_string_addref(attr->filename);
++		}
++		filename_to_use = attr->filename;
++	}
+@@ -6780 +6814,4 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
++	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, filename_to_use)) {
++		if (filename_to_use && !ZSTR_IS_INTERNED(filename_to_use)) {
++			zend_string_release(filename_to_use);
++		}
+@@ -6783,0 +6821,3 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	if (filename_to_use && !ZSTR_IS_INTERNED(filename_to_use)) {
++		zend_string_release(filename_to_use);
++	}
+@@ -6785,7 +6825 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-}
+-
+-ZEND_METHOD(ReflectionEnum, __construct)
+-{
+-	reflection_class_object_ctor(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++}		RETURN_THROWS();

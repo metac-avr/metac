@@ -1,0 +1,44 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..0af3f07a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3936 +3936 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      int res;
++       int res;
+@@ -3972 +3972 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-        if (xmlStrEqual(ns->href, cur->ns->href)) {
++        if ((cur->ns != NULL) && (ns != NULL) && xmlStrEqual(ns->href, cur->ns->href)) {
+@@ -3980,3 +3980,7 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          ret->ns = xmlNewReconciledNs(target, cur->ns);
+-          if (ret->ns == NULL)
+-              goto error;
++          if (cur->ns != NULL) {
++            ret->ns = xmlNewReconciledNs(target, cur->ns);
++            if (ret->ns == NULL)
++                goto error;
++          } else {
++            ret->ns = NULL;
++          }
+@@ -4247 +4251,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     }
+@@ -4249,3 +4254,15 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        ret->properties = xmlCopyPropList(ret, node->properties);
+-        if (ret->properties == NULL)
+-            goto error;
++        /* Check if namespace is still valid before copying properties */
++        xmlAttrPtr prop = node->properties;
++        int valid_ns = 1;
++        while (prop != NULL) {
++            if (prop->ns != NULL && prop->ns->href == NULL) {
++                valid_ns = 0;
++                break;
++            }
++            prop = prop->next;
++        }
++        if (valid_ns) {
++            ret->properties = xmlCopyPropList(ret, node->properties);
++            if (ret->properties == NULL)
++                goto error;
++        }

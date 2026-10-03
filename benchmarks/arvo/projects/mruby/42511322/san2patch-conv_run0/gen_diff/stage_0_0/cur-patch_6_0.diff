@@ -1,0 +1,31 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..90f6b5cfc 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -108,2 +108,2 @@ stack_init(mrb_state *mrb)
+-
+-  /* mrb_assert(mrb->stack == NULL); */
++  
++  /* Initialize stack with proper allocation */
+@@ -113 +113 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  /* Initialize call info with proper allocation */
+@@ -118 +118 @@ stack_init(mrb_state *mrb)
+-  c->ci->stack = c->stbase;
++  c->ci->stack = c->stbase; /* Set stack pointer to valid memory */
+@@ -525 +525,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-416: Use After Free
++     c = mrb_class(mrb, self);
+@@ -527,0 +529,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    if (voff >= 0) {
++      argv = mrb->c->stbase + voff;
++    }
+@@ -550,0 +555,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++        if (voff >= 0) {
++          argv = mrb->c->stbase + voff;
++        }
+@@ -553,3 +559,0 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    if (voff >= 0) {
+-      argv = mrb->c->stbase + voff;
+-    }

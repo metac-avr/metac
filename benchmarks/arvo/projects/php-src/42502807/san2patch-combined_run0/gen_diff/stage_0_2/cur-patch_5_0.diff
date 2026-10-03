@@ -1,0 +1,44 @@
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index c9d23d11b7d..7d602730ab8 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -1077,5 +1077,11 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-			sizeof(zval) * op_array->last_literal);
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++		size_t aligned_ops_size = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++		size_t literals_size = sizeof(zval) * op_array->last_literal;
++		
++		/* Allocate with safety margin to prevent boundary issues */
++		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes, aligned_ops_size + literals_size + 8);
++		
++		/* Safe copy with boundary validation */
++		void* literals_dest = ((char*)op_array->opcodes) + aligned_ops_size;
++		if (literals_dest >= (void*)op_array->opcodes) {  /* Prevent negative offsets */
++			memcpy(literals_dest, op_array->literals, literals_size);
++		}
+@@ -1083 +1089 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)literals_dest;
+@@ -1188,5 +1194,11 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-			sizeof(zval) * op_array->last_literal);
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++		size_t aligned_ops_size = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++		size_t literals_size = sizeof(zval) * op_array->last_literal;
++		
++		/* Allocate with safety margin to prevent boundary issues */
++		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes, aligned_ops_size + literals_size + 8);
++		
++		/* Safe copy with boundary validation */
++		void* literals_dest = ((char*)op_array->opcodes) + aligned_ops_size;
++		if (literals_dest >= (void*)op_array->opcodes) {  /* Prevent negative offsets */
++			memcpy(literals_dest, op_array->literals, literals_size);
++		}
+@@ -1194 +1206 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)literals_dest;

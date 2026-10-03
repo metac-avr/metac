@@ -1,0 +1,51 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..eaea7f79 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1237,0 +1238,46 @@ xmlFreeDoc(xmlDocPtr cur) {
++
++    /*
++     * Before releasing the node list, remove dictionary-owned strings
++     * from attributes.  For each attribute name and value, if the
++     * pointer belongs to the document dictionary, replace it with a
++     * freshly allocated copy so that ordinary xmlFreeProp behavior
++     * can free it safely.  Then free the original dictionary string
++     * through the dictionary's own reference accounting rather than
++     * free().  The dictionary is destroyed at the end of this function.
++     */
++    if ((dict != NULL) && (cur->children != NULL)) {
++        xmlNodePtr child;
++        for (child = cur->children; child != NULL; child = child->next) {
++            if (child->type == XML_ELEMENT_NODE) {
++                xmlAttrPtr attr;
++                for (attr = child->properties; attr != NULL; attr = attr->next) {
++                    const xmlChar *dictName = xmlDictLookup(dict, attr->name, -1);
++                    if (dictName != NULL) {
++                        xmlChar *copy = xmlStrdup(dictName);
++                        if (copy != NULL) {
++                            xmlDictOwns(dict, attr->name);
++                            attr->name = copy;
++                        }
++                    }
++                    if (attr->children != NULL) {
++                        xmlNodePtr text = attr->children;
++                        while (text != NULL) {
++                            if (text->type == XML_TEXT_NODE) {
++                                const xmlChar *dictValue = xmlDictLookup(dict, text->content, -1);
++                                if (dictValue != NULL) {
++                                    xmlChar *copy = xmlStrdup(dictValue);
++                                    if (copy != NULL) {
++                                        xmlDictOwns(dict, text->content);
++                                        text->content = copy;
++                                    }
++                                }
++                                break;
++                            }
++                            text = text->next;
++                        }
++                    }
++                }
++            }
++        }
++    }
++

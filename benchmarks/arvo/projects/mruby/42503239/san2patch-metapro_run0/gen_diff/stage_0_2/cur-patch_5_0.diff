@@ -1,0 +1,30 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..ea7c06815 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -107,3 +107,3 @@ stack_init(mrb_state *mrb)
+-
+-  /* mrb_assert(mrb->stack == NULL); */
+-  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE, sizeof(mrb_value));
++ 
++  /* Enhanced stack initialization with overflow protection */
++  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE + 8/sizeof(mrb_value), sizeof(mrb_value));
+@@ -112,2 +112,2 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
+-  c->cibase = (mrb_callinfo *)mrb_calloc(mrb, CALLINFO_INIT_SIZE, sizeof(mrb_callinfo));
++  /* Enhanced callinfo initialization with overflow protection */
++  c->cibase = (mrb_callinfo *)mrb_calloc(mrb, CALLINFO_INIT_SIZE + 1, sizeof(mrb_callinfo));
+@@ -1611 +1611 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        }
++         }
+@@ -1637 +1637,9 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        ci->stack[0] = recv;
++        
++        /* Bounds check with margin for 8-byte operations */
++        ptrdiff_t stack_space = mrb->c->stend - ci->stack;
++        if (stack_space >= 2) {  /* Ensure at least 16 bytes available */
++          ci->stack[0] = recv;
++        } else {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "insufficient stack space");
++          goto L_RAISE;
++        }

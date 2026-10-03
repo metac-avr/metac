@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..0d39f9f4b9a 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -34,2 +34,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
++		if (!Z_DELREF_P(zval_ptr)) {
++			rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..fec51993caa 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16750,2 +16750,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op2.var));
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++	zval *temp_op2 = EX_VAR(opline->op2.var);
++	zval *temp_op1 = EX_VAR(opline->op1.var);
++	if (temp_op2) {
++		zval_ptr_dtor_nogc(temp_op2);
++	}
++	if (temp_op1) {
++		zval_ptr_dtor_nogc(temp_op1);
++	}

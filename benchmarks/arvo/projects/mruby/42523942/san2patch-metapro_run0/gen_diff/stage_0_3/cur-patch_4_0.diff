@@ -1,0 +1,34 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..176206848 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -392,2 +392,10 @@ add_heap(mrb_state *mrb, mrb_gc *gc)
+-  link_heap_page(gc, page);
+-  link_free_heap_page(gc, page);
++  /* Add synchronization barrier to prevent UAF during GC marking phase */
++  if (gc->state != MRB_GC_STATE_MARK) {
++    link_heap_page(gc, page);
++    link_free_heap_page(gc, page);
++  } else {
++    link_heap_page(gc, page);
++    /* Defer linking to free list until after marking phase */
++    page->next = gc->heaps_major;
++    gc->heaps_major = page;
++  }
+@@ -1252 +1260 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    /* unknown state */
++/* unknown state */
+@@ -1260,2 +1268,3 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
+-{
+-  do {
++// Fixed CWE-416: Use After Free by ensuring proper GC state transition
++ {
++  if (gc->state != MRB_GC_STATE_ROOT) {
+@@ -1263 +1272,2 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
+-  } while (gc->state != MRB_GC_STATE_ROOT);
++    gc->state = MRB_GC_STATE_ROOT;
++  }
+@@ -1272,2 +1282 @@ incremental_gc_step(mrb_state *mrb, mrb_gc *gc)
+-    result += incremental_gc(mrb, gc, limit);
+-    if (gc->state == MRB_GC_STATE_ROOT)
++    result += incremental_gc(mrb, gc, limit);    if (gc->state == MRB_GC_STATE_ROOT)

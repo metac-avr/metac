@@ -1,0 +1,37 @@
+diff --git a/dict.c b/dict.c
+index 5c9ca719..e06092f0 100644
+--- a/dict.c
++++ b/dict.c
+@@ -879 +879,5 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    if (len < 0)
++    /* Prevent use-after-free by checking pointer validity */
++    if (len < 0) {
++        /* Validate memory access before calling strlen */
++        if (!xmlDictIsValid(name))
++            return(NULL);
+@@ -881 +885 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    else
++    } else {
+@@ -882,0 +887 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
++    }
+@@ -890,2 +895 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);
+diff --git a/tree.c b/tree.c
+index 6a42f118..8ce52641 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4519 +4519 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4527 +4527 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++     xmlNodePtr ret;
+@@ -4528,0 +4529,2 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if ((node == NULL) || (doc == NULL))
++        return(NULL);
+@@ -4539,2 +4541 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
++ * * Returns: a new #xmlNodePtr, or NULL in case of error.

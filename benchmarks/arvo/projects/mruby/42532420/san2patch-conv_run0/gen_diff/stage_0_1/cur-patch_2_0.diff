@@ -1,0 +1,24 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..96bc2f230 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1940 +1940,2 @@ mrb_str_index_m(mrb_state *mrb, mrb_value str)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
+@@ -1958 +1959,14 @@ mrb_str_index_m(mrb_state *mrb, mrb_value str)
+-  pos = str_index_str_by_char(mrb, str, sub, pos);
++  
++  // Fix: Ensure search position is within valid bounds
++  if (pos >= 0) {
++    mrb_int max_pos = RSTRING_CHAR_LEN(str) - RSTRING_CHAR_LEN(sub);
++    if (RSTRING_CHAR_LEN(sub) > 0 && pos <= max_pos) {
++      pos = str_index_str_by_char(mrb, str, sub, pos);
++    } else if (RSTRING_CHAR_LEN(sub) == 0) {
++      pos = str_index_str_by_char(mrb, str, sub, pos);
++    } else {
++      pos = -1;
++    }
++  } else {
++    pos = -1;
++  }

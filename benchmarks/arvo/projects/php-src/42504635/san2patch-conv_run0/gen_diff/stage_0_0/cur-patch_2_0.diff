@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..e101dc73f11 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -65 +65,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++	// Patched CWE-416: Validate string pointer before refcount assertion
++	if (__builtin_expect(GC_REFCOUNT(str) != 0, 0)) {
++		ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++	}
+@@ -77 +79,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index a473c84d2d4..02e8880c157 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -320,0 +321 @@ static void gc_stack_free(gc_stack *stack)
++		gc_stack *temp = p;  /* Store current pointer for safe freeing */
+@@ -322 +323 @@ static void gc_stack_free(gc_stack *stack)
+-		efree(p);
++		efree(temp);

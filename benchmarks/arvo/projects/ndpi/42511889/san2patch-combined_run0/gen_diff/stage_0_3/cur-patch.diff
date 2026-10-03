@@ -1,0 +1,44 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 9f1dd9cf5..ab31381ab 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1209,4 +1209,3 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-        return;
+-      } else {
+-        ndpi_int_http_add_connection(ndpi_struct, flow, NDPI_PROTOCOL_HTTP, NDPI_PROTOCOL_CATEGORY_WEB);
+-      }
++      return;
++    } else {
++      ndpi_int_http_add_connection(ndpi_struct, flow, NDPI_PROTOCOL_HTTP, NDPI_PROTOCOL_CATEGORY_WEB);
+@@ -1213,0 +1213 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
++  }
+@@ -1215,4 +1215,6 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    NDPI_LOG_DBG2(ndpi_struct,
+-		  "Filename HTTP found: %d, we look for line info..\n", filename_start);
+-
+-    ndpi_parse_packet_line_info(ndpi_struct, flow);
++  NDPI_LOG_DBG2(ndpi_struct,
++		"Filename HTTP found: %d, we look for line info..\n", filename_start);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++  ndpi_parse_packet_line_info(ndpi_struct, flow);
++  if (packet->line[0].ptr != NULL && packet->line[0].len <= MAX_PACKET_LINE_LEN) {
+@@ -1219,0 +1222 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
++  }
+@@ -1221,3 +1224,3 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    if(packet->parsed_lines <= 1) {
+-      NDPI_LOG_DBG2(ndpi_struct,
+-		    "Found just one line, we will look further for the next packet...\n");
++  if(packet->parsed_lines <= 1) {
++    NDPI_LOG_DBG2(ndpi_struct,
++		  "Found just one line, we will look further for the next packet...\n");
+@@ -1225,2 +1228,2 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-      packet->http_method.ptr = packet->line[0].ptr;
+-      packet->http_method.len = filename_start - 1;
++    packet->http_method.ptr = packet->line[0].ptr;
++    packet->http_method.len = filename_start - 1;
+@@ -1228,2 +1231,2 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-      /* Encode the direction of the packet in the stage, so we will know when we need to look for the response packet. */
+-      flow->l4.tcp.http_stage = packet->packet_direction + 1; // packet_direction 0: stage 1, packet_direction 1: stage 2
++    /* Encode the direction of the packet in the stage, so we will know when we need to look for the response packet. */
++    flow->l4.tcp.http_stage = packet->packet_direction + 1; // packet_direction 0: stage 1, packet_direction 1: stage 2

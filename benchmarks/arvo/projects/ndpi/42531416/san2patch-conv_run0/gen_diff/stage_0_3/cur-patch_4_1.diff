@@ -1,0 +1,36 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..30e3edc8e 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -906,4 +906,5 @@ static int processTLSBlock(struct ndpi_detection_module_struct *ndpi_struct,
+-    processClientServerHello(ndpi_struct, flow, 0);
+-    flow->protos.tls_quic.hello_processed = 1;
+-    flow->protos.tls_quic.ch_direction = (packet->payload[0] == 0x01 ? packet->packet_direction : !packet->packet_direction);
+-    ndpi_int_tls_add_connection(ndpi_struct, flow);
++    if(packet->payload_size >= 2) { /* Validate buffer size before processing */
++      processClientServerHello(ndpi_struct, flow, 0);
++      flow->protos.tls_quic.hello_processed = 1;
++      flow->protos.tls_quic.ch_direction = (packet->payload[0] == 0x01 ? packet->packet_direction : !packet->packet_direction);
++      ndpi_int_tls_add_connection(ndpi_struct, flow);
+@@ -912,3 +913,3 @@ static int processTLSBlock(struct ndpi_detection_module_struct *ndpi_struct,
+-    printf("*** TLS [version: %02X][%s Hello]\n",
+-	   flow->protos.tls_quic.ssl_version,
+-	   (packet->payload[0] == 0x01) ? "Client" : "Server");
++      printf("*** TLS [version: %02X][%s Hello]\n",
++	     flow->protos.tls_quic.ssl_version,
++	     (packet->payload[0] == 0x01) ? "Client" : "Server");
+@@ -917,5 +918,5 @@ static int processTLSBlock(struct ndpi_detection_module_struct *ndpi_struct,
+-    /* Not support for DTLS 1.3 yet, then certificates are always visible in DTLS */
+-    if((packet->tcp && flow->protos.tls_quic.ssl_version >= 0x0304 /* TLS 1.3 */)
+-       && (packet->payload[0] == 0x02 /* Server Hello */)) {
+-      flow->tls_quic.certificate_processed = 1; /* No Certificate with TLS 1.3+ */
+-    }
++      /* Not support for DTLS 1.3 yet, then certificates are always visible in DTLS */
++      if((packet->tcp && flow->protos.tls_quic.ssl_version >= 0x0304 /* TLS 1.3 */)
++         && (packet->payload[0] == 0x02 /* Server Hello */)) {
++        flow->tls_quic.certificate_processed = 1; /* No Certificate with TLS 1.3+ */
++      }
+@@ -923 +924,2 @@ static int processTLSBlock(struct ndpi_detection_module_struct *ndpi_struct,
+-    checkTLSSubprotocol(ndpi_struct, flow, packet->payload[0] == 0x01);
++      checkTLSSubprotocol(ndpi_struct, flow, packet->payload[0] == 0x01);
++    }

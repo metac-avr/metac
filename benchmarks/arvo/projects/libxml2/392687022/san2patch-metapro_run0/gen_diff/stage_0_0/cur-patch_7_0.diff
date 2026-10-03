@@ -1,0 +1,56 @@
+diff --git a/valid.c b/valid.c
+index 897a368d..3c1db536 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5010,2 +5010,3 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-		    if (size - len < xmlStrlen(cur->ns->prefix) + 10) {
+-			if ((size - len > 4) && (buf[len - 1] != '.'))
++		    int prefix_len = xmlStrlen(cur->ns->prefix);
++		    if (size - len < prefix_len + 10) {
++			if ((size - len > 4) && (buf[len - 1] != '.') && (len < size - 4))
+@@ -5015,2 +5016,4 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-		    strcat(buf, (char *) cur->ns->prefix);
+-		    strcat(buf, ":");
++		    if (len + prefix_len < size - 1)
++		        strcat(buf, (char *) cur->ns->prefix);
++		    if (len + 1 < size - 1)
++		        strcat(buf, ":");
+@@ -5019 +5022 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-		    if ((size - len > 4) && (buf[len - 1] != '.'))
++		    if ((size - len > 4) && (buf[len - 1] != '.') && (len < size - 4))
+@@ -5023,3 +5026,6 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-                if (cur->name != NULL)
+-	            strcat(buf, (char *) cur->name);
+-		if (cur->next != NULL)
++                if (cur->name != NULL) {
++		    int name_len = xmlStrlen(cur->name);
++		    if (len + name_len < size - 1)
++	                strcat(buf, (char *) cur->name);
++		}
++		if (cur->next != NULL && len + 1 < size - 1)
+@@ -5034,2 +5040,3 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-	        strcat(buf, "CDATA");
+-		if (cur->next != NULL)
++	        if (len + 6 < size - 1)
++	            strcat(buf, "CDATA");
++		if (cur->next != NULL && len + 1 < size - 1)
+@@ -5045,2 +5052,3 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-	        strcat(buf, "???");
+-		if (cur->next != NULL)
++	        if (len + 4 < size - 1)
++	            strcat(buf, "???");
++		if (cur->next != NULL && len + 1 < size - 1)
+@@ -5302 +5310 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
+-	    xmlSnprintfElementContent(&expr[0], 5000, cont, 1);
++	    int expr_len = xmlSnprintfElementContent(&expr[0], 5000, cont, 1);
+@@ -5305,3 +5313,4 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
+-	    if (repl != NULL)
+-		xmlSnprintfElements(&list[0], 5000, repl, 1);
+-	    else
++	    if (repl != NULL) {
++		int list_len = xmlSnprintfElements(&list[0], 5000, repl, 1);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 	    } else
+@@ -5309 +5318 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
+-		xmlSnprintfElements(&list[0], 5000, child, 1);
++		int list_len = xmlSnprintfElements(&list[0], 5000, child, 1);

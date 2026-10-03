@@ -1,0 +1,47 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..8c95d84c 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2221 +2221 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-    cur = ctxt->incTab[nr]->ref;
++cur = ctxt->incTab[nr]->ref;
+@@ -2229 +2229 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	(ctxt->incTab[nr]->xptr != NULL)) {
++ 	(ctxt->incTab[nr]->xptr != NULL)) {
+@@ -2232 +2232 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		                    ctxt->incTab[nr]->xptr);
++		            ctxt->incTab[nr]->xptr);
+@@ -2239,0 +2240,21 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    /*
++     * Avoid dangling strings from the source document: if the current
++     * document has a dictionary, copy the returned list recursively with
++     * dictionary ownership explicitly transferred to the current document,
++     * preventing source dictionary memory from becoming inaccessible while
++     * the copied nodes remain in use.
++     */
++    if (list != NULL && ctxt->doc != NULL && ctxt->doc->dict != NULL) {
++        xmlNodePtr iter = list;
++        while (iter != NULL) {
++            xmlNodePtr next = iter->next;
++            xmlNodePtr copied = xmlCopyNode(iter, 1);
++            if (copied != NULL) {
++                xmlReplaceNode(iter, copied);
++                xmlFreeNode(iter);
++                iter = copied;
++            }
++            iter = next;
++        }
++    }
++
+diff --git a/tree.c b/tree.c
+index 6a42f118..3182bf89 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2010,0 +2011,7 @@ xmlNewNsPropEatName(xmlNodePtr node, xmlNsPtr ns, xmlChar *name,
++    if ((node != NULL) && (node->doc != NULL)) {
++        xmlChar *tmp = xmlStrdup(name);
++        if (tmp == NULL)
++            return(NULL);
++        name = tmp;
++    }
++

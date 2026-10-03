@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 733ce54dc24..3aa48787081 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -5166 +5166,4 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			/* Check if iterator object is still valid before releasing */
++			if (!(GC_FLAGS(&iter->std) & IS_OBJ_FREE_CALLED)) {
++				OBJ_RELEASE(&iter->std);
++			}
+@@ -5179 +5182,4 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			/* Validate object before release to prevent expired pointer dereference */
++			if (!(GC_FLAGS(&iter->std) & IS_OBJ_FREE_CALLED)) {
++				OBJ_RELEASE(&iter->std);
++			}
+@@ -5188 +5194,4 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-		OBJ_RELEASE(&iter->std);
++		/* Ensure object validity check before accessing freed memory */
++		if (!(GC_FLAGS(&iter->std) & IS_OBJ_FREE_CALLED)) {
++			OBJ_RELEASE(&iter->std);
++		}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..781043d9e57 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -192 +192,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+@@ -194 +195,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			object->handlers->free_obj(object);
++			if (object->handlers) {
++				object->handlers->free_obj(object);
++			}

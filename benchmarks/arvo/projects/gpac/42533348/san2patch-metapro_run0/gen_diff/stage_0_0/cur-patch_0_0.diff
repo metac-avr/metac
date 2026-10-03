@@ -1,0 +1,18 @@
+diff --git a/src/utils/base_encoding.c b/src/utils/base_encoding.c
+index 22de594d9..b9bfd34c5 100644
+--- a/src/utils/base_encoding.c
++++ b/src/utils/base_encoding.c
+@@ -299,2 +299,11 @@ GF_Err gf_gz_decompress_payload_ex(u8 *data, u32 data_len, u8 **uncompressed_dat
+-		//force last byte to 0
+-		(*uncompressed_data)[*out_size] = 0;
++		// Check if we have enough space to write the null terminator
++		if (*out_size < size) {
++			//force last byte to 0
++			(*uncompressed_data)[*out_size] = 0;
++		} else {
++			// Handle case where total_out equals size - no space for null terminator
++			// Reallocate to add space for null terminator
++			*uncompressed_data = (char*)gf_realloc(*uncompressed_data, sizeof(char)*(size+2));
++			if (!*uncompressed_data) return GF_OUT_OF_MEM;
++			(*uncompressed_data)[*out_size] = 0;
++		}

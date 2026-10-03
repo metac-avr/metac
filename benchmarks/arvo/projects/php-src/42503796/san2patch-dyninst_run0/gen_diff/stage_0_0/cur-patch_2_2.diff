@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..55976791896 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	if (ht && !GC_DELREF(ht)) {
++		efree(HT_GET_DATA_ADDR(ht));
++	}
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1688,5 +1690,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..0544b7c9db8 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16730,0 +16731,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
++			/* Prevent use-after-free by checking array validity */
++			if (UNEXPECTED(Z_ARRVAL_P(container) == NULL)) {
++				ZVAL_NULL(EX_VAR(opline->result.var));
++				ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++			}
++			/* Additional safety check for reference count */
++			if (UNEXPECTED(GC_REFCOUNT(Z_ARRVAL_P(container)) == 0)) {
++				ZVAL_NULL(EX_VAR(opline->result.var));
++				ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++			}

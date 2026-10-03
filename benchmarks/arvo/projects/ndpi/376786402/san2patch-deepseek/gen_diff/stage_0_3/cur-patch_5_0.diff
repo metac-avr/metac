@@ -1,0 +1,26 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..56a923fb4 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1040 +1040,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
++	size_t colon_index;
++	int found = 0;
+@@ -1042,2 +1043,9 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	if(double_dot) {
+-	  double_dot[0] = '\0';
++	for(colon_index = 0; colon_index < content_len; colon_index++) {
++	  if(content[colon_index] == ':') {
++	    found = 1;
++	    break;
++	  }
++	}
++
++	if(found) {
++	  content[colon_index] = '\0';
+@@ -1045 +1053 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
++	  flow->http.password = ndpi_strdup((char*)&content[colon_index + 1]);
+@@ -1047 +1055 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	
++

@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..86542b5cd0e 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57,12 +57,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-{
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++	if (EXPECTED(GC_REFCOUNT(p) == 0)) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
++}}

@@ -1,0 +1,76 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..fc59c8f612 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1389,0 +1390,12 @@ static int hls_transform_tree(HEVCLocalContext *lc,
++    static int hls_transform_tree(HEVCLocalContext *lc, const HEVCPPS *pps, const HEVCSPS *sps,
++                                 int x0, int y0, int xBase, int yBase, int cb_xBase, int cb_yBase,
++                                 int log2_cb_size, int log2_trafo_size, int trafo_depth, int blk_idx,
++                                 int *cbf_cb, int *cbf_cr)
++{
++    HEVCContext *s = lc->sc;
++    int ret;
++
++    // Determine split_transform_flag based on transform size and depth
++    int split_transform_flag = log2_trafo_size > sps->log_max_trafo_size ||
++                              (log2_trafo_size == sps->log_max_trafo_size && trafo_depth == 0);
++
+@@ -1436 +1448,5 @@ do {
+-                    s->cbf_luma[y_tu * min_tu_width + x_tu] = 1;
++                    if (s && s->cbf_luma) {
++                        int idx = y_tu * min_tu_width + x_tu;
++                        if (idx < (sps->ctb_width * sps->ctb_height))
++                            s->cbf_luma[idx] = 1;
++                    }
+@@ -1447,0 +1464,2 @@ do {
++    return 0;
++}
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..4f9eb79388 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -44,7 +43,0 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
+-        ff_refstruct_unref(&frame->rpl_tab);
+-        frame->refPicList = NULL;
+-
+-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+-    }
+-}
+-
+@@ -53,0 +47,4 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++    // Validate all required pointers before use
++    if (!s || !s->ps.sps || !s->pps || !ref)
++        return NULL;
++    
+@@ -57 +54,21 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
++    
++    // Bounds check for array indexing
++    if (x_cb < 0 || y_cb < 0 || x_cb >= s->ps.sps->ctb_width || y_cb >= s->ps.sps->ctb_height)
++        return NULL;
++        
++    int ctb_addr_rs  = y_cb * pic_width_cb + x_cb;
++    
++    // Additional bounds check for ctb_addr_rs_to_ts lookup
++    if (ctb_addr_rs < 0 || ctb_addr_rs >= s->ps.sps->ctb_width * s->ps.sps->ctb_height)
++        return NULL;
++        
++    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[ctb_addr_rs];
++    
++    // Validate ctb_addr_ts and rpl_tab access
++    if (ctb_addr_ts < 0 || ctb_addr_ts >= s->pps->num_tile_columns * s->pps->num_tile_rows)
++        return NULL;
++        
++    // Check if rpl_tab and refPicList are valid
++    if (!ref->rpl_tab || !ref->rpl_tab[ctb_addr_ts])
++        return NULL;
++        
+@@ -59,7 +76 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-}
+-
+-void ff_hevc_clear_refs(HEVCContext *s)
+-{
+-    int i;
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++}        ff_hevc_unref_frame(&s->DPB[i],

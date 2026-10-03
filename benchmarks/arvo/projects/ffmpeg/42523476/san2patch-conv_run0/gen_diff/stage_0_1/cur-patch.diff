@@ -1,0 +1,28 @@
+diff --git a/libavcodec/hevc_ps.c b/libavcodec/hevc_ps.c
+index 348e4d8de2..f68aebe076 100644
+--- a/libavcodec/hevc_ps.c
++++ b/libavcodec/hevc_ps.c
+@@ -446 +445,0 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
+-
+@@ -454 +453,2 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
+-    if (nal_size > sizeof(vps->data)) {
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     if (nal_size > sizeof(vps->data)) {
+@@ -458,0 +459,3 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
++    } else if (nal_size < 0) {  // Add validation for negative size
++        av_log(avctx, AV_LOG_ERROR, "Invalid negative NAL size detected\n");
++        return AVERROR_INVALIDDATA;
+diff --git a/libavcodec/hevc_parser.c b/libavcodec/hevc_parser.c
+index 59f9a0ff3e..0deeefec09 100644
+--- a/libavcodec/hevc_parser.c
++++ b/libavcodec/hevc_parser.c
+@@ -215,2 +215,3 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
+-            ff_hevc_decode_nal_sps(gb, avctx, ps, 1);
+-            break;
++            if (ff_hevc_decode_nal_sps(gb, avctx, ps, 1) < 0)
++                return -1;
++             break;
+@@ -218 +219,2 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
+-            ff_hevc_decode_nal_pps(gb, avctx, ps);
++            if (ff_hevc_decode_nal_pps(gb, avctx, ps) < 0)
++                return -1;

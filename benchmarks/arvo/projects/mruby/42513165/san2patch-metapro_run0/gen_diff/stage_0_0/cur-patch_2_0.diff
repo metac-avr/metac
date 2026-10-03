@@ -1,0 +1,46 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..cea902c5d 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -987,0 +988,30 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
++  // Early validation to prevent exceptional conditions
++  if (x == NULL) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "null string pointer");
++    return mrb_nil_value();
++  }
++  
++  if (len < 0) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "negative string length");
++    return mrb_nil_value();
++  }
++  
++  if (len == 0) {
++    // Handle empty string case
++    struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
++    mpz_init_set_str(mrb, &b->mp, "0", 1, base);
++    return mrb_obj_value(b);
++  }
++  
++  // Validate base range
++  if (base < 2 || base > 36) {
++    mrb_raisef(mrb, E_ARGUMENT_ERROR, "base out of range: %d", (int)base);
++    return mrb_nil_value();
++  }
++  
++  // Check for potential integer overflow in length
++  if (len > INT_MAX) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "string too long");
++    return mrb_nil_value();
++  }
++  
+@@ -990 +1020,9 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  mpz_init_set_str(mrb, &b->mp, x, len, base);
++  
++  // Use safer initialization with error handling
++  int result = mpz_init_set_str(mrb, &b->mp, x, len, base);
++  if (result != 0) {
++    mrb_free(mrb, b);
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "failed to parse string");
++    return mrb_nil_value();
++  }
++  

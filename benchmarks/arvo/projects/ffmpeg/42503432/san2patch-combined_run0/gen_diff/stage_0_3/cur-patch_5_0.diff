@@ -1,0 +1,28 @@
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index d4e9276da1..fe392e9f41 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -401,0 +402,5 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++    // Bounds check to prevent heap overflow
++    if (s->buffer && s->buffer_end && (s->buffer_end - s->buffer) < 4) {
++        av_log(NULL, AV_LOG_ERROR, "Buffer too small for get_bits operation\n");
++        return 0;
++    }
+@@ -403,0 +409,5 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++    // Additional safety check for buffer overflow
++    if ((re.buffer_end - re.buffer) * 8 < re.index + n) {
++        av_log(NULL, AV_LOG_ERROR, "Attempted to read beyond buffer bounds\n");
++        return 0;
++    }
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..7b0560e782 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -116 +116,2 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
+-    // 01xxxx : reserved
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     // 01xxxx : reserved
+@@ -117,0 +119,3 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
++    if (get_bits_left(&gb) < 6) {
++        return 0;
++    }

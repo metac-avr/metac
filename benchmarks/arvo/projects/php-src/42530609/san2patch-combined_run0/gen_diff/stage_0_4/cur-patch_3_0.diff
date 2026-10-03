@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..0af04dbc675 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,5 +47,5 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+-	[IS_OBJECT] =       (zend_rc_dtor_func_t)zend_objects_store_del,
+-	[IS_RESOURCE] =     (zend_rc_dtor_func_t)zend_list_free,
+-	[IS_REFERENCE] =    (zend_rc_dtor_func_t)zend_reference_destroy,
+-	[IS_CONSTANT_AST] = (zend_rc_dtor_func_t)zend_ast_ref_destroy
++[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
++[IS_OBJECT] =       (zend_rc_dtor_func_t)zend_objects_store_del,
++[IS_RESOURCE] =     (zend_rc_dtor_func_t)zend_list_free,
++[IS_REFERENCE] =    (zend_rc_dtor_func_t)zend_reference_destroy,
++[IS_CONSTANT_AST] = (zend_rc_dtor_func_t)zend_ast_ref_destroy
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (p == NULL) return;
+@@ -67,2 +68 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
+-}
++	efree(str);}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..ffa8582ae41 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272,2 +3272,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+-				}
++				zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++			}
++		}
++		// FIXME: Crash CWE-825: Expired Pointer Dereference
++		// Validate pointer before use to prevent use-after-free
++		if (EX_VAR(throw_op->result.var) && Z_COUNTED_P(EX_VAR(throw_op->result.var))) {
++			zend_refcounted *ref = Z_COUNTED_P(EX_VAR(throw_op->result.var));
++			if (ref && !(GC_FLAGS(ref) & GC_IMMEDIATE)) {
++				zend_gc_delref(ref);
++			}

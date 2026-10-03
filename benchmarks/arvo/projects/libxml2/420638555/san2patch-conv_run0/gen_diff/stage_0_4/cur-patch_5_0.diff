@@ -1,0 +1,40 @@
+diff --git a/tree.c b/tree.c
+index e2357131..e512dadb 100644
+--- a/tree.c
++++ b/tree.c
+@@ -5530 +5530 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-        return(1);
++         return(1);
+@@ -5534,0 +5535,32 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
++    /* Validate node pointer to prevent expired pointer dereference */
++    if (node != NULL) {
++        /* Check if the node memory is still valid by examining type field */
++        switch(node->type) {
++            case XML_ELEMENT_NODE:
++            case XML_ATTRIBUTE_NODE:
++            case XML_TEXT_NODE:
++            case XML_CDATA_SECTION_NODE:
++            case XML_ENTITY_REF_NODE:
++            case XML_ENTITY_NODE:
++            case XML_PI_NODE:
++            case XML_COMMENT_NODE:
++            case XML_DOCUMENT_NODE:
++            case XML_DOCUMENT_TYPE_NODE:
++            case XML_DOCUMENT_FRAG_NODE:
++            case XML_NOTATION_NODE:
++            case XML_HTML_DOCUMENT_NODE:
++            case XML_DTD_NODE:
++            case XML_ELEMENT_DECL:
++            case XML_ATTRIBUTE_DECL:
++            case XML_ENTITY_DECL:
++            case XML_NAMESPACE_DECL:
++            case XML_XINCLUDE_START:
++            case XML_XINCLUDE_END:
++                /* Valid node types */
++                break;
++            default:
++                /* Invalid or freed node - type field corrupted */
++                return(1);
++        }
++    }
++

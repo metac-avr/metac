@@ -1,0 +1,34 @@
+diff --git a/src/media_tools/route_dmx.c b/src/media_tools/route_dmx.c
+index 15ebed31d..14caeecea 100644
+--- a/src/media_tools/route_dmx.c
++++ b/src/media_tools/route_dmx.c
+@@ -833 +833,2 @@ static GF_Err gf_route_service_gather_object(GF_ROUTEDmx *routedmx, GF_ROUTEServ
+-		if (obj->alloc_size < total_len) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		if (obj->alloc_size < total_len) {
+@@ -897,0 +899,10 @@ static GF_Err gf_route_service_gather_object(GF_ROUTEDmx *routedmx, GF_ROUTEServ
++
++	// Add bounds checking to prevent out-of-bounds write
++	if (obj->payload && obj->alloc_size > 0) {
++		// Ensure we have space for null terminator
++		if (obj->alloc_size > obj->total_length) {
++			obj->payload[obj->total_length] = 0;
++		} else if (obj->alloc_size > 0) {
++			obj->payload[obj->alloc_size - 1] = 0;
++		}
++	}
+@@ -1462 +1473 @@ static GF_Err gf_route_dmx_process_service_signaling(GF_ROUTEDmx *routedmx, GF_R
+-		payload = routedmx->unz_buffer;
++        payload = routedmx->unz_buffer;
+@@ -1470 +1481,8 @@ static GF_Err gf_route_dmx_process_service_signaling(GF_ROUTEDmx *routedmx, GF_R
+-		}
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		}
++	}
++	if (payload_size < object->alloc_size) {
++		payload[payload_size] = 0;
++	} else {
++		GF_LOG(GF_LOG_ERROR, GF_LOG_ROUTE, ("[ROUTE] Service %d buffer overflow prevented in payload null termination\n", s->service_id));
++		return GF_CORRUPTED_DATA;
+@@ -1472 +1489,0 @@ static GF_Err gf_route_dmx_process_service_signaling(GF_ROUTEDmx *routedmx, GF_R
+-	payload[payload_size] = 0;

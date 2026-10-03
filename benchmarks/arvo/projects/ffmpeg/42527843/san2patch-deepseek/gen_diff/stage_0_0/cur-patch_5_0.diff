@@ -1,0 +1,14 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..6dd393d051 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -787,2 +787,7 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
+-        int idx = --level2_codecounts[level2_lens[i]];
+-        level2_lens_s[idx] = level2_lens[i];
++        int code_len = level2_lens[i];
++        if (code_len < 0 || code_len >= dist->alphabet_size + 1)
++            return AVERROR_INVALIDDATA;
++        int idx = --level2_codecounts[code_len];
++        if (idx < 0 || idx >= dist->alphabet_size)
++            return AVERROR_INVALIDDATA;
++        level2_lens_s[idx] = code_len;

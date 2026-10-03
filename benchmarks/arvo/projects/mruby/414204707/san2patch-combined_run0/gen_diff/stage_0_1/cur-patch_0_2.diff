@@ -1,0 +1,161 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..f41813b6d 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779,16 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
+-    break;
+-  }
+-}
+-
+-MRB_API void
+-mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
+-  if (obj == 0) return;
+-  if (!is_white(obj)) return;
+-  if (is_red(obj)) return;
+-  mrb_assert((obj)->tt != MRB_TT_FREE);
+-  add_gray_list(mrb, &mrb->gc, obj);
+-}
+-
+@@ -798 +782 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
++  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d\n",obj,obj->tt));
+@@ -799,0 +784 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
++
+@@ -803,0 +789,134 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
++  case MRB_TT_CLASS:
++  case MRB_TT_MODULE:
++  case MRB_TT_SCLASS:
++    if (!end) {
++      mrb_gc_free_mt(mrb, (struct RClass*)obj);
++      mrb_gc_free_iv(mrb, (struct RObject*)obj);
++    }
++    break;
++
++  case MRB_TT_ICLASS:
++    if (!end) {
++      mrb_gc_free_mt(mrb, (struct RClass*)obj);
++    }
++    break;
++
++  case MRB_TT_ENV:
++    {
++      struct REnv *e = (struct REnv*)obj;
++
++      if (!end) {
++        mrb_gc_free_iv(mrb, (struct RObject*)obj);
++      }
++      /* cannot free iv */
++    }
++    break;
++
++  case MRB_TT_FIBER:
++    {
++      struct mrb_context *c = ((struct RFiber*)obj)->cxt;
++
++      if (!end && c && c->status != MRB_FIBER_TERMINATED) {
++        mrb_callinfo *ci;
++
++        /* mark stack */
++        if (c->stack) {
++          ci = c->ci;
++          while (ci >= c->cibase) {
++            if (ci->stackent) {
++              struct RBasic **stack = ci->stackent;
++              size_t len = ci->stack_len;
++
++              while (len-- > 0) {
++                struct RBasic *o = *stack++;
++                if (o && !is_dead(mrb, o)) {
++                  mrb_gc_mark(mrb, o);
++                }
++              }
++            }
++            ci--;
++          }
++        }
++        /* mark VM stack */
++        if (c->stbase) {
++          mrb_value *p = c->stbase;
++          while (p < c->stend) {
++            mrb_gc_mark_value(mrb, *p);
++            p++;
++          }
++        }
++        /* mark ensure stack */
++        if (c->esbase) {
++          mrb_value *p = c->esbase;
++          while (p < c->esend) {
++            mrb_gc_mark_value(mrb, *p);
++            p++;
++          }
++        }
++        /* mark argument stack */
++        if (c->abase) {
++          mrb_value *p = c->abase;
++          while (p < c->aend) {
++            mrb_gc_mark_value(mrb, *p);
++            p++;
++          }
++        }
++      }
++    }
++    break;
++
++  case MRB_TT_PROC:
++    if (!end) {
++      mrb_proc_free(mrb, (struct RProc*)obj);
++    }
++    break;
++
++  case MRB_TT_ARRAY:
++    if (ARY_SHARED_P(obj)) {
++      mrb_ary_decref(mrb, ARY_SHARED(obj));
++    }
++    else {
++      mrb_free(mrb, ARY_PTR(obj));
++    }
++    break;
++
++  case MRB_TT_HASH:
++    mrb_gc_free_iv(mrb, (struct RObject*)obj);
++    mrb_hash_free(mrb, (struct RHash*)obj);
++    break;
++
++  case MRB_TT_STRING:
++    mrb_str_free(mrb, (struct RString*)obj);
++    break;
++
++  case MRB_TT_RANGE:
++    mrb_free(mrb, ((struct RRange*)obj)->edges);
++    break;
++
++  case MRB_TT_EXCEPTION:
++    mrb_gc_free_iv(mrb, (struct RObject*)obj);
++    break;
++
++  case MRB_TT_STRUCT:
++    mrb_gc_free_iv(mrb, (struct RObject*)obj);
++    if (((struct RStruct*)obj)->ptr) {
++      mrb_free(mrb, ((struct RStruct*)obj)->ptr);
++    }
++    break;
++
++  case MRB_TT_CDATA:
++    if (!end) {
++      mrb_gc_free_iv(mrb, (struct RObject*)obj);
++      if (((struct RData*)obj)->type && ((struct RData*)obj)->type->dfree) {
++        ((struct RData*)obj)->type->dfree(mrb, ((struct RData*)obj)->data);
++      }
++    }
++    break;
++
++  default:
++    break;
++  }
++}  case MRB_TT_OBJECT:
++    mrb_gc_free_iv(mrb, (struct RObject*)obj);
++    break;
++

@@ -1,0 +1,36 @@
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..68d523c1 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1077,0 +1078 @@ xmlFreeElement(xmlElementPtr elem) {
++    elem = NULL;
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4..53b5b0f1 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -654,0 +655,2 @@ dropNode(xmlNodePtr node) {
++    if (tree == NULL)  /* Prevent accessing freed memory */
++        return;
+@@ -665 +667,2 @@ dropNode(xmlNodePtr node) {
+-         * Return if tree is referenced from another node
++// FIXME: Crash CWE-416: Use After Free
++          * Return if tree is referenced from another node
+@@ -667 +670,4 @@ dropNode(xmlNodePtr node) {
+-        if (nodeGetTree(other) == tree)
++        xmlNodePtr otherTree = nodeGetTree(other);
++        if (otherTree == NULL)  /* Prevent accessing freed memory */
++            continue;
++        if (otherTree == tree)
+@@ -3600,12 +3605,0 @@ LLVMFuzzerTestOneInput(const char *data, size_t size) {
+-size_t
+-LLVMFuzzerCustomMutator(char *data, size_t size, size_t maxSize,
+-                        unsigned seed) {
+-    static const xmlFuzzChunkDesc chunks[] = {
+-        { 4, XML_FUZZ_PROB_ONE / 10 }, /* failurePos */
+-        { 0, 0 }
+-    };
+-
+-    return xmlFuzzMutateChunks(chunks, data, size, maxSize, seed,
+-                               LLVMFuzzerMutate);
+-}
+-

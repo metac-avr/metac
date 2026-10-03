@@ -1,0 +1,28 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..4bf61ab7d 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -671,2 +671,4 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-		memcpy(sec->section, data, sizeof(char)*data_size);
+-		sec->received = data_size;
++		if (sec->section) {
++			memcpy(sec->section, data, sizeof(char)*data_size);
++			sec->received = data_size;
++		}
+@@ -703 +705 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-
++ 
+@@ -705 +707 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-	gf_m2ts_section_complete(ts, sec, ses);
++	if (sec->section) gf_m2ts_section_complete(ts, sec, ses);
+@@ -2720 +2722,2 @@ static GF_Err gf_m2ts_process_packet(GF_M2TS_Demuxer *ts, unsigned char *data)
+-	} else if (es->flags & GF_M2TS_ES_IS_SECTION) { 	/* The stream uses sections to carry its payload */
++// FIXME: Crash CWE-416: Use After Free
++	} else if (es && (es->flags & GF_M2TS_ES_IS_SECTION)) { 	/* The stream uses sections to carry its payload */
+@@ -2723 +2726 @@ static GF_Err gf_m2ts_process_packet(GF_M2TS_Demuxer *ts, unsigned char *data)
+-	} else {
++	} else if (es) {
+@@ -2732,2 +2735 @@ static GF_Err gf_m2ts_process_packet(GF_M2TS_Demuxer *ts, unsigned char *data)
+-GF_EXPORT
+-GF_Err gf_m2ts_process_data(GF_M2TS_Demuxer *ts, u8 *data, u32 data_size)
++GF_EXPORTGF_Err gf_m2ts_process_data(GF_M2TS_Demuxer *ts, u8 *data, u32 data_size)

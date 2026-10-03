@@ -1,0 +1,134 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..faf82cb0 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1162,31 +1162,40 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		switch (set->nodeTab[i]->type) {
+-		    case XML_TEXT_NODE:
+-		    case XML_CDATA_SECTION_NODE:
+-		    case XML_ELEMENT_NODE:
+-		    case XML_ENTITY_REF_NODE:
+-		    case XML_ENTITY_NODE:
+-		    case XML_PI_NODE:
+-		    case XML_COMMENT_NODE:
+-		    case XML_DOCUMENT_NODE:
+-		    case XML_HTML_DOCUMENT_NODE:
+-		    case XML_XINCLUDE_END:
+-			break;
+-		    case XML_XINCLUDE_START: {
+-	                xmlNodePtr tmp, cur = set->nodeTab[i];
+-
+-			cur = cur->next;
+-			while (cur != NULL) {
+-			    switch(cur->type) {
+-				case XML_TEXT_NODE:
+-				case XML_CDATA_SECTION_NODE:
+-				case XML_ELEMENT_NODE:
+-				case XML_ENTITY_REF_NODE:
+-				case XML_ENTITY_NODE:
+-				case XML_PI_NODE:
+-				case XML_COMMENT_NODE:
+-				    tmp = xmlXIncludeCopyNode(ctxt, target,
+-							      source, cur);
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
++		/* Check if node is still valid before accessing - prevent use-after-free */
++		if (xmlNodeIsValid(set->nodeTab[i])) {
++		    switch (set->nodeTab[i]->type) {
++			case XML_TEXT_NODE:
++			case XML_CDATA_SECTION_NODE:
++			case XML_ELEMENT_NODE:
++			case XML_ENTITY_REF_NODE:
++			case XML_ENTITY_NODE:
++			case XML_PI_NODE:
++			case XML_COMMENT_NODE:
++			case XML_DOCUMENT_NODE:
++			case XML_HTML_DOCUMENT_NODE:
++			case XML_XINCLUDE_END:
++			    break;
++			case XML_XINCLUDE_START: {
++		            xmlNodePtr tmp, cur = set->nodeTab[i];
++
++			    cur = cur->next;
++			    while (cur != NULL) {
++				/* Validate current node pointer */
++				if (xmlNodeIsValid(cur)) {
++				    switch(cur->type) {
++					case XML_TEXT_NODE:
++					case XML_CDATA_SECTION_NODE:
++					case XML_ELEMENT_NODE:
++					case XML_ENTITY_REF_NODE:
++					case XML_ENTITY_NODE:
++					case XML_PI_NODE:
++					case XML_COMMENT_NODE:
++					    tmp = xmlXIncludeCopyNode(ctxt, target,
++								      source, cur);
++					    if (last == NULL) {
++						list = last = tmp;
++					    } else {
++						last = xmlAddNextSibling(last, tmp);
++					    }
++					    cur = cur->next;
++					    continue;
++					default:
++					    break;
+@@ -1194,4 +1203,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    cur = cur->next;
+-				    continue;
+-				default:
+-				    break;
++				}
++				break;
+@@ -1199 +1206 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-			    break;
++			    continue;
+@@ -1201 +1208,10 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-			continue;
++			case XML_ATTRIBUTE_NODE:
++			case XML_NAMESPACE_DECL:
++			case XML_DOCUMENT_TYPE_NODE:
++			case XML_DOCUMENT_FRAG_NODE:
++			case XML_NOTATION_NODE:
++			case XML_DTD_NODE:
++			case XML_ELEMENT_DECL:
++			case XML_ATTRIBUTE_DECL:
++			case XML_ENTITY_DECL:
++			    continue; /* for */
+@@ -1203,13 +1219,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    case XML_ATTRIBUTE_NODE:
+-		    case XML_NAMESPACE_DECL:
+-		    case XML_DOCUMENT_TYPE_NODE:
+-		    case XML_DOCUMENT_FRAG_NODE:
+-		    case XML_NOTATION_NODE:
+-		    case XML_DTD_NODE:
+-		    case XML_ELEMENT_DECL:
+-		    case XML_ATTRIBUTE_DECL:
+-		    case XML_ENTITY_DECL:
+-			continue; /* for */
+-		}
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
++		    if (last == NULL)
++			list = last = xmlXIncludeCopyNode(ctxt, target, source,
+@@ -1217,6 +1222,13 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    else {
++			/* Check if last is valid before accessing */
++			if (xmlNodeIsValid(last)) {
++			    xmlAddNextSibling(last,
++				    xmlXIncludeCopyNode(ctxt, target, source,
++					                set->nodeTab[i]));
++			    if (last->next != NULL)
++				last = last->next;
++			}
++		    }
++		} else {
++		    /* Skip freed/invalid nodes */
++		    continue;

@@ -1,0 +1,45 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..fc55bc89652 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,9 +1172,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
+-	}
+-}
+-
+@@ -1182,0 +1174 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (!p) return 0;
+@@ -1186,9 +1178 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..4166410ce94 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -350 +350,2 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-		/* Also release error and exception handlers, which may hold objects. */
++// FIXME: Crash CWE-416: Use After Free
++ 		/* Also release error and exception handlers, which may hold objects. */
+@@ -352 +353,3 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-			zval_ptr_dtor(&EG(user_error_handler));
++			if (!EG(user_error_handler).value.obj || (EG(user_error_handler).value.obj && !GC_IS_FREED(EG(user_error_handler).value.obj))) {
++				zval_ptr_dtor(&EG(user_error_handler));
++			}
+@@ -357 +360,3 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-			zval_ptr_dtor(&EG(user_exception_handler));
++			if (!EG(user_exception_handler).value.obj || (EG(user_exception_handler).value.obj && !GC_IS_FREED(EG(user_exception_handler).value.obj))) {
++				zval_ptr_dtor(&EG(user_exception_handler));
++			}

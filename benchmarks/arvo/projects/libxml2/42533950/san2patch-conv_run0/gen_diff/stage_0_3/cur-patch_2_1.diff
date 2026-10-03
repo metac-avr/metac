@@ -1,0 +1,50 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..5c6ee467 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4070 +4070 @@ xmlCopyPropList(xmlNodePtr target, xmlAttrPtr cur) {
+-        return(NULL);
++         return(NULL);
+@@ -4071,0 +4072,6 @@ xmlCopyPropList(xmlNodePtr target, xmlAttrPtr cur) {
++        if (cur->ns != NULL && (cur->ns->href == NULL || cur->ns->type == XML_NAMESPACE_DECL)) {
++            if (cur->ns->href == NULL && cur->ns->prefix != NULL) {
++                cur = cur->next;
++                continue;
++            }
++        }
+@@ -4239,8 +4245,7 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-            if (ret->ns == NULL)
+-                goto error;
+-	} else {
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
+-	}
++                if (ret->ns == NULL)
++            goto error;
++    } else {
++	/*
++	 * reference the existing namespace definition in our own tree.
++	 */
++	ret->ns = ns;
+@@ -4249 +4254,18 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        ret->properties = xmlCopyPropList(ret, node->properties);
++        xmlAttrPtr prop_copy = NULL;
++        xmlAttrPtr last_prop = NULL;
++        xmlAttrPtr cur_prop = node->properties;
++        
++        while (cur_prop != NULL) {
++            if (cur_prop->ns != NULL && cur_prop->ns->href != NULL) {
++                xmlAttrPtr new_prop = (xmlAttrPtr) xmlCopyPropInternal(doc, ret, cur_prop);
++                if (new_prop != NULL) {
++                    if (last_prop == NULL) {
++                        ret->properties = new_prop;
++                    } else {
++                        last_prop->next = (xmlNodePtr) new_prop;
++                    }
++                    last_prop = new_prop;
++                }
++            }
++            cur_prop = (xmlAttrPtr) cur_prop->next;
++        }

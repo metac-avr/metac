@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..67e4fcba83c 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-416: Use After Free
++		/* Store offset before freeing to prevent use-after-free */
++		size_t offset = object->handlers->offset;
++		ptr = ((char*)object) - offset;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..5c77d77abd9 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -10525 +10525,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_NEW_SPEC_CONST_UNUSED_HANDLER(
+-		Z_ADDREF_P(result);
++		if (Z_TYPE_P(result) == IS_OBJECT) {
++			Z_ADDREF_P(result);
++		}

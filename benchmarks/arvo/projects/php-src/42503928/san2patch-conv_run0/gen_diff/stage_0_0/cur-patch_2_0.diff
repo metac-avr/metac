@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..670eb85947c 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -391 +391,6 @@ void shutdown_executor(void) /* {{{ */
+-	zend_shutdown_executor_values(fast_shutdown);
++	/* Safely shutdown executor values by checking for valid object store */
++	if (EG(objects_store).top > 0 && EG(objects_store).object_buckets != NULL) {
++		zend_shutdown_executor_values(fast_shutdown);
++	} else {
++		fast_shutdown = 1;
++	}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..aea81b25f3d 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,2 +202,6 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
++// FIXME: Crash CWE-416: Use After Free
++		/* Set object to NULL before freeing to prevent dangling pointer */
++		zend_object *temp_obj = object;
++		object = NULL;
++		ptr = ((char*)temp_obj) - temp_obj->handlers->offset;
++		GC_REMOVE_FROM_BUFFER(temp_obj);

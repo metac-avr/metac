@@ -1,0 +1,41 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..235de0cdd 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1372,6 +1371,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-    CASE(OP_SETIDX, B) {
+-      c = 2;
+-      mid = MRB_OPSYM(aset);
+-      goto L_SEND_SYM;
+-    }
+-
+@@ -1380 +1374,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_sym sym = syms[b];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_sym sym = syms[b];
+@@ -1383,6 +1378,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      regs[a] = val;
+-      NEXT;
+-    }
+-
+-    CASE(OP_SETCONST, BB) {
+-      mrb_vm_const_set(mrb, syms[b], regs[a]);
++      if (a < mrb->c->stend - regs) {
++        regs[a] = val;
++      }
+@@ -1390,4 +1382 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-    }
+-
+-    CASE(OP_GETMCNST, BB) {
+-      mrb_value val;
++    }      mrb_value val;
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..99d930aed 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -801 +801 @@ mrb_const_get(mrb_state *mrb, mrb_value mod, mrb_sym sym)
+-mrb_value
++        mrb_value
+@@ -808,0 +809,2 @@ mrb_vm_const_get(mrb_state *mrb, mrb_sym sym)
++  if (!mrb || !sym) return mrb_nil_value();
++  

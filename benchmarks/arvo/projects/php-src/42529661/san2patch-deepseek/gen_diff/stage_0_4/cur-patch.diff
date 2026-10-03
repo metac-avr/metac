@@ -1,0 +1,26 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..9ee133a09c5 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2490,6 +2490,13 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	GC_REMOVE_FROM_BUFFER(ht);
+-	if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
+-		_zend_hash_iterators_remove(ht);
+-	}
+-	if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
+-		efree(HT_GET_DATA_ADDR(ht));
++	if (!zend_jit_trace_is_active()) {
++		GC_REMOVE_FROM_BUFFER(ht);
++		if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
++			_zend_hash_iterators_remove(ht);
++		}
++		if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
++			efree(HT_GET_DATA_ADDR(ht));
++		}
++		FREE_HASHTABLE(ht);
++	} else {
++		if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
++			_zend_hash_iterators_remove(ht);
++		}
+@@ -2497 +2503,0 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	FREE_HASHTABLE(ht);

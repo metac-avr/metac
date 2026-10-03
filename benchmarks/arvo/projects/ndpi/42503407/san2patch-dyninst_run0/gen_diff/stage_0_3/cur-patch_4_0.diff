@@ -1,0 +1,46 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..92939c032 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -926,4 +926,4 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-				       struct ndpi_flow_struct *flow,
+-				       const uint8_t *dest_conn_id, uint8_t dest_conn_id_len,
+-				       uint8_t source_conn_id_len, uint32_t version,
+-				       uint32_t *clear_payload_len)
++			       struct ndpi_flow_struct *flow,
++			       const uint8_t *dest_conn_id, uint8_t dest_conn_id_len,
++			       uint8_t source_conn_id_len, uint32_t version,
++			       uint32_t *clear_payload_len)
+@@ -956,0 +957,7 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Validate bounds before quic_len calls */
++  if(pn_offset >= packet->payload_packet_len || 
++     pn_offset + 8 > packet->payload_packet_len) {  /* quic_len can read up to 8 bytes */
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
+@@ -957,0 +965,7 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Validate bounds after token length addition */
++  if(pn_offset >= packet->payload_packet_len || token_length > packet->payload_packet_len ||
++     pn_offset + token_length > packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
+@@ -963,0 +978,7 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Validate bounds before second quic_len call */
++  if(pn_offset >= packet->payload_packet_len || 
++     pn_offset + 8 > packet->payload_packet_len) {  /* quic_len can read up to 8 bytes */
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
+@@ -1265 +1286 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
+-    if(dest_conn_id_len == 0) {
++    if(dest_conn_id_len == 0 || 5 >= packet->payload_len) {
+@@ -1270,0 +1292,5 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
++    // Validate bounds before reading source_conn_id_len
++    if(6 + dest_conn_id_len >= packet->payload_len) {
++      NDPI_LOG_DBG(ndpi_struct, "Buffer overflow prevented in source_conn_id_len access\n");
++      return NULL;
++    }

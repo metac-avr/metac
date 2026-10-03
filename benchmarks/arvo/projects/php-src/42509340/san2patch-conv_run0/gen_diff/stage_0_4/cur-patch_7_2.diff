@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 63a3112405b..9f39af156cf 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3066,4 +3066,11 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-	} else {
+-		/* We didn't execute RETURN, and have to initialize return_value */
+-		if (EX(return_value)) {
+-			ZVAL_UNDEF(EX(return_value));
++	} static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++{
++	if (zval_ptr == NULL) {
++		return;
++	}
++	if (Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (!GC_DELREF(ref)) {
++			rc_dtor_func(ref);
++		} else {
++			gc_check_possible_root(ref);
+@@ -3071 +3077,0 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-		ZEND_VM_TAIL_CALL(zend_leave_helper_SPEC(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));
+@@ -3073,0 +3080 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
++}
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..f834e8c191b 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -40,0 +41 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++	if (zval_ptr == NULL) return;

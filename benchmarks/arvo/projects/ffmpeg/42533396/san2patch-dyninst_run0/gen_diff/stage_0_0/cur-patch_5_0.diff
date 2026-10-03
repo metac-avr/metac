@@ -1,0 +1,22 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..589bab8f92 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -673,0 +674,3 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
++        // Prevent integer overflow and unreasonable channel counts
++        if (src->nb_channels > 256 || src->nb_channels <= 0)
++            return AVERROR(EINVAL);
+@@ -675 +678 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        if (!dst->u.map)
++         if (!dst->u.map)
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..6e561272f6 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -523,0 +524,6 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
++ 
++        // Validate that num_descr is within safe bounds to prevent out-of-bounds read
++        if (num_descr < 0 || (unsigned)num_descr > (INT_MAX / sizeof(*ch_layout->u.map))) {
++            av_log(s, AV_LOG_ERROR, "invalid channel description count: %d\n", num_descr);
++            return AVERROR_INVALIDDATA;
++        }

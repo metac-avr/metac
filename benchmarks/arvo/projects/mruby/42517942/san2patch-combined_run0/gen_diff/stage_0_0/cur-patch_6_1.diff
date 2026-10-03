@@ -1,0 +1,36 @@
+diff --git a/src/string.c b/src/string.c
+index 1b5aecff2..351cac4c6 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -138,2 +138,3 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-{
+-  if (RSTR_EMBEDDABLE_P(len)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
++  if (RSTR_EMBEDDABLE_P(len) && len >= 0) {
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..14a129d22 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -817,2 +817,7 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-  if (count == -1)
+-    count = slen * 2;
++  if (count == -1) {
++    if (slen > INT_MAX / 2) {
++      count = INT_MAX;
++    } else {
++      count = slen * 2;
++    }
++  }
+@@ -825,0 +831 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
++    if (sptr >= (const char *)src + slen) break;
+@@ -831,2 +837,4 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-    *dptr++ = hexadecimal[a];
+-    count--;
++    if (dptr - dptr0 < count) {
++      *dptr++ = hexadecimal[a];
++      count--;
++    }
+@@ -834 +842 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-    if (count > 0) {
++    if (count > 0 && dptr - dptr0 < count) {

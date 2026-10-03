@@ -1,0 +1,162 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index ba3eb16d..e29eef6e 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3247,8 +3246,0 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
+- * @ctxt:  an HTML parser context
+- *
+- * parse a CharData section.
+- * if we are within a CDATA section ']]>' marks an end of section.
+- *
+- * [14] CharData ::= [^<&]* - ([^<&]* ']]>' [^<&]*)
+- */
+-
+@@ -3261 +3253 @@ htmlParseCharData(htmlParserCtxtPtr ctxt) {
+- * htmlParseExternalID:
++ * htmlParseCharDataInternal:
+@@ -3263 +3255 @@ htmlParseCharData(htmlParserCtxtPtr ctxt) {
+- * @publicID:  a xmlChar** receiving PubidLiteral
++ * @readahead: controls whether the parser should read ahead
+@@ -3265 +3257,2 @@ htmlParseCharData(htmlParserCtxtPtr ctxt) {
+- * Parse an External ID or a Public ID
++ * Parse a CharData section.
++ * if we are within a CDATA section ']]>' marks an end of section.
+@@ -3267,2 +3260,136 @@ htmlParseCharData(htmlParserCtxtPtr ctxt) {
+- * [75] ExternalID ::= 'SYSTEM' S SystemLiteral
+- *                   | 'PUBLIC' S PubidLiteral S SystemLiteral
++ * [14] CharData ::= [^<&]* - ([^<&]* ']]>' [^<&]*)
++ */
++static void
++htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
++    xmlChar *buf = NULL;
++    int len = 0;
++    int size = HTML_PARSER_BIG_BUFFER_SIZE;
++    int nbchars = 0;
++    int cur = 0;
++    int res;
++
++    if ((ctxt == NULL) || (ctxt->input == NULL))
++        return;
++
++    if (ctxt->charset == XML_CHAR_ENCODING_NONE)
++        ctxt->charset = XML_CHAR_ENCODING_UTF8;
++
++    buf = (xmlChar *) xmlMalloc(4 * size + 1);
++    if (buf == NULL) {
++        htmlParseErrMemory(ctxt, "growing buffer");
++        return;
++    }
++
++    SHRINK;
++    if (ctxt->instate == XML_PARSER_EOF)
++        return;
++    CUR_CHAR(l) = 0;
++    GROW;
++    if (ctxt->instate == XML_PARSER_EOF)
++        return;
++    cur = CUR_CHAR(l);
++
++    while ((ctxt->instate != XML_PARSER_EOF) &&
++           ((cur != '<') || (ctxt->input->cur[1] == '!'))) {
++        if ((cur == '&') && (ctxt->input->cur[1] == '#')) {
++            int i;
++            int val = 0;
++            xmlChar *rep = NULL;
++
++            i = 1;
++            if (ctxt->input->cur[i] == 'x' ||
++                ctxt->input->cur[i] == 'X') {
++                i++;
++                while (isxdigit(ctxt->input->cur[i])) {
++                    val = val * 16 + (isdigit(ctxt->input->cur[i]) ?
++                                      ctxt->input->cur[i] - '0' :
++                                      tolower(ctxt->input->cur[i]) - 'a' + 10);
++                    i++;
++                }
++            } else {
++                while (isdigit(ctxt->input->cur[i])) {
++                    val = val * 10 + ctxt->input->cur[i] - '0';
++                    i++;
++                }
++            }
++            if ((ctxt->input->cur[i] == ';') ||
++                (ctxt->input->cur[i] == '\n') ||
++                (ctxt->input->cur[i] == '\r')) {
++                if (val >= 0x80)
++                    val = xmlGetCharFromVal(val);
++                rep = htmlDecodeEntities(ctxt, val, NULL, 0, 1);
++            }
++            if (rep == NULL) {
++                int i = cur;
++
++                while ((ctxt->input->cur[i] != 0) &&
++                       (ctxt->input->cur[i] != ';'))
++                    i++;
++                if (ctxt->input->cur[i] == 0) {
++                    break;
++                }
++            } else {
++                if (buf != NULL)
++                    xmlFree(buf);
++                buf = rep;
++                nbchars = xmlcharstrlen(buf);
++                if (nbchars > size) {
++                    size = nbchars + 10;
++                    buf = xmlrealloc(buf, size + 1);
++                    if (buf == NULL) {
++                        htmlParseErrMemory(ctxt, "growing buffer");
++                        return;
++                    }
++                }
++                buf[nbchars] = 0;
++                if ((ctxt->sax != NULL) &&
++                    (ctxt->sax->references != NULL))
++                    ctxt->sax->references(ctxt->userData, buf);
++            }
++        } else if (IS_CHAR(cur)) {
++            COPY_BUF(l, buf, nbchars, cur);
++        } else {
++            htmlParseErrInt(ctxt, XML_ERR_INVALID_CHAR, "CharRef invalid char found",
++                            cur);
++            ctxt->input->cur++;
++        }
++
++        if (nbchars + 10 >= size) {
++            size = nbchars + 10;
++            buf = xmlrealloc(buf, size + 1);
++            if (buf == NULL) {
++                htmlParseErrMemory(ctxt, "growing buffer");
++                return;
++            }
++        }
++        cur = CUR_CHAR(l);
++        NEXTL(l);
++        nbchars++;
++    }
++
++    if ((ctxt->instate == XML_PARSER_EOF) ||
++        (nbchars == 0) ||
++        (cur == 0)) {
++        if (buf != NULL)
++            xmlFree(buf);
++        return;
++    }
++
++    buf[nbchars] = 0;
++    buf = xmlrealloc(buf, nbchars + 1);
++    if (buf == NULL) {
++        htmlParseErrMemory(ctxt, "growing buffer");
++        return;
++    }
++
++    if ((ctxt->sax != NULL) &&
++        (ctxt->sax->characters != NULL) &&
++        (!ctxt->disableSAX)) {
++        if (ctxt->html)
++            ctxt->sax->characters(ctxt->userData, buf, nbchars);
++        else
++            ctxt->sax->characters(ctxt->userData, buf, nbchars);
++    }
++
++    xmlFree(buf);
++} *                   | 'PUBLIC' S PubidLiteral S SystemLiteral

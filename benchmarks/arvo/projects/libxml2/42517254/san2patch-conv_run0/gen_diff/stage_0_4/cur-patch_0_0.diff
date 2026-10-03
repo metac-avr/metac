@@ -1,0 +1,20 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..8c247cec 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1160 +1160,6 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (set->nodeTab[i] == NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 		if (set->nodeTab[i] == NULL)
++		    continue;
++		/* Validate node pointer is not dangling before accessing */
++		if (set->nodeTab[i]->type == XML_ELEMENT_NODE && 
++		    set->nodeTab[i]->_private == NULL)
+@@ -1178,0 +1184,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			    /* Check if current node is valid before accessing */
++			    if (cur->_private == NULL)
++			        break;
+@@ -2277,0 +2286 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	cur = NULL;  /* Prevent use-after-free */
+@@ -2292,0 +2302 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++            child = NULL;  /* Prevent use-after-free */

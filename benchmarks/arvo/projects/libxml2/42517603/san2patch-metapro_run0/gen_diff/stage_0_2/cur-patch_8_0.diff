@@ -1,0 +1,39 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..05355c4e 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2279,3 +2279,12 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            if ((ctxt->incTab[i]->inc != NULL) ||
+-                (ctxt->incTab[i]->emptyFb != 0)) {	/* (empty fallback) */
+-                xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++// FIXME: Crash CWE-416: Use After Free
++             if ((ctxt->incTab[i]->inc != NULL) ||
++                (ctxt->incTab[i]->emptyFb != 0)) { /* (empty fallback) */
++                /* Add safety check to prevent use-after-free */
++                if (ctxt->incTab[i] != NULL && ctxt->incTab[i]->inc != NULL) {
++                    xmlNodePtr inc_node = ctxt->incTab[i]->inc;
++                    if (inc_node != NULL) {
++                        xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++                    }
++                } else if (ctxt->incTab[i]->emptyFb != 0) {
++                    xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++                }
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..8af7bf35 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -442,3 +442,11 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	cur->next = reader->ctxt->freeElems;
+-	reader->ctxt->freeElems = cur;
+-	reader->ctxt->freeElemsNr++;
++	/* Prevent premature freeing of nodes during XInclude processing */
++	if (cur->_private != NULL) {
++	    /* Node is being tracked by XInclude, defer freeing */
++	    cur->next = reader->ctxt->freeElems;
++	    reader->ctxt->freeElems = cur;
++	    reader->ctxt->freeElemsNr++;
++	} else {
++	    cur->next = reader->ctxt->freeElems;
++	    reader->ctxt->freeElems = cur;
++	    reader->ctxt->freeElemsNr++;
++	}

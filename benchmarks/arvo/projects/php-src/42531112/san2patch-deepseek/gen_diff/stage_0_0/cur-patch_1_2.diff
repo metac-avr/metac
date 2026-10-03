@@ -1,0 +1,107 @@
+diff --git a/ext/pcre/php_pcre.c b/ext/pcre/php_pcre.c
+index 075d9fc5263..fd215b39189 100644
+--- a/ext/pcre/php_pcre.c
++++ b/ext/pcre/php_pcre.c
+@@ -649,3 +649,15 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-		if (key != regex) {
+-			zend_string_release_ex(key, 0);
+-		}
++static pcre2_code *php_pcre_compile(pcre2_compile_context *cctx, int *coptions, zend_string *regex, uint32_t *capture_count)
++{
++	const char *p = ZSTR_VAL(regex);
++	const char *end_p = p + ZSTR_LEN(regex);
++	const char *pp;
++	int delimiter;
++	int start_delimiter;
++	int end_delimiter;
++	int pattern_len;
++	char *pattern;
++	int errnumber;
++	PCRE2_SIZE erroffset;
++	pcre2_code *re;
++
++	if (ZSTR_LEN(regex) < 3) {
+@@ -656,0 +669,6 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
++	delimiter = p[0];
++	if (isalnum((int)*(unsigned char *)&delimiter) || delimiter == '\\' || delimiter == '\0') {
++		pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
++		return NULL;
++	}
++
+@@ -665,3 +682,0 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-		/* We need to iterate through the pattern, searching for the ending delimiter,
+-		   but skipping the backslashed delimiters.  If the ending delimiter is not
+-		   found, display a warning. */
+@@ -673,0 +689,72 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
++	} else {
++		int brackets = 1;
++		while (pp < end_p) {
++			if (*pp == '\\' && pp + 1 < end_p) pp++;
++			else if (*pp == end_delimiter && --brackets <= 0)
++				break;
++			else if (*pp == start_delimiter)
++				brackets++;
++			pp++;
++		}
++	}
++
++	if (pp >= end_p) {
++		zend_string_release_ex(regex, 0);
++		php_error_docref(NULL, E_WARNING, "No ending delimiter '%c' found", end_delimiter);
++		pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
++		return NULL;
++	}
++
++	pattern_len = pp - p;
++	pattern = estrndup(p, pattern_len);
++	pp++;
++
++	while (pp < end_p) {
++		if (*pp == 'i') {
++			*coptions |= PCRE2_CASELESS;
++		} else if (*pp == 'm') {
++			*coptions |= PCRE2_MULTILINE;
++		} else if (*pp == 's') {
++			*coptions |= PCRE2_DOTALL;
++		} else if (*pp == 'x') {
++			*coptions |= PCRE2_EXTENDED;
++		} else if (*pp == 'A') {
++			*coptions |= PCRE2_ANCHORED;
++		} else if (*pp == 'D') {
++			*coptions |= PCRE2_DOLLAR_ENDONLY;
++		} else if (*pp == 'S') {
++			/* study flag no longer needed */
++		} else if (*pp == 'U') {
++			*coptions |= PCRE2_UNGREEDY;
++		} else if (*pp == 'X') {
++			*coptions |= PCRE2_EXTRA;
++		} else if (*pp == 'J') {
++			*coptions |= PCRE2_DUPNAMES;
++		} else if (*pp == 'u') {
++			*coptions |= PCRE2_UTF;
++		} else if (*pp == 'n') {
++			*coptions |= PCRE2_NO_AUTO_CAPTURE;
++		} else {
++			php_error_docref(NULL, E_WARNING, "Unknown modifier '%c'", *pp);
++			pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
++			efree(pattern);
++			return NULL;
++		}
++		pp++;
++	}
++
++	re = pcre2_compile((PCRE2_SPTR)pattern, pattern_len, *coptions, &errnumber, &erroffset, cctx);
++	if (re == NULL) {
++		pcre_handle_exec_error(errnumber);
++		efree(pattern);
++		return NULL;
++	}
++
++	*capture_count = pcre2_pattern_info(re, PCRE2_INFO_CAPTURECOUNT, capture_count) == 0 ? *capture_count : 0;
++
++	efree(pattern);
++	return re;
++}			else if (*pp == delimiter)
++				break;
++			pp++;
++		}

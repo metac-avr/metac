@@ -1,0 +1,23 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..26667f0d3 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -618,0 +619,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++    // Prevent reading beyond buffer boundaries
++    if (i + sizeof(bitint) > n) break;
+@@ -626 +628,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-        if (memcmp(substr, xs + 1, m - 2) == 0) {
++        // Ensure memcmp won't read out of bounds
++        if (substr + (m - 2) <= (char*)ys + n && memcmp(substr, xs + 1, m - 2) == 0) {
+@@ -636,0 +640,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++      // Additional safety check
++      if (i + j >= n) break;
+@@ -661,0 +667,8 @@ mrb_memsearch(const char *x0, mrb_int m, const char *y0, mrb_int n)
++  // Add explicit bounds checking before calling mrb_memsearch_ss
++  if (n < m || (n - m + 1) < 8) {
++    // Handle small buffers safely with byte-by-byte comparison
++    for (mrb_int i = 0; i <= n - m; i++) {
++      if (memcmp(y0 + i, x0, m) == 0) return i;
++    }
++    return -1;
++  }

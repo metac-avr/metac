@@ -1,0 +1,31 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..e30a41d1a 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -212,3 +212,10 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-  shared->refcnt--;
+-  if (shared->refcnt == 0) {
+-    mrb_free(mrb, shared->ptr);
++  // Add validation checks to prevent expired pointer dereference
++  if (!shared) return;
++  
++  // Atomic decrement with validation
++  if (__atomic_fetch_sub(&shared->refcnt, 1, __ATOMIC_SEQ_CST) == 1) {
++    // Last reference - safe to free
++    if (shared->ptr) {
++      mrb_free(mrb, shared->ptr);
++      shared->ptr = NULL;  // Clear pointer to prevent reuse
++    }
+@@ -224,0 +232 @@ str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
++
+@@ -1683 +1691,2 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1685 +1694,5 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-    hval ^= (uint32_t)*s++;
++    if (s != NULL) {
++      hval ^= (uint32_t)*s++;
++    } else {
++      break;
++    }

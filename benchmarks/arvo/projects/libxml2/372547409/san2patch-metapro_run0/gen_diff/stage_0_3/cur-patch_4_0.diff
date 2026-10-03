@@ -1,0 +1,57 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..c85f9209 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1866,8 +1866 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-
+-mem_error:
+-    xmlVErrMemory(ctxt);
+-    xmlFreeEnumeration(tree);
+-    xmlFreeAttribute(ret);
+-    return(NULL);
+-}
+-
++// FIXME: Crash CWE-416: Use After Free
+@@ -1876,12 +1869,14 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeAttribute((xmlAttributePtr) attr);
+-}
+-
+-/**
+- * xmlFreeAttributeTable:
+- * @table:  An attribute table
+- *
+- * Deallocate the memory used by an entities hash table.
+- */
+-void
+-xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++    // Implement reference counting to track when it's safe to deallocate
++    xmlAttributePtr attribute = (xmlAttributePtr) attr;
++    if (attribute != NULL && attribute->refCounter > 0) {
++        // Decrement reference count instead of immediate free
++        attribute->refCounter--;
++        // Only free when no references remain
++        if (attribute->refCounter == 0) {
++            xmlFreeAttribute(attribute);
++        }
++    } else if (attribute != NULL) {
++        // No references, safe to free immediately
++        xmlFreeAttribute(attribute);
++    }
++}    xmlHashFree(table, xmlFreeAttributeTableEntry);
+@@ -5982,7 +5976,0 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
+-
+@@ -5990 +5978,6 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    attr = elemDecl->attributes;
++// Fixed CWE-416: Use After Free - Check if elemDecl is valid before accessing attributes
++     if (elemDecl && elemDecl->attributes) {
++	attr = elemDecl->attributes;
++    } else {
++	attr = NULL;
++    }

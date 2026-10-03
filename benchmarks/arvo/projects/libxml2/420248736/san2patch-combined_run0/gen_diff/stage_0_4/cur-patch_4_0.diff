@@ -1,0 +1,36 @@
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..6565ac96 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1067,6 +1067,8 @@ xmlFreeElement(xmlElementPtr elem) {
+-    xmlUnlinkNode((xmlNodePtr) elem);
+-    xmlFreeDocElementContent(elem->doc, elem->content);
+-    if (elem->name != NULL)
+-	xmlFree((xmlChar *) elem->name);
+-    if (elem->prefix != NULL)
+-	xmlFree((xmlChar *) elem->prefix);
++    /* Add reference count check to prevent use-after-free */
++    if (elem->_private == NULL) {
++        xmlUnlinkNode((xmlNodePtr) elem);
++        xmlFreeDocElementContent(elem->doc, elem->content);
++        if (elem->name != NULL)
++	    xmlFree((xmlChar *) elem->name);
++        if (elem->prefix != NULL)
++	    xmlFree((xmlChar *) elem->prefix);
+@@ -1074,2 +1076,2 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem->contModel != NULL)
+-	xmlRegFreeRegexp(elem->contModel);
++        if (elem->contModel != NULL)
++	    xmlRegFreeRegexp(elem->contModel);
+@@ -1077 +1079,2 @@ xmlFreeElement(xmlElementPtr elem) {
+-    xmlFree(elem);
++        xmlFree(elem);
++    }
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4..b297ce70 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -667 +667,2 @@ dropNode(xmlNodePtr node) {
+-        if (nodeGetTree(other) == tree)
++        xmlNodePtr otherTree = nodeGetTree(other);
++        if (otherTree == tree && tree != NULL)

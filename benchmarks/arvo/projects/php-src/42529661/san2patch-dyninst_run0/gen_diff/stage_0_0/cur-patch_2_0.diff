@@ -1,0 +1,27 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..f1cdf2f1b14 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -646,0 +647,2 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Check if zv points to valid memory before access */
++			HashTable *ht_check = NULL;
+@@ -648 +650,3 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				ce1 = Z_OBJCE_P(zv);
++				if (zv && !GC_IS_REFCOUNT_ZERO(Z_OBJ_P(zv))) { /* Check object validity */
++					ce1 = Z_OBJCE_P(zv);
++				}
+@@ -650,2 +654,5 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
++				ht_check = Z_ARRVAL_P(zv);
++				if (ht_check && !(GC_FLAGS(ht_check) & GC_IMMUTABLE) && !GC_IS_REFCOUNT_ZERO(ht_check)) { /* Check array validity */
++					if (HT_IS_PACKED(ht_check)) {
++						flags |= IS_TRACE_PACKED;
++					}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..43c418654a3 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2494,0 +2495,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Clear hash table data before freeing to prevent UAF */
++		memset(HT_GET_DATA_ADDR(ht), 0, HT_USED_SIZE(ht));

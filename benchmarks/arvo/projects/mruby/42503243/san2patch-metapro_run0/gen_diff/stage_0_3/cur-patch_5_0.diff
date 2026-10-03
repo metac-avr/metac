@@ -1,0 +1,35 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..6cc527a66 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515,3 +515,12 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
+-      ci->stack[argc+1] = blk;
++      if (argc > 0) {
++        if (ci->stack + 1 + argc > mrb->c->stend) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in funcall");
++        } else {
++          stack_copy(ci->stack+1, argv, argc);
++        }
++      }
++      if (ci->stack + argc + 1 > mrb->c->stend) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in funcall");
++      } else {
++        ci->stack[argc+1] = blk;
++      }
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..a5d6d7b05 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -774,0 +775 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  int depth_limit = 1024; /* prevent deep inheritance traversal */
+@@ -776 +777,4 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
+-  if (skip) c = c->super;
++  if (skip) {
++    if (--depth_limit < 0 || c->super == NULL) return mrb_nil_value();
++    c = c->super;
++  }
+@@ -778 +782 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
+-  while (c) {
++  while (c && depth_limit-- > 0) {

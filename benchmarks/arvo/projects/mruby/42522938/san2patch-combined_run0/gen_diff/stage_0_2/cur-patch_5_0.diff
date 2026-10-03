@@ -1,0 +1,26 @@
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..257cdfffa 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    hash_code = mrb_object_dead_p(mrb, mrb_obj_ptr(key)) ? 0 : mrb_str_hash(mrb, key);
+@@ -343 +343,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-416: Use After Free
++     break;
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..c1f3fd682 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -212,3 +212,7 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-  shared->refcnt--;
+-  if (shared->refcnt == 0) {
+-    mrb_free(mrb, shared->ptr);
++  if (shared == NULL) return;
++  
++  // Atomic decrement and check to prevent use-after-free
++  if (__atomic_sub_fetch(&shared->refcnt, 1, __ATOMIC_SEQ_CST) == 0) {
++    if (shared->ptr) {
++      mrb_free(mrb, shared->ptr);
++    }

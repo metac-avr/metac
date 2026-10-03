@@ -1,0 +1,21 @@
+diff --git a/src/lib/ndpi_serializer.c b/src/lib/ndpi_serializer.c
+index 3cda728bd..ea28badcf 100644
+--- a/src/lib/ndpi_serializer.c
++++ b/src/lib/ndpi_serializer.c
+@@ -2113 +2113 @@ int ndpi_serialize_string_string_len(ndpi_serializer *_serializer,
+-				      value, value_len));
++                                      value, value_len));
+@@ -2123 +2123,10 @@ int ndpi_serialize_string_string(ndpi_serializer *_serializer,
+-  return(ndpi_serialize_string_string_len(_serializer, key, value, strlen(value)));
++  /* Validate pointer before using strlen to prevent use-after-free */
++  if (!value || (value && value[0] == '\0'))
++    return(ndpi_serialize_string_string_len(_serializer, key, value, 0));
++  
++  /* Manual length calculation to avoid potential use-after-free in strlen */
++  size_t value_len = 0;
++  const char *temp_ptr = value;
++  while (*temp_ptr++) value_len++;
++  
++  return(ndpi_serialize_string_string_len(_serializer, key, value, value_len));
+@@ -2133 +2141,0 @@ int ndpi_serialize_string_raw(ndpi_serializer *_serializer,
+-

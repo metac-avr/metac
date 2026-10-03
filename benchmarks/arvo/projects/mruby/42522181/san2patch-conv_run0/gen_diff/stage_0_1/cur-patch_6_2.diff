@@ -1,0 +1,52 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..4112380a1 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1229,26 +1229,5 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-  switch (gc->state) {
+-  case MRB_GC_STATE_ROOT:
+-    root_scan_phase(mrb, gc);
+-    gc->state = MRB_GC_STATE_MARK;
+-    flip_white_part(gc);
+-    return 0;
+-  case MRB_GC_STATE_MARK:
+-    if (gc->gray_list) {
+-      return incremental_marking_phase(mrb, gc, limit);
+-    }
+-    else {
+-      final_marking_phase(mrb, gc);
+-      prepare_incremental_sweep(mrb, gc);
+-      return 0;
+-    }
+-  case MRB_GC_STATE_SWEEP: {
+-     size_t tried_sweep = 0;
+-     tried_sweep = incremental_sweep_phase(mrb, gc, limit);
+-     if (tried_sweep == 0)
+-       gc->state = MRB_GC_STATE_ROOT;
+-     return tried_sweep;
+-  }
+-  default:
+-    /* unknown state */
+-    mrb_assert(0);
+-    return 0;
++  static int
++iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++{
++  if (mrb_immediate_p(v) || mrb_nil_p(v) || (mrb_ptr(v) && !is_dead(mrb, (struct RBasic*)mrb_ptr(v)))) {
++    mrb_gc_mark_value(mrb, v);
+@@ -1255,0 +1235,2 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
++  return 0;
++}
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..8d4d08f30 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -240 +240,3 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (mrb_immediate_p(v) || mrb_nil_p(v) || (mrb_ptr(v) && !is_dead(mrb, (struct RBasic*)mrb_ptr(v)))) {
++    mrb_gc_mark_value(mrb, v);
++  }
+@@ -250,2 +252 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
+-void
+-mrb_gc_mark_gv(mrb_state *mrb)
++voidmrb_gc_mark_gv(mrb_state *mrb)

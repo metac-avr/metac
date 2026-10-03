@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..d37ed601339 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && !GC_DELREF(ref)) {
+@@ -45 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..ba503a89bb5 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1750 +1750,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1751,0 +1753 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++				if (zv && !Z_IS_REFCOUNTED_P(zv)) continue;
+@@ -1759,0 +1762 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++					if (&p->val && !Z_IS_REFCOUNTED_P(&p->val)) continue;
+@@ -1763,0 +1767 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++					if (&p->val && !Z_IS_REFCOUNTED_P(&p->val)) continue;
+@@ -1771,0 +1776 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++						if (&p->val && !Z_IS_REFCOUNTED_P(&p->val)) continue;

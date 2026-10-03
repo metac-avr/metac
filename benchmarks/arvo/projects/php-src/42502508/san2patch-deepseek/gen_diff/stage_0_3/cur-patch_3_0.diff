@@ -1,0 +1,65 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..0ab3e7ab9c1 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -24,8 +23,0 @@
+-#include "zend_types.h"
+-#include "zend_gc.h"
+-
+-BEGIN_EXTERN_C()
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p);
+-ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-
+@@ -33,0 +26,10 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++	if (Z_TYPE_P(zval_ptr) == IS_INDIRECT) {
++		zval *indirect = Z_INDIRECT_P(zval_ptr);
++		if (UNEXPECTED(!indirect || !zend_gc_is_live((zend_refcounted *)indirect))) {
++			return;
++		}
++		if (Z_REFCOUNTED_P(indirect) && !Z_DELREF_P(indirect)) {
++			rc_dtor_func(Z_COUNTED_P(indirect));
++		}
++		return;
++	}
+@@ -37,9 +39 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-}
+-
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
++}		} else {
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..413d0252d36 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,8 +1208,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+@@ -1218,0 +1211,3 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++	if (Z_TYPE_P(pz) == IS_OBJECT && Z_OBJ_HANDLER_P(pz, dtor_obj) == NULL && Z_OBJ_P(pz)->ce == NULL) {
++		return 0;
++	}
+@@ -1220,11 +1215 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-}
+-
+-#if SIZEOF_SIZE_T == 4
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++}#elif SIZEOF_SIZE_T == 8

@@ -1,0 +1,52 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..ba8c7fe11 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -148,0 +150,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  /* Add validation for t->ptr before accessing */
++  if (t->ptr == NULL) return 0;
++  
+@@ -150,0 +155,4 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  
++  /* Validate memory access before proceeding */
++  if ((uintptr_t)keys % sizeof(mrb_sym) != 0) return 0; /* Alignment check */
++  
+@@ -155 +163 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-  if (pos < t->alloc) {
++  if (pos >= 0 && pos < t->alloc) { /* Bounds check */
+@@ -157,5 +165,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-    if (key) {
+-      if (MT_KEY_SYM(key) == sym) {
+-        *pp = vals[pos];
+-        return key;
+-      }
++    if (key && MT_KEY_SYM(key) == sym) {
++      *pp = vals[pos];
++      return key;
+@@ -166,0 +173,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    /* Add bounds checking */
++    if (pos < 0 || pos >= t->alloc) return 0;
++    
+diff --git a/src/vm.c b/src/vm.c
+index 6f6b9b001..ef0a9ffc8 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1763 +1763,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      recv = regs[0];
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       recv = regs[0];
+@@ -1765 +1766,9 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      m = mrb_method_search_vm(mrb, &ci->u.target_class, mid);
++      
++      // Validate that target_class is not null and add safety check before method search
++      if (ci->u.target_class != NULL) {
++        m = mrb_method_search_vm(mrb, &ci->u.target_class, mid);
++      } else {
++        m = mrb_method_t();
++        MRB_METHOD_SET_UNDEF(m);
++      }
++      

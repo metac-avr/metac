@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..785d5a0bfc3 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1374 +1374 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}
+@@ -1377 +1377,4 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	_zend_hash_del_el_ex(ht, idx, p, prev);
++	/* Validate bucket before proceeding with deletion to avoid accessing freed memory */
++	if (p && (HT_FLAGS(ht) & HASH_FLAG_INITIALIZED)) {
++		_zend_hash_del_el_ex(ht, idx, p, prev);
++	}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..b78427c9531 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -258,0 +259 @@ void shutdown_destructors(void) /* {{{ */
++	zend_objects_store_mark_destructed(&EG(objects_store));

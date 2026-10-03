@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..745bd9625a0 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (EXPECTED(p != NULL)) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..d6a8f5537ce 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16731 +16731,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-			value = zend_fetch_dimension_address_inner(Z_ARRVAL_P(container), dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);
++			zend_array *arr = Z_ARRVAL_P(container);
++			if (UNEXPECTED(ZEND_GC_TYPE(arr) == GC_BLACK)) {
++				zend_error(E_ERROR, "Array is being garbage collected");
++			}
++			value = zend_fetch_dimension_address_inner(arr, dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);

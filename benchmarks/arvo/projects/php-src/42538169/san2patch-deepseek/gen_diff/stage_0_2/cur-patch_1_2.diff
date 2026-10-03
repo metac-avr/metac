@@ -1,0 +1,34 @@
+diff --git a/Zend/zend_property_hooks.c b/Zend/zend_property_hooks.c
+index 9cfa15ecafa..761d7aa6f5f 100644
+--- a/Zend/zend_property_hooks.c
++++ b/Zend/zend_property_hooks.c
+@@ -210 +210,4 @@ static void zho_it_dtor(zend_object_iterator *iter)
+-	zval_ptr_dtor(&iter->data);
++	if (!Z_ISUNDEF(iter->data)) {
++		zval_ptr_dtor(&iter->data);
++		ZVAL_UNDEF(&iter->data);
++	}
+diff --git a/Zend/zend_iterators.c b/Zend/zend_iterators.c
+index f67033b1116..f0415bf1207 100644
+--- a/Zend/zend_iterators.c
++++ b/Zend/zend_iterators.c
+@@ -56 +55,0 @@ static const zend_object_handlers iterator_object_handlers = {
+-
+@@ -66 +65,4 @@ static void iter_wrapper_free(zend_object *object)
+-	iter->funcs->dtor(iter);
++	if (iter->funcs) {
++		iter->funcs->dtor(iter);
++		iter->funcs = NULL;
++	}
+@@ -73 +75,2 @@ static void iter_wrapper_dtor(zend_object *object)
+-static HashTable *iter_wrapper_get_gc(zend_object *object, zval **table, int *n) {
++static HashTable *iter_wrapper_get_gc(zend_object *object, zval **table, int *n)
++{
+@@ -75 +78 @@ static HashTable *iter_wrapper_get_gc(zend_object *object, zval **table, int *n)
+-	if (iter->funcs->get_gc) {
++	if (iter->funcs && iter->funcs->get_gc) {
+@@ -77,0 +81,4 @@ static HashTable *iter_wrapper_get_gc(zend_object *object, zval **table, int *n)
++	*table = NULL;
++	*n = 0;
++	return NULL;
++}	}

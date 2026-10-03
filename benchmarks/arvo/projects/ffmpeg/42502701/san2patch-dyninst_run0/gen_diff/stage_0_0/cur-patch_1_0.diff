@@ -1,0 +1,16 @@
+diff --git a/libavcodec/wmaprodec.c b/libavcodec/wmaprodec.c
+index a4b48b13a8..897cf4b057 100644
+--- a/libavcodec/wmaprodec.c
++++ b/libavcodec/wmaprodec.c
+@@ -1933,3 +1933,8 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
+-                const int start_ch = s->start_channel[i];
+-                void *left[1] = { frame->extended_data[start_ch + 0] };
+-                void *right[1] = { frame->extended_data[start_ch + 1] };
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                 const int start_ch = s->start_channel[i];
++                void *left[1] = { NULL };
++                void *right[1] = { NULL };
++                if (start_ch + 0 < frame->nb_extended_buf + 1)
++                    left[0] = frame->extended_data[start_ch + 0];
++                if (start_ch + 1 < frame->nb_extended_buf + 1)
++                    right[0] = frame->extended_data[start_ch + 1];

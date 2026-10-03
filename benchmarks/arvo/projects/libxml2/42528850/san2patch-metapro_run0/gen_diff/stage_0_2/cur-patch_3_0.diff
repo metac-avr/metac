@@ -1,0 +1,24 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..db6eb5ff 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202,3 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++	// Fixed CWE-416: Use After Free by adding null check
++	if (node->ns->prefix != NULL) {
++	     xmlNsPtr ns;
+@@ -4225,0 +4228 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
++	}
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..a4693cf7 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1299 +1299 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
+@@ -1301 +1301,4 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-		xmlTextReaderFreeNode(reader, tmp);
++		/* Check if node still has active references before freeing */
++                if ((tmp->type != XML_ELEMENT_NODE) || 
++                    (tmp->properties == NULL && tmp->nsDef == NULL))
++		    xmlTextReaderFreeNode(reader, tmp);

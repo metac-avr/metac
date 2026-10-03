@@ -1,0 +1,30 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..c088fef87 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -393 +393,8 @@ add_heap(mrb_state *mrb, mrb_gc *gc)
+-  link_free_heap_page(gc, page);
++  /* Prevent premature access to newly allocated pages during GC sweep */
++  if (gc->sweeps_since_last_mark > 0) {
++    link_free_heap_page(gc, page);
++    gc->sweeps_since_last_mark = 0;
++  } else {
++    page->next = gc->free_heaps;
++    gc->free_heaps = page;
++  }
+@@ -1252 +1259 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    /* unknown state */
++/* unknown state */
+@@ -1260,2 +1267,3 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
+-{
+-  do {
++// Prevent UAF by completing all pending GC operations before finishing
++ {
++  while (gc->state != MRB_GC_STATE_ROOT) {
+@@ -1263 +1271 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
+-  } while (gc->state != MRB_GC_STATE_ROOT);
++  }
+@@ -1272,2 +1280 @@ incremental_gc_step(mrb_state *mrb, mrb_gc *gc)
+-    result += incremental_gc(mrb, gc, limit);
+-    if (gc->state == MRB_GC_STATE_ROOT)
++    result += incremental_gc(mrb, gc, limit);    if (gc->state == MRB_GC_STATE_ROOT)

@@ -1,0 +1,29 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 42d0fa67d..45eafb227 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -3247 +3247,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  p = hostname;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   p = hostname;
+@@ -3249,2 +3250,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  while (p[idx] && (idx < len)) {
+-    if(*p == '.') {
++  while (idx < len && p[idx] != '\0') {
++    if(p[idx] == '.') {
+@@ -3261 +3262 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-    if(!(isalnum((unsigned char)*p) || *p == '-'))
++    if(!(isalnum((unsigned char)p[idx]) || p[idx] == '-'))
+@@ -3266 +3267 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-      if(!isalnum((unsigned char)*p))
++      if(!isalnum((unsigned char)p[idx]))
+@@ -3276,0 +3278,6 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
++  if(idx == 0)
++    return(false); /* Empty string */
++
++  if(idx >= len || p[idx] != '\0')
++    return(false); /* Not NUL-terminated within length */
++
+@@ -3281 +3288 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  if(!isalnum(p[idx-1]))
++  if(!isalnum((unsigned char)p[idx-1]))

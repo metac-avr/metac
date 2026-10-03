@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..fe12aba8d9e 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -390,0 +391,4 @@ void shutdown_executor(void) /* {{{ */
++	/* Prevent use-after-free by ensuring all objects are cleaned up */
++	if (!fast_shutdown) {
++		zend_gc_collect_cycles();
++	}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..6fde5cec8a6 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -203,0 +204,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		// Set object to NULL before efree to prevent UAF
++		object = NULL;

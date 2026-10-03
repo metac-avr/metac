@@ -1,0 +1,24 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..ca0994c03e 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -1622 +1622,2 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-            int16_t (*block)[64] = &s->blocks[c][block_idx];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             int16_t (*block)[64] = &s->blocks[c][block_idx];
+@@ -1624 +1625,2 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-                s->idsp.idct_put(ptr, linesize, *block);
++                if (ptr >= data && ptr < data + (mb_height * linesize * 8 >> s->avctx->lowres))
++                    s->idsp.idct_put(ptr, linesize, *block);
+diff --git a/libavcodec/faanidct.c b/libavcodec/faanidct.c
+index 3921f82dae..483bf640a7 100644
+--- a/libavcodec/faanidct.c
++++ b/libavcodec/faanidct.c
+@@ -136,2 +136,5 @@ void ff_faanidct(int16_t block[64]){
+-    p8idct(block, temp, NULL, 0, 1, 8, 0);
+-    p8idct(block, temp, NULL, 0, 8, 1, 1);
++    // Add bounds checking before p8idct calls to prevent out-of-bounds writes
++    if (block != NULL) {
++        p8idct(block, temp, NULL, 0, 1, 8, 0);
++        p8idct(block, temp, NULL, 0, 8, 1, 1);
++    }

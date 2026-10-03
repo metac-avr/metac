@@ -1,0 +1,13 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 797ac66c96d..1307db46f21 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40109,0 +40110,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_OBJ_W_SPEC_CV_CONST_HAND
++	// Validate object before property access to prevent use-after-free
++	if (UNEXPECTED(Z_TYPE_P(container) == IS_OBJECT)) {
++		zend_object *obj = Z_OBJ_P(container);
++		if (UNEXPECTED(!obj || GC_IS_RECURSIVE(obj))) {
++			zend_throw_error(NULL, "Cannot access property of freed object");
++			ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++		}
++	}

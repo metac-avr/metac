@@ -1,0 +1,32 @@
+diff --git a/dict.c b/dict.c
+index 5c9ca719..56c78ef9 100644
+--- a/dict.c
++++ b/dict.c
+@@ -870 +870 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    unsigned long key, okey, nbi = 0;
++unsigned long key, okey, nbi = 0;
+@@ -879 +879,5 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    if (len < 0)
++    /* Validate pointer and add safe strlen handling */
++    if (len < 0) {
++        /* Prevent expired pointer dereference by checking memory validity */
++        if (!name || (sizeof(void*) == 8 && ((unsigned long long)name >> 48) == 0xFFFF))
++            return(NULL);
+@@ -881 +885 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    else
++    } else
+@@ -890,2 +894 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..9c099a26 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -845,0 +846,6 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++    
++    /* Add validation to prevent expired pointer dereference during XInclude processing */
++    if (elem->type < XML_ELEMENT_NODE || elem->type > XML_ENTITY_DECL) {
++        return(NULL);
++    }
++    

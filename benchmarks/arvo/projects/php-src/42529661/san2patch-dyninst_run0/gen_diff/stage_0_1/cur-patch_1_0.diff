@@ -1,0 +1,23 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..3adf90f846a 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2495 +2495,5 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-		efree(HT_GET_DATA_ADDR(ht));
++		/* Clear hash table data but preserve header for JIT safety */
++		memset(HT_GET_DATA_ADDR(ht), 0, HT_USED_SIZE(ht));
++		HT_FLAGS(ht) |= HASH_FLAG_FREED_DATA;
++	} else {
++		FREE_HASHTABLE(ht);
+@@ -2497 +2500,0 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	FREE_HASHTABLE(ht);
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..eae4147dd08 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -633,0 +634 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			if (!zv || !Z_COUNTED_P(zv)) return;
+@@ -638,0 +640 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++				if (!zv || !Z_COUNTED_P(zv)) return;
+@@ -643,0 +646 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++				if (!zv || !Z_COUNTED_P(zv)) return;

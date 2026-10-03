@@ -1,0 +1,19 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..e95ff46807 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -1622 +1622,2 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-            int16_t (*block)[64] = &s->blocks[c][block_idx];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             int16_t (*block)[64] = &s->blocks[c][block_idx];
+@@ -1624,4 +1625,6 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-                s->idsp.idct_put(ptr, linesize, *block);
+-                if (s->bits & 7)
+-                    shift_output(s, ptr, linesize);
+-                ptr += bytes_per_pixel*8 >> s->avctx->lowres;
++                if (mb_x < mb_width && block >= s->blocks[c] && block < s->blocks[c] + s->block_stride[c] * mb_height) {
++                    s->idsp.idct_put(ptr, linesize, *block);
++                    if (s->bits & 7)
++                        shift_output(s, ptr, linesize);
++                    ptr += bytes_per_pixel*8 >> s->avctx->lowres;
++                }

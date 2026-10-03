@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..5ed6fa1d0e5 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -1120,0 +1121,4 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_leave_helper
++		/* Explicitly nullify compiled variables to prevent use-after-free */
++		for (uint32_t i = 0; i < EX(func)->op_array.last_var; i++) {
++			ZVAL_UNDEF(EX_VAR_NUM(i));
++		}
+@@ -3275 +3279,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-	}
++		// Invalidate all compiled variable references to prevent use-after-free
++		zend_execute_data *ex = EG(current_execute_data);
++		if (ex && ex->func) {
++			zval *compiled_vars = ((zval*)ex) + ex->func->op_array.last_var + ex->func->op_array.T;
++			memset(compiled_vars, 0, sizeof(zval) * ex->func->op_array.last_var);
++		}
++  	}
+@@ -3282,0 +3293 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_USER_OPCODE_SPEC_HANDLER(ZEND_
++

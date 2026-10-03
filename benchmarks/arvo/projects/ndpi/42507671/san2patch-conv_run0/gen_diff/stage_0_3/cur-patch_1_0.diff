@@ -1,0 +1,30 @@
+diff --git a/src/lib/protocols/kerberos.c b/src/lib/protocols/kerberos.c
+index 1f242ac46..ba7fb5956 100644
+--- a/src/lib/protocols/kerberos.c
++++ b/src/lib/protocols/kerberos.c
+@@ -230 +230,2 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		  }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		  }
+@@ -232 +233,5 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		  cname_len = packet->payload[name_offset];
++		  if(name_offset < packet->payload_packet_len) {
++		    cname_len = packet->payload[name_offset];
++		  } else {
++		    cname_len = 0; /* Set to 0 if out of bounds to avoid further issues */
++		  }
+@@ -256 +261 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		      if(((strcmp(cname_str, "host") == 0) || (strcmp(cname_str, "ldap") == 0)) && (packet->payload[name_offset+1+cname_len] == 0x1b)) {
++		      if(((strcmp(cname_str, "host") == 0) || (strcmp(cname_str, "ldap") == 0)) && (name_offset+1+cname_len < packet->payload_packet_len) && (packet->payload[name_offset+1+cname_len] == 0x1b)) {
+@@ -259,0 +265,2 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
++		        else
++		          cname_len = 0; /* Prevent out of bounds access */
+@@ -287 +293,0 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		    //if(num_cname == 2) realm_offset++;
+@@ -289 +295,5 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		      realm_len = packet->payload[realm_offset];
++		      if(realm_offset < packet->payload_packet_len) { /* Bounds check for realm_len access */
++		        realm_len = packet->payload[realm_offset];
++		      } else {
++		        realm_len = 0; /* Prevent out of bounds access */
++		      }

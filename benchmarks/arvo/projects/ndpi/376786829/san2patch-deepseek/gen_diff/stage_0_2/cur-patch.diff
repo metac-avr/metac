@@ -1,0 +1,68 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..fe935fe90 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1433,2 +1433,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-  } else {
+-    /* First line is complete (example: "GET / HTTP/1.1"): extract url */
++    ndpi_int_http_add_connection(ndpi_struct, flow, master_protocol);
++    check_content_type_and_change_protocol(ndpi_struct, flow);
+@@ -1436,2 +1436,6 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    packet->http_url_name.ptr = &packet->payload[filename_start];
+-    packet->http_url_name.len = packet->line[0].len - (filename_start + 9);
++    if(flow->http.user_agent == NULL ||
++       flow->http.user_agent[0] == '\0') {
++      ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_USER_AGENT, "Empty or missing User-Agent");
++    }
++    return;
++  }
+@@ -1439,2 +1443 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    packet->http_method.ptr = packet->line[0].ptr;
+-    packet->http_method.len = filename_start - 1;
++  /* First line is complete (example: "GET / HTTP/1.1"): extract url */
+@@ -1442,5 +1445,4 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    /* Set the HTTP requested version: 0=HTTP/1.0 and 1=HTTP/1.1 */
+-    if(memcmp(&packet->line[0].ptr[packet->line[0].len - 1], "1", 1) == 0)
+-      flow->http.request_version = 1;
+-    else
+-      flow->http.request_version = 0;
++  if(packet->line[0].len < (filename_start + 9)) {
++    NDPI_LOG_DBG2(ndpi_struct, "Request with an incomplete or invalid first line\n");
++    ndpi_int_http_add_connection(ndpi_struct, flow, master_protocol);
++    check_content_type_and_change_protocol(ndpi_struct, flow);
+@@ -1448,7 +1450,3 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    if(packet->http_url_name.len > 7 &&
+-       !strncasecmp((const char*) packet->http_url_name.ptr, "http://", 7)) {
+-      master_protocol = NDPI_PROTOCOL_HTTP_PROXY;
+-    }
+-    if(filename_start == 8 &&
+-       strncasecmp((const char *)packet->payload, "CONNECT ", 8) == 0) {
+-      master_protocol = NDPI_PROTOCOL_HTTP_CONNECT;
++    if(flow->http.user_agent == NULL ||
++       flow->http.user_agent[0] == '\0') {
++      ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_USER_AGENT, "Empty or missing User-Agent");
+@@ -1455,0 +1454 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++    return;
+@@ -1456,0 +1456,22 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++
++  packet->http_url_name.ptr = &packet->payload[filename_start];
++  packet->http_url_name.len = packet->line[0].len - (filename_start + 9);
++
++  packet->http_method.ptr = packet->line[0].ptr;
++  packet->http_method.len = filename_start - 1;
++
++  /* Set the HTTP requested version: 0=HTTP/1.0 and 1=HTTP/1.1 */
++  if(memcmp(&packet->line[0].ptr[packet->line[0].len - 1], "1", 1) == 0)
++    flow->http.request_version = 1;
++  else
++    flow->http.request_version = 0;
++
++  if(packet->http_url_name.len > 7 &&
++     !strncasecmp((const char*) packet->http_url_name.ptr, "http://", 7)) {
++    master_protocol = NDPI_PROTOCOL_HTTP_PROXY;
++  }
++  if(filename_start == 8 &&
++     strncasecmp((const char *)packet->payload, "CONNECT ", 8) == 0) {
++    master_protocol = NDPI_PROTOCOL_HTTP_CONNECT;
++  }
++

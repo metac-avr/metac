@@ -1,0 +1,17 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..c35165cf6 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -54 +54,8 @@ str_init_normal_capa(mrb_state *mrb, struct RString *s,
+-  if (p) memcpy(dst, p, len);
++  if (p) {
++    // Create a local copy of the string data to avoid use-after-free
++    char *safe_p = (char *)mrb_malloc(mrb, len + 1);
++    memcpy(safe_p, p, len);
++    safe_p[len] = '\0';
++    memcpy(dst, safe_p, len);
++    mrb_free(mrb, safe_p);
++  }
+@@ -253 +260 @@ mrb_gc_free_str(mrb_state *mrb, struct RString *str)
+-    /* no code */;
++    /* Embedded strings don't need freeing */;

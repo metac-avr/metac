@@ -1,0 +1,24 @@
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..dfae31da8 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -790,0 +791,6 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  if (mrb->c->stack) {
++    mrb_int stack_pos = mrb->c->stack - mrb->c->stbase;
++    if (stack_pos >= mrb->c->stend - mrb->c->stbase - 1) {
++      mrb_stack_extend(mrb, stack_pos + 2);
++    }
++  }
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..a06ccb486 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -517 +517,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[argc+1] = blk;
++      // Check stack boundary before writing blk
++      if (argc + 1 < mrb->c->stend - ci->stack) {
++        ci->stack[argc+1] = blk;
++      } else {
++        mrb_stack_extend(mrb, argc + 2);
++        ci->stack[argc+1] = blk;
++      }

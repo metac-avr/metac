@@ -1,0 +1,49 @@
+diff --git a/tree.c b/tree.c
+index 8077348a..35b713b8 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699,11 +3699,13 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
+-	return;
+-    }
+-    if (cur->doc != NULL) dict = cur->doc->dict;
+-    while (1) {
+-        while ((cur->children != NULL) &&
+-               (cur->type != XML_DOCUMENT_NODE) &&
+-               (cur->type != XML_HTML_DOCUMENT_NODE) &&
+-               (cur->type != XML_DTD_NODE) &&
+-               (cur->type != XML_ENTITY_REF_NODE)) {
+-            cur = cur->children;
++ xmlFreeNsList((xmlNsPtr) cur);
++ return;
++ }
++ // FIXME: Crash CWE-416: Use After Free
++ if (cur == NULL) return; // Add null check to prevent use after free
++ if (cur->doc != NULL) dict = cur->doc->dict;
++ while (1) {
++ while ((cur->children != NULL) &&
++ (cur->type != XML_DOCUMENT_NODE) &&
++ (cur->type != XML_HTML_DOCUMENT_NODE) &&
++ (cur->type != XML_DTD_NODE) &&
++ (cur->type != XML_ENTITY_REF_NODE)) {
++ cur = cur->children;
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..9666a1d7 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2218 +2218,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		       "XInclude error: would result in multiple root nodes\n",
++// FIXME: Crash CWE-416: Use After Free
++ 		       "XInclude error: would result in multiple root nodes\n",
+@@ -2220 +2221,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-            xmlFreeNodeList(list);
++            if (list != NULL) {
++                xmlFreeNodeList(list);
++                list = NULL;
++            }
+@@ -2258 +2262,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-            xmlFreeNodeList(list);
++            if (list != NULL) {
++                xmlFreeNodeList(list);
++                list = NULL;
++            }

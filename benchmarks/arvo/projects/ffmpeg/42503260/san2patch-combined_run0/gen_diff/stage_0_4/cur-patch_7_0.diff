@@ -1,0 +1,33 @@
+diff --git a/libavcodec/speexdec.c b/libavcodec/speexdec.c
+index 35270e6723..cf08ecb220 100644
+--- a/libavcodec/speexdec.c
++++ b/libavcodec/speexdec.c
+@@ -586,0 +587 @@ static void iir_mem(const float *x, const float *den,
++    if (ord <= 0 || !mem) return;
+@@ -1555 +1556,8 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
+-    dst = (float *)frame->extended_data[0];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     dst = (float *)frame->extended_data[0];
++    
++    // Validate frame parameters to prevent buffer overflow
++    if (frame->nb_samples > INT_MAX / sizeof(float) || s->frame_size <= 0 || s->frames_per_packet <= 0) {
++        return AVERROR_INVALIDDATA;
++    }
++    
+@@ -1557 +1565,12 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
+-        ret = speex_modes[s->mode].decode(avctx, &s->st[s->mode], &s->gb, dst + i * s->frame_size);
++        // Check for potential integer overflow in pointer arithmetic
++        if (i > INT_MAX / s->frame_size || (int64_t)i * s->frame_size > INT_MAX / sizeof(float)) {
++            return AVERROR_INVALIDDATA;
++        }
++        
++        float *current_dst = dst + i * s->frame_size;
++        // Ensure current_dst is within valid memory range
++        if (current_dst < dst || current_dst >= dst + frame->nb_samples) {
++            return AVERROR_INVALIDDATA;
++        }
++        
++        ret = speex_modes[s->mode].decode(avctx, &s->st[s->mode], &s->gb, current_dst);
+@@ -1561 +1580 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
+-            speex_decode_stereo(dst + i * s->frame_size, s->frame_size, &s->stereo);
++            speex_decode_stereo(current_dst, s->frame_size, &s->stereo);

@@ -1,0 +1,58 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..b0f795580 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,6 +2380,0 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
+-
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+-
+@@ -2389,3 +2383,5 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++				 sizeof(ja.client.signature_algorithms_str)-i*2,
++				 "%02X", packet->payload[s_offset+i]);
++		  if(i*2+1 < tot_signature_algorithms_len && s_offset+i*2+1 < total_len) {
++		    ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++		  }
+@@ -2394,9 +2390 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		}
+-
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+-
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++		}		    continue;
+@@ -2872,11 +2860,7 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-static void ndpi_search_tls_wrapper(struct ndpi_detection_module_struct *ndpi_struct,
+-				    struct ndpi_flow_struct *flow) {
+-  struct ndpi_packet_struct *packet = &ndpi_struct->packet;
+-
+-#ifdef DEBUG_TLS
+-  printf("==>> %s() %u [len: %u][version: %u]\n",
+-	 __FUNCTION__,
+-	 flow->guessed_protocol_id_by_ip,
+-	 packet->payload_packet_len,
+-	 flow->protos.tls_quic.ssl_version);
+-#endif
++		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
++		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++				 sizeof(ja.client.signature_algorithms_str)-i*2,
++				 "%02X", packet->payload[s_offset+i]);
++		  if(i*2+1 < tot_signature_algorithms_len && s_offset+i*2+1 < total_len) {
++		    ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++		  }
+@@ -2884,5 +2868,2 @@ static void ndpi_search_tls_wrapper(struct ndpi_detection_module_struct *ndpi_st
+-  if(packet->udp != NULL)
+-    ndpi_search_tls_udp(ndpi_struct, flow);
+-  else
+-    ndpi_search_tls_tcp(ndpi_struct, flow);
+-}
++		  if(rc < 0) break;
++		}

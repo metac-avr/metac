@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_opcode.c b/Zend/zend_opcode.c
+index 38ba89db2ba..b5fd8fa5aba 100644
+--- a/Zend/zend_opcode.c
++++ b/Zend/zend_opcode.c
+@@ -1009 +1009,2 @@ ZEND_API void pass_two(zend_op_array *op_array)
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
++		size_t literals_offset = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++		memcpy(((char*)op_array->opcodes) + literals_offset,
+@@ -1012 +1013 @@ ZEND_API void pass_two(zend_op_array *op_array)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)(((char*)op_array->opcodes) + literals_offset);
+@@ -1016 +1017,2 @@ ZEND_API void pass_two(zend_op_array *op_array)
+-#endif
++
++#endif#endif
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index 7fa5d82bf24..f2d5dd02b42 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -286,0 +287,2 @@ bool zend_optimizer_update_op1_const(zend_op_array *op_array,
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 			if (opline < op_array->opcodes || opline >= op_array->opcodes + op_array->last) return 0;

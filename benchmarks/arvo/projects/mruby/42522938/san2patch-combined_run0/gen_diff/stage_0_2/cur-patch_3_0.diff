@@ -1,0 +1,26 @@
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..8b7697458 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326,5 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    if (mrb_object_dead_p(mrb, mrb_obj_ptr(key))) {
++      hash_code = 0;
++    } else {
++      hash_code = mrb_str_hash(mrb, key);
++    }
+@@ -343 +347,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-416: Use After Free
++     break;
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..3cce38d76 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -211,0 +212 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
++  if (shared == NULL) return;  // Prevent dereferencing null pointer
+@@ -214 +215,3 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-    mrb_free(mrb, shared->ptr);
++    if (shared->ptr != NULL) {  // Check pointer validity before freeing
++      mrb_free(mrb, shared->ptr);
++    }

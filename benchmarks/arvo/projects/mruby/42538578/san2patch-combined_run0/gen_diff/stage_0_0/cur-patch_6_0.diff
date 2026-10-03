@@ -1,0 +1,36 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..b519f138b 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -339,0 +340 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  mrb_callinfo *old_ci = c->ci;  /* Store old ci for validation */
+@@ -348 +349 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -357 +358 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-  ci->stack = ci[-1].stack + push_stacks;
++  ci->stack = old_ci->stack + push_stacks;  /* Use validated old_ci */
+@@ -2710,8 +2711,13 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
+-      if (mrb_nil_p(regs[a])) {
+-        regs[a] = splat;
+-      }
+-      else {
+-        mrb_assert(mrb_array_p(regs[a]));
+-        mrb_ary_concat(mrb, regs[a], splat);
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
++      /* Validate ci pointer before use to prevent use-after-free */
++      struct mrb_context *ctx = mrb->c;
++      if (ctx && ctx->ci) {
++        mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
++        if (mrb_nil_p(regs[a])) {
++          regs[a] = splat;
++        }
++        else {
++          mrb_assert(mrb_array_p(regs[a]));
++          mrb_ary_concat(mrb, regs[a], splat);
++        }
+@@ -2722 +2727,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

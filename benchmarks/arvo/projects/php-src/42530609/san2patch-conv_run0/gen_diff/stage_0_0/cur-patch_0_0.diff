@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..ccfa5c00a3a 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
++[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -56,0 +57,6 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (UNEXPECTED(GC_TYPE(p) == IS_OBJECT)) {
++		zend_object *obj = (zend_object*)p;
++		if (UNEXPECTED(GC_FLAGS(obj) & IS_OBJ_FREE_CALLED)) {
++			return;
++		}
++	}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..82d57b574e0 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-416: Use After Free
+@@ -203,0 +204 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++ 		ptr = ((char*)object) - object->handlers->offset;

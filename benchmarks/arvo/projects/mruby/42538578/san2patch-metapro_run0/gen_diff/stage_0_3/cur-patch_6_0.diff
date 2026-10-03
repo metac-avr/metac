@@ -1,0 +1,28 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..47d467f77 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -349,0 +350 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *old_cibase = c->cibase;
+@@ -351 +352,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    ptrdiff_t ci_offset = ci - old_cibase;
++    c->ci = ci = c->cibase + ci_offset;
+@@ -2710,4 +2712,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
+-      if (mrb_nil_p(regs[a])) {
+-        regs[a] = splat;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
++      mrb_value *regs_backup = regs;  // Backup registry pointer before GC operations
++      mrb_value splat = mrb_ary_splat(mrb, regs_backup[a+1]);
++      if (mrb_nil_p(regs_backup[a])) {
++        regs_backup[a] = splat;
+@@ -2716,2 +2720,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-        mrb_assert(mrb_array_p(regs[a]));
+-        mrb_ary_concat(mrb, regs[a], splat);
++        mrb_assert(mrb_array_p(regs_backup[a]));
++        mrb_ary_concat(mrb, regs_backup[a], splat);
+@@ -2722 +2725,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

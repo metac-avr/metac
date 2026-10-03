@@ -1,0 +1,34 @@
+diff --git a/src/media_tools/isom_tools.c b/src/media_tools/isom_tools.c
+index a41e51a0d..61ea1d957 100644
+--- a/src/media_tools/isom_tools.c
++++ b/src/media_tools/isom_tools.c
+@@ -1416 +1416,2 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
+@@ -1418 +1419,4 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-			gf_odf_avc_cfg_write(((GF_AVCConfigurationBox *)props.config)->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			GF_AVCConfigurationBox *avc_config = (GF_AVCConfigurationBox *)props.config;
++			if (avc_config && avc_config->config) {
++				gf_odf_avc_cfg_write(avc_config->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			}
+diff --git a/src/filters/isoffin_load.c b/src/filters/isoffin_load.c
+index 31f8c8458..18db4f013 100644
+--- a/src/filters/isoffin_load.c
++++ b/src/filters/isoffin_load.c
+@@ -1831,9 +1831,2 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-	case GF_ISOM_CBCS_SCHEME:
+-	case GF_ISOM_CENC_SCHEME:
+-	case GF_ISOM_PIFF_SCHEME:
+-	case 0:
+-		break;
+-	default:
+-		return GF_FALSE;
+-	}
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++	if (!read || !read->mov) return GF_FALSE;
+@@ -1852 +1845,2 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-	} else {
++	}
++}	} else {

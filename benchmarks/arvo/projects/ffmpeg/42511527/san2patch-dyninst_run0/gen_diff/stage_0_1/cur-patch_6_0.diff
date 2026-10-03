@@ -1,0 +1,26 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..2d35dbe523 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -157 +157,3 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    inflate(&s->zstream, Z_SYNC_FLUSH);
++    if (s->zstream.next_out) {
++        inflate(&s->zstream, Z_SYNC_FLUSH);
++    }
+@@ -165 +167,3 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    deflate(&zs, Z_SYNC_FLUSH);
++    if (zs.next_out) {
++        deflate(&zs, Z_SYNC_FLUSH);
++    }
+@@ -177 +181,3 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    inflate(&s->zstream, Z_SYNC_FLUSH);
++    if (s->zstream.next_out) {
++        inflate(&s->zstream, Z_SYNC_FLUSH);
++    }
+@@ -194 +200,2 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
++// FIXME: Crash CWE-416: Use After Free
++     }
+@@ -195,0 +203,2 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        /* Ensure the data pointer is NULL before prime operation */
++        s->blocks[blk_idx].data = NULL;

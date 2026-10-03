@@ -1,0 +1,36 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..361f6b9ea 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -115 +115 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Initialize stack with bounds checking */
+@@ -117,0 +118,5 @@ stack_init(mrb_state *mrb)
++  
++  /* Ensure stack boundaries are properly set before use */
++  if (c->stbase == NULL || c->stend <= c->stbase) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "Failed to initialize VM stack");
++  }
+@@ -119 +124 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  /* Initialize call info with bounds checking */
+@@ -124,0 +130,5 @@ stack_init(mrb_state *mrb)
++  
++  /* Validate call info initialization */
++  if (c->cibase == NULL || c->ciend <= c->cibase) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "Failed to initialize call info");
++  }
+@@ -1707 +1717,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1710,0 +1722,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      /* Bounds check before accessing regs[a] */
++      if (a >= mrb->c->stend - mrb->c->stbase) {
++        mrb_raise(mrb, E_INDEX_ERROR, "register index out of bounds");
++      }
+@@ -1755,0 +1771,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Bounds check before writing to ci->stack[0] */
++        if (ci->stack + 0 >= mrb->c->stend) {
++          mrb_raise(mrb, E_INDEX_ERROR, "stack index out of bounds");
++        }

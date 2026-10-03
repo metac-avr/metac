@@ -1,0 +1,34 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..9c9c5a6b 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6857,2 +6857,6 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr result = xmlSetNsProp(node, ns, localname, value);
++            if (result == NULL || result->children == NULL) 
++                return(result);
++            return(result);
++        }
+@@ -6861 +6865,4 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr result = xmlSetNsProp(node, NULL, name, value);
++    if (result == NULL || result->children == NULL)
++        return(result);
++    return(result);
+@@ -6914,6 +6921,8 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	    tmp = prop->children;
+-	    while (tmp != NULL) {
+-		tmp->parent = (xmlNodePtr) prop;
+-		if (tmp->next == NULL)
+-		    prop->last = tmp;
+-		tmp = tmp->next;
++	    if (prop->children != NULL) {
++	        tmp = prop->children;
++	        while (tmp != NULL) {
++		    tmp->parent = (xmlNodePtr) prop;
++		    if (tmp->next == NULL)
++		        prop->last = tmp;
++		    tmp = tmp->next;
++	        }

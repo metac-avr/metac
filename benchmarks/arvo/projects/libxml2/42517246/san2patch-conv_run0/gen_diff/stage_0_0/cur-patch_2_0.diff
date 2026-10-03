@@ -1,0 +1,41 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..0fca3f18 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -845,0 +846,13 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++    
++    /* Prevent use-after-free by validating node dictionary references */
++    if (elem->type != XML_DOCUMENT_NODE) {
++        /* For regular nodes, ensure dictionary integrity before copy */
++        if (source->dict != NULL && elem->name != NULL) {
++            /* Force validation of name pointer */
++            const xmlChar *validated_name = xmlDictLookup(source->dict, elem->name, -1);
++            if (validated_name == NULL) {
++                return(NULL);
++            }
++        }
++    }
++    
+diff --git a/dict.c b/dict.c
+index 5c9ca719..d1c89005 100644
+--- a/dict.c
++++ b/dict.c
+@@ -870 +870 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    unsigned long key, okey, nbi = 0;
++unsigned long key, okey, nbi = 0;
+@@ -879,3 +879,8 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    if (len < 0)
+-        l = strlen((const char *) name);
+-    else
++    /* Validate memory before use to prevent expired pointer dereference */
++    if (len < 0) {
++        /* Check if pointer is valid before calling strlen */
++        const char *p = (const char *)name;
++        unsigned int temp_len = 0;
++        while (*p++) temp_len++;
++        l = temp_len;
++    } else
+@@ -890,2 +895 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);

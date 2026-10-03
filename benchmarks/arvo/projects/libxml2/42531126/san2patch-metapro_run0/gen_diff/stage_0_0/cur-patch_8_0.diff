@@ -1,0 +1,23 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..73250bbe 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -425 +425,3 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     */
++      */
++    if (!ctxt->input) return(0);
++    if (!ctxt->input->cur) return(0);
+@@ -437,2 +439 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-            goto encoding_error;
+-        if ((c & 0xe0) == 0xe0) {
++            goto encoding_error;        if ((c & 0xe0) == 0xe0) {
+@@ -3458,0 +3460,9 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++        /* Ensure pointer validity after buffer operations per SEI CERT C MEM00-C */
++        if (ctxt->input && ctxt->input->buf && ctxt->input->buf->buffer) {
++            if ((ctxt->input->cur < ctxt->input->buf->buffer->content) ||
++                (ctxt->input->cur > ctxt->input->buf->buffer->content + ctxt->input->buf->buffer->use)) {
++                ctxt->input->cur = ctxt->input->buf->buffer->content + 
++                                   (ctxt->input->cur - ctxt->input->base);
++                ctxt->input->base = ctxt->input->buf->buffer->content;
++            }
++        }

@@ -1,0 +1,15 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..ebccb0fcf8f 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756 +756,2 @@ static zend_always_inline zend_string* zend_jit_fetch_dim_str_offset(zend_string
+-static zend_string* ZEND_FASTCALL zend_jit_fetch_dim_str_offset_r_helper(zend_string *str, zend_long offset)
++// FIXED CWE-416: Add reference to input string before returning a substring
++ static zend_string* ZEND_FASTCALL zend_jit_fetch_dim_str_offset_r_helper(zend_string *str, zend_long offset)
+@@ -758 +759,5 @@ static zend_string* ZEND_FASTCALL zend_jit_fetch_dim_str_offset_r_helper(zend_st
+-	return zend_jit_fetch_dim_str_offset(str, offset);
++	zend_string *ret = zend_jit_fetch_dim_str_offset(str, offset);
++	if (EXPECTED(ret != NULL)) {
++		zend_string_addref(ret);
++	}
++	return ret;

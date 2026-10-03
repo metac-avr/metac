@@ -1,0 +1,18 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 8f9dae101..fee175aac 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1959 +1959,4 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-    input_info.seen_flow_beginning = NDPI_FLOW_BEGINNING_UNKNOWN;
++    // Security fix for CWE-787: Added buffer boundary validation
++    if(&input_info.seen_flow_beginning >= &input_info && 
++       (char*)&input_info.seen_flow_beginning < ((char*)&input_info + sizeof(input_info)))
++      input_info.seen_flow_beginning = NDPI_FLOW_BEGINNING_UNKNOWN;
+@@ -1962,2 +1965,2 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-							    iph ? (uint8_t *)iph : (uint8_t *)iph6,
+-							    ipsize, time_ms, &input_info);
++						    iph ? (uint8_t *)iph : (uint8_t *)iph6,
++						    ipsize, time_ms, &input_info);
+@@ -1979 +1982 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-							  &proto_guessed);
++						  &proto_guessed);

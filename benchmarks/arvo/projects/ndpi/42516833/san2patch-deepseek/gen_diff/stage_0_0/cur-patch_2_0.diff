@@ -1,0 +1,25 @@
+diff --git a/src/lib/protocols/irc.c b/src/lib/protocols/irc.c
+index 367ec86bd..dc9085b53 100644
+--- a/src/lib/protocols/irc.c
++++ b/src/lib/protocols/irc.c
+@@ -409,5 +409,9 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-	  char buf[32], msg[64], *sp;
+-
+-	  snprintf(buf, sizeof(buf), "%s", &user[5]);
+-	  if((sp = strchr(buf, ' ')) != NULL)
+-	    sp[0] = '\0';
++	  int len = packet->payload_packet_len - (user - packet->payload);
++	  if(len > 5) {
++	    char buf[32], msg[64], *sp;
++	    int n = len - 5;
++	    if(n > (int)sizeof(buf) - 1)
++	      n = sizeof(buf) - 1;
++	    snprintf(buf, sizeof(buf), "%.*s", n, &user[5]);
++	    if((sp = strchr(buf, ' ')) != NULL)
++	      sp[0] = '\0';
+@@ -415,2 +419,3 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-	  snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
+-	  ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
++	    snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
++	    ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
++	  }

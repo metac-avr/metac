@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..39d1a7a6aad 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1432,0 +1433,2 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++	// Validate bucket pointer before use to prevent use-after-free
++	if (!p || (char*)p < (char*)ht->arData || (char*)p >= (char*)(ht->arData + ht->nTableSize)) return;
+@@ -2145,0 +2148 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++		uint32_t origNumUsed = ht->nNumUsed;  // Store original size
+@@ -2154 +2157,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (result & ZEND_HASH_APPLY_REMOVE) {
++// FIXME: Crash CWE-416: Use After Free
++ 			if (result & ZEND_HASH_APPLY_REMOVE) {
+@@ -2156 +2160,3 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				if (ht->nNumUsed <= origNumUsed) {  // Check if table hasn't shrunk excessively
++					_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				}

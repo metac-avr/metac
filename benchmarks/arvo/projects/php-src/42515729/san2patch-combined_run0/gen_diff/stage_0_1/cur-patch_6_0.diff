@@ -1,0 +1,33 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..e28b0552f07 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267 +2267,4 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
++	timelib_error_container *temp_container = NULL;
++
+@@ -2269 +2272 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-		timelib_error_container_dtor(DATEG(last_errors));
++		temp_container = DATEG(last_errors);
+@@ -2270,0 +2274 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++		timelib_error_container_dtor(temp_container);
+@@ -2278,0 +2283,4 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++		*last_errors = NULL;
++	} else {
++		timelib_error_container_dtor(*last_errors);
++		*last_errors = NULL;
+@@ -2280,3 +2287,0 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-
+-	timelib_error_container_dtor(*last_errors);
+-	*last_errors = NULL;
+@@ -2333,0 +2339,4 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
++	if (err) {
++		timelib_error_container_dtor(err);
++		err = NULL;
++	}
+@@ -2343,2 +2352 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = 0;
+-		return 0;
++		dateobj->time = 0;		return 0;

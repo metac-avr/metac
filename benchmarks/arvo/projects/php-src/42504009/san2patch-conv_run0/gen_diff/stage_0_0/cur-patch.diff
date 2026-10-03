@@ -1,0 +1,70 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..1dbff1f9e62 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1052,5 +1052,6 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	ZVAL_DEREF(op1);
+-	ZVAL_DEREF(op2);
+-	if (add_function_fast(result, op1, op2) == SUCCESS) {
+-		return SUCCESS;
+-	}
++	if (op1 && op2) {
++		ZVAL_DEREF(op1);
++		ZVAL_DEREF(op2);
++		if (add_function_fast(result, op1, op2) == SUCCESS) {
++			return SUCCESS;
++		}
+@@ -1058 +1059 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_ADD);
++		ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_ADD);
+@@ -1060,6 +1061,8 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	zval op1_copy, op2_copy;
+-	if (UNEXPECTED(zendi_try_convert_scalar_to_number(op1, &op1_copy) == FAILURE)
+-			|| UNEXPECTED(zendi_try_convert_scalar_to_number(op2, &op2_copy) == FAILURE)) {
+-		zend_binop_error("+", op1, op2);
+-		if (result != op1) {
+-			ZVAL_UNDEF(result);
++		zval op1_copy, op2_copy;
++		if (UNEXPECTED(zendi_try_convert_scalar_to_number(op1, &op1_copy) == FAILURE)
++				|| UNEXPECTED(zendi_try_convert_scalar_to_number(op2, &op2_copy) == FAILURE)) {
++			zend_binop_error("+", op1, op2);
++			if (result != op1) {
++				ZVAL_UNDEF(result);
++			}
++			return FAILURE;
+@@ -1067,2 +1069,0 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-		return FAILURE;
+-	}
+@@ -1070,3 +1071,3 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (result == op1) {
+-		zval_ptr_dtor(result);
+-	}
++		if (result == op1) {
++			zval_ptr_dtor(result);
++		}
+@@ -1074,3 +1075,3 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (add_function_fast(result, &op1_copy, &op2_copy) == SUCCESS) {
+-		return SUCCESS;
+-	}
++		if (add_function_fast(result, &op1_copy, &op2_copy) == SUCCESS) {
++			return SUCCESS;
++		}
+@@ -1078,2 +1079,5 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	ZEND_ASSERT(0 && "Operation must succeed");
+-	return FAILURE;
++		ZEND_ASSERT(0 && "Operation must succeed");
++		return FAILURE;
++	} else {
++		return FAILURE;
++	}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..e94123f8f27 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -444 +444,5 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_add_helper_S
+-		op_2 = ZVAL_UNDEFINED_OP2();
++		// Fixed CWE-825: Expired Pointer Dereference
++		// Replaced non-existent ZEND_IS_FREEABLE_P with proper null check
++		if (op_2 != NULL) {
++			op_2 = ZVAL_UNDEFINED_OP2();
++		}

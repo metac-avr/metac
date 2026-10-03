@@ -1,0 +1,49 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..5232be4d7c7 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
++[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p || !zend_gc_check_pointer_validity(p)) return;
+@@ -67,2 +68 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
+-}
++	efree(str);}
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index 4d40b76854d..94ad614498e 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -177,6 +177,6 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-			} else {
+-				EG(exception) = old_exception;
+-			}
+-		}
+-		OBJ_RELEASE(object);
+-	}
++            } else {
++                EG(exception) = old_exception;
++            }
++        }
++        OBJ_RELEASE(object);
++    }
+@@ -185 +185,2 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+@@ -187 +188 @@ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+-	zend_object *object = emalloc(sizeof(zend_object) + zend_object_properties_size(ce));
++    zend_object *object = emalloc(sizeof(zend_object) + zend_object_properties_size(ce));
+@@ -189,2 +190,2 @@ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+-	_zend_object_std_init(object, ce);
+-	return object;
++    _zend_object_std_init(object, ce);
++    return object;
+@@ -195 +196 @@ ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object,
+-	bool has_clone_method = old_object->ce->clone != NULL;
++    bool has_clone_method = old_object && old_object->ce && old_object->ce->clone != NULL;
+@@ -197,2 +198 @@ ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object,
+-	if (old_object->ce->default_properties_count) {
+-		zval *src = old_object->properties_table;
++    if (old_object && old_object->ce->default_properties_count) {		zval *src = old_object->properties_table;

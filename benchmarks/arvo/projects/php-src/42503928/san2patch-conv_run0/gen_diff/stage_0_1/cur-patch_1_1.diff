@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..6fc8d13aa81 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -75 +75,6 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	efree_size(ref, sizeof(zend_reference));
++	if (EXPECTED(ref != NULL) && EXPECTED(!GC_IS_RECURSIVE(ref))) {
++		efree_size(ref, sizeof(zend_reference));
++	} else if (ref) {
++		zend_gc_remove_from_buffer(ref);
++		efree(ref);
++	}
+@@ -94,2 +99 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

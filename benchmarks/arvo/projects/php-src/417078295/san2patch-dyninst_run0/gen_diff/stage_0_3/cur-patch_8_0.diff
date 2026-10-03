@@ -1,0 +1,67 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index af5f3821723..baccc11677d 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1260 +1260 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++return p->refcount;
+@@ -1268 +1268,2 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+@@ -1269,0 +1271 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (p->refcount == 0) return 0; // Prevent incrementing freed/refcount=0 objects
+@@ -1273,9 +1275 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		++p->refcount;
+-	}
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
++static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {	if (!(p->u.type_info & GC_IMMUTABLE)) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..a8f6ab96738 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40398 +40398,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZVAL_COPY(&ref->val, get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R));
++				zval *source_val = get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R);
++				if (source_val && Z_REFCOUNTED_P(source_val)) {
++					zend_refcounted *rc = Z_COUNTED_P(source_val);
++					if (rc && !(GC_FLAGS(rc) & GC_IMMEDIATE)) {
++						ZVAL_COPY(&ref->val, source_val);
++					} else {
++						ZVAL_UNDEF(&ref->val);
++					}
++				} else {
++					ZVAL_COPY(&ref->val, source_val);
++				}
+@@ -40406 +40416,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
++			if (Z_REFCOUNTED_P(value)) {
++				zend_refcounted *obj_rc = Z_COUNTED_P(value);
++				if (obj_rc && !(GC_FLAGS(obj_rc) & GC_IMMEDIATE) && GC_REFCOUNT(obj_rc) > 0) {
++					Z_ADDREF_P(value);
++				}
++			} else {
++				Z_ADDREF_P(value);
++			}
+@@ -40414 +40431,14 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-		ZVAL_COPY(variable_ptr, value);
++		if (value) {
++			if (Z_REFCOUNTED_P(value)) {
++				zend_refcounted *check_rc = Z_COUNTED_P(value);
++				if (check_rc && !(GC_FLAGS(check_rc) & GC_IMMEDIATE) && GC_REFCOUNT(check_rc) > 0) {
++					ZVAL_COPY(variable_ptr, value);
++				} else {
++					ZVAL_UNDEF(variable_ptr);
++				}
++			} else {
++				ZVAL_COPY(variable_ptr, value);
++			}
++		} else {
++			ZVAL_UNDEF(variable_ptr);
++		}

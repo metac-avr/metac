@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..e25dd8150 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -349,0 +350 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *old_cibase = c->cibase;
+@@ -351 +352,5 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    if (c->cibase != old_cibase) {
++      ptrdiff_t diff = c->cibase - old_cibase;
++      ci = (mrb_callinfo*)((char*)ci + diff * sizeof(mrb_callinfo));
++    }
++    c->ci = ci;
+@@ -2710 +2715,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
++      /* Check for valid call stack before proceeding */
++      if (!mrb->c || !mrb->c->cibase || mrb->c->ci - mrb->c->cibase < 0) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "call stack corruption detected");
++      }
+@@ -2722 +2731,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

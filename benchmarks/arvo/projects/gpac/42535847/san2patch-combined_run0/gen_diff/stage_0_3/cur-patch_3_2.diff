@@ -1,0 +1,77 @@
+diff --git a/src/isomedia/meta.c b/src/isomedia/meta.c
+index 65660dcba..1444ff650 100644
+--- a/src/isomedia/meta.c
++++ b/src/isomedia/meta.c
+@@ -443,13 +442,0 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-
+-GF_EXPORT
+-GF_Err gf_isom_extract_meta_item(GF_ISOFile *file, Bool root_meta, u32 track_num, u32 item_id, const char *dump_file_name)
+-{
+-	return gf_isom_extract_meta_item_intern(file, root_meta, track_num, item_id, dump_file_name, NULL, NULL, NULL, NULL, GF_TRUE);
+-}
+-
+-GF_EXPORT
+-GF_Err gf_isom_extract_meta_item_mem(GF_ISOFile *file, Bool root_meta, u32 track_num, u32 item_id, u8 **out_data, u32 *out_size, u32 *out_alloc_size, const char **out_mime, Bool use_annex_b)
+-{
+-	return gf_isom_extract_meta_item_intern(file, root_meta, track_num, item_id, NULL, out_data, out_size, out_alloc_size, out_mime, use_annex_b);
+-}
+-
+@@ -463,0 +451 @@ GF_Err gf_isom_extract_meta_item_get_cenc_info(GF_ISOFile *file, Bool root_meta,
++
+@@ -471,0 +460,56 @@ GF_Err gf_isom_extract_meta_item_get_cenc_info(GF_ISOFile *file, Bool root_meta,
++	count = gf_list_count(ipma->entries);
++	for (i = 0; i < count; i++) {
++		GF_ItemPropertyAssociationEntry *entry = (GF_ItemPropertyAssociationEntry *)gf_list_get(ipma->entries, i);
++		if (entry->item_id == item_id) {
++			for (j = 0; j < entry->associations_count; j++) {
++				GF_ItemPropertyAssociation *assoc = &entry->associations[j];
++				if (assoc->property_index) {
++					GF_PropertyBox *prop = (GF_PropertyBox *)gf_list_get(ipco->other_boxes, assoc->property_index - 1);
++					if (prop && prop->type == GF_ISOM_BOX_TYPE_SENC) {
++						found = GF_TRUE;
++						break;
++					}
++				}
++			}
++			if (found) break;
++		}
++	}
++
++	if (!found) {
++		*is_protected = GF_FALSE;
++		return GF_OK;
++	}
++
++	*is_protected = GF_TRUE;
++	sai_item_id = 0;
++
++	if (!meta->item_refs)
++		return GF_ISOM_INVALID_FILE;
++
++	count = gf_list_count(meta->item_refs->references);
++	for (i=0; i<count; i++) {
++		GF_ItemReferenceBoxEntry *ref = (GF_ItemReferenceBoxEntry *)gf_list_get(meta->item_refs->references, i);
++		if (ref->from_item_id == item_id) {
++			sai_item_id = ref->to_item_id;
++			break;
++		}
++	}
++
++	if (!sai_item_id) return GF_ISOM_INVALID_FILE;
++
++	if (aux_info_type_param) {
++		*aux_info_type_param = 0;
++	}
++
++	if (!cenc_sai_data)
++		return GF_OK;
++
++	return gf_isom_extract_meta_item_mem(file, root_meta, track_num, sai_item_id, cenc_sai_data, cenc_sai_data_size, cenc_sai_alloc_size, NULL, GF_FALSE);
++}	GF_ItemPropertyAssociationBox *ipma = NULL;
++	GF_ItemPropertyContainerBox *ipco = NULL;
++	GF_MetaBox *meta = gf_isom_get_meta(file, root_meta, track_num);
++	if (!meta) return GF_BAD_PARAM;
++
++	ipma = meta->item_props->property_association;
++	ipco = meta->item_props->property_container;
++

@@ -1,0 +1,16 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..e3f1532c8 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -165 +165,10 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
+-DEFINE_INCREMENTER(ht, size)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++// The following macro should only be applied after a valid, live hash object has been verified.
++// A guard is added before the accessor chain by checking the hash type before dereferencing hsh.ht.
++#define DEFINE_INCREMENTER_SCOPED(ht, size)                                    \
++  do {                                                                          \
++    if (mrb_hash_p(mrb_obj_value(mrb_get_arg1(mrb)))) {                        \
++      DEFINE_INCREMENTER(ht, size)                                             \
++    }                                                                           \
++  } while (0)
++DEFINE_INCREMENTER_SCOPED(ht, size)

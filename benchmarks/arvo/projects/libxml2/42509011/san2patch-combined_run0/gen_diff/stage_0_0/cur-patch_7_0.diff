@@ -1,0 +1,26 @@
+diff --git a/dict.c b/dict.c
+index 90e4d814..46eae86e 100644
+--- a/dict.c
++++ b/dict.c
+@@ -269 +269,2 @@ xmlDictAddString(xmlDictPtr dict, const xmlChar *name, unsigned int namelen) {
+-        if (size < 4 * namelen)
++/* Prevent CWE-763: Validate size before allocation to avoid invalid pointer issues */
++         if (size < 4 * namelen)
+diff --git a/tree.c b/tree.c
+index 50b6763b..220881f6 100644
+--- a/tree.c
++++ b/tree.c
+@@ -7292,4 +7292,6 @@ xmlBufferShrink(xmlBufferPtr buf, unsigned int len) {
+-		memmove(buf->contentIO, &buf->content[0], buf->use);
+-		buf->content = buf->contentIO;
+-		buf->content[buf->use] = 0;
+-		buf->size += start_buf;
++		if (buf->content != NULL) {
++		    memmove(buf->contentIO, &buf->content[0], buf->use);
++		    buf->content = buf->contentIO;
++		    buf->content[buf->use] = 0;
++		    buf->size += start_buf;
++		}
+@@ -7298 +7300 @@ xmlBufferShrink(xmlBufferPtr buf, unsigned int len) {
+-    } else {
++     } else {

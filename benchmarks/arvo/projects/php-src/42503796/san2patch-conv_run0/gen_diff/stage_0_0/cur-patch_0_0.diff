@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..f697a16cbb3 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1684 +1684,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1685,0 +1687,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	ht->nInternalPointer = NULL;
++	ht->nNextFreeElement = 0;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..939acb38aed 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16723,0 +16724 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
++	zend_array *array_ptr = NULL;
+@@ -16731 +16732,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-			value = zend_fetch_dimension_address_inner(Z_ARRVAL_P(container), dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);
++			array_ptr = Z_ARRVAL_P(container);
++			value = zend_fetch_dimension_address_inner(array_ptr, dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);

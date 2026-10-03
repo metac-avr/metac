@@ -1,0 +1,13 @@
+diff --git a/src/filters/load_bt_xmt.c b/src/filters/load_bt_xmt.c
+index f0d299e0f..f20e8f452 100644
+--- a/src/filters/load_bt_xmt.c
++++ b/src/filters/load_bt_xmt.c
+@@ -832 +832 @@ static const char* my_strstr(const char *str, const char *pat, u32 str_len)
+-	//basically a memmem clone (we don't use for portability reasons)
++	// Fixed: Bound the memchr search to prevent buffer overflow
+@@ -834 +834,4 @@ static const char* my_strstr(const char *str, const char *pat, u32 str_len)
+-		char *next = memchr(str, pat[0], str_len);
++		// Calculate safe search range to avoid reading past buffer end
++		u32 safe_search_len = (str_len < len_pat) ? 0 : str_len - len_pat + 1;
++		if (safe_search_len == 0) return NULL;
++		char *next = memchr(str, pat[0], safe_search_len);

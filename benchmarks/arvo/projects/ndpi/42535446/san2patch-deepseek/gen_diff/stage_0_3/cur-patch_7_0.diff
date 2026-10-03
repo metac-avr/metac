@@ -1,0 +1,19 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..b3a8d6577 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1032,0 +1033,14 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   }
++
++  {
++    u_int16_t payload_len = ndpi_struct->packet.payload_packet_len;
++    u_int16_t offset = (u_int16_t)(flow->http.content_type.ptr - ndpi_struct->packet.payload);
++
++    if (payload_len > offset) {
++      u_int16_t max_search_len = payload_len - offset;
++      if (flow->http.content_type.len > max_search_len)
++        flow->http.content_type.len = max_search_len;
++    } else {
++      flow->http.content_type.len = 0;
++    }

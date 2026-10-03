@@ -1,0 +1,72 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..91f7471fc 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -724 +724,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
++// FIXME: Crash CWE-416: Use After Free
++     }
+@@ -727,10 +728,11 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    funcall_args_capture(mrb, 0, argc, argv, blk, ci);
+-    ci->u.target_class = mrb_class(mrb, self);
+-    m = mrb_vm_find_method(mrb, ci->u.target_class, &ci->u.target_class, mid);
+-    if (MRB_METHOD_UNDEF_P(m)) {
+-      m = prepare_missing(mrb, ci, self, mid, mrb_nil_value(), FALSE);
+-    }
+-    else {
+-      ci->mid = mid;
+-    }
+-    ci->proc = MRB_METHOD_PROC_P(m) ? MRB_METHOD_PROC(m) : NULL;
++    if (ci) {
++      funcall_args_capture(mrb, 0, argc, argv, blk, ci);
++      ci->u.target_class = mrb_class(mrb, self);
++      m = mrb_vm_find_method(mrb, ci->u.target_class, &ci->u.target_class, mid);
++      if (MRB_METHOD_UNDEF_P(m)) {
++        m = prepare_missing(mrb, ci, self, mid, mrb_nil_value(), FALSE);
++      }
++      else {
++        ci->mid = mid;
++      }
++      ci->proc = MRB_METHOD_PROC_P(m) ? MRB_METHOD_PROC(m) : NULL;
+@@ -738,7 +740,8 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    if (MRB_METHOD_CFUNC_P(m)) {
+-      mrb->exc = NULL;
+-      ci->stack[0] = self;
+-      val = MRB_METHOD_CFUNC(m)(mrb, self);
+-      cipop(mrb);
+-      if (mrb->exc != NULL) {
+-        mrb_exc_raise(mrb, mrb_obj_value(mrb->exc));
++      if (MRB_METHOD_CFUNC_P(m)) {
++        mrb->exc = NULL;
++        ci->stack[0] = self;
++        val = MRB_METHOD_CFUNC(m)(mrb, self);
++        cipop(mrb);
++        if (mrb->exc != NULL) {
++          mrb_exc_raise(mrb, mrb_obj_value(mrb->exc));
++        }
+@@ -746,6 +749,8 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
+-    else {
+-      /* handle alias */
+-      if (MRB_PROC_ALIAS_P(ci->proc)) {
+-        ci->mid = ci->proc->body.mid;
+-        ci->proc = ci->proc->upper;
++      else {
++        /* handle alias */
++        if (MRB_PROC_ALIAS_P(ci->proc)) {
++          ci->mid = ci->proc->body.mid;
++          ci->proc = ci->proc->upper;
++        }
++        ci->cci = CINFO_SKIP;
++        val = mrb_run(mrb, ci->proc, self);
+@@ -753,2 +758,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->cci = CINFO_SKIP;
+-      val = mrb_run(mrb, ci->proc, self);
++    } else {
++      val = mrb_nil_value();
+@@ -2710 +2715,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
+@@ -2722 +2727,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

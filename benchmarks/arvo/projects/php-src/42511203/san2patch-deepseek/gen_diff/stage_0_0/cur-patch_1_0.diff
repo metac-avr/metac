@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..aa81054da46 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -155,0 +156,3 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++			if (EXPECTED(!Z_REFCOUNTED_P(variable_ptr))) {
++				break;
++			}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..4194f5cb918 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -565,0 +566,4 @@ static zend_never_inline ZEND_COLD zval *zend_wrong_assign_to_variable_reference
++	zval old_value;
++
++	ZVAL_COPY(&old_value, variable_ptr);
++	ZVAL_UNDEF(variable_ptr);
+@@ -567,0 +572 @@ static zend_never_inline ZEND_COLD zval *zend_wrong_assign_to_variable_reference
++		zval_ptr_dtor(&old_value);
+@@ -573 +578,3 @@ static zend_never_inline ZEND_COLD zval *zend_wrong_assign_to_variable_reference
+-	return zend_assign_to_variable(variable_ptr, value_ptr, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++	zval *ret = zend_assign_to_variable(variable_ptr, value_ptr, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++	zval_ptr_dtor(&old_value);
++	return ret;

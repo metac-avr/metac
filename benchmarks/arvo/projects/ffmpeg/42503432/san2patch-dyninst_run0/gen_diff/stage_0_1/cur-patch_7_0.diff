@@ -1,0 +1,23 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..eef8753a4a 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -116 +116,2 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
+-    // 01xxxx : reserved
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     // 01xxxx : reserved
+@@ -118,5 +119,9 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
+-    subframe_type = get_bits(&gb, 6);
+-    if (!(subframe_type == 0 ||
+-          subframe_type == 1 ||
+-          ((subframe_type >= 8) && (subframe_type <= 12)) ||
+-          (subframe_type >= 32))) {
++    if (get_bits_left(&gb) >= 6) {
++        subframe_type = get_bits(&gb, 6);
++        if (!(subframe_type == 0 ||
++              subframe_type == 1 ||
++              ((subframe_type >= 8) && (subframe_type <= 12)) ||
++              (subframe_type >= 32))) {
++            return 0;
++        }
++    } else {

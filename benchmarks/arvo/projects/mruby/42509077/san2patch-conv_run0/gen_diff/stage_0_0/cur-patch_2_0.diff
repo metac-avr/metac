@@ -1,0 +1,28 @@
+diff --git a/src/string.c b/src/string.c
+index 7cc9c4ff3..49ea1e6a9 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -52,3 +52,5 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-{
+-  if (p) memcpy(RSTR_EMBED_PTR(s), p, len);
+-  RSTR_EMBED_PTR(s)[len] = '\0';
++ {
++  if (len < 0) return NULL;
++  if (len > MRB_STR_EMBED_LEN_MAX) return NULL;
++  if (p && len > 0) memcpy(RSTR_EMBED_PTR(s), p, len);
++  RSTR_EMBED_PTR(s)[len < 0 ? 0 : len] = '\0';
+@@ -56 +58 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-  RSTR_SET_EMBED_LEN(s, len);
++  RSTR_SET_EMBED_LEN(s, len < 0 ? 0 : len);
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 1edaac93b..70bb7414c 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -1584,0 +1585 @@ mrb_pack_unpack(mrb_state *mrb, mrb_value str)
++  if (RSTRING_LEN(str) < 0) return mrb_nil_value();
+@@ -1590,0 +1592 @@ mrb_pack_unpack1(mrb_state *mrb, mrb_value str)
++  if (RSTRING_LEN(str) < 0) return mrb_nil_value();
+@@ -1595,2 +1597 @@ void
+-mrb_mruby_pack_gem_init(mrb_state *mrb)
+-{
++mrb_mruby_pack_gem_init(mrb_state *mrb){

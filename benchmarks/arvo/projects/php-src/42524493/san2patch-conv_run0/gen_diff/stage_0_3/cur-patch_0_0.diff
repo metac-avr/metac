@@ -1,0 +1,22 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index bbddd459704..6c0bf7fe865 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1262,0 +1263,3 @@ void zend_call_destructors(void) /* {{{ */
++	} zend_catch {
++		/* Prevent use-after-free by clearing destructor queue on exception */
++		GC_FLAGS(CG(function_table)) |= GC_IMMUTABLE;
+@@ -1272,2 +1275 @@ ZEND_API void zend_deactivate(void) /* {{{ */
+-	zend_try {
+-		shutdown_scanner();
++	zend_try {		shutdown_scanner();
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..bb61131aaf1 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-416: Use After Free
++		/* Remove object from GC buffer before freeing to prevent use-after-free */
+@@ -203,0 +205 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		ptr = ((char*)object) - object->handlers->offset;

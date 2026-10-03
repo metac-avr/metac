@@ -1,0 +1,20 @@
+diff --git a/libavformat/iamfdec.c b/libavformat/iamfdec.c
+index 28d69b8b3f..7d9d91573b 100644
+--- a/libavformat/iamfdec.c
++++ b/libavformat/iamfdec.c
+@@ -464,0 +465,15 @@ static int iamf_read_header(AVFormatContext *s)
++    for (int i = 0; i < iamf->nb_mix_presentations; i++) {
++        IAMFMixPresentation *mix_presentation = iamf->mix_presentations[i];
++        const AVIAMFMixPresentation *mix = mix_presentation->mix;
++        for (int j = 0; j < mix->nb_submixes; j++) {
++            AVIAMFSubmix *sub_mix = mix->submixes[j];
++            for (int k = 0; k < sub_mix->nb_elements; k++) {
++                AVIAMFSubmixElement *submix_element = sub_mix->elements[k];
++                if (submix_element->sound_system >= FF_ARRAY_ELEMS(ff_iamf_sound_system_map)) {
++                    av_log(s, AV_LOG_ERROR, "Invalid sound system identifier\n");
++                    return AVERROR_INVALIDDATA;
++                }
++            }
++        }
++    }
++

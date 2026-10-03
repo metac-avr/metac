@@ -1,0 +1,18 @@
+diff --git a/ext/pcre/php_pcre.c b/ext/pcre/php_pcre.c
+index 075d9fc5263..47353ccd384 100644
+--- a/ext/pcre/php_pcre.c
++++ b/ext/pcre/php_pcre.c
+@@ -658,2 +658,11 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-	if ((pp = strchr("([{< )]}>", delimiter)))
+-		delimiter = pp[5];
++	if ((pp = strchr("([{< )]}>", delimiter))) {
++		/* Simplest fix: Only access pp[5] if pp points to opening delimiters */
++		if (pp >= "([{<" && pp < "([{<" + 4) {
++			delimiter = pp[5];
++		} else {
++			/* pp points to closing delimiters or outside expected range */
++			php_error_docref(NULL, E_WARNING, "Invalid delimiter type for mapping");
++			pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
++			return NULL;
++		}
++	}

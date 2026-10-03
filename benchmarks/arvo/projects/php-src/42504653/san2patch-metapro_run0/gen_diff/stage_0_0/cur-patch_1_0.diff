@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..dcaf2455a5b 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,2 +1172,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+@@ -1181 +1179,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1184,0 +1184,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p->u.type_info & GC_PERSISTENT) {
++		return --(p->refcount);
++	}
+@@ -1192,3 +1194 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..e8c86fc2aa0 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *op1_val = EX_VAR(opline->op1.var);
++		if (op1_val && Z_REFCOUNTED_P(op1_val) && !Z_ISREF_P(op1_val)) {
++			zend_refcounted *ref = Z_COUNTED_P(op1_val);
++			if (GC_TYPE(ref) != IS_UNDEF && !(GC_FLAGS(ref) & GC_IMMUTABLE)) {
++				GC_DELREF(ref);
++			}
++		}

@@ -1,0 +1,41 @@
+diff --git a/parser.c b/parser.c
+index cae2b7fd..8cca1d50 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7373 +7373,21 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		    xmlNodePtr temp_node = cur;
++		    int valid_node = 1;
++		    
++		    /* Check if node contains valid namespace references */
++		    if (temp_node->nsDef != NULL) {
++		        xmlNsPtr ns = temp_node->nsDef;
++		        while (ns != NULL) {
++		            if ((ns->href == NULL) || (ns->type != XML_LOCAL_NAMESPACE)) {
++		                valid_node = 0;
++		                break;
++		            }
++		            ns = ns->next;
++		        }
++		    }
++		    
++		    if (valid_node) {
++		        nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		    } else {
++		        nw = NULL;
++		    }
++		    
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..52956899 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346,3 +1346,6 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Validate node before freeing to prevent expired pointer dereference */
++		if (tmp != NULL) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		}

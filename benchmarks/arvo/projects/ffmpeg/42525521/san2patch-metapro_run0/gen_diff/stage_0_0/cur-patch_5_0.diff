@@ -1,0 +1,28 @@
+diff --git a/libavcodec/h263dec.c b/libavcodec/h263dec.c
+index f4e7048a5f..c12553c4e3 100644
+--- a/libavcodec/h263dec.c
++++ b/libavcodec/h263dec.c
+@@ -256,3 +256,6 @@ static int decode_slice(MpegEncContext *s)
+-                    ff_mpv_reconstruct_mb(s, s->block);
+-                    if (s->loop_filter)
+-                        ff_h263_loop_filter(s);
++                    // Prevent out-of-bounds write by checking macroblock boundaries
++                    if ((s->mb_x + s->mb_y * s->mb_stride) < (s->mb_width * s->mb_height)) {
++                        ff_mpv_reconstruct_mb(s, s->block);
++                        if (s->loop_filter)
++                            ff_h263_loop_filter(s);
++                    }
+@@ -286,0 +290,8 @@ static int decode_slice(MpegEncContext *s)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             }
++
++            // Prevent out-of-bounds write by checking macroblock boundaries
++            if ((s->mb_x + s->mb_y * s->mb_stride) < (s->mb_width * s->mb_height)) {
++                ff_mpv_reconstruct_mb(s, s->block);
++                if (s->loop_filter)
++                    ff_h263_loop_filter(s);
+@@ -288,4 +298,0 @@ static int decode_slice(MpegEncContext *s)
+-
+-            ff_mpv_reconstruct_mb(s, s->block);
+-            if (s->loop_filter)
+-                ff_h263_loop_filter(s);

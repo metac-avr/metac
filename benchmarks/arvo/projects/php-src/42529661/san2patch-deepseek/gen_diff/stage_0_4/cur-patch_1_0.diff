@@ -1,0 +1,30 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..49df25d6bba 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -647,5 +647,8 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			if (Z_TYPE_P(zv) == IS_OBJECT) {
+-				ce1 = Z_OBJCE_P(zv);
+-			} else if (Z_TYPE_P(zv) == IS_ARRAY) {
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
++			if (EXPECTED(Z_TYPE_P(zv) != IS_UNDEF && Z_TYPE_P(zv) != IS_NULL)) {
++				if (Z_TYPE_P(zv) == IS_OBJECT) {
++// FIXME: Crash CWE-416: Use After Free
++ 				ce1 = Z_OBJCE_P(zv);
++				} else if (Z_TYPE_P(zv) == IS_ARRAY) {
++					if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
++						flags |= IS_TRACE_PACKED;
++					}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..153d59d3b11 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2489,0 +2490,3 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++	if (UNEXPECTED(ht == NULL)) {
++		return;
++	}
+@@ -2497,0 +2501,3 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++#if ZEND_DEBUG
++	ht = NULL;
++#endif

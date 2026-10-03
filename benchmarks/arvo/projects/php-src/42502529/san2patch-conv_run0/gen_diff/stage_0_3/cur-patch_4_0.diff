@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..8b7f87376cd 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1829 +1829,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		p--;
++// FIXME: Crash CWE-416: Use After Free
++ 		p--;
+@@ -1830,0 +1832 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++		if (Z_REFCOUNTED(p->val) && !Z_ISREF(p->val) && Z_COUNTED(p->val) == NULL) continue;
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..e7ea3ccd0a9 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
+@@ -82 +82,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +85,3 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr && !GC_IS_RECURSIVE(Z_COUNTED_P(zval_ptr))) {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -94,2 +97 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

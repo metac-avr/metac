@@ -1,0 +1,24 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 46da1ebd21e..22d94714940 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1565 +1565,5 @@ static ZEND_COLD void get_filename_lineno(int type, zend_string **filename, uint
+-				*lineno = zend_get_executed_lineno();
++				if (*filename != NULL) {
++					*lineno = zend_get_executed_lineno();
++				} else {
++					*lineno = 0;
++				}
+@@ -1597,2 +1601,3 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
+-	uint32_t lineno;
+-	va_list args;
++	uint32_t lineno = 0;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	va_list args;
+@@ -1600 +1605,5 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
+-	get_filename_lineno(type, &filename, &lineno);
++	if (get_filename_lineno) {
++		get_filename_lineno(type, &filename, &lineno);
++	} else {
++		filename = NULL;
++	}

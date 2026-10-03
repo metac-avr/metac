@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..cd05e2d2f7e 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -132,22 +132,11 @@ static ZEND_FUNCTION(pass)
+-
+-ZEND_BEGIN_ARG_INFO_EX(zend_pass_function_arg_info, 0, 0, 0)
+-ZEND_END_ARG_INFO()
+-
+-ZEND_API const zend_internal_function zend_pass_function = {
+-	ZEND_INTERNAL_FUNCTION, /* type              */
+-	{0, 0, 0},              /* arg_flags         */
+-	0,                      /* fn_flags          */
+-	NULL,                   /* name              */
+-	NULL,                   /* scope             */
+-	NULL,                   /* prototype         */
+-	0,                      /* num_args          */
+-	0,                      /* required_num_args */
+-	(zend_internal_arg_info *) zend_pass_function_arg_info + 1, /* arg_info */
+-	NULL,                   /* attributes        */
+-	ZEND_FN(pass),          /* handler           */
+-	NULL,                   /* module            */
+-	{NULL,NULL,NULL,NULL}   /* reserved          */
+-};
+-
+-#define FREE_VAR_PTR_AND_EXTRACT_RESULT_IF_NECESSARY(free_var) do {			\
+-	zval *__container_to_free = EX_VAR(free_var);							\
++#define FREE_VAR_PTR_AND_EXTRACT_RESULT_IF_NECESSARY(free_var) do { \
++	zval *__container_to_free = EX_VAR(free_var); \
++	if (UNEXPECTED(Z_REFCOUNTED_P(__container_to_free))) { \
++		if (Z_REFCOUNT_P(__container_to_free) > 0) { \
++			Z_DELREF_P(__container_to_free); \
++			if (Z_REFCOUNT_P(__container_to_free) == 0) { \
++				zval_ptr_dtor(__container_to_free); \
++			} \
++		} \
++	} \
++} while (0)	zval *__container_to_free = EX_VAR(free_var);							\

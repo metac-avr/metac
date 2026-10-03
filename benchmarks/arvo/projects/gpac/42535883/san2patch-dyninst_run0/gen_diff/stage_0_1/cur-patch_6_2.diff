@@ -1,0 +1,51 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..da4ea69ff 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1179 +1179 @@ void gf_odf_vvc_cfg_del(GF_VVCConfig *cfg)
+-	if (cfg->sub_profiles_idc)
++if (cfg->sub_profiles_idc)
+@@ -1187 +1187,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-	u32 i, count;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	u32 i, count;
++
++	if (!cfg || !cfg->param_array) return GF_BAD_PARAM;
+@@ -1189,0 +1193 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++	if (count > 0xFFFF) return GF_BAD_PARAM; // Prevent potential integer overflow
+@@ -1220,2 +1224,7 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				// Bounds check before accessing constraint info array
++				if (cfg->num_constraint_info > 0) {
++					gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
++					gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				} else {
++					gf_bs_write_int(bs, 0, 6);
++				}
+@@ -1234,2 +1243,6 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				if (cfg->ptl_sublayer_present_mask & (1<<idx))
+-					gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++				if (cfg->ptl_sublayer_present_mask & (1<<idx)) {
++					// Bounds check for sublayer_level_idc array access
++					if (idx < 8) { // Maximum 8 temporal layers
++						gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++					}
++				}
+@@ -1240 +1253,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				// Bounds check for sub_profiles_idc array access
++				if (idx < cfg->num_sub_profiles && cfg->sub_profiles_idc) {
++					gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				}
+@@ -1253,0 +1270,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++		
++		if (!ar) continue;
+@@ -1268,0 +1287 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			if (!sl) continue;
+@@ -1274 +1293,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			gf_bs_write_data(bs, sl->data, sl->size);
++			// Bounds check before writing data
++			if (sl->data && sl->size > 0) {
++				gf_bs_write_data(bs, sl->data, sl->size);
++			}

@@ -1,0 +1,23 @@
+diff --git a/parser.c b/parser.c
+index 9ca09455..3feabbe0 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4449 +4449 @@ xmlParsePubidLiteral(xmlParserCtxt *ctxt) {
+-	    tmp = xmlRealloc(buf, size);
++	    tmp = xmlRealloc(buf, newSize);  // Fix: use newSize instead of size
+@@ -4460 +4460,14 @@ xmlParsePubidLiteral(xmlParserCtxt *ctxt) {
+-	cur = CUR;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++  	cur = CUR;
++    }
++    if (len >= size) {  // Fix: ensure space for null terminator
++        xmlChar *tmp;
++        int newSize = size + 1;
++        tmp = xmlRealloc(buf, newSize);
++        if (tmp == NULL) {
++            xmlErrMemory(ctxt);
++            xmlFree(buf);
++            return(NULL);
++        }
++        buf = tmp;
++        size = newSize;

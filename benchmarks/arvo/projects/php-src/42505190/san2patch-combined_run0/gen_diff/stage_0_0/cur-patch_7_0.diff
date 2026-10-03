@@ -1,0 +1,51 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..fc0febd116c 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29940,0 +29941,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++				zval temp_copy;
++				ZVAL_COPY(&temp_copy, object_ptr);
+@@ -29941,0 +29944,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++				/* Validate that object_ptr is still valid after zend_new_array */
++				if (Z_TYPE_P(object_ptr) != IS_ARRAY) {
++					ZVAL_NULL(object_ptr);
++				}
+@@ -30290,0 +30297,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++				zval temp_copy;
++				ZVAL_COPY(&temp_copy, object_ptr);
+@@ -30291,0 +30300,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++				/* Validate that object_ptr is still valid after zend_new_array */
++				if (Z_TYPE_P(object_ptr) != IS_ARRAY) {
++					ZVAL_NULL(object_ptr);
++				}
+@@ -49527,0 +49540,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
++				zval temp_copy;
++				ZVAL_COPY(&temp_copy, object_ptr);
+@@ -49528,0 +49543,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
++				/* Validate that object_ptr is still valid after zend_new_array */
++				if (Z_TYPE_P(object_ptr) != IS_ARRAY) {
++					ZVAL_NULL(object_ptr);
++				}
+@@ -49877,0 +49896,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
++				zval temp_copy;
++				ZVAL_COPY(&temp_copy, object_ptr);
+@@ -49878,0 +49899,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
++				/* Validate that object_ptr is still valid after zend_new_array */
++				if (Z_TYPE_P(object_ptr) != IS_ARRAY) {
++					ZVAL_NULL(object_ptr);
++				}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..0dc485f6978 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1654 +1654,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_deprecated_function(const zend_functi
+-ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
+@@ -1656,0 +1658,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++	/* Reset any cached pointers that might reference freed memory */
++	/* This prevents subsequent operations from accessing invalid memory */
+@@ -1666,2 +1669 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
+-	/* Illegal offset assignment */
+-	if (UNEXPECTED(EG(exception) != NULL)) {
++	/* Illegal offset assignment */	if (UNEXPECTED(EG(exception) != NULL)) {

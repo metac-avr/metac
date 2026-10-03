@@ -1,0 +1,29 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..523f37885 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -349,0 +351 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *old_cibase = c->cibase;
+@@ -351 +353,7 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    if (old_cibase != c->cibase) {
++      ptrdiff_t ci_offset = ci - old_cibase;
++      ci = c->cibase + ci_offset;
++    } else {
++      ci = c->cibase + size;
++    }
++    c->ci = ci;
+@@ -2710,2 +2718,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
++      mrb_value splat;
++      struct RProc *proc = mrb->c->ci->proc;  /* Save current proc */
++      splat = mrb_ary_splat(mrb, regs[a+1]);
+@@ -2722 +2732,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

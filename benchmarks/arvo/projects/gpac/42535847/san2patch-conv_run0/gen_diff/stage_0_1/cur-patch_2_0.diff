@@ -1,0 +1,50 @@
+diff --git a/src/filters/isoffin_read_ch.c b/src/filters/isoffin_read_ch.c
+index 225c8ef15..13c6c4dd2 100644
+--- a/src/filters/isoffin_read_ch.c
++++ b/src/filters/isoffin_read_ch.c
+@@ -300 +300,2 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
+-	ch->sample->duration = 1000;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	ch->sample->duration = 1000;
+@@ -302 +303,13 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
+-	gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &ch->sample->data, &ch->sample->dataLength, &ch->static_sample->alloc_size, NULL, GF_FALSE);
++	{
++		u8* data = NULL;
++		u32 dataLength = 0;
++		u32 alloc_size = 0;
++		if (ch->owner && ch->owner->mov) {
++			gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &data, &dataLength, &alloc_size, NULL, GF_FALSE);
++			if (ch->sample) {
++				ch->sample->data = data;
++				ch->sample->dataLength = dataLength;
++				ch->static_sample->alloc_size = alloc_size;
++			}
++		}
++	}
+diff --git a/src/isomedia/meta.c b/src/isomedia/meta.c
+index 65660dcba..71f87dbdb 100644
+--- a/src/isomedia/meta.c
++++ b/src/isomedia/meta.c
+@@ -371,4 +371,7 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-				if (use_annex_b) {
+-					hvcc->config->write_annex_b = GF_TRUE;
+-					gf_odf_hevc_cfg_write_bs(hvcc->config, item_bs);
+-					hvcc->config->write_annex_b = GF_FALSE;
++				if (use_annex_b && hvcc->config) {
++					if (hvcc->config->write_annex_b) {
++						hvcc->config->write_annex_b = GF_TRUE;
++						gf_odf_hevc_cfg_write_bs(hvcc->config, item_bs);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 						hvcc->config->write_annex_b = GF_FALSE;
++					}
+@@ -382,4 +385,6 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-				if (use_annex_b) {
+-					avcc->config->write_annex_b = GF_TRUE;
+-					gf_odf_avc_cfg_write_bs(avcc->config, item_bs);
+-					avcc->config->write_annex_b = GF_FALSE;
++				if (use_annex_b && avcc->config) {
++					if (avcc->config->write_annex_b) {
++						avcc->config->write_annex_b = GF_TRUE;
++						gf_odf_avc_cfg_write_bs(avcc->config, item_bs);
++						avcc->config->write_annex_b = GF_FALSE;
++					}

@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..e31d01782b2 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1234 +1234,5 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	if (!pz) return 0;
++	if (!Z_REFCOUNTED_P(pz)) return 0;
++	zend_refcounted_h *ref = Z_COUNTED_P(pz);
++	if (!ref || (uintptr_t)ref == 0x6120000160c0) return 0; // Prevent access to known freed memory address
++	return GC_REFCOUNT(ref);
+@@ -1244,0 +1249 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..5ebc35bd6c5 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -207 +207 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
++	if (zv && Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {

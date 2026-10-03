@@ -1,0 +1,42 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..9d1847d47ab 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2489,0 +2490 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++	if (ht == NULL) return;
+@@ -2495 +2496,3 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-		efree(HT_GET_DATA_ADDR(ht));
++		if (HT_GET_DATA_ADDR(ht) != NULL) {
++			efree(HT_GET_DATA_ADDR(ht));
++		}
+@@ -2497 +2500 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	FREE_HASHTABLE(ht);
++	if (ht != NULL) FREE_HASHTABLE(ht);
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..75dbe2a2701 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -1511 +1511,3 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-			ssa_vars_count = zend_ssa_rename_op(op_array, opline, idx, build_flags, ssa_vars_count, ssa_ops, (int*)stack);
++			if (zend_hash_num_elements(&op_array->function_name) > 0) {  // Add validity check for array access
++				ssa_vars_count = zend_ssa_rename_op(op_array, opline, idx, build_flags, ssa_vars_count, ssa_ops, (int*)stack);
++			}
+@@ -1515 +1517,2 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-				opline++;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 				opline++;
+@@ -1517 +1520 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-				if (opline->opcode != ZEND_OP_DATA) {
++				if (zend_hash_num_elements(&op_array->function_name) > 0 && opline->opcode != ZEND_OP_DATA) {  // Add validity check
+@@ -1525 +1528 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-			stack = frame->stack;
++			stack = frame ? frame->stack : NULL;  // Safe access with ternary operator
+@@ -1532 +1535 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-			for (i = 0; i < op_array->last_var; i++) {
++			for (i = 0; op_array && i < op_array->last_var; i++) {  // Add null check in loop condition
+@@ -1538 +1541 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-			stack = frame->stack;
++			stack = frame ? frame->stack : NULL;  // Safe access with ternary operator
+@@ -1544 +1547 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-				for (i = 0; i < op_array->last_var + op_array->T; i++) {
++				for (i = 0; op_array && i < op_array->last_var + op_array->T; i++) {  // Add null check in loop condition

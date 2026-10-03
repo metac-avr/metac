@@ -1,0 +1,28 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..111ee5385 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -952 +952,3 @@ static GF_Err pcapng_load_shb(GF_NetcapFilter *nf)
+-		blen = ntohl(blen);
++		if (nf && nf->cap_bs) {
++			blen = ntohl(blen);
++		}
+@@ -1480,5 +1482,9 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
+-			gf_netcap_load_pck_pcap(nf);
+-
++		// Add critical section protection and null check before accessing freed memory
++		if (nf->cap_bs) {
++			if (nf->cap_mode==NETCAP_GPAC)
++				gf_netcap_load_pck_gpac(nf);
++			else
++				gf_netcap_load_pck_pcap(nf);
++		}
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1489 +1495,2 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-			gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);
++			if (nf->cap_bs)  // Validate buffer before use
++				gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);

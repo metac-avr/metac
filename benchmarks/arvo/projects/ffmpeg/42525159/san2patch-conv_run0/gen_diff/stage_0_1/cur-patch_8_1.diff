@@ -1,0 +1,116 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..270668145e 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,17 +2017 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
++static void WRITE_FRAME(int bits, PIXEL)
+@@ -2035,4 +2019,71 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++    for (int compno = 0; compno < s->ncomponents; compno++) {
++        Jpeg2000Component *comp = tile->comp + compno;
++        PIXEL *line;
++        
++        if (comp->format == JPEG2000_CFMT);
++        else if (comp->format == JPEG2000_SFMT) {
++            for (int y = 0; y < comp->height; y++) {
++                line = (PIXEL*)(comp->data + y * comp->stride);
++                for (int x = 0; x < comp->width; x++) {
++                    line[x] = (line[x] << (bits - s->precision[compno]))
++                              + (1 << (bits - s->precision[compno] - 1));
++                }
++            }
++        } else {
++            for (int y = 0; y < comp->height; y++) {
++                line = (PIXEL*)(comp->data + y * comp->stride);
++                for (int x = 0; x < comp->width; x++) {
++                    line[x] = (line[x] << (bits - s->precision[compno]))
++                              + (1 << (bits - s->precision[compno] - 1));
++                }
++            }
++        }
++    }
++    
++    for (int compno = 0; compno < s->ncomponents; compno++) {
++        Jpeg2000Component *comp = tile->comp + compno;
++        PIXEL *line;
++        uint8_t *dst;
++        int cps = s->cdef[compno];
++        int plane = 0;
++        
++        if (cps < 0 || cps > 4) continue;
++        
++        switch (cps) {
++        case 0:
++            plane = avctx->pix_fmt == AV_PIX_FMT_RGB48 ? 0 : 2;
++            break;
++        case 1:
++            plane = avctx->pix_fmt == AV_PIX_FMT_RGB48 ? 1 : 0;
++            break;
++        case 2:
++            plane = avctx->pix_fmt == AV_PIX_FMT_RGB48 ? 2 : 1;
++            break;
++        case 3:
++            plane = 3;
++            break;
++        case 4:
++            plane = 4;
++            break;
++        }
++        
++        dst = picture->data[plane] + tile->coord.y * picture->linesize[plane]
++              + tile->coord.x * sizeof(PIXEL);
++        line = (PIXEL*)comp->data;
++        
++        for (int y = 0; y < comp->height; y++) {
++            PIXEL *i_datap = line;
++            for (int x = 0; x < comp->width; x++) {
++                // Fixed CWE-787: Out-of-bounds Write - Implemented bounds checking before pixel write
++                ptrdiff_t remaining_bytes = ((uint8_t*)picture->data[plane] + picture->linesize[plane] * picture->height) - (uint8_t*)dst;
++                if (remaining_bytes >= sizeof(PIXEL)) {
++                    *(PIXEL*)dst = *i_datap;
++                }
++                i_datap++;
++                dst += sizeof(PIXEL);
++            }
++            line += comp->stride / sizeof(PIXEL);
++            dst += picture->linesize[plane] - comp->width * sizeof(PIXEL);
++        }
++    }
++}
+@@ -2501 +2552,15 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-    avctx->execute2(avctx, jpeg2000_decode_tile, picture, NULL, s->numXtiles * s->numYtiles);
++    // Prevent integer overflow and validate tile count before execution
++    if (s->numXtiles >= 0 && s->numYtiles >= 0) {
++        // Check for potential integer overflow in multiplication
++        if (s->numXtiles > 0 && s->numYtiles > 0 && 
++            s->numXtiles > INT_MAX / s->numYtiles) {
++            av_log(avctx, AV_LOG_ERROR, "Tile count overflow detected\n");
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }
++        avctx->execute2(avctx, jpeg2000_decode_tile, picture, NULL, s->numXtiles * s->numYtiles);
++    } else {
++        av_log(avctx, AV_LOG_ERROR, "Negative tile dimensions detected\n");
++        ret = AVERROR_INVALIDDATA;
++        goto end;
++    }

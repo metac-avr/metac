@@ -1,0 +1,47 @@
+diff --git a/src/filters/isoffin_read_ch.c b/src/filters/isoffin_read_ch.c
+index 225c8ef15..8f03bf361 100644
+--- a/src/filters/isoffin_read_ch.c
++++ b/src/filters/isoffin_read_ch.c
+@@ -300 +300,2 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
+-	ch->sample->duration = 1000;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	ch->sample->duration = 1000;
+@@ -302 +303,15 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
+-	gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &ch->sample->data, &ch->sample->dataLength, &ch->static_sample->alloc_size, NULL, GF_FALSE);
++	u8 *data_ptr = NULL;
++	u32 data_len = 0;
++	u32 alloc_size = 0;
++	// Validate metadata extraction before assigning to sample
++	GF_Err err = gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &data_ptr, &data_len, &alloc_size, NULL, GF_FALSE);
++	if (err == GF_OK) {
++		ch->sample->data = data_ptr;
++		ch->sample->dataLength = data_len;
++		ch->static_sample->alloc_size = alloc_size;
++	} else {
++		ch->sample->data = NULL;
++		ch->sample->dataLength = 0;
++		ch->static_sample->alloc_size = 0;
++		ch->last_state = err;
++	}
+diff --git a/src/filters/isoffin_read.c b/src/filters/isoffin_read.c
+index 2f08cf8f9..bfdf61999 100644
+--- a/src/filters/isoffin_read.c
++++ b/src/filters/isoffin_read.c
+@@ -1482 +1482,2 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -1484 +1485,8 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-				isor_reader_get_sample_from_item(ch);
++				// Check if ch is valid and item_id is within valid range
++				if (ch != NULL && ch->item_id > 0 && ch->sample_buffer != NULL) {
++					isor_reader_get_sample_from_item(ch);
++				} else {
++					// Prevent out-of-bounds access by returning early
++					ch->last_state = GF_IO_ERR;
++					goto sample_processing_end;
++				}
+@@ -1494,2 +1502 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-				}
+-			}
++				}			}

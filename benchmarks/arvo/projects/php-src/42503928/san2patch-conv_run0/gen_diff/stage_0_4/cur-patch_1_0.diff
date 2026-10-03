@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..d37ed601339 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && !GC_DELREF(ref)) {
+@@ -45 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref) {
+diff --git a/Zend/zend_closures.c b/Zend/zend_closures.c
+index e2ea9eacc34..f13b72dc166 100644
+--- a/Zend/zend_closures.c
++++ b/Zend/zend_closures.c
+@@ -510,0 +511,5 @@ static zend_object *zend_closure_new(zend_class_entry *class_type) /* {{{ */
++	/* Ensure proper GC initialization to avoid dangling pointers */
++	if (closure->std.gc) {
++		GC_SET_REFCOUNT(closure->std.gc, 1);
++	}
++

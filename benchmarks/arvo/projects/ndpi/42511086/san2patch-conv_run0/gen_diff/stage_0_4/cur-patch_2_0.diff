@@ -1,0 +1,24 @@
+diff --git a/src/lib/protocols/raknet.c b/src/lib/protocols/raknet.c
+index 6df9d0ecd..a9cd6e4a7 100644
+--- a/src/lib/protocols/raknet.c
++++ b/src/lib/protocols/raknet.c
+@@ -150 +150,2 @@ void ndpi_search_raknet(struct ndpi_detection_module_struct *ndpi_struct,
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -152,5 +153,10 @@ void ndpi_search_raknet(struct ndpi_detection_module_struct *ndpi_struct,
+-          u_int16_t mtu_size = ntohs(get_u_int16_t(packet->payload, 28 + ip_addr_offset));
+-          if (mtu_size > 1500 /* Max. supported MTU, see: http://www.jenkinssoftware.com/raknet/manual/programmingtips.html */)
+-          {
+-            NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
+-            return;
++          if (packet->payload_packet_len >= (28 + ip_addr_offset + 2)) {
++              u_int16_t mtu_size = ntohs(get_u_int16_t(packet->payload, 28 + ip_addr_offset));
++              if (mtu_size > 1500 /* Max. supported MTU, see: http://www.jenkinssoftware.com/raknet/manual/programmingtips.html */)
++              {
++                NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++                return;
++              }
++          } else {
++              NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++              return;

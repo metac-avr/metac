@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_enum.h b/Zend/zend_enum.h
+index 797eb0c8ab5..8b0127ff013 100644
+--- a/Zend/zend_enum.h
++++ b/Zend/zend_enum.h
+@@ -45,7 +44,0 @@ ZEND_API zend_result zend_enum_get_case_by_value(zend_object **result, zend_clas
+-
+-static zend_always_inline zval *zend_enum_fetch_case_name(zend_object *zobj)
+-{
+-	ZEND_ASSERT(zobj->ce->ce_flags & ZEND_ACC_ENUM);
+-	return OBJ_PROP_NUM(zobj, 0);
+-}
+-
+@@ -55,0 +49,4 @@ static zend_always_inline zval *zend_enum_fetch_case_value(zend_object *zobj)
++	/* Check if the enum has a valid backing type before accessing */
++	if (zobj->ce->enum_backing_type == IS_UNDEF) {
++		return NULL;
++	}
+@@ -57,5 +54 @@ static zend_always_inline zval *zend_enum_fetch_case_value(zend_object *zobj)
+-}
+-
+-END_EXTERN_C()
+-
+-#endif /* ZEND_ENUM_H */
++}
+\ No newline at end of file
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..599b43613e6 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6964 +6964 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
++if (zend_parse_parameters_none() == FAILURE) {
+@@ -6973,0 +6974,4 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
++	if (!intern->ce || !Z_OBJ(ref->value)) {
++		zend_throw_error(NULL, "Invalid object reference");
++		RETURN_THROWS();
++	}
+@@ -6977,9 +6981 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-}
+-
+-/* {{{ proto ReflectionFiber::__construct(Fiber $fiber) */
+-ZEND_METHOD(ReflectionFiber, __construct)
+-{
+-	zval *fiber, *object;
+-	reflection_object *intern;
+-
+-	object = ZEND_THIS;
++}	object = ZEND_THIS;

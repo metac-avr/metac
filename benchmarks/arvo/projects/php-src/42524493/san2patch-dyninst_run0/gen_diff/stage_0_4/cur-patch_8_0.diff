@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..8b10a8af639 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1301 +1301,8 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	/* Safety checks to prevent expired pointer dereference */
++	if (pz == NULL) return 0;
++	if (!Z_REFCOUNTED_P(pz)) return 0;
++	zend_refcounted_h *rc_ptr = Z_COUNTED_P(pz);
++	if (rc_ptr == NULL) return 0;
++	/* Verify the pointer is not pointing to freed memory */
++	if (GC_REFCOUNT(rc_ptr) == 0xFFFFFFFF) return 0;
++	return GC_REFCOUNT(rc_ptr);
+@@ -1311,0 +1319 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..be601cce202 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p) return;
++	if (__builtin_expect((GC_TYPE(p) > IS_CONSTANT_AST), 0)) return;

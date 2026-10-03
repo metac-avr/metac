@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..b596902b758 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -444 +444,10 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_add_helper_S
+-		op_2 = ZVAL_UNDEFINED_OP2();
++		// Prevent expired pointer dereference by validating pointer before assignment
++		zval* safe_op2 = op_2;
++		if (safe_op2 != NULL && ZEND_VALID_ZVAL_ADDRESS(safe_op2)) {
++			safe_op2 = ZVAL_UNDEFINED_OP2();
++		} else {
++			zval default_val;
++			ZVAL_UNDEF(&default_val);
++			safe_op2 = &default_val;
++		}
++		op_2 = safe_op2;

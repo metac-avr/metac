@@ -1,0 +1,63 @@
+diff --git a/src/variable.c b/src/variable.c
+index 3088783ec..edf6e512c 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -230,16 +230,2 @@ iv_copy(mrb_state *mrb, iv_tbl *t)
+-static void
+-iv_free(mrb_state *mrb, iv_tbl *t)
+-{
+-  mrb_free(mrb, t->ptr);
+-  mrb_free(mrb, t);
+-}
+-
+-static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-{
+-  mrb_gc_mark_value(mrb, v);
+-  return 0;
+-}
+-
+-static void
+-mark_tbl(mrb_state *mrb, iv_tbl *t)
++MRB_API void
++mrb_gc_mark_gv(mrb_state *mrb)
+@@ -247 +233 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
+-  iv_foreach(mrb, t, iv_mark_i, 0);
++  mark_tbl(mrb, mrb->globals);
+@@ -250,2 +236 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
+-void
+-mrb_gc_mark_gv(mrb_state *mrb)
++static voidmrb_gc_mark_gv(mrb_state *mrb)
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..2b02ccedb 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -732,8 +732 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
+-    break;
+-  }
+-}
+-
+-MRB_API void
+-mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++mrb_gc_free_gv(mrb_state *mrb)
+@@ -741,13 +734,5 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-  if (obj == 0) return;
+-  if (!is_white(obj)) return;
+-  if (is_red(obj)) return;
+-  mrb_assert((obj)->tt != MRB_TT_FREE);
+-  add_gray_list(mrb, &mrb->gc, obj);
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  if (mrb->globals) {
++    iv_free(mrb, mrb->globals);
++    mrb->globals = NULL;
++  }
++}  case MRB_TT_OBJECT:

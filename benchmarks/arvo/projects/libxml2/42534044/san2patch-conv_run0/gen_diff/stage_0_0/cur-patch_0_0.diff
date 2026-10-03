@@ -1,0 +1,23 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..d4b7a3ef 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3635,0 +3636,7 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Clear pointers to avoid use-after-free */
++	    cur->properties = NULL;
++	    cur->content = NULL;
++	    cur->nsDef = NULL;
++	    cur->name = NULL;
++	    
+@@ -6817 +6824 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    xmlChar *prefix;
++    xmlChar *prefix = NULL;
+@@ -6827 +6834,2 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    if (localname == NULL)
++    if (localname == NULL) {
++        if (prefix != NULL) xmlFree(prefix);
+@@ -6828,0 +6837 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
++    }
+@@ -6832,0 +6842 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
++        prefix = NULL;  /* Fix: Nullify prefix after freeing to prevent dangling pointer */

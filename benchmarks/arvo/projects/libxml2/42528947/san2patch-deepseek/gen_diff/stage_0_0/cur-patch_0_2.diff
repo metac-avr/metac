@@ -1,0 +1,146 @@
+diff --git a/parser.c b/parser.c
+index 14288713..b2179313 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4970,0 +4971,12 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
++static void
++xmlParseComment(xmlParserCtxtPtr ctxt) {
++    xmlChar *buf = NULL;
++    size_t size = XML_PARSER_BIG_BUFFER_SIZE;
++    size_t len = 0;
++    xmlParserInputState state;
++    const xmlChar *q, *ql;
++    int r, rl;
++    int cur, l;
++    xmlParserInputPtr input = ctxt->input;
++    size_t base = input->base - input->cur;
++    size_t cur_pos = input->cur - input->base;
+@@ -4972,4 +4984,11 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-	q = r;
+-	ql = rl;
+-	r = cur;
+-	rl = l;
++    /*
++     * Check that there is a comment right here.
++     */
++    if ((ctxt->instate != XML_PARSER_COMMENT) &&
++        (ctxt->instate != XML_PARSER_EPILOG)) {
++        if ((ctxt->instate != XML_PARSER_MISC) &&
++            (ctxt->instate != XML_PARSER_PROLOG)) {
++            xmlFatalErr(ctxt, XML_ERR_COMMENT_NOT_STARTED, NULL);
++            return;
++        }
++    }
+@@ -4977,2 +4996,5 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-	NEXTL(l);
+-	cur = CUR_CHAR(l);
++    buf = (xmlChar *) xmlMallocAtomic(size);
++    if (buf == NULL) {
++        xmlFatalErr(ctxt, XML_ERR_NO_MEMORY, NULL);
++        return;
++    }
+@@ -4979,0 +5002,89 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
++    q = CUR_CHAR(ctxt->input->cur);
++    if (q == NULL) {
++        xmlFatalErr(ctxt, XML_ERR_COMMENT_NOT_FINISHED, NULL);
++        xmlFree(buf);
++        return;
++    }
++    NEXTL(l);
++    q = CUR_CHAR(ctxt->input->cur);
++    if (q == NULL) {
++        xmlFatalErr(ctxt, XML_ERR_COMMENT_NOT_FINISHED, NULL);
++        xmlFree(buf);
++        return;
++    }
++    if (*q == '-') {
++        q++;
++        r = CUR_CHAR(ctxt->input->cur);
++        if (r == NULL) {
++            xmlFatalErr(ctxt, XML_ERR_COMMENT_NOT_FINISHED, NULL);
++            xmlFree(buf);
++            return;
++        }
++        if (*r != '-') {
++            xmlFatalErr(ctxt, XML_ERR_HYPHEN_IN_COMMENT, NULL);
++            xmlFree(buf);
++            return;
++        }
++        q++;
++        NEXTL(l);
++        q = CUR_CHAR(ctxt->input->cur);
++        if (q == NULL) {
++            xmlFatalErr(ctxt, XML_ERR_COMMENT_NOT_FINISHED, NULL);
++            xmlFree(buf);
++            return;
++        }
++        if (*q == '>') {
++            xmlFatalErr(ctxt, XML_ERR_COMMENT_ABRUPTLY_CLOSED, NULL);
++            xmlFree(buf);
++            return;
++        }
++    }
++
++    ql = q;
++    rl = l;
++    cur = CUR_CHAR(l);
++    r = cur;
++
++    while (cur != 0) {
++        if ((cur == '-') && (buf[len - 1] == '-')) {
++            if (buf[len - 2] == '-') {
++                xmlFatalErr(ctxt, XML_ERR_HYPHEN_IN_COMMENT, NULL);
++                xmlFree(buf);
++                return;
++            }
++            break;
++        }
++
++        if (len + 2 > size) {
++            size_t newSize = (len + 2) > (size * 2) ? (len + 2) : (size * 2);
++            xmlChar *newBuf = (xmlChar *) xmlRealloc(buf, newSize);
++            if (newBuf == NULL) {
++                xmlFree(buf);
++                xmlFatalErr(ctxt, XML_ERR_NO_MEMORY, NULL);
++                return;
++            }
++            buf = newBuf;
++            size = newSize;
++        }
++
++        buf[len++] = cur;
++
++        q = r;
++        ql = rl;
++        r = cur;
++        rl = l;
++
++        NEXTL(l);
++        cur = CUR_CHAR(l);
++    }
++
++    if (len + 1 > size) {
++        size_t newSize = len + 1;
++        xmlChar *newBuf = (xmlChar *) xmlRealloc(buf, newSize);
++        if (newBuf == NULL) {
++            xmlFree(buf);
++            xmlFatalErr(ctxt, XML_ERR_NO_MEMORY, NULL);
++            return;
++        }
++        buf = newBuf;
++        size = newSize;
+@@ -4981,0 +5093 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
++
+@@ -4987,2 +5099,2 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-	xmlFatalErrMsgStr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
+-	                     "Comment not terminated \n<!--%.50s\n", buf);
++        xmlFatalErrMsgStr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
++                          "Comment not terminated \n<!--%.50s\n", NULL);
+@@ -4991,2 +5103,5 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-                          "xmlParseComment: invalid xmlChar value %d\n",
+-	                  cur);
++                          "xmlParseComment: invalid xmlChar value %d\n", cur);
++    }
++
++    xmlFree(buf);
++}	                  cur);

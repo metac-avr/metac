@@ -1,0 +1,42 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..bcbd6f0e801 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1242,7 +1241,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+@@ -1250 +1243,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1251,0 +1246 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (!p) return 0;
+@@ -1262,2 +1257 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
+-}
++	return ++(p->refcount);}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..a6bbdd3c769 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -258 +258,3 @@ void shutdown_destructors(void) /* {{{ */
+-		do {
++		zend_object **valid_objects = NULL;
++		uint32_t valid_count = 0;
++ 		do {
+@@ -261,0 +264,10 @@ void shutdown_destructors(void) /* {{{ */
++		
++		valid_objects = zend_objects_store_get_valid_objects(&EG(objects_store), &valid_count);
++		if (valid_objects) {
++			for (uint32_t i = 0; i < valid_count; i++) {
++				if (valid_objects[i] && Z_OBJ(valid_objects[i])->gc.refcount > 0) {
++					zend_object_release(valid_objects[i]);
++				}
++			}
++			efree(valid_objects);
++		}

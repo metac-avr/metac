@@ -1,0 +1,26 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..8df68f107 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1202 +1202,3 @@ int_mod(mrb_state *mrb, mrb_value x)
+-      mod += b;
++      if (b > 0 ? mod <= MRB_INT_MAX - b : mod >= MRB_INT_MIN - b) {
++        mod += b;
++      }
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..0551224ba 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -500,3 +500,9 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    if (j%2)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
+-    else
++    if (j%2) {
++      // Safe integer arithmetic to prevent overflow
++      uint32_t shifted_qhat = 0;
++      if (__builtin_mul_overflow(qhat, (1U << HALFDIGITBITS), &shifted_qhat)) {
++        // Handle overflow
++        shifted_qhat = UINT32_MAX;
++      }
++      q.p[j/2] |= shifted_qhat;
++    } else

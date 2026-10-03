@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..4c8f36ecd94 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1175,2 +1175,4 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
++#ifndef GC_PERSISTENT_LOCAL
++# define GC_MAKE_PERSISTENT_LOCAL(p) \
++	GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
++} while (0)
+@@ -1184,0 +1187 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (p == NULL) return 0;
+@@ -1188,0 +1192 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
++	if (p == NULL) return 0;
+@@ -1195,2 +1199,2 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
+-}
++	if (p == NULL) return 0;
++	return ++(p->refcount);}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..29c4bca117e 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -208 +208,5 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		return ZEND_HASH_APPLY_REMOVE;
++		if (EXPECTED(Z_OBJ_P(zv) != NULL) && EXPECTED(!(Z_OBJ_P(zv)->gc.u.flags & GC_IMMUTABLE))) {
++			return ZEND_HASH_APPLY_REMOVE;
++		} else {
++			return ZEND_HASH_APPLY_KEEP;
++		}

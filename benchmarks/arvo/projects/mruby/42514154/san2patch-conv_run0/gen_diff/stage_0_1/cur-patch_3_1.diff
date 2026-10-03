@@ -1,0 +1,24 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..47f97589f 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -37,2 +37,3 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-{
+-  if (x->sz < size) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
++  if (x->sz < size && size > 0) {
+@@ -1440 +1441,5 @@ mrb_bint_rshift(mrb_state *mrb, mrb_value x, mrb_int width)
+-    mpz_mul_2exp(mrb, &b2->mp, &b->mp, -width);
++    if (width < -(sizeof(mp_limb) * 8 * b->mp.sz)) {
++      mpz_set_zero(&b2->mp);
++    } else {
++      mpz_mul_2exp(mrb, &b2->mp, &b->mp, -width);
++    }
+@@ -1443 +1448,5 @@ mrb_bint_rshift(mrb_state *mrb, mrb_value x, mrb_int width)
+-    mpz_div_2exp(mrb, &b2->mp, &b->mp, width);
++    if (width > (sizeof(mp_limb) * 8 * b->mp.sz)) {
++      mpz_set_zero(&b2->mp);
++    } else {
++      mpz_div_2exp(mrb, &b2->mp, &b->mp, width);
++    }

@@ -1,0 +1,25 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..9f82bfa985c 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -275 +275,6 @@ ZEND_API zend_string *zend_vstrpprintf(size_t max_len, const char *format, va_li
+-	smart_str_0(&buf);
++	/* Add safety check to prevent use-after-free when accessing buf.s */
++	if (buf.s != NULL) {
++		smart_str_0(&buf);
++	} else {
++		return ZSTR_EMPTY_ALLOC();
++	}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..72187b4b147 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -66,0 +67,3 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	
++	/* Zero out the string structure to prevent dangling pointer access */
++	memset(str, 0, sizeof(zend_string));
+@@ -77 +79,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

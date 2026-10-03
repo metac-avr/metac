@@ -1,0 +1,26 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 239492add..48660b522 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1824 +1824 @@ cmpnum(mrb_state *mrb, mrb_value v1, mrb_value v2)
+-#ifdef MRB_USE_BIGINT
++  #ifdef MRB_USE_BIGINT
+@@ -1826 +1826,14 @@ cmpnum(mrb_state *mrb, mrb_value v1, mrb_value v2)
+-    return mrb_bint_cmp(mrb, v1, v2);
++    /* Ensure v2 is also a bigint or can be safely converted */
++    if (!mrb_bigint_p(v2)) {
++      switch (mrb_type(v2)) {
++        case MRB_TT_INTEGER:
++          v2 = mrb_bint_new_int(mrb, mrb_integer(v2));
++          break;
++        default:
++          /* Fall through to regular comparison */
++          break;
++      }
++    }
++    if (mrb_bigint_p(v2)) {
++      return mrb_bint_cmp(mrb, v1, v2);
++    }
+@@ -1828 +1841 @@ cmpnum(mrb_state *mrb, mrb_value v1, mrb_value v2)
+-#endif
++  #endif

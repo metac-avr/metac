@@ -1,0 +1,65 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..78d9688165 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,8 +2017,44 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
++
++
++#undef WRITE_FRAME
++
++// Fixed CWE-787: Out-of-bounds Write - Added bounds checking before writing
++#define WRITE_FRAME(DIRECT, PIXEL)                                                           \
++    static void write_frame_##DIRECT##_##PIXEL(Jpeg2000DecoderContext *s, AVFrame *picture,   \
++                                               int plane, int compno,                         \
++                                               int pixelsize)                                \
++    {                                                                                         \
++        int lineno;                                                                           \
++        int x, y;                                                                             \
++        int w = s->ccomp[compno].width;                                                       \
++        int h = s->ccomp[compno].height;                                                      \
++        PIXEL *line;                                                                          \
++        PIXEL *dst;                                                                           \
++        PIXEL *src = (PIXEL*)s->ccomp[compno].data;                                           \
++        int32_t *i_datap = s->idata[compno];                                                  \
++        const int cmptno = s->cdef[compno] < 0 ? compno : s->cdef[compno];                    \
++        if (s->planar) {                                                                      \
++            if (cmptno >= picture->nb_samples)                                                \
++                return;                                                                       \
++        } else {                                                                              \
++            if (cmptno >= picture->nb_samples * s->ncomponents)                               \
++                return;                                                                       \
++        }                                                                                     \
++        line = (PIXEL*)picture->data[plane] + (s->image_offset_y + s->yoff) * picture->linesize[plane] / sizeof(PIXEL) + s->image_offset_x + s->xoff; \
++        for (y = 0; y < h; y++) {                                                             \
++            dst = line;                                                                       \
++            for (x = 0; x < w; x++) {                                                         \
++                if (s->avctx->pix_fmt == AV_PIX_FMT_GRAY16 || s->avctx->pix_fmt == AV_PIX_FMT_GRAYA16 || s->avctx->pix_fmt == AV_PIX_FMT_YUVA420P || s->avctx->pix_fmt == AV_PIX_FMT_YUVA422P || s->avctx->pix_fmt == AV_PIX_FMT_YUVA444P) { \
++                    /* Add bounds check to prevent out-of-bounds writes */                   \
++                    if ((uint8_t*)dst >= (uint8_t*)picture->data[plane] &&                      \
++                        (uint8_t*)dst < (uint8_t*)picture->data[plane] + picture->linesize[plane] * picture->height) { \
++                        *dst = i_datap[w * y + x];                                              \
++                    }                                                                           \
++                } else {                                                                      \
++                    *dst = i_datap[w * y + x];                                                \
++                }                                                                             \
++                i_datap++;                                                                    \
++                dst += pixelsize;                                                             \
++            }                                                                                 \
++            line += picture->linesize[plane] / sizeof(PIXEL);                                \
++        }                                                                                     \
+@@ -2032,7 +2067,0 @@ WRITE_FRAME(16, uint16_t)
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-

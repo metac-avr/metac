@@ -1,0 +1,18 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..b79c3bea5 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -2710 +2710,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
+@@ -2711,0 +2713 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
++      mrb_gc_protect(mrb, splat);  // Protect splat from potential GC
+@@ -2717 +2719,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-        mrb_ary_concat(mrb, regs[a], splat);
++        mrb_value target_ary = regs[a];
++        mrb_gc_protect(mrb, target_ary);  // Protect target array
++        mrb_ary_concat(mrb, target_ary, splat);
++        regs[a] = target_ary;  // Ensure regs[a] is updated safely
+@@ -2722 +2726,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..c6ab2503c4e 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -207,0 +208 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++		zend_gc_refcount(zv); /* Ensure GC refcount is valid before access */
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..2778291c2d0 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1234 +1234,8 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	if (!pz) {
++		return 0;
++	}
++	zend_refcounted_h *counted = Z_COUNTED_P(pz);
++	if (!counted || (uintptr_t)counted < 0x1000) {
++		return 0;
++	}
++	return GC_REFCOUNT(counted);

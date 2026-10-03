@@ -1,0 +1,27 @@
+diff --git a/libavcodec/cbs.c b/libavcodec/cbs.c
+index daf7f66427..d24ac55bbc 100644
+--- a/libavcodec/cbs.c
++++ b/libavcodec/cbs.c
+@@ -396 +396,10 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
+-    memcpy(unit->data, ctx->write_buffer, unit->data_size);
++    // Fix: Validate size parameters before memcpy to prevent integer overflow
++    if (unit->data_size < 0 || unit->data_size > ctx->write_buffer_size) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Data size out of valid range: %d (buffer size: %d)\n", 
++               unit->data_size, ctx->write_buffer_size);
++        return AVERROR(EINVAL);
++    }
++    
++    if (unit->data_size > 0) {
++        memcpy(unit->data, ctx->write_buffer, unit->data_size);
++    }
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..d5ac8e342a 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -706 +706,5 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
+-        // Annex B, or later MP4 with already-known parameters.
++// Add bounds checking to prevent integer overflow in size calculations
++        if (frag->data_size > (INT_MAX - 1024)) {  // Conservative check with safety margin
++            av_log(ctx->log_ctx, AV_LOG_ERROR, "Fragment data size exceeds safe limits\n");
++            return AVERROR(ERANGE);
++        }

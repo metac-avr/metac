@@ -1,0 +1,56 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..74b99a2b5d3 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30063 +30063,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++// FIXME: Crash CWE-416: Use After Free
++ 				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++				if (dim != NULL) {  // Add null check to prevent use-after-free
++					zend_gc_delref(dim);  // Safe to call only if dim is valid
++				}
+@@ -30065,3 +30069,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
+-				ZVAL_NULL(EX_VAR(opline->result.var));
++				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++				if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++					ZVAL_NULL(EX_VAR(opline->result.var));
++				}
+@@ -30070 +30075 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	}
++
+@@ -49650 +49655,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++// FIXME: Crash CWE-416: Use After Free
++ 				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++				if (dim != NULL) {  // Add null check to prevent use-after-free
++					zend_gc_delref(dim);  // Safe to call only if dim is valid
++				}
+@@ -49652,3 +49661,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
+-				ZVAL_NULL(EX_VAR(opline->result.var));
++				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++				if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++					ZVAL_NULL(EX_VAR(opline->result.var));
++				}
+@@ -49657 +49667 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-	}
++
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..00e3f6a91d7 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -862 +862,10 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		if (UNEXPECTED(execute_data != prev_execute_data)) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (UNEXPECTED(execute_data != prev_execute_data)) {
++			/* Validate execute_data before proceeding to prevent use-after-free */
++			if (execute_data && ZEND_GC_IS_REFCOUNTED_P(EX_VAR(opline->result.var))) {
++				zend_refcounted *ref = Z_COUNTED_P(EX_VAR(opline->result.var));
++				if (ref && GC_HAS destructors(ref)) {
++					/* Safe to proceed with reference counting */
++					zend_gc_delref(ref);
++				}
++			}

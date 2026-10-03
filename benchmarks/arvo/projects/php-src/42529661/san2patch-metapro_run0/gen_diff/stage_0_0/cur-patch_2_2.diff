@@ -1,0 +1,47 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..a07680776a2 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -9332 +9332 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
++if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+@@ -9340 +9340 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-		}
++ 		}
+@@ -9342 +9342,4 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-		return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
++		int result = zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
++		/* Ensure no dangling references after hot side execution */
++		zend_jit_invalidate_trace_references(trace_num);
++		return result;
+@@ -9346,8 +9349 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	return (orig_opline == t->opline && EX(opline) == orig_opline);
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++	return (orig_opline == t->opline && EX(opline) == orig_opline);		case ZEND_FAST_CALL:
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..824dc56b8e1 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2490,3 +2490,4 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	GC_REMOVE_FROM_BUFFER(ht);
+-	if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
+-		_zend_hash_iterators_remove(ht);
++	HashTable *temp_ht = ht;
++	GC_REMOVE_FROM_BUFFER(temp_ht);
++	if (UNEXPECTED(HT_HAS_ITERATORS(temp_ht))) {
++		_zend_hash_iterators_remove(temp_ht);
+@@ -2494,2 +2495,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
+-		efree(HT_GET_DATA_ADDR(ht));
++	if (!(EXPECTED(HT_FLAGS(temp_ht) & HASH_FLAG_UNINITIALIZED))) {
++		efree(HT_GET_DATA_ADDR(temp_ht));
+@@ -2497 +2498,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	FREE_HASHTABLE(ht);
++	FREE_HASHTABLE(temp_ht);
++	temp_ht = NULL;

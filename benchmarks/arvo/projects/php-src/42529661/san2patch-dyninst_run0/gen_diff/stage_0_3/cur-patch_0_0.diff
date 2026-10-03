@@ -1,0 +1,31 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..5bedbcf7795 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -9332 +9332 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
++if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+@@ -9340 +9340 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-		}
++ 		}
+@@ -9341,0 +9342,4 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
++		/* Validate trace pointer before accessing in hot side exit */
++		if (t == NULL) {
++			return 0;
++		}
+@@ -9347,7 +9351 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++}		case ZEND_FAST_CALL:
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..8ad93b40149 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2494,0 +2495,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Clear pointer references before freeing to prevent UAF */
++		HT_SET_DATA_ADDR(ht, NULL);

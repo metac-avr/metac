@@ -1,0 +1,32 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..66d84ac673 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -106 +106,4 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
+-    // subframe zero bit
++    // subframe zero bit - ensure we have bits available
++    if (get_bits_count(&gb) + 1 > MAX_FRAME_HEADER_SIZE * 8 + 8) {
++        return 0;
++    }
+@@ -109,0 +113,4 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
++    // subframe type - ensure we have bits available
++    if (get_bits_count(&gb) + 6 > MAX_FRAME_HEADER_SIZE * 8 + 8) {
++        return 0;
++    }
+@@ -116 +123,2 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
+-    // 01xxxx : reserved
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     // 01xxxx : reserved
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index d4e9276da1..1b5f8a985a 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -402 +402 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
+-    OPEN_READER(re, s);
++     OPEN_READER(re, s);
+@@ -403,0 +404,5 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++    // Validate that we won't read beyond buffer boundaries
++    if (s->buffer_end - s->buffer < ((get_bits_count(s) + n + 7) >> 3)) {
++        CLOSE_READER(re, s);
++        return 0;  // Safe fallback for out-of-bounds access attempt
++    }

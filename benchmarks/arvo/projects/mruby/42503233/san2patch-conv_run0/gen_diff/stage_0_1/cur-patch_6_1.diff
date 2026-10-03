@@ -1,0 +1,31 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..61caaada8 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -190,6 +189,0 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+-  if (size > MRB_STACK_MAX) {
+-    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+-  }
+-}
+-
+@@ -198 +192,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
+@@ -199,0 +195,3 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    if (room > MRB_STACK_MAX - (mrb->c->ci->stack ? (mrb->c->ci->stack - mrb->c->stbase) : 0)) {
++      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
+@@ -202,10 +200 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-}
+-
+-static inline struct REnv*
+-uvenv(mrb_state *mrb, mrb_int up)
+-{
+-  const struct RProc *proc = mrb->c->ci->proc;
+-  struct REnv *e;
+-
+-  while (up--) {
+-    proc = proc->upper;
++}    proc = proc->upper;

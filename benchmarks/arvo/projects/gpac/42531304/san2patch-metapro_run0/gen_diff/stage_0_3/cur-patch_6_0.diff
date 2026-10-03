@@ -1,0 +1,26 @@
+diff --git a/src/utils/xml_parser.c b/src/utils/xml_parser.c
+index 30f4e3e69..1f6675120 100644
+--- a/src/utils/xml_parser.c
++++ b/src/utils/xml_parser.c
+@@ -1097 +1097,14 @@ static GF_Err gf_xml_sax_parse_intern(GF_SAXParser *parser, char *current)
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++	}
++	if (current) {
++		size_t len = 0;
++		while (current[len] && len < 5000) len++;
++		char *temp_str = gf_malloc(len + 1);
++		if (!temp_str) return GF_OUT_OF_MEM;
++		memcpy(temp_str, current, len);
++		temp_str[len] = '\0';
++		xml_sax_append_string(parser, temp_str);
++		gf_free(temp_str);
++	} else {
++		xml_sax_append_string(parser, current);
+@@ -1099 +1111,0 @@ static GF_Err gf_xml_sax_parse_intern(GF_SAXParser *parser, char *current)
+-	xml_sax_append_string(parser, current);
+@@ -1104,2 +1116 @@ GF_EXPORT
+-GF_Err gf_xml_sax_parse(GF_SAXParser *parser, const void *string)
+-{
++GF_Err gf_xml_sax_parse(GF_SAXParser *parser, const void *string){

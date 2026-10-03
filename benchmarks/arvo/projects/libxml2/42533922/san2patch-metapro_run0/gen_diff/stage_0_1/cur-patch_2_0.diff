@@ -1,0 +1,28 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..c5774c61 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3698,2 +3698,2 @@ xmlFreeNode(xmlNodePtr cur) {
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
++             xmlFreePropList(cur->properties);
++        if (cur->nsDef != NULL) {
+@@ -3700,0 +3701,2 @@ xmlFreeNode(xmlNodePtr cur) {
++            cur->nsDef = NULL;  /* Clear pointer after freeing to prevent UAF */
++        }
+@@ -8452,2 +8454,2 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * Handle XML namespace.
+-    */
++     * Handle XML namespace.
++     */
+@@ -8464,2 +8466,8 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * If the search should be done in ancestors only and no
+-    * @elem (the first ancestor) was specified, then skip the search.
++     * Validate namespace node to prevent use-after-free vulnerability
++     */
++    if (ns->type != XML_NAMESPACE_DECL || ns->_private != NULL) {
++        /* Namespace appears to be corrupted or freed */
++        return (-1);
++    }
++    /*
++    * If the search should be done in ancestors only and no    * @elem (the first ancestor) was specified, then skip the search.

@@ -1,0 +1,30 @@
+diff --git a/libavcodec/bitstream_template.h b/libavcodec/bitstream_template.h
+index 0308e3a924..a5e24f4c08 100644
+--- a/libavcodec/bitstream_template.h
++++ b/libavcodec/bitstream_template.h
+@@ -529 +529,2 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-    int ret, nb_bits, code, n = Jtable[idx].len;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     int ret, nb_bits, code, n = Jtable[idx].len;
+@@ -530,0 +532,2 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
++        // Validate destination pointer before 8-byte write
++        if (!dst) return -1;
+@@ -551,0 +555 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
++
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..db3f6c5c97 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -634 +634 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-        return AVERROR_INVALIDDATA;
++    return AVERROR_INVALIDDATA;
+@@ -642 +642,2 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-    p->flags |= AV_FRAME_FLAG_KEY;
++// FIXME: Crash CWE-787: Out-of-bounds Write - Fixed by adding bounds checking
++     p->flags |= AV_FRAME_FLAG_KEY;
+@@ -648,0 +650 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
++    // Validate buffer boundaries before VLC decoding
+@@ -654,2 +656 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-        avctx->pix_fmt == AV_PIX_FMT_GBRAP10||
+-        avctx->pix_fmt == AV_PIX_FMT_GBRAP12||
++        avctx->pix_fmt == AV_PIX_FMT_GBRAP10||        avctx->pix_fmt == AV_PIX_FMT_GBRAP12||

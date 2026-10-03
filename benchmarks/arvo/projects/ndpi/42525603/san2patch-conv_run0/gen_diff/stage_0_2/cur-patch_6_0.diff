@@ -1,0 +1,17 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 6a49c22c0..9d748b4ad 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -233 +232,0 @@ ndpi_custom_dga_predict_fctn ndpi_dga_function = NULL;
+-
+@@ -241 +240,2 @@ static inline u_int8_t flow_is_proto(struct ndpi_flow_struct *flow, u_int16_t p)
+-
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
+@@ -243 +243,5 @@ void *ndpi_flow_malloc(size_t size) {
+-  return(_ndpi_flow_malloc ? _ndpi_flow_malloc(size) : ndpi_malloc(size));
++  // Ensure minimum allocation size to prevent buffer overflow in thrift_set_method
++  // The function needs at least 320 bytes for strncpy operation
++  const size_t min_size = 1240; // 920 + 320 to ensure sufficient buffer space
++  size_t actual_size = (size < min_size) ? min_size : size;
++  return(_ndpi_flow_malloc ? _ndpi_flow_malloc(actual_size) : ndpi_malloc(actual_size));

@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..8800d5967d0 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1184,0 +1186,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (UNEXPECTED(GC_HAS_DESTRUCTORS(p))) {
++		gc_remove_from_buffer(p);
++	}
+@@ -1193 +1196,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..241c8439146 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
+@@ -82 +82,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +85,10 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref != NULL) {
++			i_zval_ptr_dtor(zval_ptr);
++		} else {
++			ZVAL_UNDEF(zval_ptr);
++		}
++	} else {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -94,2 +104 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

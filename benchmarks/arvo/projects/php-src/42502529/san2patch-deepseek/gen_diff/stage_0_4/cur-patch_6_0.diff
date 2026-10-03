@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index e59642292ba..7c13bed7245 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3268 +3268,2 @@ ZEND_API bool ZEND_FASTCALL zend_verify_ref_assignable_zval(zend_reference *ref,
+-		if (result == 0) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		if (result == 0) {
+@@ -3271 +3272,3 @@ ZEND_API bool ZEND_FASTCALL zend_verify_ref_assignable_zval(zend_reference *ref,
+-			zval_ptr_dtor(&coerced_value);
++			if (!Z_ISUNDEF(coerced_value)) {
++				zval_ptr_dtor(&coerced_value);
++			}
+@@ -3308 +3311,3 @@ ZEND_API bool ZEND_FASTCALL zend_verify_ref_assignable_zval(zend_reference *ref,
+-				zval_ptr_dtor(&coerced_value);
++				if (!Z_ISUNDEF(coerced_value)) {
++					zval_ptr_dtor(&coerced_value);
++				}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 585364a5739..43bc8a21045 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1747 +1747,2 @@ static zend_always_inline void zend_jit_assign_to_typed_ref_helper(zend_referenc
+-static void ZEND_FASTCALL zend_jit_assign_const_to_typed_ref(zend_reference *ref, zval *value)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static void ZEND_FASTCALL zend_jit_assign_const_to_typed_ref(zend_reference *ref, zval *value)
+@@ -1748,0 +1750 @@ static void ZEND_FASTCALL zend_jit_assign_const_to_typed_ref(zend_reference *ref
++	Z_TRY_ADDREF_P(value);

@@ -1,0 +1,33 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..15f5b3b0 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -6433 +6433 @@ htmlDoRead(htmlParserCtxtPtr ctxt, const char *URL, const char *encoding,
+-        (ctxt->input->filename == NULL))
++         (ctxt->input->filename == NULL))
+@@ -6436 +6436 @@ htmlDoRead(htmlParserCtxtPtr ctxt, const char *URL, const char *encoding,
+-    if (ctxt->errNo == XML_ERR_NO_MEMORY) {
++    if ((ctxt->errNo == XML_ERR_NO_MEMORY) || (ctxt->errNo == XML_HTML_PARSE_ERR_INVALID_CHAR)) {
+@@ -6712,0 +6713 @@ htmlCtxtReadMemory(htmlParserCtxtPtr ctxt, const char *buffer, int size,
++    htmlDocPtr result;
+@@ -6735 +6736,19 @@ htmlCtxtReadMemory(htmlParserCtxtPtr ctxt, const char *buffer, int size,
+-    return (htmlDoRead(ctxt, URL, encoding, options, 1));
++    
++    /* Store initial buffer state to detect reallocation */
++    void* initial_buffer_ptr = NULL;
++    if (stream->buf && stream->buf->buffer) {
++        initial_buffer_ptr = xmlBufContent(stream->buf->buffer);
++    }
++    
++    result = htmlDoRead(ctxt, URL, encoding, options, 1);
++    
++    /* Check if buffer was reallocated during parsing */
++    if (stream->buf && stream->buf->buffer && initial_buffer_ptr) {
++        void* current_buffer_ptr = xmlBufContent(stream->buf->buffer);
++        if (current_buffer_ptr != initial_buffer_ptr) {
++            /* Buffer was reallocated, ensure context is updated */
++            ctxt->input = stream;
++        }
++    }
++    
++    return (result);

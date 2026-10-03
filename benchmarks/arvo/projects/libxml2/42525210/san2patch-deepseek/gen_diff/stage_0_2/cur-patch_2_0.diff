@@ -1,0 +1,27 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index a3c47f69..46224bb2 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -2757 +2757,2 @@ htmlParseHTMLAttribute(htmlParserCtxtPtr ctxt, const xmlChar stop) {
+-     * Ok loop until we reach one of the ending chars
++// FIXME: Crash CWE-125: Out-of-bounds Read
++      * Ok loop until we reach one of the ending chars
+@@ -2763,7 +2764,11 @@ htmlParseHTMLAttribute(htmlParserCtxtPtr ctxt, const xmlChar stop) {
+-	    if (NXT(1) == '#') {
+-		unsigned int c;
+-		int bits;
+-
+-		c = htmlParseCharRef(ctxt);
+-		if      (c <    0x80)
+-		        { *out++  = c;                bits= -6; }
++	    if (ctxt->input->cur + 1 < ctxt->input->end) {
++		if (NXT(1) == '#') {
++		    unsigned int c;
++		    int bits;
++
++		    c = htmlParseCharRef(ctxt);
++		    if      (c <    0x80)
++		            { *out++  = c;                bits= -6; }
++	    } else {
++		break;
++	    }

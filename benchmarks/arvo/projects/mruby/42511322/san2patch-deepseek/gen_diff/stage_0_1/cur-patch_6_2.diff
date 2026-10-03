@@ -1,0 +1,71 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..782886ac5 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -191,8 +191,2 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+-  if (size > MRB_STACK_MAX) {
+-    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+-  }
+-}
+-
+-MRB_API void
+-mrb_stack_extend(mrb_state *mrb, mrb_int room)
++MRB_API mrb_value
++mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, const mrb_value *argv)
+@@ -200,2 +194,4 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-  if (!mrb->c->ci->stack || mrb->c->ci->stack + room >= mrb->c->stend) {
+-    stack_extend_alloc(mrb, room);
++  mrb_callinfo *ci = mrb->c->cibase + mrb->c->ci;
++  mrb_int room = argc + 1;
++  if (ci->stackent - ci->stack < room) {
++    mrb_stack_extend(mrb, room);
+@@ -203,10 +199,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-}
+-
+-static inline struct REnv*
+-uvenv(mrb_state *mrb, mrb_int up)
+-{
+-  const struct RProc *proc = mrb->c->ci->proc;
+-  struct REnv *e;
+-
+-  while (up--) {
+-    proc = proc->upper;
++  return mrb_funcall_with_block(mrb, self, mid, argc, argv, mrb_nil_value());
++}    proc = proc->upper;
+@@ -566,15 +554,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
+-  }
+-  mrb_gc_arena_restore(mrb, ai);
+-  mrb_gc_protect(mrb, val);
+-  return val;
+-}
+-
+-MRB_API mrb_value
+-mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, const mrb_value *argv)
+-{
+-  return mrb_funcall_with_block(mrb, self, mid, argc, argv, mrb_nil_value());
+-}
+-
+-static void
+-check_method_noarg(mrb_state *mrb, const mrb_callinfo *ci)
++MRB_API void
++mrb_stack_extend(mrb_state *mrb, mrb_int room)
+@@ -582,5 +557,6 @@ check_method_noarg(mrb_state *mrb, const mrb_callinfo *ci)
+-  mrb_int argc = ci->n == CALL_MAXARGS ? RARRAY_LEN(ci->stack[1]) : ci->n;
+-  if (ci->nk > 0) {
+-    mrb_value kdict = ci->stack[mrb_ci_kidx(ci)];
+-    if (!(mrb_hash_p(kdict) && mrb_hash_empty_p(mrb, kdict))) {
+-      argc++;
++  if (mrb->c->ci->stack) {
++    if (mrb->c->ci->stack + room >= mrb->c->stend) {
++      mrb_value *old_stack = mrb->c->ci->stack;
++      stack_extend_alloc(mrb, room);
++      mrb->c->ci->stack = mrb->c->stack + (old_stack - mrb->c->stbase);
++      mrb->c->ci->stackent = mrb->c->ci->stack;
+@@ -588,0 +565,5 @@ check_method_noarg(mrb_state *mrb, const mrb_callinfo *ci)
++  else {
++    stack_extend_alloc(mrb, room);
++  }
++}    }
++  }

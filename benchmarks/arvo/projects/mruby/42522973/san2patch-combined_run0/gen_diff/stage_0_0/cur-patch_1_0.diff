@@ -1,0 +1,21 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..dd72cbf24 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1050,2 +1050,4 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (!is_dead(gc, obj)) {
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    }
+@@ -1156,3 +1158,6 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Validate page before freeing to prevent expired pointer dereference */
++      if (page != NULL) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }

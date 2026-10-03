@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..7c5938b8b26 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1684 +1684,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++	/* Fixed CWE-416: Use After Free - Reset GC flags to prevent reuse */
++	if (ht->gc) {
++		GC_TYPE(ht->gc) = 0;
++	}
++ free_ht:
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..2a6156792ac 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,2 +56,6 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p != NULL) {
++		zend_uintptr_t gc_type = GC_TYPE(p);
++		if (gc_type <= IS_CONSTANT_AST) {
++			zend_rc_dtor_func[gc_type](p);
++		}
++	}

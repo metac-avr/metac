@@ -1,0 +1,30 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..44975cbd0a 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -155 +155,2 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    s->zstream.next_out  = s->tmpblock;
++// FIXME: Crash CWE-416: Use After Free
++     s->zstream.next_out  = s->tmpblock;
+@@ -157 +158 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    inflate(&s->zstream, Z_SYNC_FLUSH);
++    if (s->tmpblock != NULL) inflate(&s->zstream, Z_SYNC_FLUSH);
+@@ -165 +166 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    deflate(&zs, Z_SYNC_FLUSH);
++    if (s->deflate_block != NULL) deflate(&zs, Z_SYNC_FLUSH);
+@@ -177 +178 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    inflate(&s->zstream, Z_SYNC_FLUSH);
++    if (s->tmpblock != NULL) inflate(&s->zstream, Z_SYNC_FLUSH);
+@@ -194 +195,2 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
++// FIXME: Crash CWE-416: Use After Free
++     }
+@@ -195,0 +198,2 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        /* Nullify data pointer before potential reallocation */
++        s->blocks[blk_idx].data = NULL;
+@@ -200,0 +205,5 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        /* Ensure data pointer is valid after prime operation */
++        if (!s->blocks[blk_idx].data) {
++            av_log(avctx, AV_LOG_ERROR, "Block data pointer invalid after prime\n");
++            return AVERROR_INVALIDDATA;
++        }

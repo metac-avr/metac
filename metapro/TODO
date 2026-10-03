@@ -1,0 +1,33 @@
+* Test with real benchmarks (BugsC++)
+* Better way to handle namespaces for C++
+* 3rd-party FL tools
+* A patch cannot call an unreferenced `static` function
+  A callee is resolved by name at run time now (dlsym, from function-info.json), and a static
+  function that nothing in its own file references is never emitted by the compiler at all, so
+  the lookup finds nothing and the object is skipped. Taking its address is what used to force
+  it into the binary. Fix, if experiments show it is worth it: have metapro emit, in the file
+  that defines it, a uniquely named exported pointer to it, e.g.
+      void* const __metapro_fn_<file>__<name> = (void*)&<name>;
+  which forces the compiler to emit the function, is always link-safe because the definition is
+  right there, and gives it an unambiguous name (two files may each define a static of the same
+  name, and both land in .symtab as local symbols). Verified in a prototype, including that
+  -Wl,--gc-sections collects those pointers again unless the program is linked with -rdynamic.
+* Macro expansion uses macros of the whole project, not of the patched file (ffmpeg-42525124)
+  macros.json is one table for the program, but a #define is only in effect in the translation
+  units that see it, so _expand_macros() in gen-san2patch-config-ast.py can rewrite a name with a
+  definition the patched file never had. ffmpeg's `get_bits_left(gb)` in libavformat/jpegxl_probe.c
+  became `bits_left_be(gb)`, through
+      get_bits_left -> bits_left   (libavcodec/get_bits.h)
+      bits_left     -> bits_left_be (libavcodec/bitstream.h)
+  which are the new bitstream reader's, while that file gets the classic reader, where
+  get_bits_left is a plain `static inline` function (preprocessing it shows the definition and no
+  bits_left_be anywhere). Both names are in function-info.json, collected from whichever unit
+  defines each, so the runtime accepts the rewritten one and then finds no symbol of it:
+      function.c: ERROR: Function bits_left_be not found in variables and not in the program
+  Fix, cheapest first:
+  - do not rewrite a name that is itself a function of the program: for an object-like macro whose
+    body is a bare identifier (a rename), leave the call alone when the original name is in
+    function-info.json. Narrow, and covers this failure mode.
+  - make the table per file: the collector already records the file each macro is defined in, so
+    emitting macros.json per instrumented translation unit (or recording each unit's include
+    closure) makes expansion use only the definitions actually in effect.

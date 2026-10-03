@@ -1,0 +1,53 @@
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..7a684abef 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -199,22 +199,26 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-	Bool has_scal_layer = GF_FALSE;
+-	Bool unframed = GF_FALSE;
+-	Bool unframed_latm = GF_FALSE;
+-	char szName[20];
+-	const char *stname;
+-	if (stream->user) return;
+-
+-	if (stream->flags & GF_M2TS_GPAC_CODEC_ID) {
+-		codecid = stream->stream_type;
+-		stype = gf_codecid_type(codecid);
+-		if (stream->gpac_meta_dsi)
+-			stype = stream->gpac_meta_dsi[4];
+-		if (!stype) {
+-			GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[M2TSDmx] Unrecognized gpac codec %s - ignoring pid\n", gf_4cc_to_str(codecid) ));
+-			return;
+-		}
+-	} else {
+-		switch (stream->stream_type) {
+-		case GF_M2TS_VIDEO_MPEG1:
+-			stype = GF_STREAM_VISUAL;
+-			codecid = GF_CODECID_MPEG1;
+-			unframed = GF_TRUE;
++        Bool has_scal_layer = GF_FALSE;
++        Bool unframed = GF_FALSE;
++        Bool unframed_latm = GF_FALSE;
++        char szName[20];
++        const char *stname;
++        if (stream->user) return;
++
++        if (stream->flags & GF_M2TS_GPAC_CODEC_ID) {
++                // Check bounds before accessing stream->gpac_meta_dsi[4]
++                if (stream->gpac_meta_dsi) {
++                        codecid = stream->stream_type;
++                        stype = gf_codecid_type(codecid);
++                        stype = stream->gpac_meta_dsi[4];
++                } else {
++                        codecid = stream->stream_type;
++                        stype = gf_codecid_type(codecid);
++                }
++                if (!stype) {
++                        GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[M2TSDmx] Unrecognized gpac codec %s - ignoring pid\n", gf_4cc_to_str(codecid) ));
++                        return;
++                }
++        } else {
++                switch (stream->stream_type) {
++                case GF_M2TS_VIDEO_MPEG1:
++                        stype = GF_STREAM_VISUAL;
++                        codecid = GF_CODECID_MPEG1;			unframed = GF_TRUE;

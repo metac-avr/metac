@@ -1,0 +1,38 @@
+diff --git a/xinclude.c b/xinclude.c
+index 72a88c99..104246ed 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2399,0 +2400 @@ xmlXIncludeProcessNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
++    xmlNodePtr cur;
+@@ -2402 +2403 @@ xmlXIncludeProcessNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
+-        (node->doc == NULL) || (ctxt == NULL))
++         (node->doc == NULL) || (ctxt == NULL))
+@@ -2403,0 +2405,18 @@ xmlXIncludeProcessNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
++    
++    /* Remove ID references before processing to prevent use-after-free */
++    for (cur = node; cur != NULL; cur = cur->next) {
++        if (cur->type == XML_ELEMENT_NODE) {
++            xmlAttrPtr attr = cur->properties;
++            while (attr != NULL) {
++                if (attr->atype == XML_ATTRIBUTE_ID) {
++                    xmlChar *id_val = xmlNodeListGetString(cur->doc, attr->children, 1);
++                    if (id_val != NULL) {
++                        xmlRemoveID(cur->doc, attr);
++                        xmlFree(id_val);
++                    }
++                }
++                attr = attr->next;
++            }
++        }
++    }
++    
+diff --git a/valid.c b/valid.c
+index 1ecc762c..450bcbb7 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743,4 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
++
++    /* Check if the ID value is valid before attempting to remove */
++    if (attr->id->value == NULL) return(-1);

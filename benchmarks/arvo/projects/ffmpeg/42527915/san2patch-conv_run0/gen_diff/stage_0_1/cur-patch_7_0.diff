@@ -1,0 +1,28 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..0b804aad0c 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -107,0 +108 @@ static int vlc_common_init(VLC *vlc, int nb_bits, int nb_codes,
++        vlc->table_buf       = NULL;  /* Prevent dangling pointer access */
+@@ -427 +428,2 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-416: Use After Free
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
+@@ -438,4 +440,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    for (int j = 0; j < 1<<numbits; j++) {
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++    if (table && single) {
++        for (int j = 0; j < 1<<numbits; j++) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        }
+@@ -444,2 +448,4 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    add_level(table, nb_elems, nb_codes, numbits, buf,
+-              0, 0, numbits, 0, minbits, max, count, &info);
++    if (table && buf) {
++        add_level(table, nb_elems, nb_codes, numbits, buf,
++                  0, 0, numbits, 0, minbits, max, count, &info);
++    }

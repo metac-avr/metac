@@ -1,0 +1,55 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..0182f97dab0 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272,12 +272,11 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+-	/* No PHP callback functions should be called after this point. */
+-	EG(active) = 0;
+-
+-	if (!fast_shutdown) {
+-		zend_hash_graceful_reverse_destroy(&EG(symbol_table));
+-
+-		/* Constants may contain objects, destroy them before the object store. */
+-		if (EG(full_tables_cleanup)) {
+-			zend_hash_reverse_apply(EG(zend_constants), clean_non_persistent_constant_full);
+-		} else {
+-			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
++static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++{
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && !GC_DELREF(ref)) {
++			rc_dtor_func(ref);
++		} else if (ref) {
++			gc_check_possible_root(ref);
++		}
++	}
++}			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..9ec37c2cbbd 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -39,6 +39,11 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
++	/* No PHP callback functions should be called after this point. */
++	EG(active) = 0;
++	/* Fix CWE-416: Use After Free - Clear GC roots before hash table destruction */
++	GC_REMOVE_FROM_BUFFER(&EG(gc_worklist));
++
++	if (!fast_shutdown) {
++		zend_hash_graceful_reverse_destroy(&EG(symbol_table));
++
++		/* Constants may contain objects, destroy them before the object store. */
++		if (EG(full_tables_cleanup)) {
++			zend_hash_reverse_apply(EG(zend_constants), clean_non_persistent_constant_full);
+@@ -46,4 +50,0 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-			gc_check_possible_root(ref);
+-		}
+-	}
+-}

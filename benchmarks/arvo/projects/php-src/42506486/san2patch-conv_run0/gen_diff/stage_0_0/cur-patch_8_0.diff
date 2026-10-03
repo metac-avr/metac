@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..f9b515413a3 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -274,0 +274,2 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
++	/* Fix CWE-416: Use After Free - Ensure GC cleanup before hash destruction */
++	zend_gc_reset_queues();
+@@ -282,2 +283 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-		} else {
+-			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
++		} else {			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..e246ea21b7f 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -41 +41,2 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++// FIXME: Crash CWE-416: Use After Free
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
+@@ -43 +44 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && !GC_DELREF(ref)) {
+@@ -45 +46 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref) {

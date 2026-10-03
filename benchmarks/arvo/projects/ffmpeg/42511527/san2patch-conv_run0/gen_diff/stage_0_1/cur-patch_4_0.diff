@@ -1,0 +1,28 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..e6ab726446 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -194,2 +194,3 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
+-    if (s->zlibprime_curr || s->zlibprime_prev) {
++// FIXME: Crash CWE-416: Use After Free
++     }
++    if ((s->zlibprime_curr || s->zlibprime_prev) && s->keyframedata) {
+@@ -200,0 +202,3 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++    } else if (s->zlibprime_curr || s->zlibprime_prev) {
++        av_log(avctx, AV_LOG_ERROR, "keyframedata is NULL when prime is needed\n");
++        return AVERROR_INVALIDDATA;
+@@ -349 +353,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
++Frame width or height differs from first frame!
++");
+@@ -357 +362,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -359 +365,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
++        void *new_keyframedata = NULL;
++        if ((err = av_reallocp(&new_keyframedata, avpkt->size)) < 0)
+@@ -360,0 +368 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        s->keyframedata = new_keyframedata;  // Update pointer only after successful allocation

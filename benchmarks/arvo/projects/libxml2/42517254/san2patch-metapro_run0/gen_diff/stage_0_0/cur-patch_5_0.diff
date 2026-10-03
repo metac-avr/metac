@@ -1,0 +1,50 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..6e63e1e2 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1159,0 +1160 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		// Fixed CWE-416: Use After Free by adding null checks and validation
+@@ -1161,0 +1163,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		/* Prevent use-after-free by checking node integrity */
++		if (set->nodeTab[i]->_private == (void*)0x1)  /* Freed marker */
++		    continue;
+@@ -1187,6 +1191,9 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    tmp = xmlXIncludeCopyNode(ctxt, target,
+-							      source, cur);
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
++				    /* Validate node before copy operation */
++				    if (cur->_private != (void*)0x1) {  /* Not marked as freed */
++				        tmp = xmlXIncludeCopyNode(ctxt, target,
++							          source, cur);
++				        if (last == NULL) {
++					    list = last = tmp;
++				        } else {
++					    last = xmlAddNextSibling(last, tmp);
++				        }
+@@ -1216 +1223 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-			                              set->nodeTab[i]);
++					              set->nodeTab[i]);
+@@ -1218,5 +1225,8 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    /* Check that node is not already freed */
++		    if (set->nodeTab[i]->_private != (void*)0x1) {
++		        xmlAddNextSibling(last,
++			        xmlXIncludeCopyNode(ctxt, target, source,
++					            set->nodeTab[i]));
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2275 +2285,3 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-416: Use After Free
++          */
++	/* Fix use-after-free by nullifying cur after freeing */
+@@ -2277,0 +2290 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	cur = NULL; /* Ensure cur cannot be referenced again */

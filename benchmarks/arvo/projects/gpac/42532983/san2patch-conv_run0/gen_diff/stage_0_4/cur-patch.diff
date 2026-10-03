@@ -1,0 +1,21 @@
+diff --git a/src/filter_core/filter_session.c b/src/filter_core/filter_session.c
+index 01e4bcf92..fefad9575 100644
+--- a/src/filter_core/filter_session.c
++++ b/src/filter_core/filter_session.c
+@@ -2405 +2405,4 @@ GF_Err gf_fs_run(GF_FilterSession *fsess)
+-		gf_fs_thread_proc(&fsess->main_th);
++		// Add validation check to prevent expired pointer dereference
++		if (fsess && &fsess->main_th) {
++			gf_fs_thread_proc(&fsess->main_th);
++		}
+diff --git a/src/filters/reframe_img.c b/src/filters/reframe_img.c
+index 9eb787203..2e76b678f 100644
+--- a/src/filters/reframe_img.c
++++ b/src/filters/reframe_img.c
+@@ -346,0 +347,2 @@ GF_Err img_process(GF_Filter *filter)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++			if (!data || !pix) return GF_SERVICE_ERROR;
+@@ -347,0 +350 @@ GF_Err img_process(GF_Filter *filter)
++			if (pix < data) return GF_SERVICE_ERROR;
+@@ -348,0 +352 @@ GF_Err img_process(GF_Filter *filter)
++				if (pix+3 >= data + in_stride*h) return GF_SERVICE_ERROR;

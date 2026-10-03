@@ -1,0 +1,17 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..8775ab8c7a5 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++// FIXME: Crash CWE-416: Use After Free
+@@ -203,0 +205,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Zero out the object memory before freeing to prevent use-after-free */
++		memset(object, 0, sizeof(zend_object));
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..ef0bc4592f3 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56 +56,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++	if (!p) return;
++	if (GC_TYPE(p) > IS_CONSTANT_AST) return;

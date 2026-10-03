@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..40e5183caa8 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1233,0 +1234,3 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
++	if (UNEXPECTED(Z_TYPE_P(pz) == IS_UNDEF)) {
++		return 0;
++	}
+@@ -1244,0 +1248 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..6943a4578d7 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -250 +250,5 @@ void shutdown_destructors(void) /* {{{ */
+-		do {
++		/* Track processed objects to prevent use-after-free */
++		HashTable *processed_objects = NULL;
++		ALLOC_HASHTABLE(processed_objects);
++		zend_hash_init(processed_objects, 8, NULL, NULL, 0);
++ 		do {
+@@ -254,0 +259,2 @@ void shutdown_destructors(void) /* {{{ */
++		zend_hash_destroy(processed_objects);
++		FREE_HASHTABLE(processed_objects);

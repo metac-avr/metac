@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..ec915712c42 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && GC_REFCOUNT(ref) > 0 && !GC_DELREF(ref)) {
+@@ -45 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref && GC_REFCOUNT(ref) > 0) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..d6c1e97c0c1 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352,3 +1352,15 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
+-		ZVAL_UNDEF(&p->val);
+-		ht->pDestructor(&tmp);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		if (Z_REFCOUNTED(p->val)) {
++			zend_refcounted *ref = Z_COUNTED(p->val);
++			if (ref && !(GC_FLAGS(ref) & (GC_MARKED_MASK|GC_IMMUTABLE)) && GC_REFCOUNT(ref) > 0) {
++				ZVAL_COPY_VALUE(&tmp, &p->val);
++				ZVAL_UNDEF(&p->val);
++				ht->pDestructor(&tmp);
++			} else {
++				ZVAL_UNDEF(&p->val);
++			}
++		} else {
++			ZVAL_COPY_VALUE(&tmp, &p->val);
++			ZVAL_UNDEF(&p->val);
++			ht->pDestructor(&tmp);
++		}

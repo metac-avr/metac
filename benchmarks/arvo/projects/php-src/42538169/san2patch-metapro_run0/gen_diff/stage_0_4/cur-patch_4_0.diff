@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 8f012868dda..20dfe492d06 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1345,0 +1346,5 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	// Validate pointer before use to prevent expired pointer dereference (CWE-825)
++	if (!p) {
++		zend_error(E_CORE_ERROR, "Attempt to decrement reference count on NULL pointer");
++		return 0;
++	}
+diff --git a/Zend/zend_property_hooks.c b/Zend/zend_property_hooks.c
+index 9cfa15ecafa..e277f958670 100644
+--- a/Zend/zend_property_hooks.c
++++ b/Zend/zend_property_hooks.c
+@@ -209 +209,3 @@ static void zho_it_dtor(zend_object_iterator *iter)
+-	zend_hooked_object_iterator *hooked_iter = (zend_hooked_object_iterator*)iter;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	zend_hooked_object_iterator *hooked_iter = (zend_hooked_object_iterator*)iter;
++	if (!hooked_iter) return;

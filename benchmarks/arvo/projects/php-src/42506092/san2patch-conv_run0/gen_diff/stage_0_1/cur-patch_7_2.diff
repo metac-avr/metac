@@ -1,0 +1,55 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..d48d0107437 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1779,0 +1780,37 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
++{
++	uint32_t idx;
++	Bucket *p;
++
++	IS_CONSISTENT(ht);
++
++	if (EXPECTED(ht->nNumUsed != 0)) {
++		p = ht->arData;
++		if (ht->u.flags & HASH_FLAG_PACKED) {
++			for (idx = 0; idx < ht->nNumUsed; idx++, p++) {
++				if (Z_TYPE(p->val) == IS_INDIRECT) {
++					zval *zv = Z_INDIRECT(p->val);
++					if (UNEXPECTED(zv != NULL) && Z_TYPE_P(zv) == IS_UNDEF) {
++						ZVAL_NULL(zv);
++					}
++				} else if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) {
++					continue;
++				}
++				zval_ptr_dtor(&p->val);
++			}
++		} else {
++			for (idx = 0; idx < ht->nNumUsed; idx++, p++) {
++				if (p->key) {
++					zend_string_release(p->key);
++				}
++				if (Z_TYPE(p->val) == IS_INDIRECT) {
++					zval *zv = Z_INDIRECT(p->val);
++					if (UNEXPECTED(zv != NULL) && Z_TYPE_P(zv) == IS_UNDEF) {
++						ZVAL_NULL(zv);
++					}
++				} else if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) {
++					continue;
++				}
++				zval_ptr_dtor(&p->val);
++			}
++		}
+@@ -1781,0 +1819,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Prevent JIT use-after-free by clearing references */
++#ifdef HAVE_JIT
++	zend_jit_clear_references(ht);
++#endif
+@@ -1786,6 +1827 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	IS_CONSISTENT(ht);
+-	HT_ASSERT_RC1(ht);
++}	HT_ASSERT_RC1(ht);

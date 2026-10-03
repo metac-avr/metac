@@ -1,0 +1,18 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..cbbdbf68c 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1700 +1700 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-{
++ {
+@@ -1701,0 +1702,10 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
++  /* Prevent use-after-free by checking GC status before accessing string data */
++  if (mrb && s) {
++    if (mrb->gc.state == MRB_GC_STATE_SWEEP) {
++      /* During sweep phase, check if object is marked for deletion */
++      if (MRB_OBJECT_FROZEN_P((struct RBasic*)s) || 
++          (((struct RBasic*)s)->tt & MRB_TT_MASK) == 0) {
++        return 0; /* Safe fallback for potentially invalid pointers */
++      }
++    }
++  }

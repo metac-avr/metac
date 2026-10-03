@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..71499c5e3d8 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1684 +1684,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++	/* Fixed CWE-416: Use After Free - Ensure GC tracking is removed before final free */
++	if (ht->u.flags & HASH_FLAG_PERSISTENT) {
++		GC_REMOVE_FROM_BUFFER(ht);
++	}
++ free_ht:
+@@ -1688,5 +1691,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..5b93a9114b5 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (p == NULL) return;

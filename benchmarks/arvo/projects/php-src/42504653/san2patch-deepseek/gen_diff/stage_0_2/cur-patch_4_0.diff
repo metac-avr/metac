@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..5b0a109e73e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval old_value;
++		zval *variable_ptr = EX_VAR(opline->op1.var);
++		ZVAL_COPY_VALUE(&old_value, variable_ptr);
++		if (Z_REFCOUNTED(old_value)) {
++			if (Z_REFCOUNT(old_value) == 1) {
++				zval_ptr_dtor_nogc(&old_value);
++			} else {
++				zval_ptr_dtor(&old_value);
++			}
++		}
+@@ -29957,3 +29966 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+-	/* assign_dim has two opcodes! */
+-	ZEND_VM_NEXT_OPCODE_EX(1, 2);
++	zend_vm_next_opcode_ex(1, 2);

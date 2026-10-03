@@ -1,0 +1,38 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..2266dd9c1 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -1567,7 +1566,0 @@ mrb_hash_aset(mrb_state *mrb, mrb_value self)
+-  const mrb_value *argv = mrb_get_argv(mrb);
+-  mrb_value val = argv[1];
+-
+-  mrb_hash_set(mrb, self, argv[0], argv[1]);
+-  return val;
+-}
+-
+@@ -1575 +1568,2 @@ MRB_API mrb_int
+-mrb_hash_size(mrb_state *mrb, mrb_value hash)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ mrb_hash_size(mrb_state *mrb, mrb_value hash)
+@@ -1577,12 +1571,9 @@ mrb_hash_size(mrb_state *mrb, mrb_value hash)
+-  return (mrb_int)h_size(mrb_hash_ptr(hash));
+-}
+-
+-/* 15.2.13.4.20 */
+-/* 15.2.13.4.25 */
+-/*
+- *  call-seq:
+- *     hsh.length    ->  integer
+- *     hsh.size      ->  integer
+- *
+- *  Returns the number of key-value pairs in the hash.
+- *
++  if (!mrb_hash_p(hash)) {
++    return 0;
++  }
++  struct RHash *h = mrb_hash_ptr(hash);
++  if (h == NULL || h->ht == NULL) {
++    return 0;
++  }
++  return (mrb_int)h_size(h);
++} *

@@ -1,0 +1,51 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..18b2664c 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1160 +1160,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (set->nodeTab[i] == NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 		if (set->nodeTab[i] == NULL)
+@@ -1188,0 +1190,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++				    if (tmp == NULL)
++					goto next;
+@@ -1193,0 +1197 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++next:
+@@ -1214,2 +1218,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
++		if (last == NULL) {
++		    xmlNodePtr tmp = xmlXIncludeCopyNode(ctxt, target, source,
+@@ -1216,0 +1221,4 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		    if (tmp == NULL)
++			continue;
++		    list = last = tmp;
++		}
+@@ -1218,3 +1226,5 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
++		    xmlNodePtr tmp = xmlXIncludeCopyNode(ctxt, target, source,
++				                set->nodeTab[i]);
++		    if (tmp == NULL)
++			continue;
++		    xmlAddNextSibling(last, tmp);
+@@ -2230 +2240,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	ctxt->incTab[nr]->inc =
++	xmlNodePtr copied = NULL;
++	if (cur->parent == NULL && cur->doc == NULL)
++	    return(-1);
++	copied =
+@@ -2232,0 +2246,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	if (copied == NULL) {
++	    xmlXPathFreeObject(ctxt->incTab[nr]->xptr);
++	    ctxt->incTab[nr]->xptr = NULL;
++	    return(-1);
++	}
+@@ -2234,0 +2253,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	ctxt->incTab[nr]->inc = copied;
++	copied = NULL;
+@@ -2241,2 +2261 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-     * Check against the risk of generating a multi-rooted document
+-     */
++     * Check against the risk of generating a multi-rooted document     */

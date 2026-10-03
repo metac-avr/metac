@@ -1,0 +1,33 @@
+diff --git a/src/lib/protocols/irc.c b/src/lib/protocols/irc.c
+index 367ec86bd..ab3d76d72 100644
+--- a/src/lib/protocols/irc.c
++++ b/src/lib/protocols/irc.c
+@@ -408,0 +409 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -410,4 +410,0 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-
+-	  snprintf(buf, sizeof(buf), "%s", &user[5]);
+-	  if((sp = strchr(buf, ' ')) != NULL)
+-	    sp[0] = '\0';
+@@ -415,2 +412,16 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-	  snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
+-	  ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
++	  // Use ndpi_strnstr to safely extract username part
++	  char *username_start = &user[5];
++	  int max_copy_len = sizeof(buf) - 1;
++	  int available_len = packet->payload_packet_len - (username_start - (char*)packet->payload);
++	  int safe_copy_len = (available_len < max_copy_len) ? available_len : max_copy_len;
++	  
++	  if(safe_copy_len > 0) {
++	    strncpy(buf, username_start, safe_copy_len);
++	    buf[safe_copy_len] = '\0';
++	    
++	    if((sp = strchr(buf, ' ')) != NULL)
++	      sp[0] = '\0';
++	    
++	    snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
++	    ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
++	  }
+@@ -458 +469 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-							5) == 0)) {
++						5) == 0)) {

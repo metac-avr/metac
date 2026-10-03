@@ -1,0 +1,81 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..2ced31025b 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -44,7 +43,0 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
+-        ff_refstruct_unref(&frame->rpl_tab);
+-        frame->refPicList = NULL;
+-
+-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+-    }
+-}
+-
+@@ -52 +45,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -57,0 +52,7 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++    
++    if (!ref || !ref->rpl_tab || ctb_addr_ts < 0 || ctb_addr_ts >= FF_ARRAY_ELEMS(ref->rpl_tab))
++        return NULL;
++        
++    if (!ref->rpl_tab[ctb_addr_ts])
++        return NULL;
++    
+@@ -59,7 +60 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-}
+-
+-void ff_hevc_clear_refs(HEVCContext *s)
+-{
+-    int i;
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++}        ff_hevc_unref_frame(&s->DPB[i],
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..9da1447ffe 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1390,21 +1390,6 @@ static int hls_transform_tree(HEVCLocalContext *lc,
+-    if (split_transform_flag) {
+-        const int trafo_size_split = 1 << (log2_trafo_size - 1);
+-        const int x1 = x0 + trafo_size_split;
+-        const int y1 = y0 + trafo_size_split;
+-
+-#define SUBDIVIDE(x, y, idx)                                                    \
+-do {                                                                            \
+-    ret = hls_transform_tree(lc, pps, sps,                                      \
+-                             x, y, x0, y0, cb_xBase, cb_yBase, log2_cb_size,    \
+-                             log2_trafo_size - 1, trafo_depth + 1, idx,         \
+-                             cbf_cb, cbf_cr);                                   \
+-    if (ret < 0)                                                                \
+-        return ret;                                                             \
+-} while (0)
+-
+-        SUBDIVIDE(x0, y0, 0);
+-        SUBDIVIDE(x1, y0, 1);
+-        SUBDIVIDE(x0, y1, 2);
+-        SUBDIVIDE(x1, y1, 3);
+-
+-#undef SUBDIVIDE
++    int hls_transform_tree(HEVCLocalContext *lc, const PPS *pps, const SPS *sps,
++                       int x0, int y0, int xBase, int yBase, int cb_xBase, int cb_yBase,
++                       int log2_cb_size, int log2_trafo_size, int trafo_depth, int blk_idx,
++                       int *cbf_cb, int *cbf_cr)
++{
++    // ... existing code ...
+@@ -1440,4 +1425,11 @@ do {
+-            ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
+-            if (pps->transquant_bypass_enable_flag &&
+-                lc->cu.cu_transquant_bypass_flag)
+-                set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++            int ref_valid = 1;
++            // Check if current frame data is valid before accessing
++            if (!s->ref || !s->ref->frame || !s->ref->frame->data[0]) {
++                ref_valid = 0;
++            }
++            if (ref_valid) {
++                ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
++                if (pps->transquant_bypass_enable_flag &&
++                    lc->cu.cu_transquant_bypass_flag)
++                    set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++            }

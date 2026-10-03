@@ -1,0 +1,40 @@
+diff --git a/src/isomedia/box_funcs.c b/src/isomedia/box_funcs.c
+index 84310399e..74e31b60c 100644
+--- a/src/isomedia/box_funcs.c
++++ b/src/isomedia/box_funcs.c
+@@ -1803 +1803 @@ void gf_isom_box_del(GF_Box *a)
+-	child_boxes	= a->child_boxes;
++	child_boxes = a->child_boxes;
+@@ -1805,0 +1806,12 @@ void gf_isom_box_del(GF_Box *a)
++	// Clear child references before deletion to prevent use-after-free
++	if (child_boxes) {
++		u32 i, count = gf_list_count(child_boxes);
++		for (i = 0; i < count; i++) {
++			GF_Box *child = (GF_Box *)gf_list_get(child_boxes, i);
++			if (child && child == a) {
++				gf_list_rem(child_boxes, i);
++				break;
++			}
++		}
++	}
++
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index 753cff17d..49a215872 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -3994 +3994 @@ GF_Err audio_sample_entry_box_read(GF_Box *s, GF_BitStream *bs)
+- 	if (gf_bs_get_cookie(bs) & GF_ISOM_BS_COOKIE_QT_CONV) {
++  	if (gf_bs_get_cookie(bs) & GF_ISOM_BS_COOKIE_QT_CONV) {
+@@ -3996 +3996,2 @@ GF_Err audio_sample_entry_box_read(GF_Box *s, GF_BitStream *bs)
+- 	}
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   	}
+@@ -4030 +4031,7 @@ GF_Err audio_sample_entry_box_read(GF_Box *s, GF_BitStream *bs)
+-			if (ptr->esd) gf_isom_box_del_parent(&ptr->child_boxes, (GF_Box *)ptr->esd);
++			if (ptr->esd) {
++				// Clear the pointer from child_boxes before freeing to prevent use-after-free
++				if (ptr->child_boxes) {
++					gf_list_del_item(ptr->child_boxes, ptr->esd);
++				}
++				gf_isom_box_del_parent(&ptr->child_boxes, (GF_Box *)ptr->esd);
++			}

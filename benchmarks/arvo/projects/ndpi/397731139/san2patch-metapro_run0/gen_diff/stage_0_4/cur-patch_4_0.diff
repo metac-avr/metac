@@ -1,0 +1,24 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 6656143f6..aa548551a 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -905 +905 @@ static struct ndpi_flow_info *get_ndpi_flow_info(struct ndpi_workflow * workflow
+-	newflow->pktlen_s_to_c =  ndpi_alloc_data_analysis(DATA_ANALUYSIS_SLIDING_WINDOW),
++	newflow->pktlen_s_to_c = ndpi_alloc_data_analysis(DATA_ANALUYSIS_SLIDING_WINDOW),
+@@ -926,2 +926,14 @@ static struct ndpi_flow_info *get_ndpi_flow_info(struct ndpi_workflow * workflow
+-        ndpi_patchIPv6Address(newflow->src_name), ndpi_patchIPv6Address(newflow->dst_name);
+-      }
++        // Allocate larger temporary buffers to avoid overflow
++        char temp_src_name[INET6_ADDRSTRLEN + 10];
++        char temp_dst_name[INET6_ADDRSTRLEN + 10];
++        strncpy(temp_src_name, newflow->src_name, sizeof(temp_src_name) - 1);
++        temp_src_name[sizeof(temp_src_name) - 1] = '\0';
++        strncpy(temp_dst_name, newflow->dst_name, sizeof(temp_dst_name) - 1);
++        temp_dst_name[sizeof(temp_dst_name) - 1] = '\0';
++        ndpi_patchIPv6Address(temp_src_name);
++        ndpi_patchIPv6Address(temp_dst_name);
++        strncpy(newflow->src_name, temp_src_name, sizeof(newflow->src_name) - 1);
++        newflow->src_name[sizeof(newflow->src_name) - 1] = '\0';
++        strncpy(newflow->dst_name, temp_dst_name, sizeof(newflow->dst_name) - 1);
++        newflow->dst_name[sizeof(newflow->dst_name) - 1] = '\0';
++       }

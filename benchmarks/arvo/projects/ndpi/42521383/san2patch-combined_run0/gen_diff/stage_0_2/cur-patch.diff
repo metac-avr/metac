@@ -1,0 +1,82 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index d66ebc786..12e582533 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -244,0 +245 @@ void ndpi_free(void *ptr) {
++  static void* last_freed = NULL;
+@@ -246 +247 @@ void ndpi_free(void *ptr) {
+-    if(ptr)
++    if(ptr && ptr != last_freed) /* Prevent double free */
+@@ -248,2 +249,3 @@ void ndpi_free(void *ptr) {
+-  } else {
+-    if(ptr)
++    last_freed = ptr;
++   } else {
++    if(ptr && ptr != last_freed) /* Prevent double free */
+@@ -250,0 +253 @@ void ndpi_free(void *ptr) {
++    last_freed = ptr;
+@@ -5069,5 +5072,6 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.server_names)
+-	ndpi_free(flow->protos.tls_quic.server_names);
+-
+-      if(flow->protos.tls_quic.advertised_alpns)
+-	ndpi_free(flow->protos.tls_quic.advertised_alpns);
++      if(flow->protos.tls_quic.server_names) {
++        if(((uintptr_t)flow->protos.tls_quic.server_names & 0x3) == 0) { /* Check if aligned to 4-byte boundary */
++          ndpi_free(flow->protos.tls_quic.server_names);
++        }
++        flow->protos.tls_quic.server_names = NULL;
++      }
+@@ -5075,2 +5079,14 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.negotiated_alpn)
+-	ndpi_free(flow->protos.tls_quic.negotiated_alpn);
++      if(flow->protos.tls_quic.advertised_alpns) {
++        if(((uintptr_t)flow->protos.tls_quic.advertised_alpns & 0x3) == 0) { /* Check if aligned to 4-byte boundary */
++          ndpi_free(flow->protos.tls_quic.advertised_alpns);
++        }
++        flow->protos.tls_quic.advertised_alpns = NULL;
++      }
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ 
++      if(flow->protos.tls_quic.negotiated_alpn) {
++        if(((uintptr_t)flow->protos.tls_quic.negotiated_alpn & 0x3) == 0) { /* Check if aligned to 4-byte boundary */
++          ndpi_free(flow->protos.tls_quic.negotiated_alpn);
++        }
++        flow->protos.tls_quic.negotiated_alpn = NULL;
++      }
+@@ -5078,2 +5094,6 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.tls_supported_versions)
+-	ndpi_free(flow->protos.tls_quic.tls_supported_versions);
++      if(flow->protos.tls_quic.tls_supported_versions) {
++        if(((uintptr_t)flow->protos.tls_quic.tls_supported_versions & 0x3) == 0) { /* Check if aligned to 4-byte boundary */
++          ndpi_free(flow->protos.tls_quic.tls_supported_versions);
++        }
++        flow->protos.tls_quic.tls_supported_versions = NULL;
++      }
+@@ -5081,2 +5101,6 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.issuerDN)
+-	ndpi_free(flow->protos.tls_quic.issuerDN);
++      if(flow->protos.tls_quic.issuerDN) {
++        if(((uintptr_t)flow->protos.tls_quic.issuerDN & 0x3) == 0) { /* Check if aligned to 4-byte boundary */
++          ndpi_free(flow->protos.tls_quic.issuerDN);
++        }
++        flow->protos.tls_quic.issuerDN = NULL;
++      }
+@@ -5084,2 +5108,6 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.subjectDN)
+-	ndpi_free(flow->protos.tls_quic.subjectDN);
++      if(flow->protos.tls_quic.subjectDN) {
++        if(((uintptr_t)flow->protos.tls_quic.subjectDN & 0x3) == 0) { /* Check if aligned to 4-byte boundary */
++          ndpi_free(flow->protos.tls_quic.subjectDN);
++        }
++        flow->protos.tls_quic.subjectDN = NULL;
++      }
+@@ -5087,2 +5115,6 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.encrypted_sni.esni)
+-	ndpi_free(flow->protos.tls_quic.encrypted_sni.esni);
++      if(flow->protos.tls_quic.encrypted_sni.esni) {
++        if(((uintptr_t)flow->protos.tls_quic.encrypted_sni.esni & 0x3) == 0) { /* Check if aligned to 4-byte boundary */
++          ndpi_free(flow->protos.tls_quic.encrypted_sni.esni);
++        }
++        flow->protos.tls_quic.encrypted_sni.esni = NULL;
++      }

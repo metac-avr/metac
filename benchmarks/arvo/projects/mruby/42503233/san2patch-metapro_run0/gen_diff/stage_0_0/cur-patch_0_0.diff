@@ -1,0 +1,20 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..32f384d0d 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -201,0 +202,4 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++  /* Ensure we don't exceed stack boundaries after extension */
++  if (mrb->c->ci->stack + room > mrb->c->stend) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
+@@ -515,2 +519,8 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++      if (argc > 0) {
++        mrb_int stack_avail = mrb->c->stend - (ci->stack + 1);
++        if (stack_avail >= argc) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in funcall");
++        }
++      }

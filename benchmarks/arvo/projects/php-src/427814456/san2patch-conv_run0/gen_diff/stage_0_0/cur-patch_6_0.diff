@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..9fa23f2905a 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1446,3 +1446,8 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
+-						ZVAL_COPY_VALUE(&tmp, data);
+-						ZVAL_UNDEF(data);
+-						ht->pDestructor(&tmp);
++// Fixed CWE-416: Use After Free - Added reference count check before copying value
++                        if (Z_REFCOUNTED_P(data) && GC_REFCOUNT(Z_COUNTED_P(data)) > 1) {
++                            ZVAL_COPY_VALUE(&tmp, data);
++                            ZVAL_UNDEF(data);
++                            ht->pDestructor(&tmp);
++                        } else {
++                            ZVAL_UNDEF(data);
++                        }
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..86cffc26a1e 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (p == NULL) return;
+@@ -67 +68,3 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
++	if (str != NULL) {
++		efree(str);
++	}

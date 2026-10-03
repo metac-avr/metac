@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..18cc79a1ea9 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -64 +64 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
++ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+@@ -74 +74,3 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++	if (ref && Z_TYPE(ref->val) != IS_NULL) {
++		i_zval_ptr_dtor(&ref->val);	
++	}
+@@ -84,2 +86 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
+-}
++	i_zval_ptr_dtor(zval_ptr);}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index fbad44d2f2c..3b0c8239b63 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3880 +3880,3 @@ static zend_always_inline void i_free_compiled_variables(zend_execute_data *exec
+-		i_zval_ptr_dtor(cv);
++		if (Z_REFCOUNTED_P(cv) && Z_PTR_P(cv) != NULL && Z_TYPE_P(cv) != IS_NULL) {
++			i_zval_ptr_dtor(cv);
++		}

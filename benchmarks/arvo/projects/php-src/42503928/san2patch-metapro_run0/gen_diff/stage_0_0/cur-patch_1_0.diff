@@ -1,0 +1,17 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..09546edfff5 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -353,0 +354 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
++			EG(user_error_handler) = (zval){0}; /* Explicitly zero the structure to prevent UAF */
+@@ -358,0 +360 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
++			EG(user_exception_handler) = (zval){0}; /* Explicitly zero the structure to prevent UAF */
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..96fa7623791 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// Fixed: Clear potential dangling references before deallocation
++		zend_clear_fiber_context(object);
++ 		ptr = ((char*)object) - object->handlers->offset;

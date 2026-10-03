@@ -1,0 +1,35 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..7026b3ff0 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -690 +690 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -694 +694,4 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super) {
++        gc->gray_list = (struct RBasic*)c->super;
++        gc->gray_list->gcnext = NULL;
++      }
+@@ -698 +701,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-416: Use After Free
++   case MRB_TT_OBJECT:
+@@ -707,2 +711,8 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper) {
++        gc->gray_list = (struct RBasic*)p->upper;
++        gc->gray_list->gcnext = NULL;
++      }
++      if (p->e.env) {
++        gc->gray_list = (struct RBasic*)p->e.env;
++        gc->gray_list->gcnext = NULL;
++      }
+@@ -711 +720,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -1202,0 +1212 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Move unlinking operations before freeing to avoid UAF */
+@@ -1204,0 +1215,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Zero out page contents before freeing */
++      memset(page, 0, sizeof(mrb_heap_page));

@@ -1,0 +1,24 @@
+diff --git a/buf.c b/buf.c
+index 9dc9400f..7d121745 100644
+--- a/buf.c
++++ b/buf.c
+@@ -442 +442,2 @@ xmlBufGrow(xmlBufPtr buf, int len) {
+-    if (buf->error != 0)
++    if (buf->error != 0) {
++        if (buf->content != NULL) buf->content = NULL;
+@@ -443,0 +445 @@ xmlBufGrow(xmlBufPtr buf, int len) {
++    }
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..d7265f6c 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -4884 +4884,8 @@ htmlParseDocument(htmlParserCtxtPtr ctxt) {
+-     * autoclose
++     * Re-validate buffer pointer after parsing to prevent use-after-free
++     */
++    if (ctxt->input && ctxt->input->buf && 
++        ctxt->input->buf->buffer == NULL) return(-1);
++    
++    /*
++// FIXME: Crash CWE-416: Use After Free
++      * autoclose

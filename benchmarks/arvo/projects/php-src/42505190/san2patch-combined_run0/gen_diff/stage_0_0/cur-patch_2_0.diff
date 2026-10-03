@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..c8efdfbf012 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -543,4 +543,4 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
+-#define IS_PTR						13
+-#define IS_ALIAS_PTR				14
+-#define _IS_ERROR					15
++#define IS_INDIRECT                 12
++#define IS_PTR                      13
++#define IS_ALIAS_PTR                14
++#define _IS_ERROR                   15
+@@ -549,3 +549,4 @@ struct _zend_ast_ref {
+-#define _IS_BOOL					18
+-#define _IS_NUMBER					19
+-
++#define _IS_BOOL                    18
++#define _IS_NUMBER                  19
++// Fixed CWE-416: Use After Free - Defensive programming approach
++ 
+@@ -553 +554,4 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-	return pz->u1.v.type;
++	if (pz != NULL) {
++		return pz->u1.v.type;
++	}
++	return IS_NULL;
+@@ -562,3 +566,2 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
+-
++#define Z_TYPE(zval)                zval_get_type(&(zval))
++#define Z_TYPE_P(zval_p)            Z_TYPE(*(zval_p))
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..1bc0d470ca6 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1646 +1646 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_deprecated_function(const zend_functi
+-			ZSTR_VAL(fbc->common.scope->name),
++ZSTR_VAL(fbc->common.scope->name),
+@@ -1654 +1654,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_deprecated_function(const zend_functi
+-ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++// Fixed: Crash CWE-416: Use After Free - Added memory barrier
++ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
+@@ -1666,2 +1667 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
+-	/* Illegal offset assignment */
+-	if (UNEXPECTED(EG(exception) != NULL)) {
++	/* Illegal offset assignment */	if (UNEXPECTED(EG(exception) != NULL)) {

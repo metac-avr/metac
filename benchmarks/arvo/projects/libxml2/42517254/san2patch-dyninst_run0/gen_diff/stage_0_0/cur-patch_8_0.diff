@@ -1,0 +1,40 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..29b0882b 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1160 +1160,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (set->nodeTab[i] == NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 		if (set->nodeTab[i] == NULL)
+@@ -1214,9 +1215,12 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		xmlNodePtr current_node = set->nodeTab[i];
++		if (current_node != NULL) {
++		    if (last == NULL)
++		        list = last = xmlXIncludeCopyNode(ctxt, target, source,
++			                              current_node);
++		    else {
++		        xmlAddNextSibling(last,
++			        xmlXIncludeCopyNode(ctxt, target, source,
++				                current_node));
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2275 +2279,3 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-416: Use After Free
++          */
++	/* Prevent use-after-free by ensuring node is not accessed after unlinking */
+@@ -2276,0 +2283,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	/* Clear pointers to prevent accidental access */
++	cur->next = NULL;
++	cur->prev = NULL;
++	cur->parent = NULL;

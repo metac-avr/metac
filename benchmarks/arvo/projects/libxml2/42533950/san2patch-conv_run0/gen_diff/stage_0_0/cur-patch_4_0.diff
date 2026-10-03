@@ -1,0 +1,40 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..8e066f9a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4048 +4048,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-xmlAttrPtr
++// Fixed CWE-416: Use After Free - check for valid namespace reference
++ xmlAttrPtr
+@@ -4050 +4051,14 @@ xmlCopyProp(xmlNodePtr target, xmlAttrPtr cur) {
+-	return xmlCopyPropInternal(NULL, target, cur);
++    if (cur == NULL)
++        return NULL;
++        
++    /* Check if the namespace pointer is valid before proceeding */
++    if (cur->ns != NULL) {
++        /* Attempt to access namespace safely - if this fails, namespace is invalid */
++        xmlChar* test_href = cur->ns->href;
++        if (test_href == NULL && cur->ns->prefix == NULL) {
++            /* Likely a freed namespace structure, avoid use-after-free */
++            return NULL;
++        }
++    }
++    
++    return xmlCopyPropInternal(NULL, target, cur);
+@@ -4060,2 +4074 @@ xmlCopyProp(xmlNodePtr target, xmlAttrPtr cur) {
+- * set the attributes on the target element.
+- *
++ * set the attributes on the target element. *
+@@ -4070 +4083 @@ xmlCopyPropList(xmlNodePtr target, xmlAttrPtr cur) {
+-        return(NULL);
++         return(NULL);
+@@ -4071,0 +4085,8 @@ xmlCopyPropList(xmlNodePtr target, xmlAttrPtr cur) {
++        /* Validate namespace before copying to prevent use-after-free */
++        if (cur->ns != NULL) {
++            if (((char*)cur->ns->href != NULL && strlen((char*)cur->ns->href) == 0) || 
++                ((char*)cur->ns->prefix != NULL && strlen((char*)cur->ns->prefix) == 0)) {
++                cur = cur->next;
++                continue;
++            }
++        }

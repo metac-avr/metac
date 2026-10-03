@@ -1,0 +1,27 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..2433e5c461 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2046 +2046,4 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-        write_frame_8(s, tile, picture, 8);
++        int width = tile->comp[0].x1 - tile->comp[0].x0;
++        int height = tile->comp[0].y1 - tile->comp[0].y0;
++        if (width > 0 && height > 0 && width <= picture->width && height <= picture->height)
++            write_frame_8(s, tile, picture, 8);
+@@ -2053 +2056,4 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-        write_frame_16(s, tile, picture, precision);
++        int width = tile->comp[0].x1 - tile->comp[0].x0;
++        int height = tile->comp[0].y1 - tile->comp[0].y0;
++        if (width > 0 && height > 0 && width <= picture->width && height <= picture->height)
++            write_frame_16(s, tile, picture, precision);
+@@ -2498,0 +2505,10 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
++     }
++
++    // Check for valid buffer size before processing tiles
++    if (s->image_width > 0 && s->image_height > 0) {
++        int64_t total_pixels = (int64_t)s->image_width * s->image_height;
++        if (total_pixels > INT_MAX / 4) {  // Assuming max 4 bytes per pixel
++            av_log(avctx, AV_LOG_ERROR, "Image dimensions too large\n");
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }

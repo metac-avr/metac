@@ -1,0 +1,23 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..de081ed0 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1885 +1885,2 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-void
++// FIXME: Crash CWE-416: Use After Free
++ void
+@@ -1887 +1888,3 @@ xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++    if (table != NULL) {
++        xmlHashFree(table, xmlFreeAttributeTableEntry);
++    }
+@@ -1897,2 +1900 @@ xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+- * Returns the new xmlAttributePtr or NULL in case of error.
+- */
++ * Returns the new xmlAttributePtr or NULL in case of error. */
+@@ -6225 +6227,4 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                    /* Check if attribute declaration is still valid before validation */
++                    if (attr->atype != NULL) {
++                        ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                    }

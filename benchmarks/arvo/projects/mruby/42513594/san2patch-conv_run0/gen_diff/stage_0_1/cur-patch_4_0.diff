@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..d54eec29a 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -115,2 +115,2 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
+-  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE, sizeof(mrb_value));
++  /* Allocate stack with safety margin */
++  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE + 1, sizeof(mrb_value));
+@@ -117,0 +118,3 @@ stack_init(mrb_state *mrb)
++  
++  /* Validate stack allocation */
++  mrb_assert(c->stbase != NULL);
+@@ -119 +122 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  /* Allocate call info */
+@@ -1707 +1710,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1709,0 +1714,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      
++      /* Validate argument index before use to prevent buffer overflow */
++      if (a < 0 || &regs[a] >= mrb->c->stend) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument index");
++      }

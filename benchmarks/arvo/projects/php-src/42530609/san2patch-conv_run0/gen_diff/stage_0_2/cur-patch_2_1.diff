@@ -1,0 +1,40 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..1fab50c6a34 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272 +3272,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_USER_OPCODE_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
++{
++	USE_OPLINE
++
++		zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+@@ -3275 +3279,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-	}
++		// FIXME: Crash CWE-416: Use After Free
++		// EX_VAR(throw_op->result.var) = NULL; // Removed due to build error - expression not assignable
++  	}
+@@ -3278,6 +3284 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-}
+-
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_USER_OPCODE_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	int ret;
++}	int ret;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..20c221b2434 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,3 +202,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
++// FIXME: Crash CWE-416: Use After Free
++ 		if (object && GC_TYPE(object) != IS_NULL) {
++			GC_REMOVE_FROM_BUFFER(object);
++			ptr = ((char*)object) - object->handlers->offset;
++			efree(ptr);
++		} else {
++			GC_REMOVE_FROM_BUFFER(object);
++		}

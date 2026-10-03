@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index f2f538a2c2c..54dd7250d75 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1340 +1340,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1343,0 +1345,2 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	/* Add validation check to prevent use-after-free */
++	if (!p || (p->u.type_info & GC_DTOR_CHECKED)) return 0;
+@@ -1348,0 +1352,2 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
++	/* Add validation check to prevent use-after-free */
++	if (!p || (p->u.type_info & GC_DTOR_CHECKED)) return 0;
+@@ -1352 +1356,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..6a268e240e4 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// FIXME: Crash CWE-416: Use After Free
++ 		// Validate object is still valid before accessing it
++		if (IS_OBJ_VALID(EG(objects_store).object_buckets[handle])) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}

@@ -1,0 +1,21 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 1f24f47ef..8ba40b924 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -6971 +6971,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
+@@ -6973 +6974,11 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		    rc = snprintf(&options_fp[options_fp_idx], sizeof(options_fp)-options_fp_idx, "%02x", options[j]);
++		    int avail;
++		    if(options_fp_idx >= (int)sizeof(options_fp))
++		      break;
++		    avail = (int)sizeof(options_fp) - options_fp_idx;
++		    if(avail < 3)
++		      break;
++		    rc = snprintf(&options_fp[options_fp_idx], avail, "%02x", options[j]);
++		    if(rc >= avail || rc < 0) {
++		      options_fp[options_fp_idx] = '\0';
++		      break;
++		    }

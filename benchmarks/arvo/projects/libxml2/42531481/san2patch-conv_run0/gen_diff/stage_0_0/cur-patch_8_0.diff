@@ -1,0 +1,23 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..26780869 100644
+--- a/tree.c
++++ b/tree.c
+@@ -792 +792,2 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
++// FIXME: Crash CWE-416: Use After Free
++     if (cur->href != NULL) xmlFree((char *) cur->href);
+@@ -794,0 +796 @@ xmlFreeNs(xmlNsPtr cur) {
++    /* Memory freed - caller should handle pointer invalidation */
+@@ -804,2 +806 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;
+diff --git a/parser.c b/parser.c
+index cae2b7fd..fe15003d 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7372,0 +7373,4 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++		    if (cur->nsDef != NULL && cur->nsDef->_private == NULL) {
++		        xmlNsPtr temp_ns = cur->nsDef;
++		        cur->nsDef = NULL;
++		    }

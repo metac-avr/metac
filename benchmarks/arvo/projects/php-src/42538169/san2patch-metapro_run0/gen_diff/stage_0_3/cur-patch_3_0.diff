@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_iterators.c b/Zend/zend_iterators.c
+index f67033b1116..b0229a97af3 100644
+--- a/Zend/zend_iterators.c
++++ b/Zend/zend_iterators.c
+@@ -56 +55,0 @@ static const zend_object_handlers iterator_object_handlers = {
+-
+@@ -64 +63,2 @@ static void iter_wrapper_free(zend_object *object)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -66 +66,3 @@ static void iter_wrapper_free(zend_object *object)
+-	iter->funcs->dtor(iter);
++	if (iter && iter->funcs && iter->funcs->dtor) {
++		iter->funcs->dtor(iter);
++	}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 8f012868dda..258491bbbc2 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1345,0 +1346,6 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p == NULL) {
++		return 0;
++	}
++	if (p->refcount == 0) {
++		return 0;
++	}

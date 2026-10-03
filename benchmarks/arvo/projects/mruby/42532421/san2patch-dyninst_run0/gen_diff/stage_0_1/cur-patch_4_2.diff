@@ -1,0 +1,37 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..416cd2f3e 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1237 +1237,5 @@ mrb_str_aref(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen)
+-      return str_subseq(mrb, str, beg, len);
++      if (beg >= 0 && len >= 0 && beg <= RSTRING_LEN(str) && beg + len <= RSTRING_LEN(str)) {
++        return str_subseq(mrb, str, beg, len);
++      } else {
++        return mrb_nil_value();
++      }
+@@ -1239,6 +1243,6 @@ mrb_str_aref(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen)
+-      str = str_substr(mrb, str, beg, len);
+-      if (mrb_undef_p(alen) && !mrb_nil_p(str) && RSTRING_LEN(str) == 0) return mrb_nil_value();
+-      return str;
+-    case STR_BYTE_RANGE_CORRECTED:
+-      if (mrb_string_p(indx)) {
+-        return mrb_str_dup(mrb, indx);
++      if (beg >= 0 && len >= 0 && beg <= RSTRING_LEN(str) && beg + len <= RSTRING_LEN(str)) {
++        str = str_substr(mrb, str, beg, len);
++        if (mrb_undef_p(alen) && !mrb_nil_p(str) && RSTRING_LEN(str) == 0) return mrb_nil_value();
++        return str;
++      } else {
++        return mrb_nil_value();
+@@ -1246,2 +1250,10 @@ mrb_str_aref(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen)
+-      else {
+-        return mrb_str_byte_subseq(mrb, str, beg, len);
++    case STR_BYTE_RANGE_CORRECTED:
++      if (beg >= 0 && len >= 0 && beg <= RSTRING_LEN(str) && beg + len <= RSTRING_LEN(str)) {
++        if (mrb_string_p(indx)) {
++          return mrb_str_dup(mrb, indx);
++        }
++        else {
++          return mrb_str_byte_subseq(mrb, str, beg, len);
++        }
++      } else {
++        return mrb_nil_value();

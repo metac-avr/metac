@@ -1,0 +1,68 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 0f59ca608..df130ab53 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -4906,18 +4906,33 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-       flow_is_proto(flow, NDPI_PROTOCOL_MAIL_IMAPS)) {
+-      if(flow->protos.tls_quic.server_names)
+-	ndpi_free(flow->protos.tls_quic.server_names);
+-
+-      if(flow->protos.tls_quic.alpn)
+-	ndpi_free(flow->protos.tls_quic.alpn);
+-
+-      if(flow->protos.tls_quic.tls_supported_versions)
+-	ndpi_free(flow->protos.tls_quic.tls_supported_versions);
+-
+-      if(flow->protos.tls_quic.issuerDN)
+-	ndpi_free(flow->protos.tls_quic.issuerDN);
+-
+-      if(flow->protos.tls_quic.subjectDN)
+-	ndpi_free(flow->protos.tls_quic.subjectDN);
+-
+-      if(flow->protos.tls_quic.encrypted_sni.esni)
+-	ndpi_free(flow->protos.tls_quic.encrypted_sni.esni);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++        flow_is_proto(flow, NDPI_PROTOCOL_MAIL_IMAPS)) {
++      void *tmp_ptr;
++      
++      tmp_ptr = flow->protos.tls_quic.server_names;
++      flow->protos.tls_quic.server_names = NULL;
++      if(tmp_ptr)
++	ndpi_free(tmp_ptr);
++
++      tmp_ptr = flow->protos.tls_quic.alpn;
++      flow->protos.tls_quic.alpn = NULL;
++      if(tmp_ptr)
++	ndpi_free(tmp_ptr);
++
++      tmp_ptr = flow->protos.tls_quic.tls_supported_versions;
++      flow->protos.tls_quic.tls_supported_versions = NULL;
++      if(tmp_ptr)
++	ndpi_free(tmp_ptr);
++
++      tmp_ptr = flow->protos.tls_quic.issuerDN;
++      flow->protos.tls_quic.issuerDN = NULL;
++      if(tmp_ptr)
++	ndpi_free(tmp_ptr);
++
++      tmp_ptr = flow->protos.tls_quic.subjectDN;
++      flow->protos.tls_quic.subjectDN = NULL;
++      if(tmp_ptr)
++	ndpi_free(tmp_ptr);
++
++      tmp_ptr = flow->protos.tls_quic.encrypted_sni.esni;
++      flow->protos.tls_quic.encrypted_sni.esni = NULL;
++      if(tmp_ptr)
++	ndpi_free(tmp_ptr);
+@@ -8059 +8073,0 @@ int ndpi_match_impossible_bigram(const char *str) {
+-
+@@ -8067,2 +8081,3 @@ int ndpi_match_trigram(const char *str) {
+-void ndpi_free_flow(struct ndpi_flow_struct *flow) {
+-  if(flow) {
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ void ndpi_free_flow(struct ndpi_flow_struct *flow) {
++  if(flow != NULL) {
+@@ -8070,0 +8086 @@ void ndpi_free_flow(struct ndpi_flow_struct *flow) {
++    flow = NULL;
+@@ -8079 +8094,0 @@ char *ndpi_revision() {
+-

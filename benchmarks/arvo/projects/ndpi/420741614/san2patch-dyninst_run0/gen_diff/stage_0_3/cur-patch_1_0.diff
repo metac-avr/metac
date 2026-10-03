@@ -1,0 +1,53 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index dcdde6966..e142a7bf7 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -7133 +7133,3 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", kind);
++		  size_t remaining_space = sizeof(options_fp) - options_fp_len;
++		  if(remaining_space > 0) { 
++		    rc = snprintf(&options_fp[options_fp_len], remaining_space, "%02x", kind);
+@@ -7135,2 +7137,4 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp)))
+-		    break;
++		    if((rc < 0) || (rc >= remaining_space)) {
++		      if(rc >= remaining_space) options_fp[sizeof(options_fp)-1] = '\0';
++		      break;
++		    }
+@@ -7138 +7142,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  options_fp_len += rc;
++  		    options_fp_len += rc;
++		  } else break;
+@@ -7140 +7145,3 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&fingerprint[fp_idx], sizeof(fingerprint)-fp_idx, "%s%u", (i > 0) ? "-" : "", kind);
++		  size_t remaining_space = sizeof(fingerprint) - fp_idx;
++		  if(remaining_space > 0) { 
++		    rc = snprintf(&fingerprint[fp_idx], remaining_space, "%s%u", (i > 0) ? "-" : "", kind);
+@@ -7142,2 +7149,4 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(fp_idx + rc) == sizeof(fingerprint)))
+-		    break;
++		    if((rc < 0) || (rc >= remaining_space)) {
++		      if(rc >= remaining_space) fingerprint[sizeof(fingerprint)-1] = '\0';
++		      break;
++		    }
+@@ -7145 +7154,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  fp_idx += rc;
++		    fp_idx += rc;
++		  } else break;
+@@ -7196,5 +7206,11 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-			rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", options[j]);
+-			if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp))) break;
+-
+-			options_fp_len += rc;
+-			j++, opt_len--;
++		        size_t remaining_space = sizeof(options_fp) - options_fp_len;
++		        if(remaining_space > 0) {
++		          rc = snprintf(&options_fp[options_fp_len], remaining_space, "%02x", options[j]);
++		          if((rc < 0) || (rc >= remaining_space)) {
++		            if(rc >= remaining_space) options_fp[sizeof(options_fp)-1] = '\0';
++		            break;
++		          }
++
++		          options_fp_len += rc;
++		          j++, opt_len--;
++		        } else break;

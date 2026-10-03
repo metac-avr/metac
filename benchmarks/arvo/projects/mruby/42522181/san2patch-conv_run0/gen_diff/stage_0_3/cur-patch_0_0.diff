@@ -1,0 +1,25 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..21c2b3775 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1096,3 +1096,7 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc->gray_list = obj->gcnext;
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj->tt != MRB_TT_FREE) {  // Check if object is still valid before processing
++      gc->gray_list = obj->gcnext;
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    } else {
++      gc->gray_list = obj->gcnext;  // Skip freed objects
++    }
+@@ -1203,3 +1207,6 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Add safety check to prevent use-after-free during incremental GC */
++      if (!gc->generational || !is_major_gc(gc)) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }

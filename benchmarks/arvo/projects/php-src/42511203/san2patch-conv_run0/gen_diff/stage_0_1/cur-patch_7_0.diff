@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..8c92f97e9f3 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -27158 +27158,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
+-			   UNEXPECTED(!Z_ISREF_P(value_ptr))) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++  			   UNEXPECTED(!Z_ISREF_P(value_ptr))) {
+@@ -27160,2 +27161,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
+-		variable_ptr = zend_wrong_assign_to_variable_reference(
+-			variable_ptr, value_ptr OPLINE_CC EXECUTE_DATA_CC);
++		if (value_ptr != NULL) {
++			variable_ptr = zend_wrong_assign_to_variable_reference(
++				variable_ptr, value_ptr OPLINE_CC EXECUTE_DATA_CC);
++		} else {
++			variable_ptr = &EG(uninitialized_zval);
++		}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..8338f9efd33 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p) return;
++	if (GC_TYPE(p) > IS_CONSTANT_AST) return;

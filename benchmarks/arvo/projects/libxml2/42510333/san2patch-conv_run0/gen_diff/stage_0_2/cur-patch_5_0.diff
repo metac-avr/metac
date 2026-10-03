@@ -1,0 +1,20 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..3b027c43 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1985 +1985,6 @@ xmlXIncludeLoadFallback(xmlXIncludeCtxtPtr ctxt, xmlNodePtr fallback, int nr) {
+-	xmlXIncludeFreeContext(newctxt);
++	/* Fix: Clear pointer reference before freeing context */
++	{
++	    xmlXIncludeCtxtPtr free_ctxt = newctxt;
++	    newctxt = NULL;
++	    xmlXIncludeFreeContext(free_ctxt);
++	}
+@@ -2218 +2223,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		       "XInclude error: would result in multiple root nodes\n",
++// FIXME: Crash CWE-416: Use After Free
++ 		       "XInclude error: would result in multiple root nodes\n",
+@@ -2220,0 +2227 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	    ctxt->incTab[nr]->inc = NULL;  /* Clear the reference */
+@@ -2258,0 +2266 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	    ctxt->incTab[nr]->inc = NULL;  /* Clear the reference */

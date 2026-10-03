@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..10450f85a6d 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -39 +39 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++static void zend_reference_destroy(zend_reference *ref)
+@@ -41,7 +41,6 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
+-			gc_check_possible_root(ref);
+-		}
++	i_zval_ptr_dtor(&ref->val);
++	if (EXPECTED(ref != NULL) && EXPECTED(!GC_IS_RECURSIVE(ref))) {
++		efree_size(ref, sizeof(zend_reference));
++	} else if (ref) {
++		GC_REMOVE_FROM_BUFFER(ref);
++		efree(ref);
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..6fc8d13aa81 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -75 +75,6 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	efree_size(ref, sizeof(zend_reference));
++	if (EXPECTED(ref != NULL) && EXPECTED(!GC_IS_RECURSIVE(ref))) {
++		efree_size(ref, sizeof(zend_reference));
++	} else if (ref) {
++		zend_gc_remove_from_buffer(ref);
++		efree(ref);
++	}
+@@ -94,2 +99 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

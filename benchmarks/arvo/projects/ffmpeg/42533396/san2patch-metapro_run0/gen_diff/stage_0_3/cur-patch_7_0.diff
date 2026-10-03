@@ -1,0 +1,40 @@
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..e8541d5245 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -524 +524 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+-
++ 
+@@ -526 +526,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+-        ret = av_channel_layout_custom_init(ch_layout, nb_channels);
++        // Fix: Ensure num_descr is within safe bounds before allocation
++        if (num_descr < 0 || num_descr > 64) {
++            av_log(s, AV_LOG_ERROR, "invalid number of channel descriptors: %d\n", num_descr);
++            ret = AVERROR_INVALIDDATA;
++            goto out;
++        }
++        ret = av_channel_layout_custom_init(ch_layout, num_descr);
+diff --git a/libavcodec/codec_par.c b/libavcodec/codec_par.c
+index abaac63841..804b341c93 100644
+--- a/libavcodec/codec_par.c
++++ b/libavcodec/codec_par.c
+@@ -271 +271 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        } else {
++         } else {
+@@ -273 +273,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++        // Validate channel layout data size before copy to prevent out-of-bounds access
++        if (par->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM) {
++            size_t expected_size = par->ch_layout.nb_channels * sizeof(AVChannelCustom);
++            if (expected_size > 0 && expected_size <= 32) {
++                ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++            } else {
++                // Handle invalid custom channel layout sizes safely
++                av_channel_layout_uninit(&codec->ch_layout);
++                codec->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
++                codec->ch_layout.nb_channels = par->ch_layout.nb_channels;
++                ret = 0;
++            }
++        } else {
++            ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++        }

@@ -1,0 +1,24 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..5c8522f8 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1885 +1885,2 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-void
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ void
+@@ -1887 +1888,3 @@ xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++    if (table) {
++        xmlHashFree(table, xmlFreeAttributeTableEntry);
++    }
+@@ -6220 +6223,4 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                value = xmlNodeListGetString(doc, attr->children, 0);
++                xmlAttrPtr safe_attr = attr;  /* Store current attr pointer */
++                attr = attr->next;  /* Advance before potential free */
++                
++                value = xmlNodeListGetString(doc, safe_attr->children, 0);
+@@ -6225 +6231 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, safe_attr, value);
+@@ -6228 +6233,0 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                attr= attr->next;

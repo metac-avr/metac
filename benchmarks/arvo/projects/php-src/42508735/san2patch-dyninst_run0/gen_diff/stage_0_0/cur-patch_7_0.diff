@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..a90e80f9241 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -207 +207 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
++	if (zv != NULL && Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 6e809c87341..7e4334444fe 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2150 +2150,5 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++// FIXME: Crash CWE-416: Use After Free
++ 			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++
++			/* Validate zval before use to prevent use-after-free */
++			if (UNEXPECTED(Z_REFCOUNT_P(&p->val) == 0)) continue;

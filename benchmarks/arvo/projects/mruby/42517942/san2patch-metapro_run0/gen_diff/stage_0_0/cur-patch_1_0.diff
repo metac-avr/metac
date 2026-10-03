@@ -1,0 +1,24 @@
+diff --git a/src/string.c b/src/string.c
+index 1b5aecff2..28af4d466 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -71 +71,3 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
++  if (len < 0 || len >= sizeof(s->as.ary)) return NULL;
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..e2df74d62 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -817,2 +817,8 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-  if (count == -1)
+-    count = slen * 2;
++  if (count == -1) {
++    // Use safe arithmetic to prevent overflow
++    if (slen > 0 && slen > (INT_MAX - 1) / 2) {
++      count = INT_MAX;
++    } else {
++      count = slen * 2;
++    }
++  }

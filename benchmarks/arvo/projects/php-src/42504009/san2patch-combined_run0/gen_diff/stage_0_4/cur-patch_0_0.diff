@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..e142610d3b2 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1026 +1026,2 @@ static zend_never_inline void ZEND_FASTCALL add_function_array(zval *result, zva
+-static zend_always_inline zend_result add_function_fast(zval *result, zval *op1, zval *op2) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1, zval *op2) /* {{{ */
+@@ -1028 +1029,17 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-	zend_uchar type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));
++	zend_uchar type_pair;
++	
++	/* Check if pointers are valid before accessing */
++	if (UNEXPECTED(!op1 || !op2)) {
++		return FAILURE;
++	}
++	
++	/* Validate zval structures before accessing their types */
++	if (UNEXPECTED(Z_TYPE_P(op1) >= IS_CONSTANT_AST)) {
++		return FAILURE;
++	}
++	
++	if (UNEXPECTED(Z_TYPE_P(op2) >= IS_CONSTANT_AST)) {
++		return FAILURE;
++	}
++	
++	type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));
+@@ -1051,0 +1069,4 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
++	/* Fixed CWE-825: Expired Pointer Dereference - Added validation before dereferencing */
++	if (!op1 || !op2) {
++		return FAILURE;
++	}

@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..c4768013d10 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1779,0 +1780,12 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
++{
++	IS_CONSISTENT(ht);
++
++	if (HT_FLAGS(ht) & HASH_FLAG_PACKED) {
++		if (HT_IS_WITHOUT_HOLES(ht)) {
++			zend_hash_packed_clean(ht);
++		} else {
++			zend_hash_packed_destroy(ht);
++		}
++	} else {
++		zend_hash_destroy_ex(ht);
+@@ -1786,6 +1798,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	IS_CONSISTENT(ht);
+-	HT_ASSERT_RC1(ht);
++	/* Fix CWE-416: Set pointer to NULL after freeing to prevent use-after-free */
++	ht = NULL;
++}	HT_ASSERT_RC1(ht);

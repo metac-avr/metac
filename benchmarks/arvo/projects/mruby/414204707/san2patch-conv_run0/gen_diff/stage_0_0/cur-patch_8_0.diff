@@ -1,0 +1,34 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..a99edf6d0 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -741,3 +741,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-      for (i=0; i<e; i++) {
+-        mrb_gc_mark_value(mrb, p[i]);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
++      if (e > 0 && p != NULL) {
++        for (i=0; i<e; i++) {
++          mrb_gc_mark_value(mrb, p[i]);
++        }
+@@ -779 +781,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +789,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -791,0 +795,9 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  /* Validate object pointer against heap allocation ranges */
++  struct mrb_heap *heap = mrb->gc.heaps;
++  while (heap) {
++    if ((char*)obj >= (char*)heap->start && (char*)obj < (char*)heap->last) break;
++    heap = heap->next;
++  }
++  if (heap == NULL) return;
++  
+@@ -799,2 +811 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:

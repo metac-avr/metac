@@ -1,0 +1,38 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..a4ff975d 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3159,9 +3159,2 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
+- * @ctxt:  an HTML parser context
+- *
+- * parse a CharData section.
+- * if we are within a CDATA section ']]>' marks an end of section.
+- *
+- * [14] CharData ::= [^<&]* - ([^<&]* ']]>' [^<&]*)
+- */
+-
+-static void
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ static void
+@@ -3169,12 +3162,3 @@ htmlParseCharData(htmlParserCtxtPtr ctxt) {
+-    htmlParseCharDataInternal(ctxt, 0);
+-}
+-
+-/**
+- * htmlParseExternalID:
+- * @ctxt:  an HTML parser context
+- * @publicID:  a xmlChar** receiving PubidLiteral
+- *
+- * Parse an External ID or a Public ID
+- *
+- * [75] ExternalID ::= 'SYSTEM' S SystemLiteral
+- *                   | 'PUBLIC' S PubidLiteral S SystemLiteral
++    if ((ctxt != NULL) && (ctxt->input != NULL))
++        htmlParseCharDataInternal(ctxt, 0);
++} *                   | 'PUBLIC' S PubidLiteral S SystemLiteral
+@@ -4710 +4694,4 @@ htmlParseContentInternal(htmlParserCtxtPtr ctxt) {
+-            htmlParseCharData(ctxt);
++            if ((ctxt->input->cur != NULL) && 
++                (ctxt->input->cur < ctxt->input->end)) {
++                htmlParseCharData(ctxt);
++            }

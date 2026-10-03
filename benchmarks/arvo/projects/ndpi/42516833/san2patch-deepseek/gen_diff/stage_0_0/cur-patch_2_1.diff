@@ -1,0 +1,152 @@
+diff --git a/src/lib/protocols/irc.c b/src/lib/protocols/irc.c
+index 367ec86bd..23e77cf52 100644
+--- a/src/lib/protocols/irc.c
++++ b/src/lib/protocols/irc.c
+@@ -396,54 +396,59 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-	  || (memcmp(packet->payload, "NICK ", 5) == 0)
+-	  || (memcmp(packet->payload, "PASS ", 5) == 0)
+-	  || (memcmp(packet->payload, ":", 1) == 0 && ndpi_check_for_NOTICE_or_PRIVMSG(ndpi_struct, flow) != 0)
+-	  || (memcmp(packet->payload, "PONG ", 5) == 0)
+-	  || (memcmp(packet->payload, "PING ", 5) == 0)
+-	  || (memcmp(packet->payload, "JOIN ", 5) == 0)
+-	  || (memcmp(packet->payload, "MODE ", 5) == 0)
+-	  || (memcmp(packet->payload, "NOTICE ", 7) == 0)
+-	  || (memcmp(packet->payload, "PRIVMSG ", 8) == 0)
+-	  || (memcmp(packet->payload, "VERSION ", 8) == 0)) {
+-	char *user = ndpi_strnstr((char*)packet->payload, "USER ", packet->payload_packet_len);
+-
+-	if(user) {
+-	  char buf[32], msg[64], *sp;
+-
+-	  snprintf(buf, sizeof(buf), "%s", &user[5]);
+-	  if((sp = strchr(buf, ' ')) != NULL)
+-	    sp[0] = '\0';
+-	  
+-	  snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
+-	  ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
+-	}
+-	
+-	NDPI_LOG_DBG2(ndpi_struct,
+-		      "USER, NICK, PASS, NOTICE, PRIVMSG one time");
+-	if (flow->l4.tcp.irc_stage == 2) {
+-	  NDPI_LOG_INFO(ndpi_struct, "found irc");
+-	  ndpi_int_irc_add_connection(ndpi_struct, flow, NDPI_CONFIDENCE_DPI);
+-	  flow->l4.tcp.irc_stage = 3;
+-	}
+-	if (flow->l4.tcp.irc_stage == 1) {
+-	  NDPI_LOG_DBG2(ndpi_struct, "second time, stage=2");
+-	  flow->l4.tcp.irc_stage = 2;
+-	}
+-	if (flow->l4.tcp.irc_stage == 0) {
+-	  NDPI_LOG_DBG2(ndpi_struct, "first time, stage=1");
+-	  flow->l4.tcp.irc_stage = 1;
+-	}
+-	/* irc packets can have either windows line breaks (0d0a) or unix line breaks (0a) */
+-	if (packet->payload[packet->payload_packet_len - 2] == 0x0d
+-	    && packet->payload[packet->payload_packet_len - 1] == 0x0a) {
+-	  ndpi_parse_packet_line_info(ndpi_struct, flow);
+-	  if (packet->parsed_lines > 1) {
+-	    NDPI_LOG_DBG2(ndpi_struct, "packet contains more than one line");
+-	    for (c = 1; c < packet->parsed_lines; c++) {
+-	      if (packet->line[c].len > 4 && (memcmp(packet->line[c].ptr, "NICK ", 5) == 0
+-					      || memcmp(packet->line[c].ptr, "USER ", 5) == 0)) {
+-		NDPI_LOG_INFO(ndpi_struct, "found IRC: two icq signal words in the same packet");
+-		ndpi_int_irc_add_connection(ndpi_struct, flow, NDPI_CONFIDENCE_DPI);
+-		flow->l4.tcp.irc_stage = 3;
+-		return;
+-	      }
+-	    }
+-	  }
++  || (memcmp(packet->payload, "NICK ", 5) == 0)
++  || (memcmp(packet->payload, "PASS ", 5) == 0)
++  || (memcmp(packet->payload, ":", 1) == 0 && ndpi_check_for_NOTICE_or_PRIVMSG(ndpi_struct, flow) != 0)
++  || (memcmp(packet->payload, "PONG ", 5) == 0)
++  || (memcmp(packet->payload, "PING ", 5) == 0)
++  || (memcmp(packet->payload, "JOIN ", 5) == 0)
++  || (memcmp(packet->payload, "MODE ", 5) == 0)
++  || (memcmp(packet->payload, "NOTICE ", 7) == 0)
++  || (memcmp(packet->payload, "PRIVMSG ", 8) == 0)
++  || (memcmp(packet->payload, "VERSION ", 8) == 0)) {
++  char *user = ndpi_strnstr((char*)packet->payload, "USER ", packet->payload_packet_len);
++
++  if(user) {
++    int len = packet->payload_packet_len - (user - (const char*)packet->payload);
++    if(len > 5) {
++      char buf[32], msg[64], *sp;
++      int n = len - 5;
++      if(n > (int)sizeof(buf) - 1)
++        n = sizeof(buf) - 1;
++      snprintf(buf, sizeof(buf), "%.*s", n, &user[5]);
++      if((sp = strchr(buf, ' ')) != NULL)
++        sp[0] = '\0';
++  
++      snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
++      ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
++    }
++  }
++  
++  NDPI_LOG_DBG2(ndpi_struct,
++          "USER, NICK, PASS, NOTICE, PRIVMSG one time");
++  if (flow->l4.tcp.irc_stage == 2) {
++    NDPI_LOG_INFO(ndpi_struct, "found irc");
++    ndpi_int_irc_add_connection(ndpi_struct, flow, NDPI_CONFIDENCE_DPI);
++    flow->l4.tcp.irc_stage = 3;
++  }
++  if (flow->l4.tcp.irc_stage == 1) {
++    NDPI_LOG_DBG2(ndpi_struct, "second time, stage=2");
++    flow->l4.tcp.irc_stage = 2;
++  }
++  if (flow->l4.tcp.irc_stage == 0) {
++    NDPI_LOG_DBG2(ndpi_struct, "first time, stage=1");
++    flow->l4.tcp.irc_stage = 1;
++  }
++  /* irc packets can have either windows line breaks (0d0a) or unix line breaks (0a) */
++  if (packet->payload[packet->payload_packet_len - 2] == 0x0d
++      && packet->payload[packet->payload_packet_len - 1] == 0x0a) {
++    ndpi_parse_packet_line_info(ndpi_struct, flow);
++    if (packet->parsed_lines > 1) {
++      NDPI_LOG_DBG2(ndpi_struct, "packet contains more than one line");
++      for (c = 1; c < packet->parsed_lines; c++) {
++        if (packet->line[c].len > 4 && (memcmp(packet->line[c].ptr, "NICK ", 5) == 0
++                        || memcmp(packet->line[c].ptr, "USER ", 5) == 0)) {
++    NDPI_LOG_INFO(ndpi_struct, "found IRC: two icq signal words in the same packet");
++    ndpi_int_irc_add_connection(ndpi_struct, flow, NDPI_CONFIDENCE_DPI);
++    flow->l4.tcp.irc_stage = 3;
++    return;
++        }
++      }
++    }
+@@ -451,16 +456,13 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-	} else if (packet->payload[packet->payload_packet_len - 1] == 0x0a) {
+-	  ndpi_parse_packet_line_info_any(ndpi_struct, flow);
+-	  if (packet->parsed_lines > 1) {
+-	    NDPI_LOG_DBG2(ndpi_struct, "packet contains more than one line");
+-	    for (c = 1; c < packet->parsed_lines; c++) {
+-	      if (packet->line[c].len > 4 && (memcmp(packet->line[c].ptr, "NICK ", 5) == 0
+-					      || memcmp(packet->line[c].ptr, "USER ",
+-							5) == 0)) {
+-		NDPI_LOG_INFO(ndpi_struct, "found IRC: two icq signal words in the same packet");
+-		ndpi_int_irc_add_connection(ndpi_struct, flow, NDPI_CONFIDENCE_DPI);
+-		flow->l4.tcp.irc_stage = 3;
+-		return;
+-	      }
+-	    }
+-	  }
+-	}
++  } else if (packet->payload[packet->payload_packet_len - 1] == 0x0a) {
++    ndpi_parse_packet_line_info_any(ndpi_struct, flow);
++    if (packet->parsed_lines > 1) {
++      NDPI_LOG_DBG2(ndpi_struct, "packet contains more than one line");
++      for (c = 1; c < packet->parsed_lines; c++) {
++        if (packet->line[c].len > 4 && (memcmp(packet->line[c].ptr, "NICK ", 5) == 0
++                        || memcmp(packet->line[c].ptr, "USER ",
++                            5) == 0)) {
++    NDPI_LOG_INFO(ndpi_struct, "found IRC: two icq signal words in the same packet");
++    ndpi_int_irc_add_connection(ndpi_struct, flow, NDPI_CONFIDENCE_DPI);
++    flow->l4.tcp.irc_stage = 3;
++    return;
++        }
+@@ -469,0 +472,3 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
++}
++    }
++  }

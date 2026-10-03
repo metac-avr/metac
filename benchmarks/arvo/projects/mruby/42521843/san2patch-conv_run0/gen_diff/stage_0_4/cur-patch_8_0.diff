@@ -1,0 +1,30 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..de54b5932 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -150,0 +152,5 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  
++  /* Validate memory access to prevent expired pointer dereference */
++  if (keys == NULL || vals == NULL) return 0;
++  if ((char*)keys < (char*)t->ptr || (char*)vals < (char*)t) return 0; /* Check for invalid memory */
++  
+@@ -155 +161,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-  if (pos < t->alloc) {
++  if (pos < t->alloc && pos >= 0) {
++    if (pos >= t->alloc) return 0; /* Additional bounds check */
+@@ -159 +166,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-        *pp = vals[pos];
++        if (pp != NULL && vals != NULL) { /* Validate before dereference */
++          *pp = vals[pos];
++        }
+@@ -166,0 +176 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (pos >= t->alloc || pos < 0) return 0; /* Prevent out-of-bounds access */
+@@ -169 +179,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      *pp = vals[pos];
++      if (pp != NULL && vals != NULL) { /* Validate before dereference */
++        *pp = vals[pos];
++      }

@@ -1,0 +1,32 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..d2a3a94c 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2745,5 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    /* Check if the ID structure is still valid before accessing it */
++    if (attr->id != NULL && attr->id->value != NULL) {
++        if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }
+diff --git a/hash.c b/hash.c
+index 33e8581e..a01d3d24 100644
+--- a/hash.c
++++ b/hash.c
+@@ -1274,2 +1274,3 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
+-
+-    if ((dealloc != NULL) && (entry->payload != NULL))
++// FIXME: Crash CWE-416: Use After Free
++ 
++    if ((dealloc != NULL) && (entry->payload != NULL)) {
+@@ -1276,0 +1278,2 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
++        entry->payload = NULL; /* Prevent use-after-free by clearing payload pointer */
++    }
+@@ -1283,0 +1287,3 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
++        entry->key = NULL;   /* Clear pointers after freeing */
++        entry->key2 = NULL;
++        entry->key3 = NULL;

@@ -1,0 +1,111 @@
+diff --git a/dict.c b/dict.c
+index 90e4d814..6d3ddbe9 100644
+--- a/dict.c
++++ b/dict.c
+@@ -951,0 +952,43 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
++xmlDtdPtr
++xmlCopyDtd(xmlDtdPtr dtd) {
++    xmlDtdPtr ret;
++    xmlNodePtr cur, p = NULL, q;
++
++    if (dtd == NULL) return(NULL);
++    ret = xmlNewDtd(NULL, dtd->name, dtd->ExternalID, dtd->SystemID);
++    if (ret == NULL) return(NULL);
++    if (dtd->entities != NULL)
++        ret->entities = (void *) xmlCopyEntitiesTable(
++	                    (xmlEntitiesTablePtr) dtd->entities);
++    if (dtd->notations != NULL)
++        ret->notations = (void *) xmlCopyNotationTable(
++	                    (xmlNotationTablePtr) dtd->notations);
++    if (dtd->elements != NULL)
++        ret->elements = (void *) xmlCopyElementTable(
++	                    (xmlElementTablePtr) dtd->elements);
++    if (dtd->attributes != NULL)
++        ret->attributes = (void *) xmlCopyAttributeTable(
++	                    (xmlAttributeTablePtr) dtd->attributes);
++    if (dtd->pentities != NULL)
++	ret->pentities = (void *) xmlCopyEntitiesTable(
++			    (xmlEntitiesTablePtr) dtd->pentities);
++
++    cur = dtd->children;
++    while (cur != NULL) {
++	q = NULL;
++
++	if (cur->type == XML_ENTITY_DECL) {
++	    xmlEntityPtr tmp = (xmlEntityPtr) cur;
++	    switch (tmp->etype) {
++		case XML_INTERNAL_GENERAL_ENTITY:
++		case XML_EXTERNAL_GENERAL_PARSED_ENTITY:
++		case XML_EXTERNAL_GENERAL_UNPARSED_ENTITY:
++		    q = (xmlNodePtr) xmlGetEntityFromDtd(ret, tmp->name);
++		    break;
++		case XML_INTERNAL_PARAMETER_ENTITY:
++		case XML_EXTERNAL_PARAMETER_ENTITY:
++		    q = (xmlNodePtr)
++			xmlGetParameterEntityFromDtd(ret, tmp->name);
++		    break;
++		case XML_INTERNAL_PREDEFINED_ENTITY:
++		    break;
+@@ -953,5 +996,10 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-#else
+-	    if ((tmp->okey == skey) && (tmp->len == l) &&
+-		(!xmlStrncmp(tmp->name, name, l)))
+-		return(tmp->name);
+-#endif
++	} else if (cur->type == XML_ELEMENT_DECL) {
++	    xmlElementPtr tmp = (xmlElementPtr) cur;
++	    q = (xmlNodePtr)
++		xmlGetDtdQElementDesc(ret, tmp->name, tmp->prefix);
++	} else if (cur->type == XML_ATTRIBUTE_DECL) {
++	    xmlAttributePtr tmp = (xmlAttributePtr) cur;
++	    q = (xmlNodePtr)
++		xmlGetDtdQAttrDesc(ret, tmp->elem, tmp->name, tmp->prefix);
++	} else if (cur->type == XML_COMMENT_NODE) {
++	    q = xmlCopyNode(cur, 0);
+@@ -959,2 +1006,0 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-	key = okey % dict->size;
+-    }
+@@ -962,9 +1008,16 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    ret = xmlDictAddString(dict, name, l);
+-    if (ret == NULL)
+-        return(NULL);
+-    if (insert == NULL) {
+-	entry = &(dict->dict[key]);
+-    } else {
+-	entry = xmlMalloc(sizeof(xmlDictEntry));
+-	if (entry == NULL)
+-	     return(NULL);
++	if (q == NULL) {
++	    cur = cur->next;
++	    continue;
++	}
++
++	if (p == NULL)
++	    ret->children = q;
++	else
++	    p->next = q;
++
++	q->prev = p;
++	q->parent = (xmlNodePtr) ret;
++	q->next = NULL;
++	ret->last = q;
++	p = q;
++	cur = cur->next;
+@@ -972,2 +1025,3 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    entry->name = ret;
+-    entry->len = l;
++
++    return(ret);
++}    entry->len = l;
+diff --git a/tree.c b/tree.c
+index 50b6763b..c23d0801 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4498,2 +4498,3 @@ xmlCopyDtd(xmlDtdPtr dtd) {
+-    if (dtd->attributes != NULL)
+-        ret->attributes = (void *) xmlCopyAttributeTable(
++    if (dtd->attributes != NULL) {
++        /* Use safe copy with dictionary handling */
++        ret->attributes = (void *) xmlCopyAttributeTableSafe(
+@@ -4500,0 +4502 @@ xmlCopyDtd(xmlDtdPtr dtd) {
++    }

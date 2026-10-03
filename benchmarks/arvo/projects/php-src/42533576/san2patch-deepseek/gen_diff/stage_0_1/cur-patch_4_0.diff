@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index d1ca0ee62ae..c4556cf9375 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4343,3 +4343,9 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-			}
+-
+-			zend_vm_stack_free_args(EX(call));
++				if (call->func->type == ZEND_INTERNAL_FUNCTION || (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE)) {
++					zend_vm_stack_free_args(EX(call));
++				} else {
++					uint32_t num_args = ZEND_CALL_NUM_ARGS(call);
++					if (num_args != (uint32_t)-1 && num_args <= call->This.u2.num_args) {
++						zend_vm_stack_free_args_ex(call, num_args);
++					}
++				}
++ 			}
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..5c18628e783 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -300,0 +301,4 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
++		if (UNEXPECTED(!(call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE))) {
++			return;
++		}
++

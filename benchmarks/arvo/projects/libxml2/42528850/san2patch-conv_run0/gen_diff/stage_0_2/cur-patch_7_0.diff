@@ -1,0 +1,36 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..36a88442 100644
+--- a/tree.c
++++ b/tree.c
+@@ -818,0 +819 @@ xmlFreeNs(xmlNsPtr cur) {
++    /* Zero out the structure before freeing to prevent dangling pointer access */
+@@ -820,0 +822 @@ xmlFreeNs(xmlNsPtr cur) {
++    memset(cur, 0, sizeof(xmlNs));
+@@ -831,2 +833 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;
+diff --git a/parser.c b/parser.c
+index 11bb5199..87bbd406 100644
+--- a/parser.c
++++ b/parser.c
+@@ -11778,0 +11779,17 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
++// Validate namespace pointers before reference parsing to prevent use-after-free
++                    if (ctxt->node != NULL) {
++                        xmlNsPtr ns = ctxt->node->nsDef;
++                        int ns_valid = 1;
++                        while (ns != NULL && ns_valid) {
++                            // Check if namespace memory is still valid
++                            if (ns == (xmlNsPtr)0xdeadbeef) {  // Freed marker check
++                                ns_valid = 0;
++                                break;
++                            }
++                            ns = ns->next;
++                        }
++                        if (!ns_valid) {
++                            // Skip reference parsing if namespaces are invalid
++                            goto skip_reference;
++                        }
++                    }
+@@ -11781,0 +11799 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
++skip_reference:

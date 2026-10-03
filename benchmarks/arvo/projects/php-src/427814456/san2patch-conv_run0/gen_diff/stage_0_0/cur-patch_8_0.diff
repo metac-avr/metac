@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..3e2b116bca6 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1446,3 +1446,8 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
+-						ZVAL_COPY_VALUE(&tmp, data);
+-						ZVAL_UNDEF(data);
+-						ht->pDestructor(&tmp);
++// Fixed CWE-416: Use After Free - Added safety check for string reference before destruction
++                        if (Z_TYPE_P(data) != IS_STRING || (Z_STR_P(data) && Z_REFCOUNTED_P(data) && GC_REFCOUNT(Z_COUNTED_P(data)) > 0)) {
++                            ZVAL_COPY_VALUE(&tmp, data);
++                            ZVAL_UNDEF(data);
++                            ht->pDestructor(&tmp);
++                        } else {
++                            ZVAL_UNDEF(data);
++                        }
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..6aeaf17abb5 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p && GC_REFCOUNT(p) == 0) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+@@ -67 +69 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
++	if (str) efree(str);

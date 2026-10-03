@@ -1,0 +1,17 @@
+diff --git a/src/filter_core/filter.c b/src/filter_core/filter.c
+index 026c5f0d6..292a773bc 100644
+--- a/src/filter_core/filter.c
++++ b/src/filter_core/filter.c
+@@ -2968,0 +2969 @@ static void gf_filter_process_task(GF_FSTask *task)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -2971 +2972,9 @@ static void gf_filter_process_task(GF_FSTask *task)
+-		e = filter->freg->process(filter);
++	{
++		// Prevent expired pointer dereference by validating all pointers before use
++		if (filter != NULL && filter->freg != NULL && filter->freg->process != NULL) {
++			e = filter->freg->process(filter);
++		} else {
++			// Handle invalid pointer case gracefully
++			e = GF_NOT_SUPPORTED;
++		}
++	}

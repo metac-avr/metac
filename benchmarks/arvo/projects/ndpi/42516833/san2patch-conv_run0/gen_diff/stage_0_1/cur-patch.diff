@@ -1,0 +1,48 @@
+diff --git a/src/lib/protocols/irc.c b/src/lib/protocols/irc.c
+index 367ec86bd..7093e0db6 100644
+--- a/src/lib/protocols/irc.c
++++ b/src/lib/protocols/irc.c
+@@ -396,10 +396,10 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-	  || (memcmp(packet->payload, "NICK ", 5) == 0)
+-	  || (memcmp(packet->payload, "PASS ", 5) == 0)
+-	  || (memcmp(packet->payload, ":", 1) == 0 && ndpi_check_for_NOTICE_or_PRIVMSG(ndpi_struct, flow) != 0)
+-	  || (memcmp(packet->payload, "PONG ", 5) == 0)
+-	  || (memcmp(packet->payload, "PING ", 5) == 0)
+-	  || (memcmp(packet->payload, "JOIN ", 5) == 0)
+-	  || (memcmp(packet->payload, "MODE ", 5) == 0)
+-	  || (memcmp(packet->payload, "NOTICE ", 7) == 0)
+-	  || (memcmp(packet->payload, "PRIVMSG ", 8) == 0)
+-	  || (memcmp(packet->payload, "VERSION ", 8) == 0)) {
++  || (memcmp(packet->payload, "NICK ", 5) == 0)
++  || (memcmp(packet->payload, "PASS ", 5) == 0)
++  || (memcmp(packet->payload, ":", 1) == 0 && ndpi_check_for_NOTICE_or_PRIVMSG(ndpi_struct, flow) != 0)
++  || (memcmp(packet->payload, "PONG ", 5) == 0)
++  || (memcmp(packet->payload, "PING ", 5) == 0)
++  || (memcmp(packet->payload, "JOIN ", 5) == 0)
++  || (memcmp(packet->payload, "MODE ", 5) == 0)
++  || (memcmp(packet->payload, "NOTICE ", 7) == 0)
++  || (memcmp(packet->payload, "PRIVMSG ", 8) == 0)
++  || (memcmp(packet->payload, "VERSION ", 8) == 0)) {
+@@ -408,0 +409 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -410,2 +411,10 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-
+-	  snprintf(buf, sizeof(buf), "%s", &user[5]);
++          int remaining_len = packet->payload_packet_len - (user - (char*)packet->payload);
++          if(remaining_len > 5) {
++            remaining_len -= 5;
++            if(remaining_len >= (int)sizeof(buf))
++              remaining_len = sizeof(buf) - 1;
++          } else {
++            remaining_len = 0;
++          }
++
++	  snprintf(buf, sizeof(buf), "%.*s", (int)remaining_len, &user[5]);
+@@ -442 +451 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-					      || memcmp(packet->line[c].ptr, "USER ", 5) == 0)) {
++			      || memcmp(packet->line[c].ptr, "USER ", 5) == 0)) {
+@@ -457,2 +466,2 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-					      || memcmp(packet->line[c].ptr, "USER ",
+-							5) == 0)) {
++			      || memcmp(packet->line[c].ptr, "USER ",
++					5) == 0)) {

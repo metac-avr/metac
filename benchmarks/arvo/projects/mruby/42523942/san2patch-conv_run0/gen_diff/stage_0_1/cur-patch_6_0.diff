@@ -1,0 +1,32 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..be595b36b 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -790,0 +791 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (obj->tt == MRB_TT_FREE) return;
+@@ -799,2 +800 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1172 +1172 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    if (is_minor_gc(gc) && page->old) {
++    if (is_minor_gc(&gc) && page->old) {
+@@ -1203,3 +1203,9 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++       /* Ensure no concurrent access before freeing */
++       if (!gc->atomic_state) {
++         unlink_heap_page(gc, page);
++         unlink_free_heap_page(gc, page);
++         mrb_free(mrb, page);
++       } else {
++         /* Defer freeing until safe */
++         page->deferred_free = TRUE;
++       }

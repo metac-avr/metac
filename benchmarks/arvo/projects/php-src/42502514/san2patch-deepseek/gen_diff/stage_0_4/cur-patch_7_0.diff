@@ -1,0 +1,24 @@
+diff --git a/Zend/Optimizer/dfa_pass.c b/Zend/Optimizer/dfa_pass.c
+index 9eddbde3b71..08ffa5f0185 100644
+--- a/Zend/Optimizer/dfa_pass.c
++++ b/Zend/Optimizer/dfa_pass.c
+@@ -242,5 +242,14 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
+-			ZEND_ASSERT(op_array == &ctx->script->main_op_array);
+-			do {
+-				*opline_num -= shiftlist[*opline_num];
+-				opline_num = &op_array->opcodes[*opline_num].result.opline_num;
+-			} while (*opline_num != (uint32_t)-1);
++			if (ctx->script->first_early_binding_opline == (uint32_t)-1 || op_array != &ctx->script->main_op_array) {
++				op_array->fn_flags &= ~ZEND_ACC_EARLY_BINDING;
++				ctx->script->first_early_binding_opline = (uint32_t)-1;
++			} else {
++				do {
++					if (*opline_num >= op_array->last) {
++						op_array->fn_flags &= ~ZEND_ACC_EARLY_BINDING;
++						ctx->script->first_early_binding_opline = (uint32_t)-1;
++						break;
++					}
++					*opline_num -= shiftlist[*opline_num];
++					opline_num = &op_array->opcodes[*opline_num].result.opline_num;
++				} while (*opline_num != (uint32_t)-1);
++			}

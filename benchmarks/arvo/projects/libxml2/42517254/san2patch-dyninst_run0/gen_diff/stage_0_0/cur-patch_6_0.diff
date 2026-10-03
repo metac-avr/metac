@@ -1,0 +1,34 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..bc87c38a 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1160 +1160,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (set->nodeTab[i] == NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 		if (set->nodeTab[i] == NULL)
+@@ -1218,5 +1219,7 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
++			                set->nodeTab[i]);
++		    if (new_node != NULL) {
++		        xmlAddNextSibling(last, new_node);
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2275 +2278,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-416: Use After Free
++          */
+@@ -2277 +2281,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	xmlFreeNode(cur);
++	/* Defer freeing the node until after all references are done */
++	/* xmlFreeNode(cur); - Moved to after processing */
+@@ -2314,0 +2320,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    /* Safe cleanup - free the node after all processing is complete */
++    if ((ctxt->parseFlags & XML_PARSE_NOXINCNODE) && (cur != NULL)) {
++        xmlFreeNode(cur);
++    }

@@ -1,0 +1,21 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..c503948c1ba 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -758,2 +758,7 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	return zend_hash_lookup(ht, offset_key);
+-
++	if (ht != NULL && !GC_IS_RECURSIVE(ht)) {
++		return zend_hash_lookup(ht, offset_key);
++	} else {
++		return NULL;
++	}
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -763,5 +768 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
+-{
+-	zend_long offset;
++}	zend_long offset;

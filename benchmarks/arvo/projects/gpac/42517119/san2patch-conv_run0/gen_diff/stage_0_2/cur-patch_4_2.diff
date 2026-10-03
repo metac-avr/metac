@@ -1,0 +1,47 @@
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index d7f39328b..559c140db 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -737,6 +736,0 @@ GF_Err urn_box_size(GF_Box *s)
+-	}
+-	return GF_OK;
+-}
+-
+-#endif /*GPAC_DISABLE_ISOM_WRITE*/
+-
+@@ -758 +752,34 @@ GF_Err unkn_box_read(GF_Box *s, GF_BitStream *bs)
+-	if (ptr->size > 0xFFFFFFFF) return GF_ISOM_INVALID_FILE;
++
++	bytesToRead = (u32) (ptr->size);
++	if (!bytesToRead) return GF_OK;
++	if (bytesToRead>1000000) {
++		gf_bs_skip_bytes(bs, ptr->size - bytesToRead);
++		return GF_ISOM_INVALID_MEDIA;
++	}
++
++	// Fix: Use correct field names and declare variables properly
++	// Original had incorrect field references like dataSize which doesn't exist in GF_UnknownBox
++	// GF_UnknownBox has 'data' and 'size' fields instead
++
++	if (ptr->size > 0) {
++		ptr->data = (char*)gf_malloc((u32)ptr->size);
++		if (ptr->data == NULL) return GF_OUT_OF_MEM;
++		gf_bs_read_data(bs, ptr->data, (u32)ptr->size);
++
++		sub_bs = gf_bs_new(ptr->data, (u32)ptr->size, GF_BITSTREAM_READ);
++		if (!sub_bs) {
++			gf_free(ptr->data);
++			ptr->data = NULL;
++			return GF_OUT_OF_MEM;
++		}
++
++		while (gf_bs_available(sub_bs)) {
++			sub_size = gf_bs_read_u32(sub_bs);
++			if (sub_size > gf_bs_available(sub_bs)) break;
++			sub_a = gf_bs_read_u32(sub_bs);
++			gf_bs_skip_bytes(sub_bs, sub_size - 8);
++		}
++		gf_bs_del(sub_bs);
++	}
++	return GF_OK;
++}	if (ptr->size > 0xFFFFFFFF) return GF_ISOM_INVALID_FILE;

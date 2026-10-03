@@ -1,0 +1,16 @@
+diff --git a/libavcodec/cbs_h266_syntax_template.c b/libavcodec/cbs_h266_syntax_template.c
+index 06f9f29e08..65276934eb 100644
+--- a/libavcodec/cbs_h266_syntax_template.c
++++ b/libavcodec/cbs_h266_syntax_template.c
+@@ -932,4 +932,7 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
+-                if (!current->vps_default_ptl_dpb_hrd_max_tid_flag)
+-                    us(3, vps_hrd_max_tid[i], 0,
+-                       current->vps_max_sublayers_minus1, 1, i);
+-                else
++                if (!current->vps_default_ptl_dpb_hrd_max_tid_flag) {
++                    if (i < 257)  // Add bounds check to prevent out-of-bounds access
++                        us(3, vps_hrd_max_tid[i], 0,
++                            current->vps_max_sublayers_minus1, 1, i);
++                    else
++                        return AVERROR_INVALIDDATA;  // Return error for invalid index
++                } else

@@ -1,0 +1,35 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index d5a169eac..b0bb8b1f6 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -4151,3 +4151,4 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-    ehdr_len = (*l4ptr)[1];
+-    ehdr_len *= 8;
+-    ehdr_len += 8;
++    if(*l4len >= 2) {  // Additional bounds check to prevent out-of-bounds access
++      ehdr_len = (*l4ptr)[1];
++      ehdr_len *= 8;
++      ehdr_len += 8;
+@@ -4155,3 +4156,5 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-    if(*l4len < ehdr_len) {
+-      return(1);
+-    }
++      if(*l4len < ehdr_len) {
++        return(1);
++      }
++
++      *nxt_hdr = (*l4ptr)[0];
+@@ -4159 +4162,2 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-    *nxt_hdr = (*l4ptr)[0];
++      if(*l4len < ehdr_len)
++        return(1);
+@@ -4161 +4165,3 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-    if(*l4len < ehdr_len)
++      *l4len -= ehdr_len;
++      (*l4ptr) += ehdr_len;
++    } else {
+@@ -4163,3 +4169 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-
+-    *l4len -= ehdr_len;
+-    (*l4ptr) += ehdr_len;
++    }

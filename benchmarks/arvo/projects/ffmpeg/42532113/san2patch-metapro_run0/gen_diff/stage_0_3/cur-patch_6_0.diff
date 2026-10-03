@@ -1,0 +1,21 @@
+diff --git a/libavcodec/vvc/vvc_ps.c b/libavcodec/vvc/vvc_ps.c
+index ac96ed9f43..d1db3cde58 100644
+--- a/libavcodec/vvc/vvc_ps.c
++++ b/libavcodec/vvc/vvc_ps.c
+@@ -976,0 +977,9 @@ static int aps_decode_scaling(const VVCScalingList **scaling, const H266RawAPS *
++    // Validate APS scaling parameters before processing to prevent buffer overflow
++    if (aps->scaling_list_data_present_flag) {
++        // Add bounds checking to ensure aps parameters don't exceed buffer size
++        if (aps->scaling_list_size_id >= 4 || aps->scaling_list_id >= 28) {
++            ff_refstruct_unref(&sl);
++            return AVERROR_INVALIDDATA;
++        }
++    }
++ 
+diff --git a/libavcodec/refstruct.c b/libavcodec/refstruct.c
+index 7597f6d0ee..3524e2745f 100644
+--- a/libavcodec/refstruct.c
++++ b/libavcodec/refstruct.c
+@@ -161 +161 @@ void ff_refstruct_replace(void *dstp, const void *src)
+-{
++ {

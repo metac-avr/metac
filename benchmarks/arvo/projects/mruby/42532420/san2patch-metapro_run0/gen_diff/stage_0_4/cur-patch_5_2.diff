@@ -1,0 +1,16 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..1c993ceda 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -618 +618 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-  for (mrb_int i=0; i < n; i+=sizeof(bitint), s0++, s1++) {
++  for (mrb_int i=0; i < n && i + sizeof(bitint) <= n; i+=sizeof(bitint), s0++, s1++) {  // Add bounds check in loop condition
+@@ -626,2 +626,4 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-        if (memcmp(substr, xs + 1, m - 2) == 0) {
+-          return i + j;
++        if (substr >= (char*)ys && substr + (m - 2) <= (char*)ys + n) {  // Validate substr is within bounds
++          if (memcmp(substr, xs + 1, m - 2) == 0) {
++            return i + j;
++          }
+@@ -636,0 +639 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++      if (i + j >= n) break;  // Prevent accessing beyond buffer end

@@ -1,0 +1,39 @@
+diff --git a/src/lib/protocols/irc.c b/src/lib/protocols/irc.c
+index 367ec86bd..e9aba2182 100644
+--- a/src/lib/protocols/irc.c
++++ b/src/lib/protocols/irc.c
+@@ -408,0 +409 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -410,4 +410,0 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-
+-	  snprintf(buf, sizeof(buf), "%s", &user[5]);
+-	  if((sp = strchr(buf, ' ')) != NULL)
+-	    sp[0] = '\0';
+@@ -415,2 +412,22 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-	  snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
+-	  ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
++	  // Calculate safe length to copy
++	  size_t remaining_len = packet->payload_packet_len - (user - (char*)packet->payload) - 5;
++	  if(remaining_len > 0 && remaining_len < sizeof(buf)) {
++	    memcpy(buf, &user[5], remaining_len);
++	    buf[remaining_len] = '\0';
++	    
++	    if((sp = strchr(buf, ' ')) != NULL)
++	      sp[0] = '\0';
++	    
++	    snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
++	    ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
++	  } else if(remaining_len > 0) {
++	    // Handle case where remaining length exceeds buffer size
++	    memcpy(buf, &user[5], sizeof(buf) - 1);
++	    buf[sizeof(buf) - 1] = '\0';
++	    
++	    if((sp = strchr(buf, ' ')) != NULL)
++	      sp[0] = '\0';
++	    
++	    snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
++	    ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
++	  }
+@@ -458 +475 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-							5) == 0)) {
++						5) == 0)) {

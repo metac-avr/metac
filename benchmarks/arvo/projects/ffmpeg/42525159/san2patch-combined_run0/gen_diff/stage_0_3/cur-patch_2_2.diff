@@ -1,0 +1,55 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..b8b959be1c 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,22 +2017,28 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++#define WRITE_FRAME(DIRECT, PIXEL) \
++{ \
++    int x, y; \
++    uint8_t * restrict pix = pic + yoff * picture->linesize[plane] + (xoff * bpp); \
++    if (DIRECT) { \
++        PIXEL * restrict dst = (PIXEL *)pix; \
++        for (y = 0; y < th; y++) { \
++            PIXEL * restrict line = dst + y * (picture->linesize[plane] / sizeof(PIXEL)); \
++            for (x = 0; x < tw; x++) { \
++                if ((uint8_t*)line + x * sizeof(PIXEL) < pix + y * picture->linesize[plane] + tw * sizeof(PIXEL)) { \
++                    line[x] = i_datap[0]; \
++                } \
++                i_datap++; \
++            } \
++        } \
++    } else { \
++        uint8_t * restrict dst = pix; \
++        for (y = 0; y < th; y++) { \
++            uint8_t * restrict line = dst + y * picture->linesize[plane]; \
++            for (x = 0; x < tw; x++) { \
++                if ((uintptr_t)(line + x) < (uintptr_t)(pix + (y + 1) * picture->linesize[plane])) { \
++                    line[x] = i_datap[0]; \
++                } \
++                i_datap++; \
++            } \
++        } \
++    } \
++}

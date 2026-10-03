@@ -1,0 +1,40 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..84ceab32 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2284,2 +2284,4 @@ xmlNewText(const xmlChar *content) {
+-        if (cur->content == NULL)
+-            goto error;
++        if (cur->content == NULL) {
++            xmlFreeNode(cur);
++            return(NULL);
++        }
+@@ -2291,4 +2292,0 @@ xmlNewText(const xmlChar *content) {
+-
+-error:
+-    xmlFreeNode(cur);
+-    return(NULL);
+@@ -3613,2 +3611,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->properties != NULL))
+-		xmlFreePropList(cur->properties);
++		(cur->properties != NULL)) {
++		xmlAttrPtr tempProps = cur->properties;
++		cur->properties = NULL;  /* Prevent dangling pointer access */
++		xmlFreePropList(tempProps);
++	    }
+@@ -3620,0 +3622 @@ xmlFreeNodeList(xmlNodePtr cur) {
++		cur->content = NULL;  /* Clear content pointer */
+@@ -3625,2 +3627,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->nsDef != NULL))
+-		xmlFreeNsList(cur->nsDef);
++		(cur->nsDef != NULL)) {
++		xmlNsPtr tempNsDef = cur->nsDef;
++		cur->nsDef = NULL;  /* Prevent dangling pointer access */
++		xmlFreeNsList(tempNsDef);
++	    }
+@@ -3636 +3641 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_COMMENT_NODE))
++		(cur->type != XML_COMMENT_NODE)) {
+@@ -3637,0 +3643,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
++		cur->name = NULL;  /* Clear name pointer */
++	    }

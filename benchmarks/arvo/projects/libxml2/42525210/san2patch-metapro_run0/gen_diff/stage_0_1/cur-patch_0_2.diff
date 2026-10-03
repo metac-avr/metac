@@ -1,0 +1,19 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index a3c47f69..9bb88005 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3775,3 +3775,11 @@ htmlParseAttribute(htmlParserCtxtPtr ctxt, xmlChar **value) {
+-        NEXT;
+-	SKIP_BLANKS;
+-	val = htmlParseAttValue(ctxt);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++        if ((ctxt->input->cur >= ctxt->input->base) && 
++            ((ctxt->input->cur - ctxt->input->base) < ctxt->input->length)) {
++             NEXT;
++	    SKIP_BLANKS;
++	    val = htmlParseAttValue(ctxt);
++        } else {
++            htmlParseErr(ctxt, XML_ERR_NAME_REQUIRED,
++                         "error parsing attribute value\n", NULL, NULL);
++            return(NULL);
++        }

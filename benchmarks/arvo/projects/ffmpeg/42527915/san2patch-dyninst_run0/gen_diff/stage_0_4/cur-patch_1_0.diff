@@ -1,0 +1,32 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..fd399aa5eb 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -428,0 +429,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    // Check for valid VLC table structure to prevent use-after-free
++    if (!single->table) {
++        av_log(logctx, AV_LOG_ERROR, "VLC table is NULL in vlc_multi_gen\n");
++        return AVERROR(EINVAL);
++    }
++
+@@ -438,0 +445,2 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++        // Additional safety check for each table access
++        if (j >= (1<<numbits)) break;
+@@ -460,0 +469 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    void *saved_buf = NULL; // Save buffer reference
+@@ -495 +504 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -499,0 +509,7 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    
++    // Validate buffer pointer before use
++    if (buf == NULL) {
++        av_log(logctx, AV_LOG_ERROR, "Buffer pointer is NULL\n");
++        return AVERROR_INVALIDDATA;
++    }
++    
+@@ -502 +518 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    if (buf != localbuf)
++    if (buf != localbuf && buf != NULL)
+@@ -503,0 +520 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    buf = NULL; // Clear buffer pointer

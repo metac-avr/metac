@@ -1,0 +1,67 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..f69ce16b8 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -926,4 +926,4 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-				       struct ndpi_flow_struct *flow,
+-				       const uint8_t *dest_conn_id, uint8_t dest_conn_id_len,
+-				       uint8_t source_conn_id_len, uint32_t version,
+-				       uint32_t *clear_payload_len)
++			       struct ndpi_flow_struct *flow,
++			       const uint8_t *dest_conn_id, uint8_t dest_conn_id_len,
++			       uint8_t source_conn_id_len, uint32_t version,
++			       uint32_t *clear_payload_len)
+@@ -957 +957,14 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-  pn_offset += quic_len(&packet->payload[pn_offset], &token_length);
++  
++  /* Ensure sufficient buffer space before quic_len operations */
++  if(pn_offset + 8 >= packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
++  uint8_t *payload_ptr = &packet->payload[pn_offset];
++  if(payload_ptr == NULL) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
++  pn_offset += quic_len(payload_ptr, &token_length);
+@@ -964 +977,13 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-  pn_offset += quic_len(&packet->payload[pn_offset], &payload_length);
++  
++  /* Additional bounds check before second quic_len call */
++  if(pn_offset + 8 >= packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
++  payload_ptr = &packet->payload[pn_offset];
++  if(payload_ptr == NULL) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  pn_offset += quic_len(payload_ptr, &payload_length);
+@@ -967 +992 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-		pn_offset, token_length, payload_length);
++			pn_offset, token_length, payload_length);
+@@ -1267 +1292 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
+-		   version, dest_conn_id_len);
++	   version, dest_conn_id_len);
+@@ -1271 +1296,8 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
+-    source_conn_id_len = packet->payload[6 + dest_conn_id_len];
++// FIXME: Crash CWE-125: Out-of-bounds Read
++    // Check bounds before reading source_conn_id_len
++    if ((6 + dest_conn_id_len) < packet->payload_len) {
++        source_conn_id_len = packet->payload[6 + dest_conn_id_len];
++    } else {
++        NDPI_LOG_DBG(ndpi_struct, "Out-of-bounds read attempt prevented\n");
++        return NULL;
++    }
+@@ -1274,3 +1306,3 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
+-					   dest_conn_id, dest_conn_id_len,
+-					   source_conn_id_len, version,
+-					   clear_payload_len);
++				   dest_conn_id, dest_conn_id_len,
++				   source_conn_id_len, version,
++				   clear_payload_len);

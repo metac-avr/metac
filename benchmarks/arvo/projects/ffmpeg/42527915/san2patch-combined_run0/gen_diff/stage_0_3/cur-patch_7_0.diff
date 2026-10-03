@@ -1,0 +1,23 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..03c85c6c03 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -460,0 +461 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    int delayed_free = 0;
+@@ -498 +499,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    if (ret < 0)
++    if (ret < 0) {
++        delayed_free = 1;
+@@ -500,2 +502,3 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
+-fail:
++    }
++    ret = vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    // Only free here after vlc_multi_gen has completed
+@@ -503,0 +507,6 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    return ret;
++fail:
++    if (delayed_free && buf != localbuf)
++        av_free(buf);
++    else if (!delayed_free && buf != localbuf)
++        av_free(buf);

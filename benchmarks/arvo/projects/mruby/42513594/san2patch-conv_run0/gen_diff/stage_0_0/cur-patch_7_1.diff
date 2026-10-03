@@ -1,0 +1,19 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..26300f8d2 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1707 +1707,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1708,0 +1710,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      /* Enhanced bounds checking with stack size validation */
++      mrb_int stack_size = mrb->c->stend - mrb->c->stackent;
++      if (a >= stack_size || a < 0) {
++        mrb_raise(mrb, E_INDEX_ERROR, "index out of bounds");
++      }
+@@ -1709,0 +1716,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      /* Additional check after normalization */
++      if (a >= stack_size) {
++        mrb_raise(mrb, E_INDEX_ERROR, "normalized index out of bounds");
++      }

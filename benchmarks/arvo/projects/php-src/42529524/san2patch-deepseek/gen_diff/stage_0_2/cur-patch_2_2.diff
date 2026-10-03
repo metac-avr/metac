@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..fc566aeeb91 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272,3 +3272,17 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+-				}
+-		}
++ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_USER_OPCODE_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
++{
++	USE_OPLINE
++
++	int ret = zend_user_opcode_handlers[opline->opcode](execute_data);
++
++	switch (ret) {
++		case ZEND_USER_OPCODE_DISPATCH:
++			ZEND_VM_TAIL_CALL(zend_dispatch_try_catch_finally_helper_SPEC(current_try_catch_offset, throw_op_num ZEND_OPCODE_HANDLER_ARGS_PASSTHRU_CC));
++		case ZEND_USER_OPCODE_CONTINUE:
++			ZEND_VM_CONTINUE();
++		case ZEND_USER_OPCODE_ENTER:
++			ZEND_VM_ENTER();
++		case ZEND_USER_OPCODE_LEAVE:
++			ZEND_VM_LEAVE();
++		case ZEND_USER_OPCODE_RETURN:
++			ZEND_VM_RETURN();
+@@ -3278,6 +3292 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-}
+-
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_USER_OPCODE_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	int ret;
++}	int ret;

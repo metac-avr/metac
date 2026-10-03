@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..997a533def9 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
++[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p) return;
+@@ -57 +58,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	zend_rc_dtor_func_t dtor_func = zend_rc_dtor_func[GC_TYPE(p)];
++	if (dtor_func) {
++		dtor_func(p);
++	}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..065b58692d6 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -200,0 +201,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++			// Add explicit null check before decrementing reference
++			if (object != NULL) {
++				GC_DELREF(object);
++			}
+@@ -201,0 +206 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		// FIXME: Crash CWE-416: Use After Free

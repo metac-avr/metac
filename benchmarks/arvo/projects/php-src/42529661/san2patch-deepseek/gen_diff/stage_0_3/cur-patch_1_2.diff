@@ -1,0 +1,42 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..41d420adbac 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -8981,21 +8981,4 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+-			} else if (!zend_jit_traces[parent_num].polymorphism) {
+-				polymorphism = 1;
+-			} else if (exit_num == 0) {
+-				polymorphism = zend_jit_traces[parent_num].polymorphism + 1;
+-			}
+-		}
+-	}
+-
+-	JIT_G(tracing) = 1;
+-	stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
+-	JIT_G(tracing) = 0;
+-
+-	if (stop & ZEND_JIT_TRACE_HALT) {
+-		ret = -1;
+-	}
+-	stop &= ~ZEND_JIT_TRACE_HALT;
+-
+-	if (UNEXPECTED(trace_buffer->start != ZEND_JIT_TRACE_START_SIDE)) {
+-		if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_START) {
+-			const zend_op_array *op_array = trace_buffer[0].op_array;
++static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
++{
++	switch (opline->opcode) {
++		case ZEND_CATCH:
+@@ -9332 +9315 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
++if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+@@ -9347,7 +9330 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++}		case ZEND_FAST_CALL:

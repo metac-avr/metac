@@ -1,0 +1,28 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..72b2914ef 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -110 +110 @@ stack_init(mrb_state *mrb)
+-  c->stend = c->stbase + STACK_INIT_SIZE;
++  c->stend = c->stbase + STACK_INIT_SIZE - 1;
+@@ -1380,4 +1380,7 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_sym sym = syms[b];
+-
+-      val = mrb_vm_const_get(mrb, sym);
+-      regs[a] = val;
++      if (b >= 0 && b < irep->syms_len) {
++        mrb_sym sym = syms[b];
++        val = mrb_vm_const_get(mrb, sym);
++        regs[a] = val;
++      } else {
++        regs[a] = mrb_nil_value();
++      }
+@@ -1388 +1391,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_vm_const_set(mrb, syms[b], regs[a]);
++      if (b >= 0 && b < irep->syms_len) {
++        mrb_vm_const_set(mrb, syms[b], regs[a]);
++      }
+@@ -1392,2 +1397 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-    CASE(OP_GETMCNST, BB) {
+-      mrb_value val;
++    CASE(OP_GETMCNST, BB) {      mrb_value val;

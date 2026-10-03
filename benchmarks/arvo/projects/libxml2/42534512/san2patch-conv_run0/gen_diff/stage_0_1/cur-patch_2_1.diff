@@ -1,0 +1,32 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..49b36d22 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6857,2 +6857,9 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr prop = xmlSetNsProp(node, ns, localname, value);
++            if (prop != NULL && prop->children != NULL) {
++                prop->children->parent = NULL;
++                xmlFreeNodeList(prop->children);
++                prop->children = NULL;
++            }
++            return(prop);
++        }
+@@ -6861 +6868,7 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr prop = xmlSetNsProp(node, NULL, name, value);
++    if (prop != NULL && prop->children != NULL) {
++        prop->children->parent = NULL;
++        xmlFreeNodeList(prop->children);
++        prop->children = NULL;
++    }
++    return(prop);
+@@ -6904 +6917,3 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	/* Fix for CWE-825: Properly unlink children before freeing */
++	if (prop->children != NULL) {
++	    xmlUnlinkNode(prop->children); /* Use correct unlinking function */
+@@ -6905,0 +6921 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++	}

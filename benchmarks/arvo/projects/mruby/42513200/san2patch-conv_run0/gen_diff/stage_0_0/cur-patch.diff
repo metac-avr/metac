@@ -1,0 +1,32 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..df87d61f7 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -498,7 +497,0 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      }
+-    }
+-    if (j%2)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
+-    else
+-      q.p[j/2] |= qhat;
+-    if (j == 0) break;
+@@ -506,3 +499,16 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  mpz_realloc(mrb,&r,(size_t)(yy->sz));
+-  zero(&r);
+-  urshift(mrb,&r,&x,ns);
++  }
++  if (j%2) {
++// Check for potential integer overflow before assignment
++    if (j/2 >= q.sz) return;
++    q.p[j/2] |= qhat << HALFDIGITBITS;
++  }
++  else {
++// Check for potential integer overflow before assignment
++    if (j/2 >= q.sz) return;
++    q.p[j/2] |= qhat;
++  }
++  if (j == 0) break;
++}
++mpz_realloc(mrb,&r,(size_t)(yy->sz));
++zero(&r);
++urshift(mrb,&r,&x,ns);

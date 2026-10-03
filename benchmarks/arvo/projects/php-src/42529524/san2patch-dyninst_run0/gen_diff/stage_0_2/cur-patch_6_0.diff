@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 1819d0b671d..dcb15945728 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4495 +4495,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zval_ptr_dtor_nogc(var);
++					if (var && Z_REFCOUNTED_P(var)) {
++						zval_ptr_dtor_nogc(var);
++					}
+@@ -4500,2 +4502,4 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zend_object_store_ctor_failed(obj);
+-					OBJ_RELEASE(obj);
++					if (obj) {
++						zend_object_store_ctor_failed(obj);
++						OBJ_RELEASE(obj);
++					}
+@@ -4506 +4510,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zval_ptr_dtor_nogc(var);
++					if (var && Z_REFCOUNTED_P(var)) {
++						zval_ptr_dtor_nogc(var);
++					}
+@@ -4516 +4522,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-						zend_string_release_ex(*rope, 0);
++						if (rope && *rope) {
++							zend_string_release_ex(*rope, 0);
++						}
+@@ -4519,3 +4527,7 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-						do {
+-							zend_string_release_ex(rope[j], 0);
+-						} while (j--);
++						if (rope) {
++							do {
++								if (rope[j]) {
++									zend_string_release_ex(rope[j], 0);
++								}
++							} while (j--);
++						}

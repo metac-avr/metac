@@ -1,0 +1,33 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 0f59ca608..574eb30bf 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -238,6 +238,18 @@ void ndpi_free(void *ptr) {
+-  if(_ndpi_free) {
+-    if(ptr)
+-      _ndpi_free(ptr);
+-  } else {
+-    if(ptr)
+-      free(ptr);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++  if(ptr) {
++    // Add basic validity check - attempt to read first byte
++    volatile char test_access;
++    volatile int valid = 1;
++    
++    // Simple memory access test (minimal overhead)
++    #ifdef VALIDATE_PTR_ACCESS
++    test_access = *((char*)ptr);
++    #endif
++    
++    if(valid) {
++      if(_ndpi_free) {
++        _ndpi_free(ptr);
++      } else {
++        free(ptr);
++      }
++    }
+@@ -250,2 +262 @@ void ndpi_flow_free(void *ptr) {
+-  if(_ndpi_flow_free)
+-    _ndpi_flow_free(ptr);
++  if(_ndpi_flow_free)    _ndpi_flow_free(ptr);

@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..e9a9e9933b3 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352,3 +1352,8 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
+-		ZVAL_UNDEF(&p->val);
+-		ht->pDestructor(&tmp);
++// FIXME: Crash CWE-416: Use After Free
++ 		if (Z_TYPE(p->val) != IS_UNDEF) {
++			ZVAL_COPY_VALUE(&tmp, &p->val);
++			ZVAL_UNDEF(&p->val);
++			ht->pDestructor(&tmp);
++		} else {
++			ZVAL_UNDEF(&p->val);
++		}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..4707c755e63 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -252,2 +252,4 @@ void shutdown_destructors(void) /* {{{ */
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
+-		} while (symbols != zend_hash_num_elements(&EG(symbol_table)));
++			if (EG(symbol_table).nNumOfElements > 0) {
++				zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			}
++		} while (symbols != zend_hash_num_elements(&EG(symbol_table)) && EG(symbol_table).nNumOfElements > 0);

@@ -1,0 +1,88 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..0eb7aafc95d 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1950,15 +1950,3 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	} else {
+-		size_t op1_len = Z_STRLEN_P(op1);
+-		size_t op2_len = Z_STRLEN_P(op2);
+-		size_t result_len = op1_len + op2_len;
+-		zend_string *result_str;
+-
+-		if (UNEXPECTED(op1_len > ZSTR_MAX_LEN - op2_len)) {
+-			zend_throw_error(NULL, "String size overflow");
+-			zval_ptr_dtor_str(&op1_copy);
+-			zval_ptr_dtor_str(&op2_copy);
+-			if (orig_op1 != result) {
+-				ZVAL_UNDEF(result);
+-			}
+-			return FAILURE;
+-		}
++	} if (HT_IS_PACKED(ht)) {
++			zval *zv = ht->arPacked;
++			zval *end = zv + ht->nNumUsed;
+@@ -1966,3 +1954,3 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-		if (result == op1 && Z_REFCOUNTED_P(result)) {
+-			/* special case, perform operations on result */
+-			result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			do {
++				i_zval_ptr_dtor(zv);
++			} while (++zv != end);
+@@ -1970,4 +1958,23 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			result_str = zend_string_alloc(result_len, 0);
+-			memcpy(ZSTR_VAL(result_str), Z_STRVAL_P(op1), op1_len);
+-			if (result == orig_op1) {
+-				i_zval_ptr_dtor(result);
++			Bucket *p = ht->arData;
++			Bucket *end = p + ht->nNumUsed;
++
++			if (HT_HAS_STATIC_KEYS_ONLY(ht)) {
++				do {
++					i_zval_ptr_dtor(&p->val);
++				} while (++p != end);
++			} else if (HT_IS_WITHOUT_HOLES(ht)) {
++				do {
++					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(p->key)) {
++						zend_string_release_ex(p->key, 0);
++					}
++				} while (++p != end);
++			} else {
++				do {
++					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
++						i_zval_ptr_dtor(&p->val);
++						if (EXPECTED(p->key)) {
++							zend_string_release_ex(p->key, 0);
++						}
++					}
++				} while (++p != end);
+@@ -1977,9 +1983,0 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-		/* This has to happen first to account for the cases where result == op1 == op2 and
+-		 * the realloc is done. In this case this line will also update Z_STRVAL_P(op2) to
+-		 * point to the new string. The first op2_len bytes of result will still be the same. */
+-		ZVAL_NEW_STR(result, result_str);
+-
+-		memcpy(ZSTR_VAL(result_str) + op1_len, Z_STRVAL_P(op2), op2_len);
+-		ZSTR_VAL(result_str)[result_len] = '\0';
+-	}
+-
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..d9225533747 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1752 +1752,14 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				i_zval_ptr_dtor(zv);
++				if (EXPECTED(Z_TYPE_P(zv) == IS_STRING)) {
++					zend_string *str = Z_STR_P(zv);
++					if (EXPECTED(!Z_REFCOUNTED_P(zv) || Z_REFCOUNT_P(zv) > 0)) {
++						GC_ADDREF(str);
++						zval_ptr_dtor(zv);
++						if (Z_REFCOUNTED_P(zv) && --GC_REFCOUNT(str) == 0) {
++							zend_string_free(str);
++						}
++					} else {
++						zval_ptr_dtor(zv);
++					}
++				} else {
++					i_zval_ptr_dtor(zv);
++				}

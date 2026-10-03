@@ -1,0 +1,35 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..446d7ebd 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2464 +2464,9 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-	    xmlXIncludeIncludeNode(ctxt, i);
++	    {
++            int result = xmlXIncludeIncludeNode(ctxt, i);
++            if (result < 0) {
++                /* Handle error case - prevent use of freed nodes */
++                ctxt->incTab[i]->inc = NULL;
++                ctxt->incTab[i]->xptr = NULL;
++                continue;
++            }
++        }
+@@ -2474,2 +2482 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+- * @ctxt:  an XInclude processing context
+- * @flags: a set of xmlParserOption used for parsing XML includes
++ * @ctxt:  an XInclude processing context * @flags: a set of xmlParserOption used for parsing XML includes
+diff --git a/tree.c b/tree.c
+index 8077348a..a887c9c8 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699 +3699 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
++xmlFreeNsList((xmlNsPtr) cur);
+@@ -3702,0 +3703,4 @@ xmlFreeNodeList(xmlNodePtr cur) {
++    /* Validate node before processing to prevent use-after-free */
++    if (cur->type < XML_ELEMENT_NODE || cur->type > XML_NOTATION_NODE) {
++        return;
++    }
+@@ -3709,2 +3713 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-            cur = cur->children;
+-            depth += 1;
++            cur = cur->children;            depth += 1;

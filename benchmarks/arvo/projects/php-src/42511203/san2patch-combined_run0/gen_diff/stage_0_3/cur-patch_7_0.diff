@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..849e1c91110 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,2 +56,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p && GC_TYPE(p) <= IS_CONSTANT_AST) { // Fix: Validate pointer and type before access
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..7c69604938d 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683 +1683,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
++	if (HT_GET_DATA_ADDR(ht)) {
++		efree(HT_GET_DATA_ADDR(ht));
++	} else {
++		HT_GET_DATA_ADDR(ht) = NULL;
++	}

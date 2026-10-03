@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..491b9a019fa 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1782,3 +1782,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
+-	zend_hash_iterators_remove(ht);
++	if (HT_GET_DATA_ADDR(ht)) {
++		efree(HT_GET_DATA_ADDR(ht));
++		zend_hash_iterators_remove(ht);
++	} else {
++		zend_hash_iterators_remove(ht);
++	}
++ free_ht:
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index d13087a5b02..f59af65378f 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -155,0 +156,5 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++// Prevent use-after-free by checking if garbage collection has already occurred
++			if (UNEXPECTED(GC_REFERENCE_COUNT(garbage) <= 0)) {
++				/* Do not proceed if reference count indicates object has been freed */
++				return variable_ptr;
++			}

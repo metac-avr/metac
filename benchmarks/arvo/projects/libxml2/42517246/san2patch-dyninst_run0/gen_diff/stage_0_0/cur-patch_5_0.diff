@@ -1,0 +1,55 @@
+diff --git a/dict.c b/dict.c
+index 5c9ca719..32eaab9c 100644
+--- a/dict.c
++++ b/dict.c
+@@ -870 +870 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    unsigned long key, okey, nbi = 0;
++unsigned long key, okey, nbi = 0;
+@@ -878,2 +878,16 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-
+-    if (len < 0)
++ 
++    /* Enhanced validation to prevent expired pointer dereference */
++    if (len < 0) {
++        /* Add memory validity check before strlen call */
++        if (name == NULL) {
++            return(NULL);
++        }
++        /* Attempt to access first byte to verify pointer validity */
++        volatile char first_byte;
++        if (__builtin_expect((uintptr_t)name < 4096, 0)) {
++            /* Very low address - likely invalid */
++            return(NULL);
++        }
++        /* Try to read first byte - will segfault immediately if invalid */
++        first_byte = *((volatile char*)name);
++        (void)first_byte; /* Prevent optimization */
+@@ -881 +895 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    else
++    } else {
+@@ -882,0 +897 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
++    }
+@@ -890,2 +905 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);
+diff --git a/tree.c b/tree.c
+index 6a42f118..fa284828 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4310,3 +4310,8 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    else if (node->name != NULL) {
+-        if ((doc != NULL) && (doc->dict != NULL))
+-	    ret->name = xmlDictLookup(doc->dict, node->name, -1);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     else if (node->name != NULL) {
++        if ((doc != NULL) && (doc->dict != NULL)) {
++            if (xmlValidateName(node->name, 0) == 0)
++	        ret->name = xmlDictLookup(doc->dict, node->name, -1);
++	    else
++	        ret->name = xmlStrdup(node->name);
++	}
+@@ -4322,2 +4327 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }else{
+-      if (node->type == XML_ELEMENT_NODE)
++    }else{      if (node->type == XML_ELEMENT_NODE)

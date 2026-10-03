@@ -1,0 +1,22 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..d382238119 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -405,0 +406,3 @@ int av_channel_layout_custom_init(AVChannelLayout *channel_layout, int nb_channe
++         return AVERROR(EINVAL);
++
++    if (nb_channels > 256)  // Reasonable limit to prevent large allocations
+diff --git a/libavformat/aiffdec.c b/libavformat/aiffdec.c
+index 5314d159ef..fca10c6c3a 100644
+--- a/libavformat/aiffdec.c
++++ b/libavformat/aiffdec.c
+@@ -271 +271,2 @@ static int aiff_read_header(AVFormatContext *s)
+-                if ((ret = ff_id3v2_parse_apic(s, id3v2_extra_meta)) < 0 ||
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                 if ((ret = ff_id3v2_parse_apic(s, id3v2_extra_meta)) < 0 ||
+@@ -336,0 +338,5 @@ static int aiff_read_header(AVFormatContext *s)
++            if (size <= 0 || size > 65536) {  // Validate reasonable CHAN chunk size
++                av_log(s, AV_LOG_WARNING, "Invalid CHAN chunk size detected: %u\n", size);
++                avio_skip(pb, size);
++                return AVERROR_INVALIDDATA;
++            }

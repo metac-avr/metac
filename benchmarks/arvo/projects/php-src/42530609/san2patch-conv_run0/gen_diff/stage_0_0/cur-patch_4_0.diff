@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..b8d0d26511a 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3200,0 +3201,4 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
++			zend_object *obj = Z_OBJ_P(EX(return_value));
++			if (obj) {
++				GC_SET_REFCOUNT(obj, 1);
++			}
+@@ -3201,0 +3206,3 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
++			if (obj) {
++				GC_SET_REFCOUNT(obj, 0);
++			}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..f0f4c336d21 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -64,4 +64,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
++ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
++ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
++efree(str);
+@@ -71,0 +72 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
++// FIXME: Crash CWE-416: Use After Free
+@@ -74,2 +75,4 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
++	if (ref != NULL) {  // Check for null before accessing
++		i_zval_ptr_dtor(&ref->val);
++		efree_size(ref, sizeof(zend_reference));
++	}

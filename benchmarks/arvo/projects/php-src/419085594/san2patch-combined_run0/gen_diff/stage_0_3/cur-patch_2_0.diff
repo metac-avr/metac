@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..ae1d1227163 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45977 +45977 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-		dim = NULL;
++ 		dim = NULL;
+@@ -46005,0 +46006,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++			/* Prevent use-after-free by ensuring value is safe */
++			if (Z_REFCOUNTED_P(value) && Z_REFCOUNT_P(value) == 0) {
++				/* Value has been freed, cannot proceed */
++				goto assign_dim_op_ret_null;
++			}
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..95a24d76111 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,5 +1894,5 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}
+@@ -1909,0 +1910 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
++					if (Z_REFCOUNTED_P(op1)) Z_ADDREF_P(op1);

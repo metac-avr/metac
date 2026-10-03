@@ -1,0 +1,30 @@
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..078ed6fb41 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -524,0 +525,6 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
++        // Bounds checking to prevent heap overflow
++        if (num_descr < 0 || num_descr > 64) {  // Reasonable limit for channel count
++            av_log(s, AV_LOG_ERROR, "invalid number of channel descriptions: %d\n", num_descr);
++            return AVERROR_INVALIDDATA;
++        }
++
+@@ -542,0 +549,5 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
++            // Prevent negative size
++            if (size < 0) {
++                av_log(s, AV_LOG_ERROR, "channel layout data exhausted\n");
++                return AVERROR_INVALIDDATA;
++            }
+diff --git a/libavformat/aiffdec.c b/libavformat/aiffdec.c
+index 5314d159ef..2c5e955529 100644
+--- a/libavformat/aiffdec.c
++++ b/libavformat/aiffdec.c
+@@ -335 +335,2 @@ static int aiff_read_header(AVFormatContext *s)
+-            break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             break;
+@@ -336,0 +338,4 @@ static int aiff_read_header(AVFormatContext *s)
++            if (size < 0 || size > 2048) {
++                av_log(s, AV_LOG_ERROR, "CHAN chunk size out of bounds: %d\n", size);
++                return AVERROR_INVALIDDATA;
++            }

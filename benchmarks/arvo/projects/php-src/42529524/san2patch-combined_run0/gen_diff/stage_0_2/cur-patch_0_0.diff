@@ -1,0 +1,49 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..b85ec26f6ad 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1332,9 +1331,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
+-	}
+-}
+-
+@@ -1342 +1333 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
++	ZEND_ASSERT(p != NULL && p->refcount > 0);
+@@ -1345,9 +1336 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 1819d0b671d..a1b97cdebff 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4500,2 +4500,4 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zend_object_store_ctor_failed(obj);
+-					OBJ_RELEASE(obj);
++					if (obj != NULL) {  /* Check if object pointer is valid before use */
++						zend_object_store_ctor_failed(obj);
++						OBJ_RELEASE(obj);
++					}
+@@ -4516 +4518,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-						zend_string_release_ex(*rope, 0);
++						if (rope != NULL && *rope != NULL) {  /* Validate rope pointer before use */
++							zend_string_release_ex(*rope, 0);
++						}
+@@ -4520 +4524,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-							zend_string_release_ex(rope[j], 0);
++							if (rope != NULL && rope[j] != NULL) {  /* Validate rope[j] before use */
++								zend_string_release_ex(rope[j], 0);
++							}

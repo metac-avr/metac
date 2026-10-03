@@ -1,0 +1,32 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..a5a4d22d 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -6426,0 +6427,3 @@ htmlDoRead(htmlParserCtxtPtr ctxt, const char *URL, const char *encoding,
++    xmlParserInputBufferPtr input_buf = NULL;
++    const xmlChar *old_buf_content = NULL;
++    int old_buf_size = 0;
+@@ -6434,0 +6438,8 @@ htmlDoRead(htmlParserCtxtPtr ctxt, const char *URL, const char *encoding,
++
++    if (ctxt->input != NULL)
++        input_buf = ctxt->input->buf;
++    if ((input_buf != NULL) && (input_buf->buffer != NULL)) {
++        old_buf_content = xmlBufContent(input_buf->buffer);
++        old_buf_size = xmlBufUse(input_buf->buffer);
++    }
++
+@@ -6435,0 +6447,14 @@ htmlDoRead(htmlParserCtxtPtr ctxt, const char *URL, const char *encoding,
++
++    if ((input_buf != NULL) && (input_buf->buffer != NULL) &&
++        (old_buf_content != NULL)) {
++        const xmlChar *new_buf_content = xmlBufContent(input_buf->buffer);
++        int new_buf_size = xmlBufUse(input_buf->buffer);
++        /* Ensure any stale pointer derived from the input buffer is not used
++           after a potential reallocation during parsing. */
++        if ((new_buf_content != old_buf_content) ||
++            (new_buf_size != old_buf_size)) {
++            old_buf_content = new_buf_content;
++            old_buf_size = new_buf_size;
++        }
++    }
++

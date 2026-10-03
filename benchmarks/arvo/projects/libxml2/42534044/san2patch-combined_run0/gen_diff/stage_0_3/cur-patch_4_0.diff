@@ -1,0 +1,36 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..f460398a 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -593 +593 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
++if (child == NULL)
+@@ -601 +601 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++     xmlNodePtr cur = node;
+@@ -603 +603 @@ nodeGetTree(xmlNodePtr node) {
+-    while (cur->parent)
++    while (cur != NULL && cur->parent)
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..3a7f8444 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6835,2 +6835,8 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr result = xmlSetNsProp(node, ns, localname, value);
++            /* Prevent use-after-free by ensuring no dangling references remain */
++            if (result && result->children && result->children->parent != (xmlNodePtr)result) {
++                result->children->parent = NULL;
++            }
++            return(result);
++        }
+@@ -6839 +6845,6 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr result = xmlSetNsProp(node, NULL, name, value);
++    /* Prevent use-after-free by ensuring no dangling references remain */
++    if (result && result->children && result->children->parent != (xmlNodePtr)result) {
++        result->children->parent = NULL;
++    }
++    return(result);

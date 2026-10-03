@@ -1,0 +1,53 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..11d80df6 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -413 +413,2 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     * From rfc2044: encoding of the Unicode values on UTF-8:
++            /*
++             * From rfc2044: encoding of the Unicode values on UTF-8:
+@@ -422,0 +424,2 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++    if ((cur == NULL) || (cur >= ctxt->input->end))
++        return(0);
+@@ -434 +437,40 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        if ((c & 0xe0) == 0xe0) {
++
++        if ((c & 0xe0) == 0xc0) {
++            if ((avail < 2) || ((cur[1] & 0xc0) != 0x80))
++                goto encoding_error;
++            *len = 2;
++            val = (cur[0] & 0x1f) << 6;
++            val |= (cur[1] & 0x3f);
++            if (!IS_CHAR(val))
++                goto encoding_error;
++            return(val);
++        } else if ((c & 0xf0) == 0xe0) {
++            if ((avail < 3) || ((cur[1] & 0xc0) != 0x80) ||
++                ((cur[2] & 0xc0) != 0x80))
++                goto encoding_error;
++            *len = 3;
++            val = (cur[0] & 0xf) << 12;
++            val |= (cur[1] & 0x3f) << 6;
++            val |= (cur[2] & 0x3f);
++            if (!IS_CHAR(val))
++                goto encoding_error;
++            return(val);
++        } else if ((c & 0xf8) == 0xf0) {
++            if ((avail < 4) || ((cur[1] & 0xc0) != 0x80) ||
++                ((cur[2] & 0xc0) != 0x80) || ((cur[3] & 0xc0) != 0x80))
++                goto encoding_error;
++            *len = 4;
++            val = (cur[0] & 0x7) << 18;
++            val |= (cur[1] & 0x3f) << 12;
++            val |= (cur[2] & 0x3f) << 6;
++            val |= (cur[3] & 0x3f);
++            if (!IS_CHAR(val))
++                goto encoding_error;
++            return(val);
++        } else {
++            goto encoding_error;
++        }
++    } else {
++        *len = 1;
++        return(c);
++    }        if ((c & 0xe0) == 0xe0) {

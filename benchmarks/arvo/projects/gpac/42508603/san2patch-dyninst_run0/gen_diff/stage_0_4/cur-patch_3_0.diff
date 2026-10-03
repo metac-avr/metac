@@ -1,0 +1,19 @@
+diff --git a/src/isomedia/box_funcs.c b/src/isomedia/box_funcs.c
+index 84310399e..60c4ed628 100644
+--- a/src/isomedia/box_funcs.c
++++ b/src/isomedia/box_funcs.c
+@@ -1808 +1808,2 @@ void gf_isom_box_del(GF_Box *a)
+-		GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[iso file] Delete invalid box type %s without registry\n", gf_4cc_to_str(a->type) ));
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[iso file] Delete invalid box type %s without registry\n", gf_4cc_to_str(a->type) ));
+@@ -1810 +1811,3 @@ void gf_isom_box_del(GF_Box *a)
+-		a_box_registry->del_fn(a);
++		if (a_box_registry->del_fn) {
++			a_box_registry->del_fn(a);
++		}
+@@ -2135 +2138,4 @@ void gf_isom_box_del_parent(GF_List **child_boxes, GF_Box*b)
+-	gf_isom_box_del(b);
++	// Clear the box pointer before deletion to prevent use-after-free
++	GF_Box* temp_box = b;
++	b = NULL;
++	gf_isom_box_del(temp_box);

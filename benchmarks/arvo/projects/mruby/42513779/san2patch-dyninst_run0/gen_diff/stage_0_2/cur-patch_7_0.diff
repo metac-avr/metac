@@ -1,0 +1,23 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..a22d3cc95 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -422 +422,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  if (uzero(yy)) return;        /* divided by zero */
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   if (uzero(yy)) return;        /* divided by zero */
+@@ -425,0 +427 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  if (yd == 0 || yd > yy->sz) return;  /* bounds check for y array */
+@@ -430,0 +433 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  if (yd > y.sz || yd == 0) return;  /* bounds check for y array */
+@@ -432,0 +436 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    if (j + yd >= xd + 1) break;  /* prevent out-of-bounds access */
+@@ -436,0 +441 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        if (i+j >= x.sz) break;  /* bounds check for x array */
+@@ -442 +447 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if (i+j < x.sz) b += x.p[i+j];  /* bounds check before access */
+@@ -446,0 +452 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        if (i+j >= x.sz || i >= y.sz) break;  /* bounds check for arrays */
+@@ -452,0 +459 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    if (j >= q.sz) break;  /* bounds check for q array */

@@ -1,0 +1,32 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 8d2f4dd7f..4cd1deeb1 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -3274,0 +3275 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
++		const char *alpns = flow->protos.tls_quic.advertised_alpns;
+@@ -3276 +3277,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
++		if(!ndpi_is_valid_string((const u_char *)alpns, strlen(alpns)))
++		  alpns = NULL;
+@@ -3278 +3280,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		item = strtok_r(buf, ",", &tmp);
++		if(alpns != NULL) {
++		  snprintf(buf, sizeof(buf), "%s", alpns);
+@@ -3280,7 +3283,10 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		while(item != NULL) {
+-		  if(item[0] == 'h') {
+-		    /* Example 'h2' */
+-		    ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_ALPN_SNI_MISMATCH, item);
+-		    break;
+-		  } else
+-		    item = strtok_r(NULL, ",", &tmp);
++		  item = strtok_r(buf, ",", &tmp);
++
++		  while(item != NULL) {
++		    if(item[0] == 'h') {
++		      /* Example 'h2' */
++		      ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_ALPN_SNI_MISMATCH, item);
++		      break;
++		    } else
++		      item = strtok_r(NULL, ",", &tmp);
++		  }

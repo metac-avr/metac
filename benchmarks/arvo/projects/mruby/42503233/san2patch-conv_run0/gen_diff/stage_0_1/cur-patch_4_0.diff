@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..a231a2152 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -479 +479,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     c = mrb_class(mrb, self);
+@@ -481 +482,8 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    mrb_stack_extend(mrb, argc + 3);
++    
++    // Bounds check before stack extension
++    mrb_int required_stack_size = argc + 3;
++    if (required_stack_size < 0 || required_stack_size > MRB_INT_MAX) {
++      mrb_raise(mrb, E_RUNTIME_ERROR, "invalid stack size");
++    }
++    mrb_stack_extend(mrb, required_stack_size);
++    
+@@ -507 +515,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-        mrb_stack_extend(mrb, p->body.irep->nregs + argc);
++        // Validate combined stack requirements
++        mrb_int proc_stack_size = p->body.irep->nregs + argc;
++        if (proc_stack_size < 0 || proc_stack_size > MRB_INT_MAX) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "invalid stack size for proc");
++        }
++        mrb_stack_extend(mrb, proc_stack_size);

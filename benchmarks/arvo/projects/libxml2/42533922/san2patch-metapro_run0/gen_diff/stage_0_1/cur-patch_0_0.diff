@@ -1,0 +1,35 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..efccf39c 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3694 +3694 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->type == XML_ELEMENT_NODE) ||
++    if (((cur->type == XML_ELEMENT_NODE) ||
+@@ -3696 +3696 @@ xmlFreeNode(xmlNodePtr cur) {
+-        (cur->type == XML_XINCLUDE_END)) {
++        (cur->type == XML_XINCLUDE_END))) {
+@@ -3698,3 +3698,6 @@ xmlFreeNode(xmlNodePtr cur) {
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
+-            xmlFreeNsList(cur->nsDef);
++             xmlFreePropList(cur->properties);
++        if (cur->nsDef != NULL) {
++            xmlNsPtr nsDef = cur->nsDef;
++            cur->nsDef = NULL;  /* Clear reference before freeing */
++            xmlFreeNsList(nsDef);
++        }
+@@ -8452,2 +8455,2 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * Handle XML namespace.
+-    */
++     * Handle XML namespace.
++     */
+@@ -8464,2 +8467,7 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * If the search should be done in ancestors only and no
+-    * @elem (the first ancestor) was specified, then skip the search.
++     * Validate namespace pointer before use to prevent use-after-free
++     */
++    if (ns->type != XML_NAMESPACE_DECL) {
++        return (-1);
++    }
++    /*
++    * If the search should be done in ancestors only and no    * @elem (the first ancestor) was specified, then skip the search.

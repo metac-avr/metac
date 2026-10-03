@@ -1,0 +1,57 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..0cd7fdfa5b1 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-416: Use After Free
+@@ -862,0 +864,6 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Validate memory pointer before JIT operations to prevent UAF */
++			if (!zend_jit_validate_ptr((void*)execute_data)) {
++				/* Pointer validation failed - avoid dereferencing freed memory */
++				execute_data = prev_execute_data;
++			}
++		}
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..55e3a8730a7 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7616 +7616 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
++								(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+@@ -7618 +7618 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-				polymorphism = 1;
++					polymorphism = 1;
+@@ -7620 +7620 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-				polymorphism = zend_jit_traces[parent_num].polymorphism + 1;
++					polymorphism = zend_jit_traces[parent_num].polymorphism + 1;
+@@ -7623 +7623 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	}
++		}
+@@ -7625,3 +7625,8 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	JIT_G(tracing) = 1;
+-	stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
+-	JIT_G(tracing) = 0;
++		// Prevent use-after-free by validating execution state before JIT trace execution
++		if (execute_data) {
++			JIT_G(tracing) = 1;
++			stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
++			JIT_G(tracing) = 0;
++		} else {
++			stop = ZEND_JIT_TRACE_STOP_RETURN;
++		}
+@@ -7629,4 +7634,4 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	if (stop & ZEND_JIT_TRACE_HALT) {
+-		ret = -1;
+-	}
+-	stop &= ~ZEND_JIT_TRACE_HALT;
++		if (stop & ZEND_JIT_TRACE_HALT) {
++			ret = -1;
++		}
++		stop &= ~ZEND_JIT_TRACE_HALT;
+@@ -7634,3 +7639,3 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	if (UNEXPECTED(trace_buffer->start != ZEND_JIT_TRACE_START_SIDE)) {
+-		if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_START) {
+-			const zend_op_array *op_array = trace_buffer[0].op_array;
++		if (UNEXPECTED(trace_buffer->start != ZEND_JIT_TRACE_START_SIDE)) {
++			if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_START) {
++				const zend_op_array *op_array = trace_buffer[0].op_array;

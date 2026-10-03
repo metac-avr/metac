@@ -1,0 +1,39 @@
+diff --git a/dict.c b/dict.c
+index 5c9ca719..455f1292 100644
+--- a/dict.c
++++ b/dict.c
+@@ -870 +870 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    unsigned long key, okey, nbi = 0;
++unsigned long key, okey, nbi = 0;
+@@ -878 +878,5 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-
++    
++    /* Validate pointer before dereferencing to avoid expired pointer access */
++    if ((void*)name <= (void*)0x10000)
++        return(NULL);
++ 
+@@ -890,2 +894 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);
+diff --git a/tree.c b/tree.c
+index 6a42f118..bc563e4a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4310 +4310,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    else if (node->name != NULL) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     else if (node->name != NULL) {
+@@ -4312 +4313,11 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    ret->name = xmlDictLookup(doc->dict, node->name, -1);
++	    /* Add null check and validation to prevent expired pointer dereference */
++	    if (node->name != NULL) {
++	        size_t name_len = xmlStrlen(node->name);
++	        if (name_len > 0 && name_len < INT_MAX) {
++	            ret->name = xmlDictLookup(doc->dict, node->name, -1);
++	        } else {
++	            ret->name = xmlStrdup(node->name);
++	        }
++	    } else {
++	        ret->name = NULL;
++	    }

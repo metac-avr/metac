@@ -1,0 +1,37 @@
+diff --git a/tree.c b/tree.c
+index a93f2e31..66b8964d 100644
+--- a/tree.c
++++ b/tree.c
+@@ -553 +553 @@ xmlNewNs(xmlNode *node, const xmlChar *href, const xmlChar *prefix) {
+-	    if ((xmlStrEqual(prev->prefix, cur->prefix)) &&
++	    if ((prev->prefix != NULL) && (xmlStrEqual(prev->prefix, cur->prefix)) &&
+@@ -558 +558 @@ xmlNewNs(xmlNode *node, const xmlChar *href, const xmlChar *prefix) {
+-		if ((xmlStrEqual(prev->prefix, cur->prefix)) &&
++		if ((prev->prefix != NULL) && (xmlStrEqual(prev->prefix, cur->prefix)) &&
+diff --git a/valid.c b/valid.c
+index e11d2c95..e49b9c15 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364,5 +2364,11 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
+-
+-	fullelemname = (elem->ns != NULL && elem->ns->prefix != NULL) ?
+-	    xmlBuildQName(elem->name, elem->ns->prefix, felem, 50) :
+-	    (xmlChar *)elem->name;
++             return(0);
++
++	/* Check if elem->ns is valid before accessing elem->ns->prefix */
++	if ((elem->ns != NULL) && (elem->ns->prefix == NULL)) {
++	    /* Handle case where elem->ns exists but prefix is NULL */
++	    fullelemname = (xmlChar *)elem->name;
++	} else if ((elem->ns != NULL) && (elem->ns->prefix != NULL)) {
++	    fullelemname = xmlBuildQName(elem->name, elem->ns->prefix, felem, 50);
++	} else {
++	    fullelemname = (xmlChar *)elem->name;
++	}
+@@ -2376 +2382 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);
+@@ -2379 +2385 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-					      attr->name, aprefix);
++			                      attr->name, aprefix);

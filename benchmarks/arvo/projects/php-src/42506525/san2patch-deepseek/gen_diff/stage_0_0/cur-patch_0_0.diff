@@ -1,0 +1,14 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..7b01ade26bc 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1409,2 +1409,7 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
+-		ZVAL_UNDEF(&p->val);
++		if (UNEXPECTED(ht->u.flags & HASH_FLAG_ALLOW_COW_VIOLATION)) {
++			ZVAL_COPY_VALUE(&tmp, &p->val);
++			ZVAL_UNDEF(&p->val);
++		} else {
++			ZVAL_COPY(&tmp, &p->val);
++			zval_ptr_dtor(&p->val);
++		}

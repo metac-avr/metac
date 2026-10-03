@@ -1,0 +1,24 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..dbd9665e77 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -348,0 +349,17 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++                                 int *got_frame, AVPacket *avpkt)
++{
++    FlashSVContext *s = avctx->priv_data;
++    int ret;
++
++    /* no supplementary picture */
++    if (avpkt->size == 0)
++        return 0;
++
++    /* skip if decoder init failed */
++    if (!s->blocks)
++        return AVERROR_INVALIDDATA;
++
++    /* check for resolution changes */
++    if (s->image_width != avctx->width || s->image_height != avctx->height) {
++        av_log(avctx, AV_LOG_ERROR,
+@@ -370,0 +388 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++

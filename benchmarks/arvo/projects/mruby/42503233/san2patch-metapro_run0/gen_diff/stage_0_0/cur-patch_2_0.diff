@@ -1,0 +1,29 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..cbd11c30d 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -201,0 +202,6 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++  else {
++    /* Validate stack bounds to prevent buffer overflow */
++    if (mrb->c->ci->stack + room > mrb->c->stend) {
++      stack_extend_alloc(mrb, room);
++    }
++  }
+@@ -515,2 +521,9 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++      if (argc > 0) {
++        ptrdiff_t needed_space = argc;
++        ptrdiff_t available_space = mrb->c->stend - (ci->stack + 1);
++        if (available_space >= needed_space) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          goto stack_overflow;
++        }
++      }
+@@ -531,0 +545,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    goto skip_stack_overflow;
++  
++  stack_overflow:
++    mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in equality comparison");
++  skip_stack_overflow:;

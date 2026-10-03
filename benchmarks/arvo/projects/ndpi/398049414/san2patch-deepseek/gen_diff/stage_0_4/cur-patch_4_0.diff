@@ -1,0 +1,17 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 8d2f4dd7f..613faa466 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -3274,3 +3274,9 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		char buf[256], *tmp, *item;
+-
+-		snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		char buf[256], *tmp, *item;
++		size_t alpns_len;
++
++		alpns_len = strlen(flow->protos.tls_quic.advertised_alpns);
++		if(alpns_len >= sizeof(buf))
++		  alpns_len = sizeof(buf) - 1;
++		memcpy(buf, flow->protos.tls_quic.advertised_alpns, alpns_len);
++		buf[alpns_len] = '\0';

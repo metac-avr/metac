@@ -1,0 +1,26 @@
+diff --git a/src/lib/protocols/bittorrent.c b/src/lib/protocols/bittorrent.c
+index cdb62e8db..c92015bb8 100644
+--- a/src/lib/protocols/bittorrent.c
++++ b/src/lib/protocols/bittorrent.c
+@@ -97,2 +97,6 @@ static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndp
+-  if(bt_hash && (packet->payload_packet_len >= (20 + (bt_hash-(const char*)packet->payload))))
+-    memcpy(flow->protos.bittorrent.hash, bt_hash, 20);
++  if(bt_hash && (packet->payload_packet_len >= (20 + (bt_hash-(const char*)packet->payload)))) {
++    size_t remaining = packet->payload_packet_len - (bt_hash-(const char*)packet->payload);
++    if(remaining >= 20)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     memcpy(flow->protos.bittorrent.hash, bt_hash, 20);
++  }
+@@ -100,12 +103,0 @@ static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndp
+-
+-/* *********************************************** */
+-
+-static void ndpi_add_connection_as_bittorrent(struct ndpi_detection_module_struct *ndpi_struct,
+-					      struct ndpi_flow_struct *flow,
+-					      int bt_offset, int check_hash,
+-					      ndpi_confidence_t confidence) {
+-  struct ndpi_packet_struct *packet = &ndpi_struct->packet;
+-
+-  if(check_hash)
+-    ndpi_search_bittorrent_hash(ndpi_struct, flow, bt_offset);
+-

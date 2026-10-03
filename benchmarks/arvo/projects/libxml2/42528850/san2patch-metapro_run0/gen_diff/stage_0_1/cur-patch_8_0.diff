@@ -1,0 +1,71 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..95515ee7 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4204,10 +4204,12 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
++        /* Add null check and validation to prevent expired pointer dereference */
++        if (node->ns != NULL) {
++            ns = xmlSearchNs(doc, ret, node->ns->prefix);
++            if (ns == NULL) {
++                /*
++                 * Humm, we are copying an element whose namespace is defined
++                 * out of the new tree scope. Search it in the original tree
++                 * and add it at the top of the new tree
++                 */
++                ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++                if (ns != NULL) {
++                    xmlNodePtr root = ret;
+@@ -4215,11 +4217,12 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-		} else {
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
+-	    }
+-	} else {
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
+-	}
++                    while (root->parent != NULL) root = root->parent;
++                    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                } else {
++                    ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++                }
++            } else {
++                /*
++                 * reference the existing namespace definition in our own tree.
++                 */
++                ret->ns = ns;
++            }
++        }
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..0cdcfa10 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1280 +1280 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-        if ((reader->preserves > 0) &&
++	if ((reader->preserves > 0) &&
+@@ -1299,3 +1299,9 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Validate node is safe to free by checking namespace references */
++		if (tmp->type != XML_ELEMENT_NODE || tmp->nsDef == NULL) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		} else {
++		    /* Defer freeing nodes with namespaces to avoid use-after-free */
++		    tmp->extra |= NODE_DEFERRED_FREE;
++		}

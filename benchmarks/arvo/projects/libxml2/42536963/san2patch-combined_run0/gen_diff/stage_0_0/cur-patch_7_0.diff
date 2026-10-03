@@ -1,0 +1,25 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..007117ed 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -421 +421,6 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     */
++// FIXME: Crash CWE-125: Out-of-bounds Read
++      */
++    if (ctxt->input->cur >= ctxt->input->end) {
++        *len = 0;
++        return(0);
++    }
+@@ -3918,2 +3923,6 @@ htmlParseStartTag(htmlParserCtxtPtr ctxt) {
+-    if (meta && (nbatts != 0))
+-	htmlCheckMeta(ctxt, atts);
++    if (meta && (nbatts != 0)) {
++        /* Prevent out-of-bounds read by validating context */
++        if (ctxt != NULL && atts != NULL) {
++            htmlCheckMeta(ctxt, atts);
++        }
++    }
+@@ -3929,2 +3938 @@ htmlParseStartTag(htmlParserCtxtPtr ctxt) {
+-	    else
+-		ctxt->sax->startElement(ctxt->userData, name, NULL);
++	    else		ctxt->sax->startElement(ctxt->userData, name, NULL);

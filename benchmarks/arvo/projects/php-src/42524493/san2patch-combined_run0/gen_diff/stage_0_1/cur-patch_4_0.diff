@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..1f47b9b9c11 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1301 +1301,8 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	if (!Z_REFCOUNTED_P(pz) && Z_TYPE_P(pz) != IS_ARRAY) {
++		return 0;
++	}
++	zend_refcounted_h *counted = Z_COUNTED_P(pz);
++	if (counted == NULL) {
++		return 0;
++	}
++	return GC_REFCOUNT(counted);
+@@ -1312 +1319 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-}
++}}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..871aff7a7cb 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -200 +200,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			object->handlers->free_obj(object);
++			if (object->handlers && object->handlers->free_obj) {
++				object->handlers->free_obj(object);
++			}
+@@ -202 +204,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-416: Use After Free
++ 		ptr = ((char*)object) - object->handlers->offset;

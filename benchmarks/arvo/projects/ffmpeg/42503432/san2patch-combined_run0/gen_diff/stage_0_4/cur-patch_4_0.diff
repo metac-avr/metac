@@ -1,0 +1,42 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..07288a8852 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -664 +664,2 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-                       ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                        ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
+@@ -665,0 +667,13 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
++        
++        /* Validate start_offset to prevent buffer overflow */
++        if (start_offset < 0) {
++            av_log(avctx, AV_LOG_ERROR, "Negative start offset detected\n");
++            goto handle_error;
++        }
++        
++        /* Ensure start_offset doesn't exceed FIFO buffer size */
++        if (start_offset > av_fifo_size(fpc->fifo_buf)) {
++            av_log(avctx, AV_LOG_ERROR, "Start offset exceeds FIFO buffer size\n");
++            goto handle_error;
++        }
++        
+@@ -691,7 +705,12 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-            int warp = fpc->fifo_buf->wptr - fpc->fifo_buf->buffer < MAX_FRAME_HEADER_SIZE;
+-            /* HACK: drain the tail of the fifo */
+-            fpc->fifo_buf->wptr -= MAX_FRAME_HEADER_SIZE;
+-            fpc->fifo_buf->wndx -= MAX_FRAME_HEADER_SIZE;
+-            if (warp) {
+-                fpc->fifo_buf->wptr += fpc->fifo_buf->end -
+-                    fpc->fifo_buf->buffer;
++            /* Check bounds before modifying wptr to prevent underflow */
++            if (fpc->fifo_buf->wptr - fpc->fifo_buf->buffer >= MAX_FRAME_HEADER_SIZE) {
++                int warp = fpc->fifo_buf->wptr - fpc->fifo_buf->buffer < MAX_FRAME_HEADER_SIZE;
++                /* HACK: drain the tail of the fifo */
++                fpc->fifo_buf->wptr -= MAX_FRAME_HEADER_SIZE;
++                fpc->fifo_buf->wndx -= MAX_FRAME_HEADER_SIZE;
++                if (warp) {
++                    fpc->fifo_buf->wptr += fpc->fifo_buf->end -
++                        fpc->fifo_buf->buffer;
++                }
++            } else {
++                av_log(avctx, AV_LOG_WARNING, "Insufficient data to drain FIFO tail\n");

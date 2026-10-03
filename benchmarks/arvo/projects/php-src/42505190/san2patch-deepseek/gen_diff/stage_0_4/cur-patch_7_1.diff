@@ -1,0 +1,50 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..2242c90ac1e 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1646,13 +1645,0 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_deprecated_function(const zend_functi
+-			ZSTR_VAL(fbc->common.scope->name),
+-			ZSTR_VAL(fbc->common.function_name)
+-		);
+-	} else {
+-		zend_error(E_DEPRECATED, "Function %s() is deprecated", ZSTR_VAL(fbc->common.function_name));
+-	}
+-}
+-
+-ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
+-{
+-	zend_error(E_DEPRECATED, "Automatic conversion of false to array is deprecated");
+-}
+-
+@@ -1667 +1654,30 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
+-	if (UNEXPECTED(EG(exception) != NULL)) {
++
++	if (UNEXPECTED(offset < 0)) {
++		zend_illegal_offset_assignment(dim, value);
++		return;
++	}
++
++	if (EXPECTED(Z_TYPE_P(str) == IS_STRING)) {
++		string_len = Z_STRLEN_P(str);
++		if (UNEXPECTED((size_t)offset >= string_len)) {
++			zend_error(E_WARNING, "Cannot access offset of type string on string");
++			return;
++		}
++		c = Z_STRVAL_P(str)[offset];
++		if (UNEXPECTED(c == '\0')) {
++			zend_error(E_WARNING, "Cannot assign an empty string to a string offset");
++			return;
++		}
++		Z_STRVAL_P(str)[offset] = Z_STRVAL_P(value)[0];
++	} else {
++		zend_error(E_WARNING, "Cannot use a scalar value as an array");
++	}
++}
++
++ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++{
++	if (EG(exception)) {
++		return;
++	}
++	zend_error(E_DEPRECATED, "Automatic conversion of false to array is deprecated");
++}	if (UNEXPECTED(EG(exception) != NULL)) {

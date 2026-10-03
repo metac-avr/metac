@@ -1,0 +1,16 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 2752aa55f..7ea71beb2 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -9688 +9688,2 @@ char *ndpi_strnstr(const char *s, const char *find, size_t slen) {
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -9689,0 +9691 @@ char *ndpi_strnstr(const char *s, const char *find, size_t slen) {
++    size_t actual_len = (slen < (size_t)(find - s + slen)) ? slen : (find - s + slen);
+@@ -9706,2 +9708,3 @@ char *ndpi_strnstr(const char *s, const char *find, size_t slen) {
+-    size_t remaining_length = end - s;
+-    s = (char *)memchr(s + 1, c, remaining_length);
++    size_t offset = s + 1 - (const char *)s;
++    size_t bounded_length = (offset < slen) ? (slen - offset) : 0;
++    s = (char *)memchr(s + 1, c, bounded_length);

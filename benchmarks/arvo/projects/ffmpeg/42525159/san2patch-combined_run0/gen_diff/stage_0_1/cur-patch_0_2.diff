@@ -1,0 +1,58 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..28a083cbd1 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,22 +2017,31 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++#define WRITE_FRAME(DIRECT, PIXEL) \
++static void write_frame_direct_##DIRECT##_##PIXEL(Jpeg2000DecoderContext *s, AVFrame *picture, int tile_index, int component) \
++{                                                                                         \
++    int x, y, line, line_x, line_y;                                                       \
++    PIXEL *dst = (PIXEL*)picture->data[component];                                        \
++    int pixelsize = s->precision > 8 ? 2 : 1;                                             \
++    int step_x = s->image_comp[component].step_x;                                         \
++    int step_y = s->image_comp[component].step_y;                                         \
++    int32_t *i_datap = s->tile[tile_index].comp[component].data;                          \
++    int w = s->tile[tile_index].comp[component].coord[0][1] - s->tile[tile_index].comp[component].coord[0][0]; \
++    int h = s->tile[tile_index].comp[component].coord[1][1] - s->tile[tile_index].comp[component].coord[1][0]; \
++    int coffx = s->tile[tile_index].comp[component].coord[0][0];                          \
++    int coffy = s->tile[tile_index].comp[component].coord[1][0];                          \
++                                                                                          \
++    for (line_y = 0; line_y < h; line_y += step_y) {                                     \
++        line = (line_y + coffy) * picture->linesize[component] / sizeof(PIXEL);          \
++        for (line_x = 0; line_x < w; line_x += step_x) {                                 \
++            for (y = line_y + coffy; y < line_y + step_y + coffy; y++) {                  \
++                for (x = line_x + coffx; x < line_x + step_x + coffx; x++) {              \
++                    int sample = *i_datap++;                                              \
++                    /* Fixed CWE-787: Out-of-bounds Write - Added bounds checking before pixel write */ \
++                    if (y < picture->height && x < picture->width) {                      \
++                        *(PIXEL *)(dst + line) = sample;                                  \
++                    }                                                                     \
++                    dst += pixelsize;                                                     \
++                }                                                                         \
++            }                                                                             \
++            line += picture->linesize[component] / sizeof(PIXEL);                        \
++        }                                                                                 \
++    }                                                                                     \
++}

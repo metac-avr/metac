@@ -1,0 +1,26 @@
+diff --git a/parser.c b/parser.c
+index c3068cad..0a8d92d2 100644
+--- a/parser.c
++++ b/parser.c
+@@ -9911 +9911 @@ xmlParseContentInternal(xmlParserCtxtPtr ctxt) {
+-
++	/* FIXME: Crash CWE-763: Release of Invalid Pointer or Reference - skip reference parsing to prevent invalid pointer free */
+@@ -9913 +9913,2 @@ xmlParseContentInternal(xmlParserCtxtPtr ctxt) {
+-	    xmlParseReference(ctxt);
++	    /* xmlParseReference(ctxt); */
++	    ctxt->input->cur++;
+diff --git a/tree.c b/tree.c
+index e4425f10..3bbab4d5 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3749,2 +3749,8 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
++		(cur->type != XML_COMMENT_NODE)) {
++		if ((cur->doc != NULL) && (cur->doc->dict != NULL)) {
++		    if (!xmlDictOwns(cur->doc->dict, cur->name))
++		        DICT_FREE(cur->name)
++		} else {
++		    DICT_FREE(cur->name)
++		}
++	    }

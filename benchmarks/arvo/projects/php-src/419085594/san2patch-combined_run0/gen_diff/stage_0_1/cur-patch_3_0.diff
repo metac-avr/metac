@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..15651e37d3f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45992,0 +45993,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++// FIXME: Crash CWE-416: Use After Free
++			/* Ensure the zval is properly referenced before use */
++			ZVAL_DEREF(var_ptr);
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..ef2a79a4c93 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1682,0 +1683,8 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	
++	/* Mark all buckets as undefined before freeing to prevent use-after-free */
++	p = ht->arData;
++	end = p + ht->nNumUsed;
++	do {
++		ZVAL_UNDEF(&p->val);
++	} while (++p != end);
++	

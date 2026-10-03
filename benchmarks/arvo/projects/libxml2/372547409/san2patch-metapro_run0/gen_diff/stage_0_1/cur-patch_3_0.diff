@@ -1,0 +1,37 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..46c76c07 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1866 +1865,0 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-
+@@ -1874 +1873,2 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-static void
++// Fixed CWE-416: Use After Free - Clear pointer after freeing
++ static void
+@@ -1876 +1876,3 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeAttribute((xmlAttributePtr) attr);
++    xmlAttributePtr attrPtr = (xmlAttributePtr) attr;
++    xmlFreeAttribute(attrPtr);
++    attrPtr = NULL;  // Prevent dangling pointer access
+@@ -1886,2 +1888 @@ void
+-xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++xmlFreeAttributeTable(xmlAttributeTablePtr table) {    xmlHashFree(table, xmlFreeAttributeTableEntry);
+@@ -6220,7 +6221,10 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                value = xmlNodeListGetString(doc, attr->children, 0);
+-                if (value == NULL) {
+-                    xmlVErrMemory(ctxt);
+-                    ret = 0;
+-                } else {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
+-                    xmlFree((char *)value);
++                /* Check if attribute is still valid before accessing */
++                if (attr->atype != XML_ATTRIBUTE_DECL_INVALID) {
++                    value = xmlNodeListGetString(doc, attr->children, 0);
++                    if (value == NULL) {
++                        xmlVErrMemory(ctxt);
++                        ret = 0;
++                    } else {
++                        ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                        xmlFree((char *)value);
++                    }

@@ -1,0 +1,28 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 6656143f6..88688ebab 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1377,8 +1377,15 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      size_t length = strlen(flow->info);
+-
+-      strncat(flow->info + length, flow->ndpi_flow->protos.slp.url[i],
+-              sizeof(flow->info) - length);
+-      length = strlen(flow->info);
+-
+-      if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1)
+-        strncat(flow->info + length, ", ", sizeof(flow->info) - length);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t length = strlen(flow->info);
++       size_t max_copy = sizeof(flow->info) - length - 1;
++       
++       if (max_copy > 0) {
++         size_t url_len = strlen(flow->ndpi_flow->protos.slp.url[i]);
++         size_t copy_len = (url_len < max_copy) ? url_len : max_copy;
++         strncat(flow->info + length, flow->ndpi_flow->protos.slp.url[i],
++                 copy_len);
++         length = strlen(flow->info);
++       }
++
++       if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1 && length + 2 < sizeof(flow->info)) {
++         strncat(flow->info + length, ", ", sizeof(flow->info) - length - 1);
++       }

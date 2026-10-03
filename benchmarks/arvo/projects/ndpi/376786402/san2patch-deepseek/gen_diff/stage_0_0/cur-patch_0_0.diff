@@ -1,0 +1,33 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..8a5ddab0b 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1034 +1034,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      size_t content_len;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t content_len;
+@@ -1040 +1041 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
++	char *double_dot = (char*)memchr((char*)content, ':', content_len);
+@@ -1043,3 +1044,18 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	  double_dot[0] = '\0';
+-	  flow->http.username = ndpi_strdup((char*)content);
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
++	  u_char *username = (u_char*)ndpi_malloc(content_len + 1);
++	  u_char *password = (u_char*)ndpi_malloc(content_len + 1);
++
++	  if(username && password) {
++	    size_t username_len = (size_t)(double_dot - (char*)content);
++	    size_t password_len = content_len - username_len - 1;
++
++	    memcpy(username, content, username_len);
++	    username[username_len] = '\0';
++	    memcpy(password, double_dot + 1, password_len);
++	    password[password_len] = '\0';
++
++	    flow->http.username = ndpi_strdup((char*)username);
++	    flow->http.password = ndpi_strdup((char*)password);
++	  }
++
++	  if(username) ndpi_free(username);
++	  if(password) ndpi_free(password);

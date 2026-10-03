@@ -1,0 +1,21 @@
+diff --git a/src/lib/ndpi_domain_classify.c b/src/lib/ndpi_domain_classify.c
+index 8b66c940e..7c8707eaa 100644
+--- a/src/lib/ndpi_domain_classify.c
++++ b/src/lib/ndpi_domain_classify.c
+@@ -388 +388 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-					char *domain) {
++				char *domain) {
+@@ -392 +392,2 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -394 +395,8 @@ u_int16_t ndpi_domain_classify_contains(ndpi_domain_classify *_s,
+-  if((len = strlen(domain)) == 0)                         return(0);
++  
++  // Validate domain buffer is null-terminated within reasonable bounds
++  for(len = 0; len < 256; len++) {  // Assuming max domain length of 255 + null terminator
++    if(domain[len] == '\0') break;
++  }
++  if(len >= 256 || domain[len] != '\0') return(0);  // Not null-terminated or too long
++  
++  if(len == 0)                         return(0);

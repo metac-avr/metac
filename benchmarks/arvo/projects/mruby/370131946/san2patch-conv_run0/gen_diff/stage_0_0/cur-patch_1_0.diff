@@ -1,0 +1,29 @@
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..036855032 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2878 +2878 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-    mrb_str_modify(mrb, mrb_str_ptr(str));
++     mrb_str_modify(mrb, mrb_str_ptr(str));
+@@ -2880 +2880,7 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-  return mrb_str_cat(mrb, str, RSTRING_PTR(str2), RSTRING_LEN(str2));
++  
++  /* Validate that str2 is not nil and is a proper string type before dereferencing */
++  if (!mrb_nil_p(str2)) {
++    mrb_ensure_string_type(mrb, str2);
++    return mrb_str_cat(mrb, str, RSTRING_PTR(str2), RSTRING_LEN(str2));
++  }
++  return str;
+@@ -2890,2 +2896 @@ mrb_str_append(mrb_state *mrb, mrb_value str1, mrb_value str2)
+-/*
+- * call-seq:
++/* * call-seq:
+diff --git a/src/error.c b/src/error.c
+index c622df789..1368cb6a9 100644
+--- a/src/error.c
++++ b/src/error.c
+@@ -515 +514,0 @@ frozen_error(mrb_state *mrb, mrb_value v)
+-
+@@ -524,0 +524,2 @@ mrb_check_frozen(mrb_state *mrb, void *o)
++  if (!o) return;
++  if (mrb_check_memory_bounds(o, sizeof(struct RBasic))) return;

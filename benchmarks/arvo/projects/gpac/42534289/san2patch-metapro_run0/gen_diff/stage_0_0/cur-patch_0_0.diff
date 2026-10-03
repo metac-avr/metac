@@ -1,0 +1,39 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..f6c50e7d6 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -563 +563,2 @@ static u32 dump_t35(FILE *dump, GF_BitStream *bs, u32 sei_size)
+-static u32 dump_udta_m2v(FILE *dump, u8 *data, u32 sei_size)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ static u32 dump_udta_m2v(FILE *dump, u8 *data, u32 sei_size)
+@@ -565 +566 @@ static u32 dump_udta_m2v(FILE *dump, u8 *data, u32 sei_size)
+-    u32 udta_id = GF_4CC(data[0], data[1], data[2], data[3]);
++    u32 udta_id = 0;
+@@ -567,0 +569,4 @@ static u32 dump_udta_m2v(FILE *dump, u8 *data, u32 sei_size)
++    // Check if we have at least 4 bytes for udta_id
++    if (sei_size < 4) return 0;
++    udta_id = GF_4CC(data[0], data[1], data[2], data[3]);
++
+@@ -569,4 +574,6 @@ static u32 dump_udta_m2v(FILE *dump, u8 *data, u32 sei_size)
+-	if (udta_id==GF_4CC('G','A','9','4'))
+-		udta_code = data[4];
+-	else if (udta_id==GF_4CC('D','T','G','1'))
+-		udta_code = data[4];
++	if (udta_id==GF_4CC('G','A','9','4')) {
++        if (sei_size >= 5) udta_code = data[4];
++    }
++	else if (udta_id==GF_4CC('D','T','G','1')) {
++        if (sei_size >= 5) udta_code = data[4];
++    }
+@@ -578,0 +586,2 @@ static u32 dump_udta_m2v(FILE *dump, u8 *data, u32 sei_size)
++        // Need at least 5 bytes + 2 bytes for initial reads
++        if (sei_size < 7) return 0;
+@@ -579,0 +589,2 @@ static u32 dump_udta_m2v(FILE *dump, u8 *data, u32 sei_size)
++        // Check remaining size for em_data_flag, cc_data_flag, etc.
++        if (sei_size < 7) return 0;
+@@ -584,0 +596,2 @@ static u32 dump_udta_m2v(FILE *dump, u8 *data, u32 sei_size)
++        // Check if we have enough data for em_data
++        if (sei_size < 8) return 0;
+@@ -586,0 +600,2 @@ static u32 dump_udta_m2v(FILE *dump, u8 *data, u32 sei_size)
++        // Check if we have enough data for cc_data loop
++        if (sei_size < (7 + cc_count * 3)) return 0;

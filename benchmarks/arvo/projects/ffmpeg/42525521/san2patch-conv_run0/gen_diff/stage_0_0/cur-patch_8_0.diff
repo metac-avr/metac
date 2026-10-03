@@ -1,0 +1,33 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..3c20971c82 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -280,0 +281 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++            int width_limit = linesize[i] / 2;
+@@ -282,2 +283,4 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step) {
++                    if (dest_pcm[i] + w < (uint16_t*)((uint8_t*)dest_pcm[i] + width_limit * sizeof(uint16_t)))
++                        dest_pcm[i][w] = src[idx];
++                }
+@@ -297,0 +301 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++            int width_limit = linesize[i] / 2;
+@@ -299,3 +303,6 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
++                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step) {
++                    if (dest_pcm[i] + w < (uint16_t*)((uint8_t*)dest_pcm[i] + width_limit * sizeof(uint16_t)))
++                        dest_pcm[i][w] = src[idx];
++                }
+diff --git a/libavcodec/h263dec.c b/libavcodec/h263dec.c
+index f4e7048a5f..2de47a0634 100644
+--- a/libavcodec/h263dec.c
++++ b/libavcodec/h263dec.c
+@@ -612,0 +613,3 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
++        
++        if (s->mb_x >= s->mb_width || s->mb_y >= s->mb_height)
++            break;

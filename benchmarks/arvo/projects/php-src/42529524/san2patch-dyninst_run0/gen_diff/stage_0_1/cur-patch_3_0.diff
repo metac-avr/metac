@@ -1,0 +1,73 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 1819d0b671d..c056d9b283d 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4495 +4495,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zval_ptr_dtor_nogc(var);
++					if (var != NULL) {
++						zval_ptr_dtor_nogc(var);
++					}
+@@ -4500,2 +4502,4 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zend_object_store_ctor_failed(obj);
+-					OBJ_RELEASE(obj);
++					if (obj != NULL) {
++						zend_object_store_ctor_failed(obj);
++						OBJ_RELEASE(obj);
++					}
+@@ -4503,2 +4507,5 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					if (Z_TYPE_P(var) != IS_ARRAY && Z_FE_ITER_P(var) != (uint32_t)-1) {
+-						zend_hash_iterator_del(Z_FE_ITER_P(var));
++					if (var != NULL) {
++						if (Z_TYPE_P(var) != IS_ARRAY && Z_FE_ITER_P(var) != (uint32_t)-1) {
++							zend_hash_iterator_del(Z_FE_ITER_P(var));
++						}
++						zval_ptr_dtor_nogc(var);
+@@ -4506 +4512,0 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zval_ptr_dtor_nogc(var);
+@@ -4508,14 +4514,16 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zend_string **rope = (zend_string **)var;
+-					zend_op *last = EX(func)->op_array.opcodes + op_num;
+-					while ((last->opcode != ZEND_ROPE_ADD && last->opcode != ZEND_ROPE_INIT)
+-							|| last->result.var != var_num) {
+-						ZEND_ASSERT(last >= EX(func)->op_array.opcodes);
+-						last--;
+-					}
+-					if (last->opcode == ZEND_ROPE_INIT) {
+-						zend_string_release_ex(*rope, 0);
+-					} else {
+-						int j = last->extended_value;
+-						do {
+-							zend_string_release_ex(rope[j], 0);
+-						} while (j--);
++					if (var != NULL) {
++						zend_string **rope = (zend_string **)var;
++						zend_op *last = EX(func)->op_array.opcodes + op_num;
++						while ((last->opcode != ZEND_ROPE_ADD && last->opcode != ZEND_ROPE_INIT)
++								|| last->result.var != var_num) {
++							ZEND_ASSERT(last >= EX(func)->op_array.opcodes);
++							last--;
++						}
++						if (last->opcode == ZEND_ROPE_INIT) {
++							zend_string_release_ex(*rope, 0);
++						} else {
++							int j = last->extended_value;
++							do {
++								zend_string_release_ex(rope[j], 0);
++							} while (j--);
++						}
+@@ -4525 +4533 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					if (E_HAS_ONLY_FATAL_ERRORS(EG(error_reporting))
++					if (var != NULL && E_HAS_ONLY_FATAL_ERRORS(EG(error_reporting))
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..0c304da2046 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35 +36 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+@@ -45,0 +47 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++

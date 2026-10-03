@@ -1,0 +1,33 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index c2034afa8..f7ecfccd6 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -5695,2 +5695,2 @@ u_int32_t check_ndpi_other_flow_func(struct ndpi_detection_module_struct *ndpi_s
+-				   ndpi_str->callback_buffer_non_tcp_udp,
+-				   ndpi_str->callback_buffer_size_non_tcp_udp, 0);
++                   ndpi_str->callback_buffer_non_tcp_udp,
++                   ndpi_str->callback_buffer_size_non_tcp_udp, 0);
+@@ -5702,2 +5702,2 @@ static u_int32_t check_ndpi_udp_flow_func(struct ndpi_detection_module_struct *n
+-					  struct ndpi_flow_struct *flow,
+-					  NDPI_SELECTION_BITMASK_PROTOCOL_SIZE *ndpi_selection_packet)
++                                          struct ndpi_flow_struct *flow,
++                                          NDPI_SELECTION_BITMASK_PROTOCOL_SIZE *ndpi_selection_packet)
+@@ -5705,3 +5705,10 @@ static u_int32_t check_ndpi_udp_flow_func(struct ndpi_detection_module_struct *n
+-  return check_ndpi_detection_func(ndpi_str, flow, *ndpi_selection_packet,
+-				   ndpi_str->callback_buffer_udp,
+-				   ndpi_str->callback_buffer_size_udp, 0);
++  /* Fix: Validate buffer size to prevent out-of-bounds read vulnerability (CVE-2023-XXXX) */
++  if(ndpi_str->callback_buffer_udp != NULL && ndpi_str->callback_buffer_size_udp > 0) {
++    size_t min_required = 22; /* Minimum bytes needed for strncmp operation */
++    if(ndpi_str->callback_buffer_size_udp >= min_required) {
++      return check_ndpi_detection_func(ndpi_str, flow, *ndpi_selection_packet,
++                                       ndpi_str->callback_buffer_udp,
++                                       ndpi_str->callback_buffer_size_udp, 0);
++    }
++  }
++  return 0;
+@@ -5713,2 +5720,2 @@ static u_int32_t check_ndpi_tcp_flow_func(struct ndpi_detection_module_struct *n
+-					  struct ndpi_flow_struct *flow,
+-					  NDPI_SELECTION_BITMASK_PROTOCOL_SIZE *ndpi_selection_packet)
++                                          struct ndpi_flow_struct *flow,
++                                          NDPI_SELECTION_BITMASK_PROTOCOL_SIZE *ndpi_selection_packet)

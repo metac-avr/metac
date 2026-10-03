@@ -1,0 +1,16 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 2c4324f14..8ad413c12 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -3639 +3639,5 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			} else {
++			} else if (nal_size > 0 && data + nal_size <= data) { // Check for potential integer overflow
++				inspect_printf(dump, "   <!-- NALU would cause buffer overflow -->\n");
++				break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 			} else {
+@@ -3641 +3645,3 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-				gf_inspect_dump_nalu_internal(dump, data, nal_size, pctx->has_svcc ? 1 : 0, pctx->hevc_state, pctx->avc_state, pctx->vvc_state, pctx->nalu_size_length, ctx->crc, pctx->is_cenc_protected, ctx->analyze, pctx);
++				if (nal_size > 0) {
++					gf_inspect_dump_nalu_internal(dump, data, nal_size, pctx->has_svcc ? 1 : 0, pctx->hevc_state, pctx->avc_state, pctx->vvc_state, pctx->nalu_size_length, ctx->crc, pctx->is_cenc_protected, ctx->analyze, pctx);
++				}

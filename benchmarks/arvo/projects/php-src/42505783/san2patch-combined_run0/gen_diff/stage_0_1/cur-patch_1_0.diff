@@ -1,0 +1,19 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..d573ded16ff 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1201 +1201,2 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -1225 +1226,6 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-		memcpy(ZSTR_VAL(result_str), ZSTR_VAL(op1_str), op1_len);
++		if (op1_str && !ZSTR_IS_INTERNED(op1_str) && GC_REFCOUNT(op1_str) > 0) {
++			memcpy(ZSTR_VAL(result_str), ZSTR_VAL(op1_str), op1_len);
++		} else {
++			zend_string_release(result_str);
++			return;
++		}
+@@ -2020 +2026 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
+-	}
++  	}

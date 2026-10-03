@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..787ae5c5972 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1185 +1186,4 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	return --(p->refcount);
++	if (!(p->u.type_info & GC_FREE_TAG)) {
++		return --(p->refcount);
++	}
++	return 0;
+@@ -1193 +1196,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..ddd7b01de64 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1837,0 +1838 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++	HT_FLAGS(ht) |= HASH_FLAG_UNINITIALIZED; // Mark as uninitialized to prevent further access

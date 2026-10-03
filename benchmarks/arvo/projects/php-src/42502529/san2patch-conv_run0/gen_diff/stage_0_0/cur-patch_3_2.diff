@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..0fe01c8b2e3 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,3 +1173 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+@@ -1176,0 +1175 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
++		ZEND_ASSERT(p->refcount > 0);
+@@ -1178 +1177 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-		--p->refcount;
++		return --(p->refcount);
+@@ -1180,15 +1179,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
+-	ZEND_RC_MOD_CHECK(p);
+-	return --(p->refcount);
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++	return 0;
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..b05c70f576e 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1831 +1831,10 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		if (Z_TYPE_FLAGS(p->val) & IS_TYPE_REFCOUNTED) {
++			zend_refcounted *ref = Z_COUNTED(p->val);
++			if (ref && GC_REFCOUNT(ref) > 0) {
++				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++			} else {
++				continue;
++			}
++		} else {
++			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		}

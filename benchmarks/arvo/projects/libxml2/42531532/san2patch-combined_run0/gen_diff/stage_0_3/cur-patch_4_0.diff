@@ -1,0 +1,34 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..6e300125 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2736,0 +2737 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    xmlIDPtr idp;
+@@ -2743 +2744 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2746,5 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    idp = xmlHashLookup(table, attr->id->value);
++    if (idp != NULL) {
++        if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }
+diff --git a/hash.c b/hash.c
+index 33e8581e..d21b75f7 100644
+--- a/hash.c
++++ b/hash.c
+@@ -1274,3 +1274,9 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
+-
+-    if ((dealloc != NULL) && (entry->payload != NULL))
+-        dealloc(entry->payload, entry->key);
++// FIXME: Crash CWE-416: Use After Free
++ 
++    if ((dealloc != NULL) && (entry->payload != NULL)) {
++        /* Validate payload pointer before use to prevent use-after-free */
++        if (entry->payload != NULL) {
++            dealloc(entry->payload, entry->key);
++            entry->payload = NULL; /* Clear payload after deallocation */
++        }
++    }

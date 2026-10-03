@@ -1,0 +1,165 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 8d2f4dd7f..9ba11a9c0 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -1688,31 +1688,3 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-	if((handshake_len + 12) == block_len) {
+-          packet->payload = &block[13];
+-          packet->payload_packet_len = block_len;
+-          processTLSBlock(ndpi_struct, flow);
+-	} else if(handshake_len + 12 > block_len) {
+-	  int rc;
+-
+-#ifdef DEBUG_TLS
+-          printf("[TLS] DTLS fragment off %d len %d\n", handshake_frag_off, handshake_frag_len);
+-#endif
+-          if(handshake_frag_len + 12 > block_len) {
+-#ifdef DEBUG_TLS
+-            printf("[TLS] DTLS fragment invalid len %d + 12 > %d\n", handshake_frag_len, block_len);
+-#endif
+-            no_dtls = 1;
+-            break;
+-	  }
+-
+-          if(handshake_frag_off == 0) {
+-            rc = ndpi_search_tls_memory(&block[13],
+-					handshake_frag_len + 12,
+-					handshake_frag_off, message);
+-	  } else {
+-            rc = ndpi_search_tls_memory(&block[13 + 12],
+-					handshake_frag_len,
+-					handshake_frag_off + 12, message);
+-	  }
+-	  if(rc == -1) {
+-            no_dtls = 1;
+-            break;
+-	  }
++	void switch_to_tls(struct ndpi_detection_module_struct *ndpi_struct,
++	   struct ndpi_flow_struct *flow, int first_time)
++{
+@@ -1720,2 +1692 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-          printf("[TLS] DTLS reassembled len %d vs %d\n",
+-                 message->buffer_used, handshake_len + 12);
++  printf("Switching to TLS\n");
+@@ -1724,4 +1695,8 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-          if(handshake_len + 12 == message->buffer_used) {
+-            packet->payload = message->buffer;
+-            packet->payload_packet_len = message->buffer_used;
+-            processTLSBlock(ndpi_struct, flow);
++  if(first_time) {
++    /* Reset reassemblers */
++    if(flow->tls_quic.message[0].buffer)
++      ndpi_free(flow->tls_quic.message[0].buffer);
++    memset(&flow->tls_quic.message[0], '\0', sizeof(flow->tls_quic.message[0]));
++    if(flow->tls_quic.message[1].buffer)
++      ndpi_free(flow->tls_quic.message[1].buffer);
++    memset(&flow->tls_quic.message[1], '\0', sizeof(flow->tls_quic.message[1]));
+@@ -1729,6 +1704,8 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-            ndpi_free(message->buffer);
+-            memset(message, '\0', sizeof(*message));
+-            message = NULL;
+-          } else {
+-            /* No break, next fragments might be in the same packet */
+-          }
++    /* We will not check obfuscated heuristic (anymore) because we have been
++       called from the STUN code, but we need to clear the previous state
++       (if any) to trigger "standard" TLS/DTLS code */
++    if(flow->tls_quic.obfuscated_heur_state) {
++      ndpi_free(flow->tls_quic.obfuscated_heur_state);
++      flow->tls_quic.obfuscated_heur_state = NULL;
++    }
++  }
+@@ -1736,8 +1713,2 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-        } else {
+-#ifdef DEBUG_TLS
+-          printf("[TLS] DTLS invalid handshake_len %d, %d\n",
+-                 handshake_len, block_len);
+-#endif
+-          no_dtls = 1;
+-          break;
+-        }
++  ndpi_search_tls_wrapper(ndpi_struct, flow);
++}
+@@ -1836,3 +1807,9 @@ void switch_extra_dissection_to_tls(struct ndpi_detection_module_struct *ndpi_st
+-void switch_to_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-		   struct ndpi_flow_struct *flow, int first_time)
+-{
++if((handshake_len + 12) == block_len) {
++          packet->payload = &block[13];
++          packet->payload_packet_len = block_len;
++          if(ndpi_struct != NULL && flow != NULL && packet->payload != NULL && packet->payload_packet_len > 0) {
++            processTLSBlock(ndpi_struct, flow);
++          }
++	} else if(handshake_len + 12 > block_len) {
++	  int rc;
++
+@@ -1840 +1817 @@ void switch_to_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-  printf("Switching to TLS\n");
++          printf("[TLS] DTLS fragment off %d len %d\n", handshake_frag_off, handshake_frag_len);
+@@ -1841,0 +1819,7 @@ void switch_to_tls(struct ndpi_detection_module_struct *ndpi_struct,
++          if(handshake_frag_len + 12 > block_len) {
++#ifdef DEBUG_TLS
++            printf("[TLS] DTLS fragment invalid len %d + 12 > %d\n", handshake_frag_len, block_len);
++#endif
++            no_dtls = 1;
++            break;
++	  }
+@@ -1843,8 +1827,17 @@ void switch_to_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-  if(first_time) {
+-    /* Reset reassemblers */
+-    if(flow->tls_quic.message[0].buffer)
+-      ndpi_free(flow->tls_quic.message[0].buffer);
+-    memset(&flow->tls_quic.message[0], '\0', sizeof(flow->tls_quic.message[0]));
+-    if(flow->tls_quic.message[1].buffer)
+-      ndpi_free(flow->tls_quic.message[1].buffer);
+-    memset(&flow->tls_quic.message[1], '\0', sizeof(flow->tls_quic.message[1]));
++          if(handshake_frag_off == 0) {
++            rc = ndpi_search_tls_memory(&block[13],
++					handshake_frag_len + 12,
++					handshake_frag_off, message);
++	  } else {
++            rc = ndpi_search_tls_memory(&block[13 + 12],
++					handshake_frag_len,
++					handshake_frag_off + 12, message);
++	  }
++	  if(rc == -1) {
++            no_dtls = 1;
++            break;
++	  }
++#ifdef DEBUG_TLS
++          printf("[TLS] DTLS reassembled len %d vs %d\n",
++                 message->buffer_used, handshake_len + 12);
++#endif
+@@ -1852,8 +1845,6 @@ void switch_to_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-    /* We will not check obfuscated heuristic (anymore) because we have been
+-       called from the STUN code, but we need to clear the previous state
+-       (if any) to trigger "standard" TLS/DTLS code */
+-    if(flow->tls_quic.obfuscated_heur_state) {
+-      ndpi_free(flow->tls_quic.obfuscated_heur_state);
+-      flow->tls_quic.obfuscated_heur_state = NULL;
+-    }
+-  }
++          if(handshake_len + 12 == message->buffer_used) {
++            packet->payload = message->buffer;
++            packet->payload_packet_len = message->buffer_used;
++            if(ndpi_struct != NULL && flow != NULL && packet->payload != NULL && packet->payload_packet_len > 0) {
++              processTLSBlock(ndpi_struct, flow);
++            }
+@@ -1861,2 +1852,15 @@ void switch_to_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-  ndpi_search_tls_wrapper(ndpi_struct, flow);
+-}
++            ndpi_free(message->buffer);
++            memset(message, '\0', sizeof(*message));
++            message = NULL;
++          } else {
++            /* No break, next fragments might be in the same packet */
++          }
++
++        } else {
++#ifdef DEBUG_TLS
++          printf("[TLS] DTLS invalid handshake_len %d, %d\n",
++                 handshake_len, block_len);
++#endif
++          no_dtls = 1;
++          break;
++        }

@@ -1,0 +1,119 @@
+diff --git a/src/ietf/sdp.c b/src/ietf/sdp.c
+index 4b6627fcb..59b531724 100644
+--- a/src/ietf/sdp.c
++++ b/src/ietf/sdp.c
+@@ -483,8 +482,0 @@ GF_Err gf_sdp_info_parse(GF_SDPInfo *sdp, char *sdp_text, u32 text_size)
+-	if (gf_sys_is_cov_mode()) {
+-		SDP_MakeSeconds("30m");
+-	}
+-#endif
+-
+-	//Clean SDP info
+-	gf_sdp_info_reset(sdp);
+-
+@@ -493,3 +485,18 @@ GF_Err gf_sdp_info_parse(GF_SDPInfo *sdp, char *sdp_text, u32 text_size)
+-		LinePos = gf_token_get_line(sdp_text, LinePos, text_size, LineBuf, 3000);
+-		if (LinePos <= 0) break;
+-		if (!strcmp(LineBuf, "\r\n") || !strcmp(LineBuf, "\n") || !strcmp(LineBuf, "\r")) continue;
++		char *dynLineBuf = NULL;
++		u32 dynLineLen = 0;
++		u32 scanPos = LinePos;
++		while ((scanPos < text_size) && (sdp_text[scanPos] != '\n') && (sdp_text[scanPos] != '\r')) {
++			scanPos++;
++			dynLineLen++;
++		}
++		dynLineBuf = gf_malloc(sizeof(char) * (dynLineLen + 2));
++		if (!dynLineBuf) return GF_OUT_OF_MEM;
++		LinePos = gf_token_get_line(sdp_text, LinePos, text_size, dynLineBuf, dynLineLen + 2);
++		if (LinePos <= 0) {
++			gf_free(dynLineBuf);
++			break;
++		}
++		if (!strcmp(dynLineBuf, "\r\n") || !strcmp(dynLineBuf, "\n") || !strcmp(dynLineBuf, "\r")) {
++			gf_free(dynLineBuf);
++			continue;
++		}
+@@ -498 +505 @@ GF_Err gf_sdp_info_parse(GF_SDPInfo *sdp, char *sdp_text, u32 text_size)
+-		switch (LineBuf[0]) {
++		switch (dynLineBuf[0]) {
+@@ -500 +507 @@ GF_Err gf_sdp_info_parse(GF_SDPInfo *sdp, char *sdp_text, u32 text_size)
+-			/*pos = */gf_token_get(LineBuf, 2, "\t\r\n", comp, 3000);
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
+@@ -503,0 +511,77 @@ GF_Err gf_sdp_info_parse(GF_SDPInfo *sdp, char *sdp_text, u32 text_size)
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->Username = gf_strdup(comp);
++			/*pos = */gf_token_get(dynLineBuf, pos, "\t\r\n", comp, 3000);
++			sdp->SessionID = gf_strdup(comp);
++			/*pos = */gf_token_get(dynLineBuf, pos, "\t\r\n", comp, 3000);
++			sdp->SessionVersion = gf_strdup(comp);
++			/*pos = */gf_token_get(dynLineBuf, pos, "\t\r\n", comp, 3000);
++			sdp->NetType = gf_strdup(comp);
++			/*pos = */gf_token_get(dynLineBuf, pos, "\t\r\n", comp, 3000);
++			sdp->AddressType = gf_strdup(comp);
++			/*pos = */gf_token_get(dynLineBuf, pos, "\t\r\n", comp, 3000);
++			sdp->Address = gf_strdup(comp);
++			break;
++		case 's':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->SessionName = gf_strdup(comp);
++			break;
++		case 'i':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->SessionInfo = gf_strdup(comp);
++			break;
++		case 'u':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->URI = gf_strdup(comp);
++			break;
++		case 'e':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->Email = gf_strdup(comp);
++			break;
++		case 'p':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->Phone = gf_strdup(comp);
++			break;
++		case 'c':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->Connection = gf_strdup(comp);
++			break;
++		case 'b':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->Bandwidth = gf_strdup(comp);
++			break;
++		case 't':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->Time = gf_strdup(comp);
++			break;
++		case 'r':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->Repeat = gf_strdup(comp);
++			break;
++		case 'z':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->TimeZone = gf_strdup(comp);
++			break;
++		case 'k':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->Encryption = gf_strdup(comp);
++			break;
++		case 'a':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			if (!strcmp(comp, "control")) {
++				/*pos = */gf_token_get(dynLineBuf, pos, "\t\r\n", comp, 3000);
++				sdp->Control = gf_strdup(comp);
++			}
++			break;
++		case 'm':
++			/*pos = */gf_token_get(dynLineBuf, 2, "\t\r\n", comp, 3000);
++			sdp->Media = gf_strdup(comp);
++			/*pos = */gf_token_get(dynLineBuf, pos, "\t\r\n", comp, 3000);
++			sdp->Port = gf_strdup(comp);
++			/*pos = */gf_token_get(dynLineBuf, pos, "\t\r\n", comp, 3000);
++			sdp->Protocol = gf_strdup(comp);
++			/*pos = */gf_token_get(dynLineBuf, pos, "\t\r\n", comp, 3000);
++			sdp->Format = gf_strdup(comp);
++			break;
++		}
++		gf_free(dynLineBuf);
++	}

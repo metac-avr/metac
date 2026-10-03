@@ -1,0 +1,19 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..c7b8ccae 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3607,0 +3608,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    /* Mark node as freed to prevent use-after-free */
++	    cur->type = XML_ELEMENT_NODE; /* Invalid type to indicate freed */
++
+@@ -6882 +6885,7 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
++	    /* Clear parent references before freeing to prevent use-after-free */
++	    xmlNodePtr cur = prop->children;
++	    while (cur != NULL) {
++	        cur->parent = NULL;
++	        cur = cur->next;
++	    }
+@@ -6883,0 +6893 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++	}

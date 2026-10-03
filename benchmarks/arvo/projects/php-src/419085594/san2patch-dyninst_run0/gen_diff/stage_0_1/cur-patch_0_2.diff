@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..743106eef00 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -46004 +46004,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-				}
++// FIXME: Crash CWE-416: Use After Free
++ 				}
++			}
++			
++			// Check if var_ptr is still valid before using it
++			if (UNEXPECTED(Z_TYPE_P(var_ptr) == IS_UNDEF)) {
++				ZVAL_EMPTY_STRING(var_ptr);
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..1edae06efa3 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,5 +1894,10 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}
++			/* Check if op1 is a valid zval before accessing it */
++			if (UNEXPECTED(Z_TYPE_P(op1) == IS_UNDEF)) {
++				ZVAL_EMPTY_STRING(result);
++				return SUCCESS;
++			}

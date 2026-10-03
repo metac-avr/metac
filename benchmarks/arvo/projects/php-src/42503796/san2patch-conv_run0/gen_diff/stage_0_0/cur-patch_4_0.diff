@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..724a2e5b6f8 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16750,2 +16750,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op2.var));
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++	/* Validate pointers before dtor calls to prevent use-after-free */
++	if (EX_VAR(opline->op2.var) && !Z_ISREF_P(EX_VAR(opline->op2.var))) {
++		zval_ptr_dtor_nogc(EX_VAR(opline->op2.var));
++	}
++	if (EX_VAR(opline->op1.var) && !Z_ISREF_P(EX_VAR(opline->op1.var))) {
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++	}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..bd31e62b597 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p != NULL && GC_REFCOUNT(p) > 0) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

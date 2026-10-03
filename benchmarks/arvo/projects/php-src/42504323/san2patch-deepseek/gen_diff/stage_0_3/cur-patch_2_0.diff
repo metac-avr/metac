@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_opcode.c b/Zend/zend_opcode.c
+index ad41b9f699d..7c5fb0e7bd2 100644
+--- a/Zend/zend_opcode.c
++++ b/Zend/zend_opcode.c
+@@ -884 +884,6 @@ static void zend_calc_live_ranges(
+-			uint32_t var_num = EX_VAR_TO_NUM(opline->result.var) - var_offset;
++			uint32_t var_num;
++			if (UNEXPECTED(opline->result.var < var_offset)) {
++				op_array->fn_flags |= ZEND_ACC_HAS_UNREACHABLE_CODE;
++				continue;
++			}
++			var_num = EX_VAR_TO_NUM(opline->result.var) - var_offset;
+@@ -889,0 +895,3 @@ static void zend_calc_live_ranges(
++			if (UNEXPECTED(var_num >= op_array->last_var)) {
++				continue;
++			}
+@@ -901 +909,2 @@ static void zend_calc_live_ranges(
+-					num = opnum - (opline->opcode == ZEND_OP_DATA);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 					num = opnum - (opline->opcode == ZEND_OP_DATA);

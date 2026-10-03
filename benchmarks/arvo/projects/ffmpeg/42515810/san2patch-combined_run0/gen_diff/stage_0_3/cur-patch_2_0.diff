@@ -1,0 +1,12 @@
+diff --git a/libavutil/aes.c b/libavutil/aes.c
+index 029d738f87..ead91ec965 100644
+--- a/libavutil/aes.c
++++ b/libavutil/aes.c
+@@ -254 +254,6 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
+-        memcpy(a->round_key[0].u8 + t, tk, KC * 4);
++        if (t < (rounds + 1) * 16) {
++            int copy_size = (t + KC * 4 <= (rounds + 1) * 16) ? KC * 4 : (rounds + 1) * 16 - t;
++            if (copy_size > 0 && t < sizeof(a->round_key[0].u8)) {
++                memcpy(a->round_key[0].u8 + t, tk, copy_size < KC * 4 ? copy_size : KC * 4);
++            }
++        }

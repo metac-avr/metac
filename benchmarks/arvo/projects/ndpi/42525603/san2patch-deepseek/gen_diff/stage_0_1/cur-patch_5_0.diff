@@ -1,0 +1,16 @@
+diff --git a/src/lib/protocols/thrift.c b/src/lib/protocols/thrift.c
+index 344795523..31ee4060e 100644
+--- a/src/lib/protocols/thrift.c
++++ b/src/lib/protocols/thrift.c
+@@ -178 +178,3 @@ static void ndpi_dissect_compact_hdr(struct ndpi_detection_module_struct *ndpi_s
+-  struct ndpi_packet_struct const * const packet = &ndpi_struct->packet;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++   struct ndpi_packet_struct const * const packet = &ndpi_struct->packet;
++   u_int16_t method_copy_len;
+@@ -202 +204,5 @@ static void ndpi_dissect_compact_hdr(struct ndpi_detection_module_struct *ndpi_s
+-  thrift_set_method(ndpi_struct, flow, compact_hdr->method, compact_hdr->method_length);
++  method_copy_len = compact_hdr->method_length < sizeof(flow->protos.thrift.method)
++                      ? compact_hdr->method_length
++                      : sizeof(flow->protos.thrift.method) - 1;
++  memcpy(flow->protos.thrift.method, compact_hdr->method, method_copy_len);
++  flow->protos.thrift.method[method_copy_len] = '\0';

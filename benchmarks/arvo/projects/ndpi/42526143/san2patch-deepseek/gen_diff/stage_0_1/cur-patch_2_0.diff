@@ -1,0 +1,37 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..50b09b512 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -299,2 +299,7 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++	      if(filename_len >= 2 &&
++	         packet->content_disposition_line.ptr + attachment_len + 1 + filename_len - 1 <= packet->payload + packet->payload_packet_len) {
++	        strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
++	        flow->http.filename[filename_len-1] = '\0';
++	      } else {
++	        flow->http.filename[0] = '\0';
++	      }
+@@ -306 +310,0 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-
+@@ -308,3 +312,8 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++	      if(filename_len >= 2 &&
++	         packet->content_disposition_line.ptr + attachment_len + 1 + filename_len - 2 <= packet->payload + packet->payload_packet_len) {
++	        strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
++		        filename_len-2);
++	        flow->http.filename[filename_len-2] = '\0';
++	      } else {
++	        flow->http.filename[0] = '\0';
++	      }
+@@ -319,2 +328,6 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    if(packet->content_disposition_line.ptr + attachment_len + filename_len <= packet->payload + packet->payload_packet_len) {
++	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
++	      flow->http.filename[filename_len] = '\0';
++	    } else {
++	      flow->http.filename[0] = '\0';
++	    }

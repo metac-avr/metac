@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..6482468e5bc 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1830,0 +1831,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++		/* Safety check to ensure we don't access freed memory */
++		if (UNEXPECTED((char*)p < (char*)HT_GET_DATA_ADDR(ht))) break;
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..9ab8a0e7155 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -275 +274 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
++	
+@@ -277 +276,4 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-		zend_hash_graceful_reverse_destroy(&EG(symbol_table));
++		/* Add safety check to prevent accessing freed memory during shutdown */
++		if (EG(symbol_table).arData != NULL) {
++			zend_hash_graceful_reverse_destroy(&EG(symbol_table));
++		}
+@@ -282,2 +284 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-		} else {
+-			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
++		} else {			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {

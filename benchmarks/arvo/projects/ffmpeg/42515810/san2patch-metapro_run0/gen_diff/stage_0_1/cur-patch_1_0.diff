@@ -1,0 +1,24 @@
+diff --git a/libavutil/aes.c b/libavutil/aes.c
+index 029d738f87..2cf3de5ebe 100644
+--- a/libavutil/aes.c
++++ b/libavutil/aes.c
+@@ -241,3 +241,13 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
+-        for (i = 0; i < 4; i++)
+-            tk[0][i] ^= sbox[tk[KC - 1][(i + 1) & 3]];
+-        tk[0][0] ^= rcon[rconpointer++];
++        for (i = 0; i < 4; i++) {
++            // Prevent out-of-bounds access by validating array indices
++            if (KC - 1 >= 0 && KC - 1 < 8 && (i + 1) < 4) {
++                tk[0][i] ^= sbox[tk[KC - 1][(i + 1) & 3]];
++            } else {
++                return AVERROR(EINVAL);
++            }
++        }
++        if (rconpointer < sizeof(rcon)) {
++            tk[0][0] ^= rcon[rconpointer++];
++        } else {
++            return AVERROR(EINVAL);
++        }
+@@ -252 +262 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
+-        }
++         }

@@ -1,0 +1,20 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..32678a19483 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -647,0 +648 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -650,2 +651,4 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
++				if (Z_ARRVAL_P(zv) && !GC_IS_RECURSIVE(Z_ARRVAL_P(zv))) {
++					if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
++						flags |= IS_TRACE_PACKED;
++					}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..e1584e4f15a 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2494,0 +2495,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Clear hash table data before freeing to prevent dangling pointers */
++		HT_SET_DATA_ADDR(ht, NULL);

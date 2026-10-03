@@ -1,0 +1,31 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..ec9dfcc4a6 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,14 +2017,10 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
++static void WRITE_FRAME(int bits, PIXEL)
++{
++    ...
++    // Existing code before the fix
++    ...
++    // Fixed CWE-787: Out-of-bounds Write - Coordinate-based bounds validation
++    if (line_offset + x < picture->linesize[plane] && y < picture->height) {                  
++        *dst = sample;                                                                       
++    }                                                                                         
++}
+@@ -2038 +2033,0 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-

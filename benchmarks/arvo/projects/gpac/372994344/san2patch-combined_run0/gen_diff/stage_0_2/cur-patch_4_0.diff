@@ -1,0 +1,17 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..141a13cc2 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -303,0 +304,3 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
++	// Clear the pointer to prevent dangling pointer issues
++	// This helps prevent use-after-free vulnerabilities by ensuring the pointer cannot be dereferenced
++	memset(&es, 0, sizeof(es));
+@@ -3113 +3116,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++  	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3116 +3120,3 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-			gf_m2ts_es_del(ts->ess[i], ts);
++			GF_M2TS_ES *es = ts->ess[i];
++			ts->ess[i] = NULL;
++			gf_m2ts_es_del(es, ts);

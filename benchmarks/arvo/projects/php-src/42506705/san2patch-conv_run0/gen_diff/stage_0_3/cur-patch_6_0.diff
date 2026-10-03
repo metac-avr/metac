@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..6be2d77c592 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -269 +268,0 @@ ZEND_API void ZEND_FASTCALL _zend_hash_init(HashTable *ht, uint32_t nSize, dtor_
+-
+@@ -277 +276,2 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
+-ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
+@@ -280,0 +281 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
++	zend_hash_real_init(ht, 0);
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 6a6476b2ce5..e4e002a545b 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -59826,0 +59827,4 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
++	/* Validate execute_data before initialization to prevent use-after-free */
++	if (UNEXPECTED(execute_data == NULL)) {
++		return;
++	}

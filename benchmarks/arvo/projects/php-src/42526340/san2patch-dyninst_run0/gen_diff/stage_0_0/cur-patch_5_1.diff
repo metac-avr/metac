@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..ddca594c778 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1309,0 +1310 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
++	if (!pz || !Z_COUNTED_P(pz)) return 0;
+@@ -1320,0 +1322 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index eb7ef1624b9..6c89534d1c9 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3270 +3270,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				/* smart branch opcodes may not initialize result */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 				/* smart branch opcodes may not initialize result */
+@@ -3272 +3273,9 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *result_var = EX_VAR(throw_op->result.var);
++					if (result_var && !Z_ISREF_P(result_var)) {
++						zval_ptr_dtor_nogc(result_var);
++					} else if (result_var && Z_ISREF_P(result_var)) {
++						zval *ref_val = Z_REFVAL_P(result_var);
++						if (ref_val && Z_TYPE_P(ref_val) != IS_UNDEF) {
++							zval_ptr_dtor_nogc(result_var);
++						}
++					}

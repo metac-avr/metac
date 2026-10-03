@@ -1,0 +1,94 @@
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 1edaac93b..2d6c6d01f 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -1486,35 +1486,4 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-  while (has_tmpl(&tmpl)) {
+-    read_tmpl(mrb, &tmpl, &dir, &type, &size, &count, &flags);
+-
+-    if (dir == PACK_DIR_INVALID)
+-      continue;
+-    else if (dir == PACK_DIR_NUL) {
+-      check_x(mrb, srclen-srcidx, count, 'x');
+-      srcidx += count;
+-      continue;
+-    }
+-    else if (dir == PACK_DIR_BACK) {
+-      check_x(mrb, srcidx, count, 'X');
+-      srcidx -= count;
+-      continue;
+-    }
+-    else if (dir == PACK_DIR_ABS) {
+-      check_x(mrb, srclen, count, '@');
+-      srcidx = count;
+-      continue;
+-    }
+-
+-    /* PACK_FLAG_COUNT2 directions */
+-    sptr = (const unsigned char *)RSTRING_PTR(str) + srcidx;
+-    switch (dir) {
+-    case PACK_DIR_HEX:
+-      srcidx += unpack_hex(mrb, sptr, srclen - srcidx, result, count, flags);
+-      continue;
+-    case PACK_DIR_STR:
+-      srcidx += unpack_str(mrb, sptr, srclen - srcidx, result, count, flags);
+-      continue;
+-    case PACK_DIR_BASE64:
+-      srcidx += unpack_base64(mrb, sptr, srclen - srcidx, result);
+-      continue;
+-      break;
+-    case PACK_DIR_QENC:
++      case PACK_DIR_QENC:
++      if (srclen < srcidx) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "invalid unpack source");
++      }
+@@ -1523,11 +1491,0 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-    default:
+-      break;
+-    }
+-
+-    while (count != 0) {
+-      if (srclen - srcidx < size) {
+-        while (count-- > 0) {
+-          mrb_ary_push(mrb, result, mrb_nil_value());
+-        }
+-        break;
+-      }
+@@ -1535,37 +1492,0 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      sptr = (const unsigned char*)RSTRING_PTR(str) + srcidx;
+-      switch (dir) {
+-      case PACK_DIR_CHAR:
+-        srcidx += unpack_char(mrb, sptr, srclen - srcidx, result, flags);
+-        break;
+-      case PACK_DIR_SHORT:
+-        srcidx += unpack_short(mrb, sptr, srclen - srcidx, result, flags);
+-        break;
+-      case PACK_DIR_LONG:
+-        srcidx += unpack_long(mrb, sptr, srclen - srcidx, result, flags);
+-        break;
+-      case PACK_DIR_QUAD:
+-        srcidx += unpack_quad(mrb, sptr, srclen - srcidx, result, flags);
+-        break;
+-      case PACK_DIR_BER:
+-        srcidx += unpack_BER(mrb, sptr, srclen - srcidx, result, flags);
+-        break;
+-#ifndef MRB_NO_FLOAT
+-      case PACK_DIR_FLOAT:
+-        srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
+-        break;
+-      case PACK_DIR_DOUBLE:
+-        srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
+-        break;
+-#endif
+-      case PACK_DIR_UTF8:
+-        srcidx += unpack_utf8(mrb, sptr, srclen - srcidx, result, flags);
+-        break;
+-      default:
+-        mrb_raise(mrb, E_RUNTIME_ERROR, "mruby-pack's bug");
+-      }
+-      if (count > 0) {
+-        count--;
+-      }
+-    }
+-    if (single) break;
+-  }

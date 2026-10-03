@@ -1,0 +1,54 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..e7c3d5a6 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -374,2 +374,2 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-
+-    if (ctxt->input->end - ctxt->input->cur < INPUT_CHUNK)
++ 
++    if (ctxt->input->end - ctxt->input->cur < INPUT_CHUNK) {
+@@ -376,0 +377,7 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++        /* Ensure pointers are valid after potential reallocation */
++        if (ctxt->input == NULL)
++            return(0);
++        /* Re-validate cur pointer */
++        if (ctxt->input->cur == NULL || ctxt->input->end == NULL)
++            return(0);
++    }
+@@ -386,2 +393 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        if (*ctxt->input->cur < 0x80) {
+-            if (*ctxt->input->cur == 0) {
++        if (*ctxt->input->cur < 0x80) {            if (*ctxt->input->cur == 0) {
+@@ -3457,11 +3463,2 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
+-	    (r != '-') || (q != '-'))) {
+-	NEXTL(l);
+-	next = CUR_CHAR(nl);
+-
+-	if ((q == '-') && (r == '-') && (cur == '!') && (next == '>')) {
+-	  htmlParseErr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
+-		       "Comment incorrectly closed by '--!>'", NULL, NULL);
+-	  cur = '>';
+-	  break;
+-	}
+-
++// FIXME: Crash CWE-416: Use After Free
++ 	    (r != '-') || (q != '-'))) {
+@@ -3478,0 +3476,7 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	    /* Reinitialize parser state after buffer reallocation */
++	    q = r;
++	    ql = rl;
++	    r = cur;
++	    rl = l;
++	    cur = CUR_CHAR(l);
++	    next = CUR_CHAR(nl);
+@@ -3479,0 +3484,10 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	NEXTL(l);
++	next = CUR_CHAR(nl);
++
++	if ((q == '-') && (r == '-') && (cur == '!') && (next == '>')) {
++	  htmlParseErr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
++		       "Comment incorrectly closed by '--!>'", NULL, NULL);
++	  cur = '>';
++	  break;
++	}
++

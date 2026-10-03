@@ -1,0 +1,40 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..a40c6785bca 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -543,2 +543,2 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
+-#define IS_PTR						13
++#define IS_INDIRECT              	12
++#define IS_PTR					13
+@@ -551 +551,2 @@ struct _zend_ast_ref {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -553 +554,4 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-	return pz->u1.v.type;
++	 zend_uchar type;
++	 if (!pz) return IS_UNDEF;
++	 type = pz->u1.v.type;
++	 return type;
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..08cb8146fe6 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1026 +1026,2 @@ static zend_never_inline void ZEND_FASTCALL add_function_array(zval *result, zva
+-static zend_always_inline zend_result add_function_fast(zval *result, zval *op1, zval *op2) /* {{{ */
++// Fixed: Crash CWE-825: Expired Pointer Dereference - Added memory safety checks
++ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1, zval *op2) /* {{{ */
+@@ -1028 +1029,11 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-	zend_uchar type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));
++	zend_uchar type_pair;
++	
++	if (__builtin_expect(!result || !op1 || !op2, 0)) {
++		return FAILURE;
++	}
++	
++	if (__builtin_expect((uintptr_t)op1 < 4096 || (uintptr_t)op2 < 4096, 0)) {
++		return FAILURE;
++	}
++	
++	type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));

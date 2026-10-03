@@ -1,0 +1,35 @@
+diff --git a/src/lib/protocols/zoom.c b/src/lib/protocols/zoom.c
+index 4ffad391a..e33da8efc 100644
+--- a/src/lib/protocols/zoom.c
++++ b/src/lib/protocols/zoom.c
+@@ -205,11 +205,19 @@ static void ndpi_search_zoom(struct ndpi_detection_module_struct *ndpi_struct,
+-    ip_len = ntohl(*(u_int32_t *)&packet->payload[24]);
+-
+-    if(24 + 4 + ip_len + 4 < packet->payload_packet_len) {
+-      uuid_len = ntohl(*(u_int32_t *)&packet->payload[24 + 4 + ip_len]);
+-
+-      if(packet->payload_packet_len == 24 + 4 + ip_len + 4 + uuid_len + 4) {
+-        NDPI_LOG_DBG(ndpi_struct, "found P2P Zoom\n");
+-        flow->l4.udp.zoom_p2p = 1;
+-        ndpi_int_zoom_add_connection(ndpi_struct, flow, NDPI_PROTOCOL_UNKNOWN);
+-        return;
+-      }
++    // Incremental bounds checking as per fix guidelines
++    if (packet->payload_packet_len > 24 + 4) {  // Check if we can read ip_len
++        ip_len = ntohl(*(u_int32_t *)&packet->payload[24]);
++    
++        // Check if ip_len + related fields fit within payload
++        if(24 + 4 + ip_len + 4 < packet->payload_packet_len) {
++          // Validate we can read uuid_len safely
++          if (24 + 4 + ip_len + 4 <= packet->payload_packet_len - sizeof(u_int32_t)) {
++              uuid_len = ntohl(*(u_int32_t *)&packet->payload[24 + 4 + ip_len]);
++    
++              // Final validation of complete structure
++              if(packet->payload_packet_len == 24 + 4 + ip_len + 4 + uuid_len + 4) {
++                NDPI_LOG_DBG(ndpi_struct, "found P2P Zoom\n");
++                flow->l4.udp.zoom_p2p = 1;
++                ndpi_int_zoom_add_connection(ndpi_struct, flow, NDPI_PROTOCOL_UNKNOWN);
++                return;
++              }
++          }
++        }

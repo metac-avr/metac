@@ -1,0 +1,28 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 239492add..44324d4b8 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1815 +1815,2 @@ int_to_s(mrb_state *mrb, mrb_value self)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1816,0 +1818,5 @@ int_to_s(mrb_state *mrb, mrb_value self)
++  if (mrb_bigint_p(self)) {
++    if (!mrb_bigint_valid_p(self)) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid bigint");
++    }
++  }
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..764f9fce6 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -83 +83 @@ mpz_clear(mrb_state *mrb, mpz_t *s)
+-    mrb_free(mrb, s->p);
++mrb_free(mrb, s->p);
+@@ -93 +93,3 @@ digits(mpz_t *x)
+-  for (i = (x->sz) - 1; (x->p)[i] == 0 ; i--)
++  if (!x || !x->p) return 0;
++  if (x->sz == 0) return 0;
++  for (i = (x->sz) - 1; i < x->sz && (x->p)[i] == 0 ; i--)
+@@ -103 +104,0 @@ mpz_set(mrb_state *mrb, mpz_t *y, mpz_t *x)
+-

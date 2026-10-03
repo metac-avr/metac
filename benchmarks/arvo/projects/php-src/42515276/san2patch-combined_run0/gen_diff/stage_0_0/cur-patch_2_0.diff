@@ -1,0 +1,41 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index 229d9890251..8d3e3d1a3a9 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2328 +2328 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-
++ 
+@@ -2331 +2331,14 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		/* spit out the first library error message, at least */
++		/* Extract required fields before destruction */
++		int position = err->error_messages[0].position;
++		char character = err->error_messages[0].character;
++		char *message_copy = NULL;
++		
++		/* Duplicate string to avoid use-after-free */
++		if (err->error_messages[0].message) {
++			message_copy = estrdup(err->error_messages[0].message);
++		}
++		
++		/* Safe to free now */
++		timelib_error_container_dtor(err);
++		
++		/* Use duplicated values */
+@@ -2333 +2346,6 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-			err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
++			position, character, message_copy ? message_copy : "Unknown error");
++		
++		if (message_copy) {
++			efree(message_copy);
++		}
++		return 0;
+@@ -2340 +2357,0 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-
+diff --git a/ext/date/lib/timelib.c b/ext/date/lib/timelib.c
+index d42c69bbd6f..c2da81ace5c 100644
+--- a/ext/date/lib/timelib.c
++++ b/ext/date/lib/timelib.c
+@@ -158,0 +159,3 @@ void timelib_error_container_dtor(timelib_error_container *errors)
++	if (errors == NULL) {
++		return;
++	}

@@ -1,0 +1,19 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..8bd1f2aa0 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1730 +1730,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-            check_method_noarg(mrb, ci);
++// FIXME: Crash CWE-190: Integer Overflow or Wraparound
++             check_method_noarg(mrb, ci);
+@@ -1755,0 +1757,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Validate stack pointer arithmetic to prevent overflow */
++        if (ci->stack != NULL && &ci->stack[0] < ci->stack) {
++          mrb_raisef(mrb, E_RUNTIME_ERROR, "Stack pointer arithmetic overflow");
++        }
+@@ -1767,0 +1773,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Check for integer overflow in stack extension parameter */
++        mrb_int stack_size = (irep->nregs < 4) ? 4 : irep->nregs;
++        if (stack_size < 0 || (size_t)stack_size > SIZE_MAX / sizeof(mrb_value)) {
++          mrb_raisef(mrb, E_ARGUMENT_ERROR, "Invalid stack size: %d", stack_size);
++        }

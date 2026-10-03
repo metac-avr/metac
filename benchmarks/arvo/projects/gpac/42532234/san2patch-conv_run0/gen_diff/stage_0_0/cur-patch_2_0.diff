@@ -1,0 +1,37 @@
+diff --git a/src/media_tools/m3u8.c b/src/media_tools/m3u8.c
+index 5f570e30a..2ebae97ee 100644
+--- a/src/media_tools/m3u8.c
++++ b/src/media_tools/m3u8.c
+@@ -338 +338 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			while (line[start+spaces] == ' ')
++			while (start+spaces < len && line[start+spaces] == ' ')
+@@ -340 +340 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			if ((sz-spaces<=1) && (line[start+spaces]==',')) {
++			if ((sz-spaces<=1) && (start+spaces < len && line[start+spaces]==',')) {
+@@ -343 +343 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-				if (!strncmp(&line[start+spaces], "\t", sz-spaces) || !strncmp(&line[start+spaces], "\n", sz-spaces)) {
++				if ((start+spaces < len && !strncmp(&line[start+spaces], "\t", sz-spaces)) || (start+spaces < len && !strncmp(&line[start+spaces], "\n", sz-spaces))) {
+@@ -345,5 +345,7 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-					ret[curr_attribute] = gf_calloc( (1+sz-spaces), sizeof(char));
+-					strncpy(ret[curr_attribute], &(line[start+spaces]), sz-spaces);
+-					curr_attribute++;
+-					if (curr_attribute >= num_attributes)
+-						break;
++					if (sz-spaces >= 0) {
++						ret[curr_attribute] = gf_calloc( (1+sz-spaces), sizeof(char));
++						strncpy(ret[curr_attribute], &(line[start+spaces]), sz-spaces);
++						curr_attribute++;
++						if (curr_attribute >= num_attributes)
++							break;
++					}
+@@ -358 +360 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-		if ((line[i] == '\'') || (line[i] == '"'))  {
++		if (i < len && ((line[i] == '\'') || (line[i] == '"')))  {
+@@ -1254,0 +1257 @@ GF_Err gf_m3u8_parse_sub_playlist(const char *m3u8_file, MasterPlaylist **playli
++// FIXED: Added NULL check and bounds validation
+@@ -1257 +1260 @@ GF_Err gf_m3u8_parse_sub_playlist(const char *m3u8_file, MasterPlaylist **playli
+-					while (attributes[i] != NULL) {
++					while (attributes && attributes[i] != NULL) {
+@@ -1264 +1267 @@ GF_Err gf_m3u8_parse_sub_playlist(const char *m3u8_file, MasterPlaylist **playli
+-					gf_free(attributes);
++					if (attributes) gf_free(attributes);

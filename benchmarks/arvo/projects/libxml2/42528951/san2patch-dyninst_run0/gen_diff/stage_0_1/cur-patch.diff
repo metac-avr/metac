@@ -1,0 +1,21 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index 9667ccb4..31405be1 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -1085,3 +1085,3 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	if (val <   0x800) { *out++= (val >>  6) | 0xC0;  bits=  0; }
+-	else if (val < 0x10000) { *out++= (val >> 12) | 0xE0;  bits=  6;}
+-	else if (val < 0x110000)  { *out++= (val >> 18) | 0xF0;  bits=  12; }
++	if (val <   0x800) { if (out - savedout < 4) *out++= (val >>  6) | 0xC0; else return(0); bits=  0; }
++	else if (val < 0x10000) { if (out - savedout < 4) *out++= (val >> 12) | 0xE0; else return(0); bits=  6;}
++	else if (val < 0x110000)  { if (out - savedout < 4) *out++= (val >> 18) | 0xF0; else return(0); bits=  12; }
+@@ -1093 +1093 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	}
++ 	}
+@@ -1095 +1095 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	    *out++= ((val >> bits) & 0x3F) | 0x80 ;
++	    if (out - savedout < 4) *out++= ((val >> bits) & 0x3F) | 0x80 ; else return(0);
+@@ -1098 +1098,2 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-    *out = val;
++    if (val < 0x80) *out = val;
++    else return(0);

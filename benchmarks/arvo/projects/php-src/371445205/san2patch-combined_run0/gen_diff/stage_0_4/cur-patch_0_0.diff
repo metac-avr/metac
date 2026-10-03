@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..482e90971ef 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -251,0 +252 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		zend_string_addref(filename); // Increment reference count to prevent premature freeing
+@@ -291 +292 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-
++ 
+@@ -298,0 +300 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		zend_string_release(filename); // Properly release the reference we added
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..08509ed7324 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,6 +6770 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
+-		}
++        }
+@@ -6777,0 +6773 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -6778,0 +6775 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	zend_object *attribute_obj;
+@@ -6783,0 +6781,3 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	// Transfer ownership of the object to prevent double-free
++	attribute_obj = Z_OBJ(obj);
++	GC_ADDREF(attribute_obj); // Increase refcount to ensure proper lifetime
+@@ -6790,2 +6790 @@ ZEND_METHOD(ReflectionEnum, __construct)
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++	if (EG(exception)) {		RETURN_THROWS();

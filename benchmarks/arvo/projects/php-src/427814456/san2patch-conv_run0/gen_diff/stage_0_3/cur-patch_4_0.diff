@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..d674e00cadb 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -64,0 +65,2 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Invalidate string references in error context before destruction */
++	zend_invalidate_string_in_errors(str);
+@@ -76,3 +78 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-}
+-
+-static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
++}static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+diff --git a/Zend/zend_exceptions.c b/Zend/zend_exceptions.c
+index da4b664981f..1659c14e005 100644
+--- a/Zend/zend_exceptions.c
++++ b/Zend/zend_exceptions.c
+@@ -799 +799,5 @@ ZEND_API zend_class_entry *zend_get_error_exception(void)
+-	return zend_ce_error_exception;
++	zend_class_entry *ce = zend_ce_error_exception;
++	if (ce == NULL) {
++		return zend_ce_exception;
++	}
++	return ce;
+@@ -810 +813,0 @@ static zend_object *zend_throw_exception_zstr(zend_class_entry *exception_ce, ze
+-

@@ -1,0 +1,19 @@
+diff --git a/libavcodec/h2645_parse.c b/libavcodec/h2645_parse.c
+index 28db465059..5b207e66c2 100644
+--- a/libavcodec/h2645_parse.c
++++ b/libavcodec/h2645_parse.c
+@@ -470,0 +471 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
++    int64_t total_size;
+@@ -471,0 +473,9 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
++    // Prevent integer overflow by using 64-bit arithmetic and bounds checking
++    if (length < 0) {
++        return AVERROR_INVALIDDATA;
++    }
++    total_size = (int64_t)length + padding;
++    if (total_size > INT_MAX) {
++        return AVERROR_INVALIDDATA;
++    }
++ 
+@@ -473 +483 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
+-    alloc_rbsp_buffer(&pkt->rbsp, length + padding, use_ref);
++    alloc_rbsp_buffer(&pkt->rbsp, (int)total_size, use_ref);

@@ -1,0 +1,28 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..844783cfd2 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -656 +656 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    }
++     }
+@@ -683,0 +684,4 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
++    /* Validate dimensions to prevent buffer overflow */
++    if (s->jpgframe->width <= 0 || s->jpgframe->height <= 0)
++        return AVERROR_INVALIDDATA;
++
+@@ -708,0 +713,6 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
++    /* Validate buffer boundaries before blitting */
++    if (w <= 0 || h <= 0 || 
++        dst_offset > (frame->linesize[0] * frame->height) / pixel_size ||
++        w > s->jpgframe->width || h > s->jpgframe->height)
++        return AVERROR_INVALIDDATA;
++
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 846ed0b0f8..36858e9de0 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -88 +88 @@ void ff_put_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-    /* read the pixels */
++    /* read the pixels with bounds checking */
+@@ -89,0 +90 @@ void ff_put_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
++        if (pixels + 7 < pixels) break;  // Check for potential overflow

@@ -1,0 +1,42 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..c6a65bbef 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -339,0 +340 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  int reallocated = 0; /* Track if realloc occurred */
+@@ -348 +349 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -352,0 +354 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    reallocated = 1; /* Mark that realloc happened */
+@@ -357 +359,6 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-  ci->stack = ci[-1].stack + push_stacks;
++  /* Validate stack access based on reallocation status */
++  if (!reallocated) {
++    ci->stack = ci[-1].stack + push_stacks;
++  } else {
++    ci->stack = c->cibase[size-1].stack + push_stacks;
++  }
+@@ -2710,8 +2717,12 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
+-      if (mrb_nil_p(regs[a])) {
+-        regs[a] = splat;
+-      }
+-      else {
+-        mrb_assert(mrb_array_p(regs[a]));
+-        mrb_ary_concat(mrb, regs[a], splat);
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
++      /* Check for valid execution context before proceeding */
++      if (mrb && mrb->c) {
++        mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
++        if (mrb_nil_p(regs[a])) {
++          regs[a] = splat;
++        }
++        else {
++          mrb_assert(mrb_array_p(regs[a]));
++          mrb_ary_concat(mrb, regs[a], splat);
++        }
+@@ -2722 +2732,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

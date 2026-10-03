@@ -1,0 +1,23 @@
+diff --git a/src/filters/reframe_img.c b/src/filters/reframe_img.c
+index 9eb787203..a28f973a8 100644
+--- a/src/filters/reframe_img.c
++++ b/src/filters/reframe_img.c
+@@ -347 +347,4 @@ GF_Err img_process(GF_Filter *filter)
+-			pix = data + fh.bfOffBits + i*in_stride;
++// Copy pixel data to local buffer to avoid expired pointer dereference
++			unsigned char *local_pix = (unsigned char *)malloc(in_stride);
++			if (!local_pix) return GF_OUT_OF_MEM;
++			memcpy(local_pix, data + fh.bfOffBits + i*in_stride, in_stride);
+@@ -349,5 +352,5 @@ GF_Err img_process(GF_Filter *filter)
+-				output[j + irow] = pix[2];
+-				output[j+1 + irow] = pix[1];
+-				output[j+2 + irow] = pix[0];
+-				output[j+3 + irow] = pix[3];
+-				pix += 4;
++				output[j + irow] = local_pix[2];
++				output[j+1 + irow] = local_pix[1];
++				output[j+2 + irow] = local_pix[0];
++				output[j+3 + irow] = local_pix[3];
++				local_pix += 4;
+@@ -354,0 +358 @@ GF_Err img_process(GF_Filter *filter)
++			free(local_pix - in_stride);

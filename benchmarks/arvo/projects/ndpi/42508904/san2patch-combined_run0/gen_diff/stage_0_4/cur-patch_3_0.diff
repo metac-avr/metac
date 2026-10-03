@@ -1,0 +1,27 @@
+diff --git a/fuzz/fuzz_ndpi_reader.c b/fuzz/fuzz_ndpi_reader.c
+index 3989accbc..5dd136731 100644
+--- a/fuzz/fuzz_ndpi_reader.c
++++ b/fuzz/fuzz_ndpi_reader.c
+@@ -102 +102,2 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -104 +105,3 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-      ndpi_workflow_process_packet(workflow, header, packet_checked, &flow_risk, NULL);
++      if (header->caplen >= 4) {  // Add bounds check before processing
++        ndpi_workflow_process_packet(workflow, header, packet_checked, &flow_risk, NULL);
++      }
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 3340170ef..f327b0260 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1835 +1835,2 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
+-  case ETH_P_MPLS_UNI:
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   case ETH_P_MPLS_UNI:
+@@ -1836,0 +1838,2 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
++    if(ip_offset + 4 > (int)header->caplen)
++      return(nproto);
+@@ -1842,0 +1846,2 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
++      if(ip_offset + 4 > (int)header->caplen)
++        return(nproto);

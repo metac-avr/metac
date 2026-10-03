@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index c4fce74ebbb..c5956ed0aff 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -2052,2 +2052,6 @@ has_op2_string:;
+-				/* op1_string will be used as the result, so we should not free it */
+-				i_zval_ptr_dtor(result);
++				/* Prevent use-after-free by checking object validity */
++				zend_bool valid_object = (result != NULL && 
++					(Z_TYPE_P(result) == IS_STRING || Z_TYPE_P(result) == IS_OBJECT));
++				if (valid_object) {
++					i_zval_ptr_dtor(result);
++				}
+@@ -2070 +2074,6 @@ has_op2_string:;
+-				i_zval_ptr_dtor(result);
++				/* Add safety check before destruction */
++				zend_bool valid_object = (result != NULL && 
++					(Z_TYPE_P(result) == IS_STRING || Z_TYPE_P(result) == IS_OBJECT));
++				if (valid_object) {
++					i_zval_ptr_dtor(result);
++				}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..d9f1ebdeec3 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p != NULL) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

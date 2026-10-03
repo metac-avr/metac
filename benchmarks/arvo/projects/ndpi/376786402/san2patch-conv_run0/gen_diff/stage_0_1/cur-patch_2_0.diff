@@ -1,0 +1,52 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..2ea7992ba 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1031 +1031 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-			     "Basic", packet->authorization_line.len))
++		     "Basic", packet->authorization_line.len))
+@@ -1033 +1033 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-				"Digest", packet->authorization_line.len))) {
++			"Digest", packet->authorization_line.len))) {
+@@ -1037 +1037 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-					   packet->authorization_line.len - len, &content_len);
++				   packet->authorization_line.len - len, &content_len);
+@@ -1040 +1040,13 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
++	// Add bounds checking before string operations
++	if(content_len > 0) {
++	  // Ensure null termination within allocated bounds
++	  if(content_len > 0) content[content_len - 1] = '\0';
++	  
++	  // Safe string search with bounds checking
++	  char *double_dot = NULL;
++	  for(size_t i = 0; i < content_len; i++) {
++	    if(content[i] == ':') {
++	      double_dot = (char*)&content[i];
++	      break;
++	    }
++	  }
+@@ -1042,4 +1054,5 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	if(double_dot) {
+-	  double_dot[0] = '\0';
+-	  flow->http.username = ndpi_strdup((char*)content);
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
++	  if(double_dot) {
++	    double_dot[0] = '\0';
++	    flow->http.username = ndpi_strdup((char*)content);
++	    flow->http.password = ndpi_strdup(&double_dot[1]);
++	  }
+@@ -1047 +1059,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..7ce8ec7f2 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -956 +956 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++ 
+@@ -958 +958 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-  pos = out = ndpi_malloc(olen);
++  pos = out = ndpi_malloc(olen + 1);
+@@ -991,0 +992 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++  *pos = '\0';

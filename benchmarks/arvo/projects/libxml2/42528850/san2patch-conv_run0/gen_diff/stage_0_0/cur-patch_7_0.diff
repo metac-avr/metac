@@ -1,0 +1,30 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..f5fdd90e 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4367 +4367 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4375 +4375,2 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     xmlNodePtr ret;
+@@ -4377 +4378,3 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    ret = xmlStaticCopyNode(node, doc, NULL, extended);
++    ret = NULL;
++    if (node != NULL)
++        ret = xmlStaticCopyNode(node, doc, NULL, extended);
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..eadd2bd4 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1299,3 +1299,6 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Validate pointer before use - MISRA C:2012 Rule 22.7 */
++		if (tmp != NULL) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		}

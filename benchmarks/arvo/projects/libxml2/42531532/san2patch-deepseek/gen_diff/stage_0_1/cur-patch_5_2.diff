@@ -1,0 +1,66 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..3e694fd8 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2746,0 +2747,4 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++xmlAttrPtr
++xmlGetID(xmlDocPtr doc, const xmlChar *ID) {
++    xmlIDTablePtr table;
++    xmlIDPtr id;
+@@ -2748,2 +2752,2 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    attr->atype = 0;
+-    attr->id = NULL;
++    if (doc == NULL || ID == NULL)
++        return(NULL);
+@@ -2751 +2755,9 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    return(0);
++    table = (xmlIDTablePtr) doc->ids;
++    if (table == NULL)
++        return(NULL);
++
++    id = (xmlIDPtr) xmlHashLookup(table, ID);
++    if (id == NULL)
++        return(NULL);
++
++    return(id->attr);
+@@ -2755 +2767 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+- * xmlGetID:
++ * xmlRemoveID:
+@@ -2757 +2769 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+- * @ID:  the ID value
++ * @attr:  pointer to the attribute
+@@ -2759 +2771 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+- * Search the attribute declaring the given ID
++ * Remove an ID from the document ID table.
+@@ -2761 +2773 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+- * Returns NULL if not found, otherwise the xmlAttrPtr defining the ID
++ * Returns 0 on success, -1 on failure.
+@@ -2763,2 +2775,2 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-xmlAttrPtr
+-xmlGetID(xmlDocPtr doc, const xmlChar *ID) {
++int
++xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+@@ -2768 +2780,22 @@ xmlGetID(xmlDocPtr doc, const xmlChar *ID) {
+-    if (doc == NULL) {
++    if (attr == NULL)
++        return(-1);
++
++    id = (xmlIDPtr) attr->id;
++    if (id == NULL)
++        return(-1);
++
++    if (doc == NULL)
++        return(-1);
++
++    table = (xmlIDTablePtr) doc->ids;
++    if (table == NULL)
++        return(-1);
++
++    if (id->attr == attr) {
++        attr->id = NULL;
++        xmlHashRemoveEntry(table, id->name, (xmlHashDeallocator) xmlFreeID);
++        return(0);
++    }
++
++    return(-1);
++}    if (doc == NULL) {

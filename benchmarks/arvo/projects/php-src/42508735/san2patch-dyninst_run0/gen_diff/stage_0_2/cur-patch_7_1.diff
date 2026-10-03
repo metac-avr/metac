@@ -1,0 +1,39 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index c37cd9ed974..2035c6b37f1 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1215,7 +1214,0 @@ ZEND_API void zend_activate(void) /* {{{ */
+-	if (CG(map_ptr_last)) {
+-		memset(CG(map_ptr_real_base), 0, CG(map_ptr_last) * sizeof(void*));
+-	}
+-	zend_observer_activate();
+-}
+-/* }}} */
+-
+@@ -1223,0 +1217,2 @@ void zend_call_destructors(void) /* {{{ */
++	/* Clear active generators before shutdown to prevent use-after-free */
++	zend_generator_clear_all();
+@@ -1229,8 +1223,0 @@ void zend_call_destructors(void) /* {{{ */
+-
+-ZEND_API void zend_deactivate(void) /* {{{ */
+-{
+-	/* we're no longer executing anything */
+-	EG(current_execute_data) = NULL;
+-
+-	zend_observer_deactivate();
+-
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..3a684ea395b 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		ptr = ((char*)object) - object->handlers->offset;
+@@ -204 +205,5 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		efree(ptr);
++		if (GC_TYPE(object) != IS_NULL) {
++			efree(ptr);
++		} else {
++			efree(ptr);
++		}

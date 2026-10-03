@@ -1,0 +1,44 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..763d3854 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1211,0 +1212,3 @@ xmlFreeDoc(xmlDocPtr cur) {
++    xmlNodePtr child;
++    xmlAttrPtr attr;
++    xmlNodePtr text;
+@@ -1237,0 +1241 @@ xmlFreeDoc(xmlDocPtr cur) {
++
+@@ -1239,0 +1244,33 @@ xmlFreeDoc(xmlDocPtr cur) {
++
++    /*
++     * Detach dictionary-owned attribute name and value pointers from
++     * the tree before the normal cleanup path runs.  xmlFreeProp would
++     * otherwise call free() on an interior pointer returned by the
++     * xmlDict pool.  After detaching these strings, the dictionary is
++     * still responsible for their lifetime, and it is released at the
++     * end of xmlFreeDoc.
++     */
++    if ((dict != NULL) && (cur->children != NULL)) {
++        for (child = cur->children; child != NULL; child = child->next) {
++            if (child->type == XML_ELEMENT_NODE) {
++                for (attr = child->properties; attr != NULL; attr = attr->next) {
++                    if (xmlDictOwns(dict, attr->name)) {
++                        attr->name = NULL;
++                    }
++                    if (attr->children != NULL) {
++                        text = attr->children;
++                        while (text != NULL) {
++                            if (text->type == XML_TEXT_NODE) {
++                                if (xmlDictOwns(dict, text->content)) {
++                                    text->content = NULL;
++                                }
++                                break;
++                            }
++                            text = text->next;
++                        }
++                    }
++                }
++            }
++        }
++    }
++

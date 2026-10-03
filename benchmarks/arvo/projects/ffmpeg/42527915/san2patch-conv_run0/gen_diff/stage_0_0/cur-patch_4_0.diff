@@ -1,0 +1,20 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..346dadc4a2 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
++     } else {
+@@ -243 +243,3 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-            av_freep(&vlc->table);
++            if (vlc->table) {  // Check before freeing
++                av_freep(&vlc->table);
++            }
+@@ -427 +429,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
++
++    if (!single || !single->table) {
++        return AVERROR(EINVAL);
++    }

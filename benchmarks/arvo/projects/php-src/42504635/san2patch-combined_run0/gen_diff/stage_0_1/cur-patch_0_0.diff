@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..1d3bde9b4c0 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (p == NULL) return; // Prevent dereferencing null pointer
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index dce0f32e835..c064c527544 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3500 +3500,8 @@ static zend_always_inline void i_free_compiled_variables(zend_execute_data *exec
+-		i_zval_ptr_dtor(cv);
++		if (Z_REFCOUNTED_P(cv)) {
++			zend_refcounted *ref = Z_COUNTED_P(cv);
++			if (ref && GC_TYPE(ref) != IS_NULL) {
++				i_zval_ptr_dtor(cv);
++			}
++		} else {
++			i_zval_ptr_dtor(cv);
++		}

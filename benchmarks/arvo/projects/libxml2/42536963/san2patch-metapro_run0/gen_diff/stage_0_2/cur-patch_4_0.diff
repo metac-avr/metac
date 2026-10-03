@@ -1,0 +1,25 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..d6fa0c94 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3130 +3130,4 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
+-	cur = CUR_CHAR(l);
++	if ((ctxt->input != NULL) && (ctxt->input->cur < ctxt->input->end))
++	    cur = CUR_CHAR(l);
++	else
++	    break;
+@@ -3167 +3170,2 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
+-static void
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ static void
+@@ -3169,0 +3174,6 @@ htmlParseCharData(htmlParserCtxtPtr ctxt) {
++    if (ctxt != NULL && ctxt->input != NULL) {
++        // Ensure buffer bounds are respected
++        if (ctxt->input->cur > ctxt->input->end) {
++            ctxt->input->cur = ctxt->input->end;
++        }
++    }
+@@ -3179,2 +3189 @@ htmlParseCharData(htmlParserCtxtPtr ctxt) {
+- * [75] ExternalID ::= 'SYSTEM' S SystemLiteral
+- *                   | 'PUBLIC' S PubidLiteral S SystemLiteral
++ * [75] ExternalID ::= 'SYSTEM' S SystemLiteral *                   | 'PUBLIC' S PubidLiteral S SystemLiteral

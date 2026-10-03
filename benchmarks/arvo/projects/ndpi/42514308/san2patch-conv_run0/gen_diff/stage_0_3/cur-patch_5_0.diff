@@ -1,0 +1,28 @@
+diff --git a/src/lib/protocols/softether.c b/src/lib/protocols/softether.c
+index 4f62f1c4a..3142c2564 100644
+--- a/src/lib/protocols/softether.c
++++ b/src/lib/protocols/softether.c
+@@ -229,4 +229,19 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
+-
+-    if(val2.type == VALUE_DATA && val2.value_size > 0 &&
+-       strncmp(val2.value.ptr.value_str, "ddns_fqdn", val2.value_size) == 0)	{
+-      got_fqdn = 1;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++    if(val2.type == VALUE_DATA && val2.value_size > 0) {
++      // Bounds-safe string comparison to prevent out-of-bounds read
++      if(val2.value_size >= sizeof("ddns_fqdn") - 1) {  // Ensure enough data for comparison
++        // Check that we don't read beyond buffer boundaries
++        size_t cmp_len = sizeof("ddns_fqdn") - 1;
++        if(val2.value_size >= cmp_len) {
++          if(strncmp(val2.value.ptr.value_str, "ddns_fqdn", cmp_len) == 0) {
++            // Additional check for proper null termination within bounds
++            if(cmp_len < val2.value_size && val2.value.ptr.value_str[cmp_len] == '\0') {
++              got_fqdn = 1;
++            } else if(cmp_len == val2.value_size) {
++              // Exact match case
++              got_fqdn = 1;
++            }
++          }
++        }
++      }

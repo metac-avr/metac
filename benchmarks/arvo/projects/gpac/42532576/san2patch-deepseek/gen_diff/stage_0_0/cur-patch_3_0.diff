@@ -1,0 +1,27 @@
+diff --git a/src/media_tools/m3u8.c b/src/media_tools/m3u8.c
+index 5f570e30a..8263dd8ae 100644
+--- a/src/media_tools/m3u8.c
++++ b/src/media_tools/m3u8.c
+@@ -657 +657,21 @@ static char** parse_attributes(const char *line, s_accumulated_attributes *attri
+-		return ret;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++// ensure each returned attribute is NUL-terminated within its allocation
++		{
++			u32 j = 0;
++			while (ret[j] != NULL) {
++				size_t ret_len = strlen_safe(ret[j], line);
++				char *tmp = gf_strndup(ret[j], ret_len);
++				if (!tmp) {
++					while (ret[j] != NULL) {
++						gf_free(ret[j]);
++						j++;
++					}
++					gf_free(ret);
++					return NULL;
++				}
++				gf_free(ret[j]);
++				ret[j] = tmp;
++				j++;
++			}
++		}
++ 		return ret;

@@ -1,0 +1,22 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..59a17d9c 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1989 +1989 @@ xmlXIncludeLoadFallback(xmlXIncludeCtxtPtr ctxt, xmlNodePtr fallback, int nr) {
+-        if (ctxt->incTab[nr]->inc == NULL)
++        if (ctxt->incTab[nr]->inc == NULL) {
+@@ -1990,0 +1991,8 @@ xmlXIncludeLoadFallback(xmlXIncludeCtxtPtr ctxt, xmlNodePtr fallback, int nr) {
++        } else {
++            /* Transfer ownership to prevent use-after-free */
++            xmlNodePtr temp = fallback->children;
++            while (temp != NULL) {
++                xmlUnlinkNode(temp);
++                temp = temp->next;
++            }
++        }
+@@ -2218,2 +2226,3 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		       "XInclude error: would result in multiple root nodes\n",
+-			   NULL);
++// FIXME: Crash CWE-416: Use After Free
++ 		       "XInclude error: would result in multiple root nodes\n",
++		       NULL);

@@ -1,0 +1,20 @@
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index be826527f..29190689a 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -15955 +15955,2 @@ static Bool gf_ac4_raw_frame(GF_BitStream *bs, GF_AC4Config* hdr, Bool full_pars
+-			default_presentation_flag = gf_ac4_is_substream_group_part_of_default_presentation(hdr_p_list, i);
++// FIXME: Crash CWE-416: Use After Free
++ 			default_presentation_flag = hdr_p_list ? gf_ac4_is_substream_group_part_of_default_presentation(hdr_p_list, i) : 0;
+@@ -16018 +16019,2 @@ static Bool gf_ac4_raw_frame(GF_BitStream *bs, GF_AC4Config* hdr, Bool full_pars
+-				if (p->b_presentation_core_channel_coded == 1) {
++// FIXME: Crash CWE-416: Use After Free
++ 				if (p && p->b_presentation_core_channel_coded == 1) {
+@@ -16027 +16029,4 @@ static Bool gf_ac4_raw_frame(GF_BitStream *bs, GF_AC4Config* hdr, Bool full_pars
+-				gf_free(idx);
++				if (idx) {
++					gf_free(idx);
++					idx = NULL; // Clear the local pointer
++				}
+@@ -16029,0 +16035 @@ static Bool gf_ac4_raw_frame(GF_BitStream *bs, GF_AC4Config* hdr, Bool full_pars
++			if (p) p->substream_group_indexs = NULL; // Clear the structure pointer

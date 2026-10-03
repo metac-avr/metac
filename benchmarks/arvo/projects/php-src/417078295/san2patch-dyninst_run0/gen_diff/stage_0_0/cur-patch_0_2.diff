@@ -1,0 +1,17 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..eeb518ed1e3 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40406,2 +40406,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
+-			ZVAL_REF(variable_ptr, Z_REF_P(value));
++			if (Z_REFCOUNTED_P(value) && !GC_DELREF(Z_REF_P(value))) {
++				zend_reference *ref = Z_REF_P(value);
++				if (EXPECTED(GC_REFCOUNT(ref) > 0)) {
++					Z_ADDREF_P(value);
++					ZVAL_REF(variable_ptr, ref);
++				}
++			} else {
++				Z_ADDREF_P(value);
++				ZVAL_REF(variable_ptr, Z_REF_P(value));
++			}

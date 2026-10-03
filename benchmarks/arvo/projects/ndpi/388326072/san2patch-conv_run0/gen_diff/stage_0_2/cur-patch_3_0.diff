@@ -1,0 +1,20 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 073e22dcd..5af3c1a7e 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -3180,2 +3180,4 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-                      if(param_len > 0 &&
+-                         quic_len_buffer_still_required(packet->payload[s_offset]) <= (int)param_len) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                       if(param_len > 0 &&
++                         quic_len_buffer_still_required(packet->payload[s_offset]) <= (int)param_len &&
++                         s_offset + quic_len_buffer_still_required(packet->payload[s_offset]) <= packet->payload_packet_len) { // Added bounds check
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 7e1a08ac1..bef3e266e 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -1396 +1396,3 @@ void process_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-  processClientServerHello(ndpi_struct, flow, flow->protos.tls_quic.quic_version);
++  if(crypto_data_len >= 2) {
++    processClientServerHello(ndpi_struct, flow, flow->protos.tls_quic.quic_version);
++  }

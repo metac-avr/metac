@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..9ce6037c68a 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *tmp_op_data = EX_VAR(opline->op_data.var);
++		if (tmp_op_data && Z_TYPE_P(tmp_op_data) != IS_UNDEF) {
++			ZVAL_UNDEF(tmp_op_data);
++		}
+@@ -29960,9 +29963 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-}
+-
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA_TMP_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	zval *object_ptr, *orig_object_ptr;
+-	zval *value;
+-	zval *variable_ptr;
+-	zval *dim;
++}	zval *dim;
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..8709b7a2e16 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7624 +7624,6 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-
++// FIXME: Crash CWE-416: Use After Free
++	if (EX_VAR(opline->op1.var)) {
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++		EX_VAR(opline->op1.var) = NULL;
++	}
++ 

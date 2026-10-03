@@ -1,0 +1,44 @@
+diff --git a/libavcodec/hevcdec.c b/libavcodec/hevcdec.c
+index 1a0beac901..296601ca4f 100644
+--- a/libavcodec/hevcdec.c
++++ b/libavcodec/hevcdec.c
+@@ -1958,6 +1958,10 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        int nPbH_c = nPbH >> s->ps.sps->vshift[1];
+-
+-        luma_mc_uni(lc, dst0, s->frame->linesize[0], ref0->frame,
+-                    &current_mv.mv[0], x0, y0, nPbW, nPbH,
+-                    s->sh.luma_weight_l0[current_mv.ref_idx[0]],
+-                    s->sh.luma_offset_l0[current_mv.ref_idx[0]]);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         int nPbH_c = nPbH >> s->ps.sps->vshift[1];
++
++        // Validate motion vector coordinates to prevent buffer overflows
++        if (current_mv.mv[0].x >= -((int)(nPbW + 16)) && current_mv.mv[0].y >= -((int)(nPbH + 16))) {
++            luma_mc_uni(lc, dst0, s->frame->linesize[0], ref0->frame,
++                        &current_mv.mv[0], x0, y0, nPbW, nPbH,
++                        s->sh.luma_weight_l0[current_mv.ref_idx[0]],
++                        s->sh.luma_offset_l0[current_mv.ref_idx[0]]);
++        }
+@@ -1979,4 +1983,7 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        luma_mc_uni(lc, dst0, s->frame->linesize[0], ref1->frame,
+-                    &current_mv.mv[1], x0, y0, nPbW, nPbH,
+-                    s->sh.luma_weight_l1[current_mv.ref_idx[1]],
+-                    s->sh.luma_offset_l1[current_mv.ref_idx[1]]);
++        // Validate motion vector coordinates to prevent buffer overflows
++        if (current_mv.mv[1].x >= -((int)(nPbW + 16)) && current_mv.mv[1].y >= -((int)(nPbH + 16))) {
++            luma_mc_uni(lc, dst0, s->frame->linesize[0], ref1->frame,
++                        &current_mv.mv[1], x0, y0, nPbW, nPbH,
++                        s->sh.luma_weight_l1[current_mv.ref_idx[1]],
++                        s->sh.luma_offset_l1[current_mv.ref_idx[1]]);
++        }
+@@ -1999,3 +2006,7 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        luma_mc_bi(lc, dst0, s->frame->linesize[0], ref0->frame,
+-                   &current_mv.mv[0], x0, y0, nPbW, nPbH,
+-                   ref1->frame, &current_mv.mv[1], &current_mv);
++        // Validate motion vector coordinates for bidirectional prediction
++        if (current_mv.mv[0].x >= -((int)(nPbW + 16)) && current_mv.mv[0].y >= -((int)(nPbH + 16)) && 
++            current_mv.mv[1].x >= -((int)(nPbW + 16)) && current_mv.mv[1].y >= -((int)(nPbH + 16))) {
++            luma_mc_bi(lc, dst0, s->frame->linesize[0], ref0->frame,
++                       &current_mv.mv[0], x0, y0, nPbW, nPbH,
++                       ref1->frame, &current_mv.mv[1], &current_mv);
++        }

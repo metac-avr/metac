@@ -1,0 +1,30 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..13d95aa97af 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2494,0 +2495,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Invalidate JIT references before freeing memory */
++		zend_jit_invalidate_references(ht);
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..b90da6e2d0e 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -1515,4 +1515,11 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-				opline++;
+-				ssa_opcodes[idx] = opline;
+-				if (opline->opcode != ZEND_OP_DATA) {
+-					ssa_vars_count = zend_ssa_rename_op(op_array, opline, idx, build_flags, ssa_vars_count, ssa_ops, (int*)stack);
++// FIXME: Crash CWE-416: Use After Free
++				if (opline && opline->opcode != ZEND_OP_DATA) { // Validate opline before increment
++					opline++;
++					ssa_opcodes[idx] = opline;
++					if (opline->opcode != ZEND_OP_DATA) {
++						ssa_vars_count = zend_ssa_rename_op(op_array, opline, idx, build_flags, ssa_vars_count, ssa_ops, (int*)stack);
++					}
++					idx++;
++					len--;
++				} else {
++					break; // Exit loop if opline is invalid
+@@ -1520,2 +1526,0 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-				idx++;
+-				len--;

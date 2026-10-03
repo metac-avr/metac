@@ -1,0 +1,40 @@
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..4e4c637fb2 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -524 +524 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+-
++ 
+@@ -526 +526,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+-        ret = av_channel_layout_custom_init(ch_layout, nb_channels);
++        // Fix: Validate size before allocation to prevent buffer overflow
++        if (size < (int64_t)num_descr * 20) {
++            av_log(s, AV_LOG_ERROR, "insufficient data for channel descriptions\n");
++            ret = AVERROR_INVALIDDATA;
++            goto out;
++        }
++        ret = av_channel_layout_custom_init(ch_layout, num_descr);
+diff --git a/libavcodec/codec_par.c b/libavcodec/codec_par.c
+index abaac63841..7b2984ebe5 100644
+--- a/libavcodec/codec_par.c
++++ b/libavcodec/codec_par.c
+@@ -271 +271 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        } else {
++         } else {
+@@ -273 +273,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++        // Add bounds checking for custom channel layout to prevent buffer overflow
++        if (par->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM && par->ch_layout.u.map) {
++            // Check if the custom channel layout map size is within safe limits
++            if (par->ch_layout.nb_channels <= 32 / sizeof(AVChannelCustom)) {
++                ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++            } else {
++                // Truncate or reject oversized custom layouts
++                av_log(codec, AV_LOG_WARNING, "Custom channel layout too large, using unspecified layout\n");
++                codec->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
++                codec->ch_layout.nb_channels = par->ch_layout.nb_channels;
++                ret = 0;
++            }
++        } else {
++            ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++        }

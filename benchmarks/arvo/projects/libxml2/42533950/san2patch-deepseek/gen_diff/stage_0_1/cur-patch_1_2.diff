@@ -1,0 +1,107 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..acf7fc2e 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3934,51 +3934,21 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-    if ((cur->ns != NULL) && (target != NULL)) {
+-      xmlNsPtr ns;
+-      int res;
+-
+-      res = xmlSearchNsSafe(target, cur->ns->prefix, &ns);
+-      if (res < 0)
+-          goto error;
+-      if (ns == NULL) {
+-        /*
+-         * Humm, we are copying an element whose namespace is defined
+-         * out of the new tree scope. Search it in the original tree
+-         * and add it at the top of the new tree
+-         */
+-        res = xmlSearchNsSafe(cur->parent, cur->ns->prefix, &ns);
+-        if (res < 0)
+-          goto error;
+-        if (ns != NULL) {
+-          xmlNodePtr root = target;
+-          xmlNodePtr pred = NULL;
+-
+-          while (root->parent != NULL) {
+-            pred = root;
+-            root = root->parent;
+-          }
+-          if (root == (xmlNodePtr) target->doc) {
+-            /* correct possibly cycling above the document elt */
+-            root = pred;
+-          }
+-          ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-          if (ret->ns == NULL)
+-              goto error;
+-        }
+-      } else {
+-        /*
+-         * we have to find something appropriate here since
+-         * we can't be sure, that the namespace we found is identified
+-         * by the prefix
+-         */
+-        if (xmlStrEqual(ns->href, cur->ns->href)) {
+-          /* this is the nice case */
+-          ret->ns = ns;
+-        } else {
+-          /*
+-           * we are in trouble: we need a new reconciled namespace.
+-           * This is expensive
+-           */
+-          ret->ns = xmlNewReconciledNs(target, cur->ns);
+-          if (ret->ns == NULL)
+-              goto error;
+-        }
+-      }
++    xmlAttrPtr
++xmlCopyPropList(xmlNodePtr target, xmlAttrPtr cur) {
++	xmlAttrPtr ret = NULL;
++	xmlAttrPtr p = NULL,q;
++
++	if ((target != NULL) && (target->type != XML_ELEMENT_NODE))
++		target = NULL;
++
++	while (cur != NULL) {
++	    q = xmlCopyProp(target, cur);
++	    if (q == NULL)
++		goto cleanup;
++	    if (p == NULL) {
++	        ret = p = q;
++	    } else {
++	        p->next = q;
++	        q->prev = p;
++	        p = q;
++	    }
++	    cur = cur->next;
++	}
+@@ -3986,2 +3956,5 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-    } else
+-        ret->ns = NULL;
++cleanup:
++	if (p != NULL)
++	    p->next = NULL;
++	return(ret);
++}
+@@ -4040,8 +4012,0 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+- * Create a copy of the attribute. This function sets the parent
+- * pointer of the copy to @target but doesn't set the attribute on
+- * the target element. Users should consider to set the attribute
+- * by calling xmlAddChild afterwards or reset the parent pointer to
+- * NULL.
+- *
+- * Returns: a new #xmlAttrPtr, or NULL in case of error.
+- */
+@@ -4051,11 +4016 @@ xmlCopyProp(xmlNodePtr target, xmlAttrPtr cur) {
+-}
+-
+-/**
+- * xmlCopyPropList:
+- * @target:  the element where the attributes will be grafted
+- * @cur:  the first attribute
+- *
+- * Create a copy of an attribute list. This function sets the
+- * parent pointers of the copied attributes to @target but doesn't
+- * set the attributes on the target element.
+- *
++} *

@@ -1,0 +1,27 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..eb865ab2 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4048 +4048,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-xmlAttrPtr
++// FIXME: Crash CWE-416: Use After Free
++ xmlAttrPtr
+@@ -4050 +4051,5 @@ xmlCopyProp(xmlNodePtr target, xmlAttrPtr cur) {
+-	return xmlCopyPropInternal(NULL, target, cur);
++    if (cur == NULL)
++        return NULL;
++    if (target == NULL)
++        return xmlCopyPropInternal(NULL, NULL, cur);
++    return xmlCopyPropInternal(NULL, target, cur);
+@@ -4070 +4075 @@ xmlCopyPropList(xmlNodePtr target, xmlAttrPtr cur) {
+-        return(NULL);
++         return(NULL);
+@@ -4071,0 +4077,8 @@ xmlCopyPropList(xmlNodePtr target, xmlAttrPtr cur) {
++        if (cur->ns != NULL && (cur->ns->href == NULL) && 
++            (target != NULL && target->doc != NULL)) {
++            xmlNsPtr nsCopy = xmlSearchNs(target->doc, target, cur->ns->prefix);
++            if (nsCopy == NULL && cur->ns->prefix != NULL) {
++                cur = cur->next;
++                continue;
++            }
++        }

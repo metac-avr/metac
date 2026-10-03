@@ -1,0 +1,63 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..aa632956579 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1445,6 +1444,0 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			EG(exit_status) = 255;
+-		}
+-	}
+-}
+-/* }}} */
+-
+@@ -1455,2 +1449,9 @@ static ZEND_COLD void zend_error_va_list(
+-	zend_string *message = zend_vstrpprintf(0, format, args);
+-	zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
++	zend_string *message;
++	zend_string *safe_filename = error_filename;
++	
++	if (error_filename && !ZSTR_IS_INTERNED(error_filename)) {
++		zend_string_addref(error_filename);
++	}
++	
++	message = zend_vstrpprintf(0, format, args);
++	zend_error_zstr_at(orig_type, safe_filename, error_lineno, message);
+@@ -1458,9 +1459,5 @@ static ZEND_COLD void zend_error_va_list(
+-}
+-
+-static ZEND_COLD void get_filename_lineno(int type, zend_string **filename, uint32_t *lineno) {
+-	/* Obtain relevant filename and lineno */
+-	switch (type) {
+-		case E_CORE_ERROR:
+-		case E_CORE_WARNING:
+-			*filename = NULL;
+-			*lineno = 0;
++	
++	if (error_filename && !ZSTR_IS_INTERNED(error_filename)) {
++		zend_string_delref(error_filename);
++	}
++}			*lineno = 0;
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..28d010b9d23 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -834 +834,2 @@ ZEND_API void ZEND_COLD zend_incompatible_double_to_long_error(double d)
+-ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string *s)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string *s)
+@@ -836 +837,15 @@ ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string
+-	zend_error(E_DEPRECATED, "Implicit conversion from float-string \"%s\" to int loses precision", ZSTR_VAL(s));
++	if (s && !GC_IS_RECURSIVE((zend_refcounted *) s) && ZSTR_VAL(s)) {
++		const char *str_val = ZSTR_VAL(s);
++		size_t str_len = ZSTR_LEN(s);
++		if (str_len > 0) {
++			char *temp_str = emalloc(str_len + 1);
++			memcpy(temp_str, str_val, str_len);
++			temp_str[str_len] = '\0';
++			zend_error(E_DEPRECATED, "Implicit conversion from float-string \"%s\" to int loses precision", temp_str);
++			efree(temp_str);
++		} else {
++			zend_error(E_DEPRECATED, "Implicit conversion from float-string \"\" to int loses precision");
++		}
++	} else {
++		zend_error(E_DEPRECATED, "Implicit conversion from float-string \"(null)\" to int loses precision");
++	}

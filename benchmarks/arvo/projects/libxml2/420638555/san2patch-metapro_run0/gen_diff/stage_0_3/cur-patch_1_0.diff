@@ -1,0 +1,88 @@
+diff --git a/tree.c b/tree.c
+index e2357131..0f4cb733 100644
+--- a/tree.c
++++ b/tree.c
+@@ -5530 +5530 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-        return(1);
++         return(1);
+@@ -5539,16 +5539,18 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                for (i = 0; i < nbns; i++) {
+-                    if ((cur->prefix == namespaces[i]->prefix) ||
+-                        (xmlStrEqual(cur->prefix, namespaces[i]->prefix)))
+-                        break;
+-                }
+-                if (i >= nbns) {
+-                    if (nbns >= maxns) {
+-                        xmlNsPtr *tmp;
+-                        int newSize;
+-
+-                        newSize = xmlGrowCapacity(maxns, sizeof(tmp[0]),
+-                                                  10, XML_MAX_ITEMS);
+-                        if (newSize < 0) {
+-                            xmlFree(namespaces);
+-                            return(-1);
+-                        }
++                /* Add safety check to prevent use-after-free */
++                if (cur != NULL) {  /* Prevent accessing freed memory */
++                    for (i = 0; i < nbns; i++) {
++                        if ((cur->prefix == namespaces[i]->prefix) ||
++                            (xmlStrEqual(cur->prefix, namespaces[i]->prefix)))
++                            break;
++                    }
++                    if (i >= nbns) {
++                        if (nbns >= maxns) {
++                            xmlNsPtr *tmp;
++                            int newSize;
++
++                            newSize = xmlGrowCapacity(maxns, sizeof(tmp[0]),
++                                                      10, XML_MAX_ITEMS);
++                            if (newSize < 0) {
++                                xmlFree(namespaces);
++                                return(-1);
++                            }
+@@ -5556,2 +5558,2 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                        if (newSize < 2)
+-                            newSize = 2;
++                            if (newSize < 2)
++                                newSize = 2;
+@@ -5559,5 +5561,13 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                        tmp = xmlRealloc(namespaces,
+-                                         (newSize + 1) * sizeof(tmp[0]));
+-                        if (tmp == NULL) {
+-                            xmlFree(namespaces);
+-                            return(-1);
++                            tmp = xmlRealloc(namespaces,
++                                             (newSize + 1) * sizeof(tmp[0]));
++                            if (tmp == NULL) {
++                                xmlFree(namespaces);
++                                return(-1);
++                            }
++                            namespaces = tmp;
++                            maxns = newSize;
++                        }
++                        /* Additional check before assignment */
++                        if (cur != NULL) {
++                            namespaces[nbns++] = cur;
++                            namespaces[nbns] = NULL;
+@@ -5565,2 +5574,0 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                        namespaces = tmp;
+-                        maxns = newSize;
+@@ -5568,2 +5575,0 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                    namespaces[nbns++] = cur;
+-                    namespaces[nbns] = NULL;
+@@ -5571,2 +5577,5 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-
+-                cur = cur->next;
++                if (cur != NULL) {
++                    cur = cur->next;
++                } else {
++                    break;
++                }
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..c0c8cc58 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1066,0 +1067,3 @@ xmlFreeElement(xmlElementPtr elem) {
++    /* Clear namespace references before freeing to prevent dangling pointers */
++    elem->attributes = NULL;
++    elem->element = NULL;

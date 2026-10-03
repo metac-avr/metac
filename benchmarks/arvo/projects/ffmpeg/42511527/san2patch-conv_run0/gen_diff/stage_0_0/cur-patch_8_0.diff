@@ -1,0 +1,47 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..b597314727 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -152,0 +153,4 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    if (!s->tmpblock) {
++        av_log(s->avctx, AV_LOG_ERROR, "tmpblock is NULL\n");
++        return AVERROR_INVALIDDATA;
++    }
+@@ -155 +159,2 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    s->zstream.next_out  = s->tmpblock;
++// FIXME: Crash CWE-416: Use After Free
++     s->zstream.next_out  = s->tmpblock;
+@@ -160,0 +166,4 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    if (!s->tmpblock) {
++        av_log(s->avctx, AV_LOG_ERROR, "tmpblock is NULL after inflate\n");
++        return AVERROR_INVALIDDATA;
++    }
+@@ -172,0 +182,4 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    if (!s->deflate_block || !s->tmpblock) {
++        av_log(s->avctx, AV_LOG_ERROR, "buffers are NULL\n");
++        return AVERROR_INVALIDDATA;
++    }
+@@ -349,6 +361,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -357 +364,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -359 +367,3 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
++        err = av_reallocp(&s->keyframedata, avpkt->size);
++        if (err < 0) {
++            s->keyframedata = NULL;
+@@ -360,0 +371 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        }
+@@ -366,5 +376,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-
+-    ff_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
+-            s->image_width, s->image_height, s->block_width, s->block_height,
+-            h_blocks, v_blocks, h_part, v_part);
+-

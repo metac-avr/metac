@@ -1,0 +1,35 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index b8b6bd23..995fb1f0 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3014 +3014,3 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
+-        if (err == 0)
++        if (err == 0) {
++            if ((BASE_PTR + startPosition + len) > INPUT_END)
++                len = INPUT_END - (BASE_PTR + startPosition);
+@@ -3015,0 +3018 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
++        }
+@@ -3303 +3306 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	}
++        }
+@@ -3305 +3308,9 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	URI = htmlParseSystemLiteral(ctxt);
++	
++	/* Fix: Check available buffer length before parsing system literal */
++	if ((ctxt->input->end - ctxt->input->cur) > 0) {
++	    URI = htmlParseSystemLiteral(ctxt);
++	} else {
++	    htmlParseErr(ctxt, XML_ERR_URI_REQUIRED,
++	                 "Insufficient buffer for SYSTEM URI\n", NULL, NULL);
++	    URI = NULL;
++	}
+@@ -3327 +3338,8 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	    URI = htmlParseSystemLiteral(ctxt);
++	    /* Fix: Check available buffer length before parsing system literal */
++	    if ((ctxt->input->end - ctxt->input->cur) > 0) {
++	        URI = htmlParseSystemLiteral(ctxt);
++	    } else {
++	        htmlParseErr(ctxt, XML_ERR_URI_REQUIRED,
++	                     "Insufficient buffer for SYSTEM URI\n", NULL, NULL);
++	        URI = NULL;
++	    }

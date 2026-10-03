@@ -1,0 +1,60 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..e14acc23 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346 +1346 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
+diff --git a/tree.c b/tree.c
+index 314cf5d5..75641c74 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// FIXME: Crash CWE-416: Use After Free
++         xmlNsPtr ns;
+@@ -4272,6 +4273,8 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree.
++        if (node->ns == NULL)
++            goto error;
++        ns = xmlSearchNs(doc, ret, node->ns->prefix);
++        if (ns == NULL) {
++            /*
++             * Humm, we are copying an element whose namespace is defined
++             * out of the new tree scope. Search it in the original tree
++             * and add it at the top of the new tree.
+@@ -4281,4 +4284,4 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
++             */
++            ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++            if (ns != NULL) {
++                xmlNodePtr root = ret;
+@@ -4286,2 +4289,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                while (root->parent != NULL) root = root->parent;
++                ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+@@ -4290 +4293 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    }
++            }
+@@ -4293,6 +4296,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	} else {
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
+-	}
++        } else {
++            /*
++             * reference the existing namespace definition in our own tree.
++             */
++            ret->ns = ns;
++        }

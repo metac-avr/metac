@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..ff5a6495563 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272,2 +3272,9 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+-				}
++                    zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++                }
++        }
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	zval *check_var = EX_VAR(throw_op->result.var);
++	if (check_var != NULL && !Z_ISUNDEF_P(check_var)) {
++		zend_gc_delref(check_var);
++		if (Z_REFCOUNT_P(check_var) == 0) {
++			zval_dtor(check_var);
+@@ -3275,0 +3283 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
++ 	}
+@@ -3282,0 +3291 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_USER_OPCODE_SPEC_HANDLER(ZEND_
++
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..a498703a776 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35,2 +36,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
++		if (!Z_DELREF_P(zval_ptr)) {
++			rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		}
+@@ -45,0 +49 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++

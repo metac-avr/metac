@@ -1,0 +1,53 @@
+diff --git a/parser.c b/parser.c
+index 14288713..42b3906b 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4943,0 +4944,31 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
++    void xmlParserHandleComment(xmlParserCtxtPtr ctxt) {
++    xmlChar *buf = NULL;
++    int size = 100;
++    int len = 0;
++    xmlChar q, r;
++    int ql, rl;
++    int l;
++    int cur;
++    
++    /*
++     * Check that there is a comment in the input.
++     */
++    if (ctxt->input == NULL) return;
++    
++    q = 0;
++    r = 0;
++    ql = 0;
++    rl = 0;
++    
++    buf = (xmlChar *) xmlMallocAtomic(size * sizeof(xmlChar));
++    if (buf == NULL) {
++        xmlErrMemory(ctxt, NULL);
++        return;
++    }
++    
++    /*
++     * Parse the comment
++     */
++    SKIP(4);
++    cur = CUR_CHAR(l);
++    
+@@ -4945,2 +4976,2 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-           ((cur != '>') ||
+-	    (r != '-') || (q != '-'))) {
++       ((cur != '>') ||
++	(r != '-') || (q != '-'))) {
+@@ -4963,0 +4995,9 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
++        
++        /* Check for potential buffer overflow before COPY_BUF */
++        if (ql > 0 && len > size - ql) {
++            xmlFatalErrMsgStr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
++                         "Buffer overflow prevented in comment", NULL);
++            xmlFree (buf);
++            return;
++        }
++        
+@@ -4980,0 +5021 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
++}

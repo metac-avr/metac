@@ -1,0 +1,37 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..fcf1944b2 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1038,3 +1038,15 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+-      if(content != NULL) {
+-	char *double_dot = strchr((char*)content, ':');
++ 
++      if(content != NULL && content_len > 0) {
++        /* Bounds-check before using string functions */
++        if(content[content_len - 1] != '\0') {
++          u_char *temp_content = (u_char*)ndpi_malloc(content_len + 1);
++          if(temp_content != NULL) {
++            memcpy(temp_content, content, content_len);
++            temp_content[content_len] = '\0';
++            ndpi_free(content);
++            content = temp_content;
++            content_len += 1;
++          }
++        }
++        
++        char *double_dot = strchr((char*)content, ':');
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..e44a44d98 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -956 +956 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++ 
+@@ -958 +958 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-  pos = out = ndpi_malloc(olen);
++  pos = out = ndpi_malloc(olen + 1); // Allocate one extra byte for safety
+@@ -992,0 +993,3 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++  if (*out_len <= olen) { // Ensure we don't exceed allocated bounds
++    out[*out_len] = '\0'; // Null terminate safely
++  }

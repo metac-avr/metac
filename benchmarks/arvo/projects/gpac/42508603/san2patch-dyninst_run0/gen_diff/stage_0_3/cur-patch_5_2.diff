@@ -1,0 +1,40 @@
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index 753cff17d..a698be57b 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -1253,2 +1253,7 @@ void esds_box_del(GF_Box *s)
+-	if (ptr == NULL)	return;
+-	if (ptr->desc) gf_odf_desc_del((GF_Descriptor *)ptr->desc);
++	if (ptr == NULL) return;
++	// Add defensive check for double-free scenarios
++	if (ptr->desc) {
++		gf_odf_desc_del((GF_Descriptor *)ptr->desc);
++		// Nullify the pointer immediately after freeing
++		ptr->desc = NULL;
++	}
+@@ -1294,9 +1299,2 @@ GF_Err esds_box_read(GF_Box *s, GF_BitStream *bs)
+-					gf_odf_slc_set_pref(ptr->desc->slConfig);
+-				}
+-			}
+-		}
+-	}
+-	return e;
+-}
+-
+-GF_Box *esds_box_new()
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ GF_Box *esds_box_new()
+@@ -1304,0 +1303 @@ GF_Box *esds_box_new()
++	tmp->references = 1;
+@@ -1306,10 +1305 @@ GF_Box *esds_box_new()
+-}
+-
+-
+-#ifndef GPAC_DISABLE_ISOM_WRITE
+-
+-GF_Err esds_box_write(GF_Box *s, GF_BitStream *bs)
+-{
+-	GF_Err e;
+-	u8 *enc_desc;
+-	u32 descSize = 0;
++}	u32 descSize = 0;

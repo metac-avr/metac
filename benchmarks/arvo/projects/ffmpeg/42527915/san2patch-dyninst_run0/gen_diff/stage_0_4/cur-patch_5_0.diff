@@ -1,0 +1,31 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..345c360d42 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -439,3 +439,11 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++        // Validate memory before access to prevent use-after-free
++        if (single != NULL && single->table != NULL) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        } else {
++            // Initialize with safe defaults if memory is invalid
++            table[j].len = 0;
++            table[j].num = 0;
++            AV_WN16(table[j].val, 0);
++        }
+@@ -495 +503 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -500 +508,7 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++        
++    if (multi->table && vlc && buf) {
++        return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    } else {
++        av_log(logctx, AV_LOG_ERROR, "Invalid pointers for VLC generation\n");
++        goto fail;
++    }

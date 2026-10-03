@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..53898ce9a6f 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// Patch: Validate object and handlers before accessing to prevent use-after-free
++		if (object && object->handlers) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}
+diff --git a/Zend/zend_generators.c b/Zend/zend_generators.c
+index a5fcad31dfe..821ec874dbd 100644
+--- a/Zend/zend_generators.c
++++ b/Zend/zend_generators.c
+@@ -409,0 +410 @@ static zend_object *zend_generator_create(zend_class_entry *class_type) /* {{{ *
++	if (generator == NULL) return NULL;

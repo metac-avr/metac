@@ -1,0 +1,75 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..dee0c645 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202,16 +4202,25 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
+-
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
+-
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-		} else {
++        /* Validate namespace pointer to prevent use-after-free */
++        xmlNsPtr ns = NULL;
++        int ns_valid = 1;
++        
++        /* Check if namespace memory is still valid */
++        if (node->ns->type != XML_LOCAL_NAMESPACE && 
++            node->ns->type != XML_GLOBAL_NAMESPACE) {
++            ns_valid = 0;
++        }
++        
++        if (ns_valid) {
++	    ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	    if (ns == NULL) {
++	        /*
++	         * Humm, we are copying an element whose namespace is defined
++	         * out of the new tree scope. Search it in the original tree
++	         * and add it at the top of the new tree
++	         */
++	        ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	        if (ns != NULL) {
++	            xmlNodePtr root = ret;
++
++		    while (root->parent != NULL) root = root->parent;
++		    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		    } else {
+@@ -4218,0 +4228,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
++	        }
++	    } else {
++	        /*
++	         * reference the existing namespace definition in our own tree.
++	         */
++	        ret->ns = ns;
+@@ -4220,6 +4235,4 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	} else {
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
+-	}
++        } else {
++            /* Invalid namespace, don't set ret->ns to prevent UAF */
++            ret->ns = NULL;
++        }
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..af47372e 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -422,2 +422,4 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        xml FreeNsList(cur->nsDef);
++        cur->nsDef = NULL;
++    }

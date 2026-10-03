@@ -1,0 +1,78 @@
+diff --git a/tree.c b/tree.c
+index e2357131..dc8a3a0d 100644
+--- a/tree.c
++++ b/tree.c
+@@ -5530 +5530 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-        return(1);
++         return(1);
+@@ -5539,16 +5539,18 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                for (i = 0; i < nbns; i++) {
+-                    if ((cur->prefix == namespaces[i]->prefix) ||
+-                        (xmlStrEqual(cur->prefix, namespaces[i]->prefix)))
+-                        break;
+-                }
+-                if (i >= nbns) {
+-                    if (nbns >= maxns) {
+-                        xmlNsPtr *tmp;
+-                        int newSize;
+-
+-                        newSize = xmlGrowCapacity(maxns, sizeof(tmp[0]),
+-                                                  10, XML_MAX_ITEMS);
+-                        if (newSize < 0) {
+-                            xmlFree(namespaces);
+-                            return(-1);
+-                        }
++                /* Check if namespace pointer is valid before accessing */
++                if (cur->prefix != NULL) {  /* Basic validity check */
++                    for (i = 0; i < nbns; i++) {
++                        if ((cur->prefix == namespaces[i]->prefix) ||
++                            (xmlStrEqual(cur->prefix, namespaces[i]->prefix)))
++                            break;
++                    }
++                    if (i >= nbns) {
++                        if (nbns >= maxns) {
++                            xmlNsPtr *tmp;
++                            int newSize;
++
++                            newSize = xmlGrowCapacity(maxns, sizeof(tmp[0]),
++                                                      10, XML_MAX_ITEMS);
++                            if (newSize < 0) {
++                                xmlFree(namespaces);
++                                return(-1);
++                            }
+@@ -5556,2 +5558,2 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                        if (newSize < 2)
+-                            newSize = 2;
++                            if (newSize < 2)
++                                newSize = 2;
+@@ -5559,5 +5561,8 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                        tmp = xmlRealloc(namespaces,
+-                                         (newSize + 1) * sizeof(tmp[0]));
+-                        if (tmp == NULL) {
+-                            xmlFree(namespaces);
+-                            return(-1);
++                            tmp = xmlRealloc(namespaces,
++                                             (newSize + 1) * sizeof(tmp[0]));
++                            if (tmp == NULL) {
++                                xmlFree(namespaces);
++                                return(-1);
++                            }
++                            namespaces = tmp;
++                            maxns = newSize;
+@@ -5565,2 +5570,2 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                        namespaces = tmp;
+-                        maxns = newSize;
++                        namespaces[nbns++] = cur;
++                        namespaces[nbns] = NULL;
+@@ -5568,2 +5572,0 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                    namespaces[nbns++] = cur;
+-                    namespaces[nbns] = NULL;
+@@ -5571 +5573,0 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..4a32d1f9 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1066,0 +1067,2 @@ xmlFreeElement(xmlElementPtr elem) {
++    /* Mark element as being freed to prevent use-after-free */
++    elem->etype = (xmlElementTypeVal) 0xDEADBEAF; /* Magic number to indicate freed state */

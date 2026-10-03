@@ -1,0 +1,28 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..813c768e 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2539,0 +2540 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
++    int result;
+@@ -2546 +2547,8 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
+-    return(xmlXIncludeProcessTreeFlagsData(tree, flags, data));
++    
++    /* Increment reference count before processing to prevent premature deallocation */
++    xmlNodeReference(tree);
++    result = xmlXIncludeProcessTreeFlagsData(tree, flags, data);
++    /* Decrement reference count after processing */
++    xmlNodeDeReference(tree);
++    
++    return(result);
+diff --git a/tree.c b/tree.c
+index 8077348a..8489fe24 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3750,0 +3751,7 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Prevent use-after-free by clearing pointers before freeing */
++	    cur->properties = NULL;
++	    cur->content = NULL;
++	    cur->nsDef = NULL;
++	    cur->name = NULL;
++	    

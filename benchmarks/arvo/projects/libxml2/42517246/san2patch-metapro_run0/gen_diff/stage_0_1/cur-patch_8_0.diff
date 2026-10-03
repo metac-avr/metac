@@ -1,0 +1,38 @@
+diff --git a/dict.c b/dict.c
+index 5c9ca719..aee74d4b 100644
+--- a/dict.c
++++ b/dict.c
+@@ -870 +870 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    unsigned long key, okey, nbi = 0;
++unsigned long key, okey, nbi = 0;
+@@ -879 +879,5 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    if (len < 0)
++    /* Prevent expired pointer dereference by validating memory range */
++    if (len < 0) {
++        /* Basic sanity check - kernel space addresses are invalid */
++        if ((uintptr_t)name >= 0xFFFF000000000000ULL)
++            return(NULL);
+@@ -881 +885 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    else
++    } else
+@@ -890,2 +894 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..ed90d4b4 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -845,0 +846,12 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++    
++    /* Defensive check for expired pointer in elem->content */
++    if (elem->content != NULL) {
++        void* content_check = elem->content;
++        /* Verify pointer validity before proceeding */
++        if (content_check == NULL) 
++            return(NULL);
++        /* Additional safety check - ensure minimal validity */
++        if ((uintptr_t)content_check & 0x1) 
++            return(NULL);
++    }
++    

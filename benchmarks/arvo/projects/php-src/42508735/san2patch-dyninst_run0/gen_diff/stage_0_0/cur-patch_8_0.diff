@@ -1,0 +1,17 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..f0731635d4e 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -205,0 +206 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++		if (!zv) return ZEND_HASH_APPLY_REMOVE;
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 6e809c87341..b37a4e4b35c 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2150 +2150,5 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++// FIXME: Crash CWE-416: Use After Free
++ 			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++
++			/* Add safety check to prevent accessing freed memory */
++			if (UNEXPECTED(p->key == NULL && Z_TYPE(p->val) == IS_NULL)) continue;

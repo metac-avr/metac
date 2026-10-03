@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..e3aab0f3490 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1950 +1950 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	} else {
++	}         else {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..901fd5a0591 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1752 +1752,14 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				i_zval_ptr_dtor(zv);
++				if (EXPECTED(Z_TYPE_P(zv) == IS_STRING)) {
++					zend_string *str = Z_STR_P(zv);
++					if (EXPECTED(GC_REFCOUNT(str) > 0)) {
++						GC_ADDREF(str);
++						zval_ptr_dtor(zv);
++						if (--GC_REFCOUNT(str) == 0) {
++							zend_string_free(str);
++						}
++					} else {
++						ZVAL_UNDEF(zv);
++					}
++				} else {
++					i_zval_ptr_dtor(zv);
++				}

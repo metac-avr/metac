@@ -1,0 +1,34 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..84244a5b3 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -345,0 +346 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *new_cibase;
+@@ -348 +349,8 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
++    new_cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    
++    if (new_cibase != c->cibase) {
++      ci = new_cibase + size;
++      c->cibase = new_cibase;
+@@ -350,2 +358,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
+-    c->ci = ci = c->cibase + size;
++    
++    c->ci = ci;
+@@ -2710 +2718,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
+@@ -2717 +2726,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-        mrb_ary_concat(mrb, regs[a], splat);
++        // Validate array reference before use to prevent use-after-free
++        mrb_value array_check = regs[a];
++        if (!mrb_nil_p(array_check) && mrb_array_p(array_check)) {
++          mrb_ary_concat(mrb, array_check, splat);
++        }
+@@ -2722 +2734,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

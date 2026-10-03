@@ -1,0 +1,29 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..2d67619b 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3618,0 +3619 @@ xmlFreeNodeList(xmlNodePtr cur) {
++		cur->content = NULL;  /* Prevent use-after-free */
+@@ -3634 +3635 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_COMMENT_NODE))
++		(cur->type != XML_COMMENT_NODE)) {
+@@ -3635,0 +3637,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
++		cur->name = NULL;  /* Prevent dangling pointer access */
++	    }
++	    /* Additional safety: clear all pointers before final free */
++	    cur->properties = NULL;
++	    cur->nsDef = NULL;
+@@ -6881 +6887 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	}
++  	}
+@@ -6892,0 +6899 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++	    /* Validate children nodes before setting parent */
+@@ -6894,3 +6901,5 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-		tmp->parent = (xmlNodePtr) prop;
+-		if (tmp->next == NULL)
+-		    prop->last = tmp;
++		if (tmp != NULL) {
++		    tmp->parent = (xmlNodePtr) prop;
++		    if (tmp->next == NULL)
++			prop->last = tmp;
++		}

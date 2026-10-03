@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..13e524e1d6e 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -35 +35,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && GC_TYPE(ref) != IS_OBJECT_DESTROYED) {
++			rc_dtor_func(ref);
++		}
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index 4d40b76854d..7e47c7c807f 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -185 +185,2 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++// Validate object pointer before use to prevent heap-use-after-free
++ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+@@ -197,2 +198 @@ ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object,
+-	if (old_object->ce->default_properties_count) {
+-		zval *src = old_object->properties_table;
++	if (old_object->ce->default_properties_count) {		zval *src = old_object->properties_table;

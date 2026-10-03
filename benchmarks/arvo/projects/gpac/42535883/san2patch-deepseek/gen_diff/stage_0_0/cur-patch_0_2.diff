@@ -1,0 +1,28 @@
+diff --git a/src/media_tools/isom_tools.c b/src/media_tools/isom_tools.c
+index a41e51a0d..58d10e7d1 100644
+--- a/src/media_tools/isom_tools.c
++++ b/src/media_tools/isom_tools.c
+@@ -1505 +1505,10 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-			gf_odf_vvc_cfg_write(((GF_VVCConfigurationBox *)props.config)->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			if (((GF_VVCConfigurationBox *)props.config)->type == GF_ISOM_BOX_TYPE_VVCC) {
++				gf_odf_vvc_cfg_write(((GF_VVCConfigurationBox *)props.config)->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			}
++			else {
++				e = GF_NON_COMPLIANT_BITSTREAM;
++			}
++		}
++		if (e) {
++			gf_odf_desc_del((GF_Descriptor *)esd);
++			return NULL;
+diff --git a/src/filters/isoffin_load.c b/src/filters/isoffin_load.c
+index 31f8c8458..02f68ea10 100644
+--- a/src/filters/isoffin_load.c
++++ b/src/filters/isoffin_load.c
+@@ -1831 +1831 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-	case GF_ISOM_CBCS_SCHEME:
++case GF_ISOM_CBCS_SCHEME:
+@@ -1840 +1839,0 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-
+@@ -1852 +1851 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-	} else {
++	}	} else {

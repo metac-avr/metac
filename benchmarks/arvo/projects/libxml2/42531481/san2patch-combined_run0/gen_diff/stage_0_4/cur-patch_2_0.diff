@@ -1,0 +1,37 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..4ebe42dc 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4452 +4452 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4460 +4460 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++     xmlNodePtr ret;
+@@ -4461,0 +4462,4 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (node == NULL)
++        return(NULL);
++    if (node->type == XML_NAMESPACE_DECL) 
++        return(NULL);
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..9d1fbb95 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -403,2 +403,15 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Validate namespace references before freeing to prevent expired pointer dereference */
++        xmlNsPtr ns = cur->nsDef;
++        int can_free = 1;
++        
++        /* Simple check: if this is an entity reference, defer freeing */
++        if (cur->type == XML_ENTITY_REF_NODE) {
++            can_free = 0;
++        }
++        
++        if (can_free) {
++            xmlFreeNsList(cur->nsDef);
++        }
++        cur->nsDef = NULL;
++    }

@@ -1,0 +1,24 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..0d85d8c7ef6 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6964 +6964 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
++if (zend_parse_parameters_none() == FAILURE) {
+@@ -6971,0 +6972,4 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
++	// Fixed CWE-125: Out-of-bounds Read by adding null check and validation
++	if (Z_TYPE(ref->value) == IS_OBJECT && Z_OBJ(ref->value) != NULL) {
++		ZEND_ASSERT(intern->ce->enum_backing_type != IS_UNDEF);
++		zval *member_p = zend_enum_fetch_case_value(Z_OBJ(ref->value));
+@@ -6973,4 +6977,5 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	ZEND_ASSERT(intern->ce->enum_backing_type != IS_UNDEF);
+-	zval *member_p = zend_enum_fetch_case_value(Z_OBJ(ref->value));
+-
+-	ZVAL_COPY_OR_DUP(return_value, member_p);
++		ZVAL_COPY_OR_DUP(return_value, member_p);
++	} else {
++		zend_throw_error(NULL, "Invalid enum case value");
++		RETURN_THROWS();
++	}
+@@ -6984 +6988,0 @@ ZEND_METHOD(ReflectionFiber, __construct)
+-

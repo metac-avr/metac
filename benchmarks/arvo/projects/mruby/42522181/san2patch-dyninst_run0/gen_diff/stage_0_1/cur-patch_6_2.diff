@@ -1,0 +1,24 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..669894cf9 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -791,0 +792,6 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  /* Ensure object is not freed during incremental GC */
++  if (mrb->gc.state != MRB_GC_STATE_ROOT) {
++    if (is_dead(mrb, obj)) return;
++  }
++  
+@@ -799,2 +805 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1202,0 +1208,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Ensure no concurrent access during sweep */
++      gc->swept_freelist = page->freelist;

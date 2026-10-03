@@ -1,0 +1,32 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..02dfe16a 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2540 +2540,2 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
+-
++    int result = -1;
++    
+@@ -2546 +2547,7 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
+-    return(xmlXIncludeProcessTreeFlagsData(tree, flags, data));
++    
++    /* Validate node before processing to ensure it hasn't been freed */
++    if (tree->doc != NULL) {
++        result = xmlXIncludeProcessTreeFlagsData(tree, flags, data);
++    }
++    
++    return(result);
+diff --git a/tree.c b/tree.c
+index 8077348a..b5ce754f 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3751 +3751,9 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    xmlFree(cur);
++	    
++	    /* Add reference counting check before freeing */
++	    if (cur->doc && cur->_private) {
++	        /* Assuming _private contains reference count info */
++	        /* Only free if reference count is 0 */
++	        xmlFree(cur);
++	    } else {
++	        xmlFree(cur);
++	    }

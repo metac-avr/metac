@@ -1,0 +1,32 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..2f3826ce 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2345 +2345,2 @@ xmlSAX2StartElementNs(void *ctx,
+-		}
++// FIXME: Crash CWE-416: Use After Free
++ 		}
+@@ -2362,0 +2364 @@ xmlSAX2StartElementNs(void *ctx,
++
+diff --git a/parser.c b/parser.c
+index 12ca104e..c24ebf51 100644
+--- a/parser.c
++++ b/parser.c
+@@ -9342,2 +9342,7 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
+-	(!ctxt->disableSAX)) {
+-	if (nbNs > 0)
++    (!ctxt->disableSAX)) {
++	if (nbNs > 0) {
++	    /* Increment reference count before calling startElementNs to prevent use-after-free */
++	    for (int i = 0; i < nbNs; i++) {
++	        xmlNsPtr ns = (xmlNsPtr)ctxt->nsTab[2 * (ctxt->nsNr - nbNs + i) + 1];
++	        if (ns != NULL) ns->ref++; 
++	    }
+@@ -9347 +9352,6 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
+-	else
++	    /* Decrement reference count after calling startElementNs */
++	    for (int i = 0; i < nbNs; i++) {
++	        xmlNsPtr ns = (xmlNsPtr)ctxt->nsTab[2 * (ctxt->nsNr - nbNs + i) + 1];
++	        if (ns != NULL && ns->ref > 0) ns->ref--;
++	    }
++	} else

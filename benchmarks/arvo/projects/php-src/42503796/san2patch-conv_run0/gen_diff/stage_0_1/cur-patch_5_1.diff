@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..68c5b190970 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1680,0 +1681,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++{
++	if (EXPECTED(p != NULL)) {
++		ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++		zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -1682,5 +1686,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	SET_INCONSISTENT(HT_DESTROYED);
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
+-	zend_hash_iterators_remove(ht);
+-	FREE_HASHTABLE(ht);
+@@ -1688,5 +1687,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..821e24004a1 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,2 +56,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (EXPECTED(p != NULL) && EXPECTED(!(GC_FLAGS(p) & GC_PURGED))) {
++		ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

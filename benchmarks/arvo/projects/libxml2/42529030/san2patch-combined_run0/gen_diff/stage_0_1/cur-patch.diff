@@ -1,0 +1,34 @@
+diff --git a/error.c b/error.c
+index 1b4fe767..4faa1b7d 100644
+--- a/error.c
++++ b/error.c
+@@ -185,0 +186,3 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
++    /* Add comprehensive bounds checking for all pointer accesses */
++    if (base == NULL || input->end == NULL || cur < base || cur >= input->end)
++	return;
+@@ -211,0 +215,3 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
++	/* Ensure cur is still within valid buffer bounds */
++	if (cur < base || cur >= input->end || len <= 0)
++	    break;
+@@ -218,0 +225,3 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
++    /* Final validation before memory operations */
++    if (start < base || start >= input->end || n > (unsigned int)(input->end - start))
++	return;
+diff --git a/parser.c b/parser.c
+index 19f2e615..2af05934 100644
+--- a/parser.c
++++ b/parser.c
+@@ -8274,2 +8274,11 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
+-    xmlBufResetInput(input->buf->buffer, input);
+-
++    /* Ensure pointers are valid after buffer operations to prevent use-after-free */
++    if (input->buf != NULL && input->buf->buffer != NULL) {
++        if (xmlBufUse(input->buf->buffer) > 0) {
++            xmlBufResetInput(input->buf->buffer, input);
++        } else {
++            input->cur = input->base = NULL;
++        }
++    } else {
++        input->cur = input->base = NULL;
++    }
++ 

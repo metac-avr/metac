@@ -1,0 +1,27 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..47ed59536 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++ 
+@@ -150,0 +151,4 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  
++  /* Validate pointers before use to prevent expired pointer dereference */
++  if (keys == NULL || vals == NULL) return 0;
++  
+@@ -156,5 +160,7 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-    mrb_sym key = keys[pos];
+-    if (key) {
+-      if (MT_KEY_SYM(key) == sym) {
+-        *pp = vals[pos];
+-        return key;
++    if (pos >= 0) {  /* Add bounds check */
++      mrb_sym key = keys[pos];
++      if (key) {
++        if (MT_KEY_SYM(key) == sym) {
++          *pp = vals[pos];
++          return key;
++        }
+@@ -166,0 +173 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (pos < 0 || pos >= t->alloc) return 0;  /* Bounds check */

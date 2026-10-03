@@ -1,0 +1,22 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..8892a600b 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -349,0 +350 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *old_cibase = c->cibase;
+@@ -351 +352,5 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    if (c->cibase != old_cibase) {
++      ptrdiff_t ci_offset = ci - old_cibase;
++      ci = c->cibase + ci_offset;
++    }
++    c->ci = ci;
+@@ -1958,0 +1964,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
++          /* Validate callinfo pointer before use to prevent use-after-free */
++          if (ci < mrb->c->cibase || ci >= mrb->c->cibase + mrb->c->ciend) {
++            mrb_raise(mrb, E_RUNTIME_ERROR, "invalid callinfo after realloc");
++          }
+@@ -1971,2 +1980 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-          return recv;
+-        }
++          return recv;        }

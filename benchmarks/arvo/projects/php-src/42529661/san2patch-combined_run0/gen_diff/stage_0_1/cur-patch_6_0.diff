@@ -1,0 +1,57 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..52488026f77 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -8981,21 +8981,24 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+-			} else if (!zend_jit_traces[parent_num].polymorphism) {
+-				polymorphism = 1;
+-			} else if (exit_num == 0) {
+-				polymorphism = zend_jit_traces[parent_num].polymorphism + 1;
+-			}
+-		}
+-	}
+-
+-	JIT_G(tracing) = 1;
+-	stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
+-	JIT_G(tracing) = 0;
+-
+-	if (stop & ZEND_JIT_TRACE_HALT) {
+-		ret = -1;
+-	}
+-	stop &= ~ZEND_JIT_TRACE_HALT;
+-
+-	if (UNEXPECTED(trace_buffer->start != ZEND_JIT_TRACE_START_SIDE)) {
+-		if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_START) {
+-			const zend_op_array *op_array = trace_buffer[0].op_array;
++                    (ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
++            } else if (!zend_jit_traces[parent_num].polymorphism) {
++                polymorphism = 1;
++            } else if (exit_num == 0) {
++                polymorphism = zend_jit_traces[parent_num].polymorphism + 1;
++            }
++        }
++    }
++// FIXME: Crash CWE-416: Use After Free
++ 
++    JIT_G(tracing) = 1;
++    do {
++        stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
++    } while (0);
++    JIT_G(tracing) = 0;
++
++    if (stop & ZEND_JIT_TRACE_HALT) {
++        ret = -1;
++    }
++    stop &= ~ZEND_JIT_TRACE_HALT;
++
++    if (UNEXPECTED(trace_buffer->start != ZEND_JIT_TRACE_START_SIDE)) {
++        if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_START) {
++            const zend_op_array *op_array = trace_buffer[0].op_array;
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..0ebcd8e0b43 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2494,0 +2495,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Clear pointer to prevent use-after-free */
++		HT_SET_DATA_ADDR(ht, NULL);

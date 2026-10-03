@@ -1,0 +1,57 @@
+diff --git a/Zend/zend_opcode.c b/Zend/zend_opcode.c
+index ad41b9f699d..a80fbb4840b 100644
+--- a/Zend/zend_opcode.c
++++ b/Zend/zend_opcode.c
+@@ -883,11 +883,18 @@ static void zend_calc_live_ranges(
+-		if ((opline->result_type & (IS_TMP_VAR|IS_VAR)) && !is_fake_def(opline)) {
+-			uint32_t var_num = EX_VAR_TO_NUM(opline->result.var) - var_offset;
+-			/* Defs without uses can occur for two reasons: Either because the result is
+-			 * genuinely unused (e.g. omitted FREE opcode for an unused boolean result), or
+-			 * because there are multiple defining opcodes (e.g. JMPZ_EX and QM_ASSIGN), in
+-			 * which case the last one starts the live range. As such, we can simply ignore
+-			 * missing uses here. */
+-			if (EXPECTED(last_use[var_num] != (uint32_t) -1)) {
+-				/* Skip trivial live-range */
+-				if (opnum + 1 != last_use[var_num]) {
+-					uint32_t num;
++		        if ((opline->result_type & (IS_TMP_VAR|IS_VAR)) && !is_fake_def(opline)) {
++            uint32_t var_num;
++            if (UNEXPECTED(opline->result.var < var_offset)) {
++                continue;
++            }
++            var_num = EX_VAR_TO_NUM(opline->result.var) - var_offset;
++            /* Defs without uses can occur for two reasons: Either because the result is
++             * genuinely unused (e.g. omitted FREE opcode for an unused boolean result), or
++             * because there are multiple defining opcodes (e.g. JMPZ_EX and QM_ASSIGN), in
++             * which case the last one starts the live range. As such, we can simply ignore
++             * missing uses here. */
++            if (UNEXPECTED(var_num >= op_array->last_var)) {
++                continue;
++            }
++            if (EXPECTED(last_use[var_num] != (uint32_t) -1)) {
++                /* Skip trivial live-range */
++                if (opnum + 1 != last_use[var_num]) {
++                    uint32_t num;
+@@ -896,3 +903,3 @@ static void zend_calc_live_ranges(
+-					/* OP_DATA uses only op1 operand */
+-					ZEND_ASSERT(opline->opcode != ZEND_OP_DATA);
+-					num = opnum;
++                    /* OP_DATA uses only op1 operand */
++                    ZEND_ASSERT(opline->opcode != ZEND_OP_DATA);
++                    num = opnum;
+@@ -900,2 +907,2 @@ static void zend_calc_live_ranges(
+-					/* OP_DATA is really part of the previous opcode. */
+-					num = opnum - (opline->opcode == ZEND_OP_DATA);
++                    /* OP_DATA is really part of the previous opcode. */
++                    num = opnum - (opline->opcode == ZEND_OP_DATA);
+@@ -903,5 +910,5 @@ static void zend_calc_live_ranges(
+-					emit_live_range(op_array, var_num, num, last_use[var_num], needs_live_range);
+-				}
+-				last_use[var_num] = (uint32_t) -1;
+-			}
+-		}
++                    emit_live_range(op_array, var_num, num, last_use[var_num], needs_live_range);
++                }
++                last_use[var_num] = (uint32_t) -1;
++            }
++        }

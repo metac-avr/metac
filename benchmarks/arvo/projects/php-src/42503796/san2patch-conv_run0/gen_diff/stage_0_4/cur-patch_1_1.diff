@@ -1,0 +1,57 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..8c32f1b2f37 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,9 +1145,8 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+-#endif
+-
++// Add function declarations at the top to resolve implicit declaration warnings
++static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p);
++static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc);
++static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p);
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p);
++
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1154,0 +1154 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (p == NULL) return 0;
+@@ -1158,0 +1159 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
++	if (p == NULL) return 0;
+@@ -1163,0 +1165 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (p == NULL) return 0;
+@@ -1167,0 +1170,6 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p == NULL) return 0;
++	ZEND_RC_MOD_CHECK(p);
++	return --(p->refcount);
++}}
++
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..7a82468d96d 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1681 +1681 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	}
++			}
+@@ -1682,0 +1683,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	if (ht != NULL) {
++		zend_hash_iterators_remove(ht);
++	}
+@@ -1684,3 +1687,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
+-	zend_hash_iterators_remove(ht);
+-	FREE_HASHTABLE(ht);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ free_ht:
++	if (ht != NULL) {
++		FREE_HASHTABLE(ht);
++	}
+@@ -1692 +1696,0 @@ ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-

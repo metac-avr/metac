@@ -1,0 +1,51 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..b3d1b4e2378 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29939 +29939,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-				UNDEF_RESULT();
++				/* Validate reference count status before UNDEF_RESULT to prevent use-after-free */
++				if (orig_object_ptr && Z_REFCOUNTED_P(orig_object_ptr) && Z_REFCOUNT_P(orig_object_ptr) > 0) {
++					UNDEF_RESULT();
++				} else if (!orig_object_ptr || !Z_REFCOUNTED_P(orig_object_ptr)) {
++					UNDEF_RESULT();
++				}
+@@ -30289 +30294,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-				UNDEF_RESULT();
++				/* Validate reference count status before UNDEF_RESULT to prevent use-after-free */
++				if (orig_object_ptr && Z_REFCOUNTED_P(orig_object_ptr) && Z_REFCOUNT_P(orig_object_ptr) > 0) {
++					UNDEF_RESULT();
++				} else if (!orig_object_ptr || !Z_REFCOUNTED_P(orig_object_ptr)) {
++					UNDEF_RESULT();
++				}
+@@ -49526 +49536,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-				UNDEF_RESULT();
++				/* Validate reference count status before UNDEF_RESULT to prevent use-after-free */
++				if (orig_object_ptr && Z_REFCOUNTED_P(orig_object_ptr) && Z_REFCOUNT_P(orig_object_ptr) > 0) {
++					UNDEF_RESULT();
++				} else if (!orig_object_ptr || !Z_REFCOUNTED_P(orig_object_ptr)) {
++					UNDEF_RESULT();
++				}
+@@ -49876 +49891,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-				UNDEF_RESULT();
++				/* Validate reference count status before UNDEF_RESULT to prevent use-after-free */
++				if (orig_object_ptr && Z_REFCOUNTED_P(orig_object_ptr) && Z_REFCOUNT_P(orig_object_ptr) > 0) {
++					UNDEF_RESULT();
++				} else if (!orig_object_ptr || !Z_REFCOUNTED_P(orig_object_ptr)) {
++					UNDEF_RESULT();
++				}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..c02e3d889e5 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,5 +46,0 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+-	/* IS_OBJECT       */ (zend_rc_dtor_func_t)zend_objects_store_del,
+-	/* IS_RESOURCE     */ (zend_rc_dtor_func_t)zend_list_free,
+-	/* IS_REFERENCE    */ (zend_rc_dtor_func_t)zend_reference_destroy,
+-	/* IS_CONSTANT_AST */ (zend_rc_dtor_func_t)zend_ast_ref_destroy
+@@ -57 +52,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p != NULL && GC_TYPE(p) <= IS_CONSTANT_AST) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

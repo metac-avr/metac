@@ -1,0 +1,34 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..795606f1541 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7616 +7616 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
++ 				(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+@@ -7624 +7624,2 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-
++	// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -7625,0 +7627,5 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
++	/* Prevent use-after-free by checking execute_data validity before trace execution */
++	if (UNEXPECTED(!execute_data || !EX(opline))) {
++		JIT_G(tracing) = 0;
++		return -1;
++	}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..05490cb11d3 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1682,0 +1683,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	// Mark hash table as destroyed to prevent JIT access
++	HT_FLAGS(ht) |= HASH_FLAG_DESTROYED;
+@@ -1684 +1686,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1688,5 +1690,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-

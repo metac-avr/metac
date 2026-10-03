@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..6259b026194 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1966 +1966 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-		if (result == op1 && Z_REFCOUNTED_P(result)) {
++		if (result == op1 && Z_REFCOUNTED_P(result) && Z_REFCOUNT_P(result) == 1) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..d9225533747 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1752 +1752,14 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				i_zval_ptr_dtor(zv);
++				if (EXPECTED(Z_TYPE_P(zv) == IS_STRING)) {
++					zend_string *str = Z_STR_P(zv);
++					if (EXPECTED(!Z_REFCOUNTED_P(zv) || Z_REFCOUNT_P(zv) > 0)) {
++						GC_ADDREF(str);
++						zval_ptr_dtor(zv);
++						if (Z_REFCOUNTED_P(zv) && --GC_REFCOUNT(str) == 0) {
++							zend_string_free(str);
++						}
++					} else {
++						zval_ptr_dtor(zv);
++					}
++				} else {
++					i_zval_ptr_dtor(zv);
++				}

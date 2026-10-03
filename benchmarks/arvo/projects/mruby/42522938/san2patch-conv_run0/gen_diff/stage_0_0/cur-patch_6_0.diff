@@ -1,0 +1,24 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..b996c2f77 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1712,0 +1713 @@ static mrb_value
++// FIXME: Crash CWE-416: Use After Free
+@@ -1715 +1716,2 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+-  mrb_int key = mrb_str_hash(mrb, self);
++  mrb_value str = mrb_str_dup(mrb, self);  /* Create a duplicate to prevent use-after-free */
++  mrb_int key = mrb_str_hash(mrb, str);
+@@ -1725,2 +1727 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+- *  Returns <code>true</code> if <i>str</i> contains the given string or
+- *  character.
++ *  Returns <code>true</code> if <i>str</i> contains the given string or *  character.
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..a6e1c9ebc 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -325,0 +326,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
++    /* Prevent garbage collection during hash computation */
++    mrb_gc_mark(mrb, (struct RBasic*)mrb_str_ptr(key));
+@@ -343 +345 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++     break;

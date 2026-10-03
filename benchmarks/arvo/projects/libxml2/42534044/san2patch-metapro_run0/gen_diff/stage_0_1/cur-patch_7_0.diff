@@ -1,0 +1,69 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..362274fc 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3608,11 +3608,18 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    if (((cur->type == XML_ELEMENT_NODE) ||
+-		 (cur->type == XML_XINCLUDE_START) ||
+-		 (cur->type == XML_XINCLUDE_END)) &&
+-		(cur->properties != NULL))
+-		xmlFreePropList(cur->properties);
+-	    if ((cur->type != XML_ELEMENT_NODE) &&
+-		(cur->type != XML_XINCLUDE_START) &&
+-		(cur->type != XML_XINCLUDE_END) &&
+-		(cur->type != XML_ENTITY_REF_NODE) &&
+-		(cur->content != (xmlChar *) &(cur->properties))) {
+-		DICT_FREE(cur->content)
++	    /* Store node type before freeing content */
++	    xmlElementType node_type = cur->type;
++	    xmlAttrPtr props = cur->properties;
++	    xmlNsPtr nsdefs = cur->nsDef;
++	    xmlChar *content_ptr = cur->content;
++	    const xmlChar *name_ptr = cur->name;
++
++	    if (((node_type == XML_ELEMENT_NODE) ||
++		 (node_type == XML_XINCLUDE_START) ||
++		 (node_type == XML_XINCLUDE_END)) &&
++		(props != NULL))
++		xmlFreePropList(props);
++	    if ((node_type != XML_ELEMENT_NODE) &&
++		(node_type != XML_XINCLUDE_START) &&
++		(node_type != XML_XINCLUDE_END) &&
++		(node_type != XML_ENTITY_REF_NODE) &&
++		(content_ptr != (xmlChar *) &(props))) {
++		DICT_FREE(content_ptr)
+@@ -3620,5 +3627,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    if (((cur->type == XML_ELEMENT_NODE) ||
+-	         (cur->type == XML_XINCLUDE_START) ||
+-		 (cur->type == XML_XINCLUDE_END)) &&
+-		(cur->nsDef != NULL))
+-		xmlFreeNsList(cur->nsDef);
++	    if (((node_type == XML_ELEMENT_NODE) ||
++	         (node_type == XML_XINCLUDE_START) ||
++		 (node_type == XML_XINCLUDE_END)) &&
++		(nsdefs != NULL))
++		xmlFreeNsList(nsdefs);
+@@ -3632,4 +3639,4 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    if ((cur->name != NULL) &&
+-		(cur->type != XML_TEXT_NODE) &&
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
++	    if ((name_ptr != NULL) &&
++		(node_type != XML_TEXT_NODE) &&
++		(node_type != XML_COMMENT_NODE))
++		DICT_FREE(name_ptr)
+@@ -6835,2 +6842,6 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr result = xmlSetNsProp(node, ns, localname, value);
++            /* Check if node is still valid after property setting */
++            if (node == NULL) return(NULL);
++            return(result);
++        }
+@@ -6839 +6850,4 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr result = xmlSetNsProp(node, NULL, name, value);
++    /* Check if node is still valid after property setting */
++    if (node == NULL) return(NULL);
++    return(result);

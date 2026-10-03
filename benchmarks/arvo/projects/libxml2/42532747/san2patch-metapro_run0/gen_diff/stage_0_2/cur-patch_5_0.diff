@@ -1,0 +1,26 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..b5e024ff 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2499 +2499,5 @@ xmlFreeID(xmlIDPtr id) {
+-    if (id->value != NULL)
++    if (id->value != NULL) {
++        /* Remove from ID table before freeing value */
++        if (id->doc != NULL && id->doc->ids != NULL) {
++            xmlHashRemapEntry(id->doc->ids, id->value, NULL, NULL);
++        }
+@@ -2500,0 +2505 @@ xmlFreeID(xmlIDPtr id) {
++    }
+@@ -2743 +2748 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2750,7 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    /* Store the value pointer before potential freeing */
++    xmlChar *id_value = attr->id->value;
++    
++    if (id_value != NULL) {
++        if (xmlHashRemoveEntry(table, id_value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }

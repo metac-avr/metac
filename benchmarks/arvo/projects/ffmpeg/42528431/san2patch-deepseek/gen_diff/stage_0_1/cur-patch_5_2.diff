@@ -1,0 +1,61 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..e39c913877 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1210,0 +1211,49 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
++    static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
++                                        CodedBitstreamUnit *unit,
++                                        PutBitContext *pbc)
++{
++    H264RawSlice *slice = unit->content;
++    int data_bit_start = put_bits_count(pbc) - unit->data_bit_padding;
++    int rest, i;
++
++    if (slice->data_size == 0) {
++        // No data, but we still need to write the rbsp_stop_bit.
++        if (put_bits_count(pbc) % 8 == 0) {
++            put_bits(pbc, 1, 1);
++            while (put_bits_count(pbc) % 8)
++                put_bits(pbc, 1, 0);
++        } else {
++            // We are in the middle of a byte, write a stop bit and
++            // align.
++            put_bits(pbc, 1, 1);
++            while (put_bits_count(pbc) % 8)
++                put_bits(pbc, 1, 0);
++        }
++        return 0;
++    }
++
++    if (slice->data_size < 0) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid slice data size.\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    if (8 * (slice->data_size - 1) + slice->data_bit_start + 1 > INT_MAX) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Slice data too large.\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    rest = slice->data_size - (data_bit_start - slice->data_bit_start + 7) / 8;
++    if (rest < 0) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid slice data length.\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    if (rest > 0) {
++        av_assert0(rest <= slice->data_size);
++        if (data_bit_start % 8 == 0)
++            memcpy(put_bits_ptr(pbc), slice->data + (data_bit_start - slice->data_bit_start) / 8, rest);
++        else
++            for (i = 0; i < rest; i++)
++                put_bits(pbc, 8, slice->data[i + (data_bit_start - slice->data_bit_start) / 8]);
++    }
++
+@@ -1216 +1265 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        memcpy(put_bits_ptr(pbc), pos, rest);
++        memcpy(put_bits_ptr(pbc), slice->data + (data_bit_start - slice->data_bit_start) / 8, rest);
+@@ -1245,0 +1295,3 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
++    return 0;
++}
++

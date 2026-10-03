@@ -1,0 +1,52 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..57e3e3aa9 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -531,7 +530,0 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
+-  }
+-  mrb_gc_arena_restore(mrb, ai);
+-  mrb_gc_protect(mrb, val);
+-  return val;
+-}
+-
+@@ -539 +532 @@ MRB_API mrb_value
+-mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, const mrb_value *argv)
++mrb_funcall_argv(mrb_state *mrb, mrb_sym mid, mrb_int argc, const mrb_value *argv)
+@@ -540,0 +534,10 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
++  mrb_int max_argc = 1000000; // Reasonable limit to prevent overflow
++  
++  if (argc > max_argc) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "too many arguments");
++  }
++  
++  if (argc > 0 && argv == NULL) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "argv cannot be NULL when argc > 0");
++  }
++  
+@@ -549,0 +553,5 @@ exec_irep(mrb_state *mrb, mrb_value self, struct RProc *p)
++  if (ci == NULL || ci->stack == NULL) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "invalid call info");
++    return mrb_nil_value();
++  }
++  
+@@ -551,2 +559 @@ exec_irep(mrb_state *mrb, mrb_value self, struct RProc *p)
+-  mrb_vm_ci_proc_set(ci, p);
+-  if (MRB_PROC_CFUNC_P(p)) {
++  mrb_vm_ci_proc_set(ci, p);  if (MRB_PROC_CFUNC_P(p)) {
+diff --git a/src/error.c b/src/error.c
+index 5fa872c9b..6fcdcb6f1 100644
+--- a/src/error.c
++++ b/src/error.c
+@@ -512 +512,2 @@ mrb_make_exception(mrb_state *mrb, mrb_int argc, const mrb_value *argv)
+-        mrb_sym exc = MRB_SYM(exception);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         mrb_sym exc = MRB_SYM(exception);
+@@ -514 +515,6 @@ mrb_make_exception(mrb_state *mrb, mrb_int argc, const mrb_value *argv)
+-          mesg = mrb_funcall_argv(mrb, argv[0], exc, n, argv+1);
++          /* Prevent out-of-bounds access by validating parameters */
++          if ((argc == 2 && n <= 1) || (argc == 3 && n <= 2)) {
++            mesg = mrb_funcall_argv(mrb, argv[0], exc, n, argv+1);
++          } else {
++            mrb_raise(mrb, E_INDEX_ERROR, "parameter index out of range");
++          }

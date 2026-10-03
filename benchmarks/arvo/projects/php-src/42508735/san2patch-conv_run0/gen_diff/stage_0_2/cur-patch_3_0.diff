@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..9cb74f06fe1 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1231 +1231 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-#if ZEND_DEBUG
++	#if ZEND_DEBUG
+@@ -1233 +1233,4 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-#endif
++	#endif
++	if (UNEXPECTED(Z_TYPE_P(pz) == IS_OBJECT && Z_OBJ_P(pz)->gc.u.type_flags & GC_DTOR_CHECK)) {
++		return 0;
++	}
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index b09ce3b990d..f33b3e21e2e 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -68 +68,2 @@ ZEND_API void zend_object_std_dtor(zend_object *object)
+-					}
++// FIXME: Crash CWE-416: Use After Free
++ 					}

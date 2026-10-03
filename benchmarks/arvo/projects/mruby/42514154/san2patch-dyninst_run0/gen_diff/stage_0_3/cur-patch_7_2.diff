@@ -1,0 +1,25 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..a2687834e 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -432,0 +433,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    /* Validate array bounds before accessing x.p[j+yd] and related indices */
++    if (j >= x.len || (j+yd) >= x.len || (j+yd-1) >= x.len) break;
+@@ -436 +438 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      for (i=0; i<yd; i++) {
++      for (i=0; i<yd && (i+j) < x.len; i++) {  /* Ensure i+j stays within bounds */
+@@ -442 +444 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if ((i+j) < x.len) b += x.p[i+j];
+@@ -444 +446 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
++    for (; b!=0 && qhat > 0; qhat--) {  /* Prevent underflow of qhat */
+@@ -446 +448 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      for (i=0; i<yd; i++) {
++      for (i=0; i<yd && (i+j) < x.len; i++) {  /* Ensure i+j stays within bounds */
+@@ -451 +453 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += c;
++      if ((i+j) < x.len && c != 0) b += c;
+@@ -453 +455 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < q.len) q.p[j] = qhat;  /* Only write if within bounds */

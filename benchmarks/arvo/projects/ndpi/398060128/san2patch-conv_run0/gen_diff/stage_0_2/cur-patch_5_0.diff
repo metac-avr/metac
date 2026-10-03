@@ -1,0 +1,35 @@
+diff --git a/fuzz/fuzz_ndpi_reader.c b/fuzz/fuzz_ndpi_reader.c
+index 5f29664be..b61e4e1f2 100644
+--- a/fuzz/fuzz_ndpi_reader.c
++++ b/fuzz/fuzz_ndpi_reader.c
+@@ -183,4 +183,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-  /* Free flow trees */
+-  for(i = 0; i < workflow->prefs.num_roots; i++) {
+-    ndpi_twalk(workflow->ndpi_flows_root[i], node_cleanup_walker, NULL);
+-    ndpi_tdestroy(workflow->ndpi_flows_root[i], ndpi_flow_info_freer);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   /* Free flow trees - with safety checks */
++  if(workflow->ndpi_flows_root) {  // Check if root array exists
++    for(i = 0; i < workflow->prefs.num_roots && i < MAX_ROOTS; i++) {  // Add bounds check
++      if(workflow->ndpi_flows_root[i]) {  // Check individual tree pointers
++        ndpi_twalk(workflow->ndpi_flows_root[i], node_cleanup_walker, NULL);
++        ndpi_tdestroy(workflow->ndpi_flows_root[i], ndpi_flow_info_freer);
++      }
++    }
++    ndpi_free(workflow->ndpi_flows_root);
+@@ -188 +193,0 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-  ndpi_free(workflow->ndpi_flows_root);
+diff --git a/src/lib/ndpi_memory.c b/src/lib/ndpi_memory.c
+index bb8173108..5cced5fa5 100644
+--- a/src/lib/ndpi_memory.c
++++ b/src/lib/ndpi_memory.c
+@@ -43,2 +43,3 @@ void set_ndpi_malloc(void *(*__ndpi_malloc)(size_t size)) {
+-void set_ndpi_free(void (*__ndpi_free)(void *ptr)) {
+-  _ndpi_free = __ndpi_free;
++// Resolved CWE-825: Expired Pointer Dereference - Validate function pointer before use
++ void set_ndpi_free(void (*__ndpi_free)(void *ptr)) {
++  _ndpi_free = (__ndpi_free != NULL) ? __ndpi_free : NULL;
+@@ -55,2 +56 @@ u_int32_t ndpi_get_tot_allocated_memory() {
+-void *ndpi_malloc(size_t size) {
+-  __sync_fetch_and_add(&ndpi_tot_allocated_memory, size);
++void *ndpi_malloc(size_t size) {  __sync_fetch_and_add(&ndpi_tot_allocated_memory, size);

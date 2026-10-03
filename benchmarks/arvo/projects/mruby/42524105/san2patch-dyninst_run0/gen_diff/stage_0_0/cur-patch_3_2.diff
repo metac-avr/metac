@@ -1,0 +1,28 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..b05dfb218 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -146 +146,6 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-  return str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++  
++  struct RString *s = mrb_obj_alloc_string(mrb);
++  if (s) {
++    s->flags |= MRB_STR_NOFREE;
++  }
++  return str_init_normal(mrb, s, p, len);
+@@ -253 +258,2 @@ mrb_gc_free_str(mrb_state *mrb, struct RString *str)
+-    /* no code */;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     /* no code */;
+@@ -256,2 +262,9 @@ mrb_gc_free_str(mrb_state *mrb, struct RString *str)
+-  else if (!RSTR_NOFREE_P(str) && !RSTR_FSHARED_P(str))
+-    mrb_free(mrb, str->as.heap.ptr);
++  else if (!RSTR_NOFREE_P(str) && !RSTR_FSHARED_P(str)) {
++    // Check if string is being used in hash computation before freeing
++    if (str->RefCount > 0) {
++      // Defer deallocation to prevent use-after-free during hash operations
++      str->flags |= 0x80000000; /* Mark for deferred deletion */
++    } else {
++      mrb_free(mrb, str->as.heap.ptr);
++    }
++  }

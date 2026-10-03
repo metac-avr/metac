@@ -1,0 +1,24 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..12d825d539 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -1435 +1435,2 @@ static int jpegxl_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -1437,4 +1438,9 @@ static int jpegxl_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        ret = skip_boxes(ctx, ctx->pc.buffer, ctx->pc.index);
+-        if (ret < 0) {
+-            if (ret == AVERROR_INVALIDDATA)
+-                ctx->next = -1;
++        if (ctx->pc.index >= sizeof(uint16_t)) {
++            ret = skip_boxes(ctx, ctx->pc.buffer, ctx->pc.index);
++            if (ret < 0) {
++                if (ret == AVERROR_INVALIDDATA)
++                    ctx->next = -1;
++                goto flush;
++            }
++            ctx->next = ret + ctx->skip;
++        } else {
+@@ -1443 +1448,0 @@ static int jpegxl_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        ctx->next = ret + ctx->skip;

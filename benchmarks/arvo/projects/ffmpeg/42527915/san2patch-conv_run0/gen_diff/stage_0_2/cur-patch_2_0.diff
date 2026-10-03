@@ -1,0 +1,53 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..66cb7f17be 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
++     } else {
+@@ -245,0 +246,4 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++        if (vlc->table) {
++            // Ensure table is valid before returning success
++            av_assert0(vlc->table_size > 0);
++        }
+@@ -425 +429 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    int minbits, maxbits, max = nb_codes-1;
++    int minbits, maxbits, max = nb_elems-1;
+@@ -429,7 +433,12 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    minbits = buf[nb_codes-1].bits;
+-    maxbits = FFMIN(buf[0].bits, numbits);
+-
+-    while (max >= nb_codes/2) {
+-        if (buf[max].bits+minbits > maxbits)
+-            break;
+-        max--;
++    // Initialize max properly based on nb_elems instead of nb_codes to prevent buffer overruns
++    max = nb_elems-1;
++    
++    if (nb_codes > 0) {
++        minbits = buf[nb_codes-1].bits;
++        maxbits = FFMIN(buf[0].bits, numbits);
++
++        while (max >= nb_codes/2) {
++            if (buf[max].bits+minbits > maxbits)
++                break;
++            max--;
++        }
+@@ -438,4 +447,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    for (int j = 0; j < 1<<numbits; j++) {
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++    if (single && single->table) {
++        for (int j = 0; j < 1<<numbits; j++) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        }
+@@ -444,2 +455,4 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    add_level(table, nb_elems, nb_codes, numbits, buf,
+-              0, 0, numbits, 0, minbits, max, count, &info);
++    if (table && buf) {
++        add_level(table, nb_elems, nb_codes, numbits, buf,
++                  0, 0, numbits, 0, minbits, max, count, &info);
++    }

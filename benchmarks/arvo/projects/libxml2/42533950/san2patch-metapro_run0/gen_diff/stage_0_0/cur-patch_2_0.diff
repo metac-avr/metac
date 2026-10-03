@@ -1,0 +1,38 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..3a6cf758 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3936 +3936 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      int res;
++       int res;
+@@ -3954 +3954 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          while (root->parent != NULL) {
++          while ((root != NULL) && (root->parent != NULL)) {
+@@ -3958 +3958 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          if (root == (xmlNodePtr) target->doc) {
++          if ((root != NULL) && (root == (xmlNodePtr) target->doc)) {
+@@ -3962,3 +3962,5 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-          if (ret->ns == NULL)
+-              goto error;
++          if (root != NULL) {
++            ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++            if (ret->ns == NULL)
++                goto error;
++          }
+@@ -4048 +4050,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-xmlAttrPtr
++// FIXME: Crash CWE-416: Use After Free
++ xmlAttrPtr
+@@ -4050 +4053,6 @@ xmlCopyProp(xmlNodePtr target, xmlAttrPtr cur) {
+-	return xmlCopyPropInternal(NULL, target, cur);
++    /* Defensive check to avoid use-after-free vulnerability */
++    if (cur == NULL)
++        return NULL;
++    if (target == NULL)
++        return NULL;
++    return xmlCopyPropInternal(NULL, target, cur);
+@@ -4060,2 +4068 @@ xmlCopyProp(xmlNodePtr target, xmlAttrPtr cur) {
+- * set the attributes on the target element.
+- *
++ * set the attributes on the target element. *

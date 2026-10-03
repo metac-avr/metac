@@ -1,0 +1,27 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..2e5912c2e 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -732 +731,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -743,0 +743 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if ((obj)->tt == MRB_TT_FREE || (obj)->tt >= MRB_TT_MAXDEFINE) return;
+@@ -752,2 +752 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1156,4 +1155,10 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++      /* Synchronize with marking phase - defer freeing if marking is active */
++      if (gc->state != GC_STATE_MARK) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      } else {
++        /* Defer page freeing until mark phase completes */
++        page->deferred_free = TRUE;
++        page = next;
++      }

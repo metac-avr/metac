@@ -1,0 +1,17 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..eb882d0dabb 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (GC_REFCOUNT(p) > 0) {  /* Validate reference count before destruction */
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index fbad44d2f2c..00659505f2a 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3880,0 +3881,3 @@ static zend_always_inline void i_free_compiled_variables(zend_execute_data *exec
++		if (Z_TYPE_P(cv) == IS_OBJECT && Z_OBJ_P(cv)->handlers == &spl_fixedarray_handlers) {
++			ZVAL_NULL(cv);
++		}

@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..b21e99aabb9 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	/* Remove iterators prior to memory deallocation to prevent expired pointer dereference */
+@@ -1685,0 +1685,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Free hash table data storage */
++	efree(HT_GET_DATA_ADDR(ht));
++ free_ht:
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..f0307d84cc7 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,2 +56,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p && GC_TYPE(p) <= IS_CONSTANT_AST) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

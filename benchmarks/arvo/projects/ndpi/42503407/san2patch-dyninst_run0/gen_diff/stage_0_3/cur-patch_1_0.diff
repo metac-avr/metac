@@ -1,0 +1,48 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..6daa18dcb 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -941 +941 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-				 client_secret) != 0) {
++					 client_secret) != 0) {
+@@ -956,0 +957,14 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Ensure sufficient data before first quic_len call */
++  if(pn_offset >= packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
++  uint32_t token_len_offset = pn_offset;
++  uint8_t token_len_bytes = (packet->payload[token_len_offset] & 0xC0) >> 6;
++  if(token_len_bytes > 0 && token_len_offset + token_len_bytes >= packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
+@@ -961,0 +976,14 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     return NULL;
++  }
++  
++  /* Ensure sufficient data before second quic_len call */
++  if(pn_offset >= packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
++  uint32_t payload_len_offset = pn_offset;
++  uint8_t payload_len_bytes = (packet->payload[payload_len_offset] & 0xC0) >> 6;
++  if(payload_len_bytes > 0 && payload_len_offset + payload_len_bytes >= packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
+@@ -963,0 +992 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
+@@ -967 +996 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-		pn_offset, token_length, payload_length);
++			pn_offset, token_length, payload_length);
+@@ -977 +1006 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-			  GCRY_CIPHER_AES128, &first_byte, &pkn32, 0)) {
++				  GCRY_CIPHER_AES128, &first_byte, &pkn32, 0)) {
+@@ -995 +1024 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-		       offset, first_byte, pkn_len, packet_number, &decryption);
++			       offset, first_byte, pkn_len, packet_number, &decryption);

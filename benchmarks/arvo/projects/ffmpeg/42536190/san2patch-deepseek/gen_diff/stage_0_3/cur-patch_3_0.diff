@@ -1,0 +1,17 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..48f24c9c0e 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -3191,0 +3192,12 @@ static int decode_slice(HEVCContext *s, const H2645NAL *nal, GetBitContext *gb)
++    if (s->sh.slice_type != HEVC_SLICE_I) {
++        const RefPicList *rpl = NULL;
++        if (s->sh.slice_type == HEVC_SLICE_B)
++            rpl = &s->ref->refPicList[1];
++        else
++            rpl = &s->ref->refPicList[0];
++        if (!rpl->nb_refs || !rpl->ref[0]) {
++            av_log(s->avctx, AV_LOG_ERROR, "Missing reference picture for slice.\n");
++            return AVERROR_INVALIDDATA;
++        }
++    }
++

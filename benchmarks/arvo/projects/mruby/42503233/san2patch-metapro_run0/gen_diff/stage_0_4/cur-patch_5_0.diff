@@ -1,0 +1,37 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..7b8adf11b 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -162 +162 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-  size_t off = mrb->c->ci->stack ? mrb->c->stend - mrb->c->ci->stack : 0;
++  size_t off = mrb->c->ci->stack ? mrb->c->stend - mrb->c->stack : 0;
+@@ -179,0 +180,12 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Validate size bounds before allocation to prevent overflow */
++  if (size > MRB_STACK_MAX) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    return; /* Ensure we don't continue with invalid size */
++  }
++  
++  /* Additional check for size wrapping around */
++  if (size < oldsize) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    return;
++  }
++
+@@ -189,2 +201 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-  /* Raise an exception if the new stack size will be too large,
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
++  /* Final validation after allocation */
+@@ -387,0 +399,7 @@ mrb_funcall_id(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, ...)
++  /* Add guard against stack overflow from infinite recursion */
++  static int recursion_guard = 0;
++  if (++recursion_guard > 500) {
++    recursion_guard = 0;
++    mrb_raise(mrb, E_SYSTEM_CALL_ERROR, "stack level too deep");
++  }
++
+@@ -393 +411,3 @@ mrb_funcall_id(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, ...)
+-  return mrb_funcall_argv(mrb, self, mid, argc, argv);
++  mrb_value result = mrb_funcall_argv(mrb, self, mid, argc, argv);
++  recursion_guard--;
++  return result;

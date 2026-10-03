@@ -1,0 +1,33 @@
+diff --git a/tree.c b/tree.c
+index 6a42f118..d425d689 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3878 +3878 @@ xmlFreeNode(xmlNodePtr cur) {
+-	DICT_FREE(cur->name)
++        DICT_FREE(cur->name)
+@@ -3880,2 +3880,2 @@ xmlFreeNode(xmlNodePtr cur) {
+-    xmlFree(cur);
+-}
++    /* Zero out critical fields before freeing to prevent dangling pointers */
++    memset(&cur->content, 0, sizeof(cur->content));
+@@ -3883,4 +3883,2 @@ xmlFreeNode(xmlNodePtr cur) {
+-/**
+- * xmlUnlinkNode:
+- * @cur:  the node
+- *
++    xmlFree(cur);
++} *
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..9b435080 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1498 +1498,2 @@ xmlXIncludeLoadDoc(xmlXIncludeCtxtPtr ctxt, const xmlChar *url, int nr) {
+-#ifdef LIBXML_XPTR_ENABLED
++// Fixed CWE-416: Use After Free - Validate context before XPointer operations
++ #ifdef LIBXML_XPTR_ENABLED
+@@ -1505 +1506 @@ xmlXIncludeLoadDoc(xmlXIncludeCtxtPtr ctxt, const xmlChar *url, int nr) {
+-    if (fragment != NULL) {	/* if this is an XPointer eval */
++    if ((fragment != NULL) && (ctxt != NULL)) { /* if this is an XPointer eval and context is valid */
+@@ -1506,0 +1508,2 @@ xmlXIncludeLoadDoc(xmlXIncludeCtxtPtr ctxt, const xmlChar *url, int nr) {
++    } else if (fragment != NULL && ctxt == NULL) {
++        return -1;  /* Prevent use-after-free when context is invalid */

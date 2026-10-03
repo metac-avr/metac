@@ -1,0 +1,24 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..4c2a43a9e2 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -783 +783,7 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
+-    for (int i = 1; i < dist->alphabet_size + 1; i++)
++    // Validate alphabet_size against maximum allowed size to prevent buffer overflow
++    if (dist->alphabet_size > 262147) 
++        return AVERROR_INVALIDDATA;
++    
++    for (int i = 1; i < dist->alphabet_size + 1; i++) {
++        if (i >= sizeof(level2_codecounts)/sizeof(level2_codecounts[0])) 
++            return AVERROR_INVALIDDATA;
+@@ -784,0 +791 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
++    }
+@@ -786,0 +794,3 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
++        if (level2_lens[i] >= sizeof(level2_lens)/sizeof(level2_lens[0]) || 
++            i >= sizeof(level2_syms)/sizeof(level2_syms[0])) 
++            return AVERROR_INVALIDDATA;
+@@ -787,0 +798,2 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
++        if (idx >= sizeof(level2_lens_s)/sizeof(level2_lens_s[0])) 
++            return AVERROR_INVALIDDATA;
+@@ -794 +805,0 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
+-

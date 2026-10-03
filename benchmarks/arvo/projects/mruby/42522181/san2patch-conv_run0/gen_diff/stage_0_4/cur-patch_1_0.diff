@@ -1,0 +1,32 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..91874dece 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -791,0 +792,4 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  // Validate object before accessing - prevent UAF
++  if (mrb == NULL || obj == NULL) return;
++  
+@@ -799,2 +803 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..f1fe2a7a7 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -240 +240,3 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (!mrb_immediate_p(v) && !mrb_nil_p(v)) {
++    mrb_gc_mark_value(mrb, v);
++  }
+@@ -250,2 +252 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
+-void
+-mrb_gc_mark_gv(mrb_state *mrb)
++voidmrb_gc_mark_gv(mrb_state *mrb)

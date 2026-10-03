@@ -1,0 +1,24 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..d26527472 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -99 +99,2 @@ static inline void
+-stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
++// FIXME: Crash CWE-416: Use After Free
++ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+@@ -101 +102,3 @@ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+-  memcpy(dst, src, sizeof(mrb_value)*size);
++  if (size > 0 && dst != NULL && src != NULL) {
++    memcpy(dst, src, sizeof(mrb_value)*size);
++  }
+@@ -180,0 +184,4 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Calculate stack offsets before reallocation to prevent use-after-free */
++  ptrdiff_t stack_off = mrb->c->ci->stack ? mrb->c->ci->stack - mrb->c->stbase : 0;
++  mrb_bool has_stack = mrb->c->ci->stack != NULL;
++  
+@@ -188,0 +196,5 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  
++  /* Restore stack pointer using calculated offset */
++  if (has_stack) {
++    mrb->c->ci->stack = mrb->c->stbase + stack_off;
++  }

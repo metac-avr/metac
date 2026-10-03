@@ -1,0 +1,37 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..56b98938b 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -179,0 +180,5 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Validate stack size before allocation to prevent overflow */
++  if (size > MRB_STACK_MAX || size < oldsize) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
++
+@@ -481 +486,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    mrb_stack_extend(mrb, argc + 3);
++    
++    // Validate stack extension parameters
++    mrb_int extend_size = argc + 3;
++    if (extend_size < argc || extend_size < 3) {  // Check for integer overflow
++      mrb_raise(mrb, E_RUNTIME_ERROR, "integer overflow in stack extension");
++    }
++    mrb_stack_extend(mrb, extend_size);
+@@ -507 +518,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-        mrb_stack_extend(mrb, p->body.irep->nregs + argc);
++        // Validate proc stack extension
++        mrb_int proc_extend = p->body.irep->nregs + argc;
++        if (proc_extend < p->body.irep->nregs || proc_extend < argc) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "integer overflow in proc stack extension");
++        }
++        mrb_stack_extend(mrb, proc_extend);
+@@ -515 +531,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       if (argc > 0) {
++        // Validate stack copy bounds
++        if ((size_t)(ci->stack + 1 + argc) > (size_t)mrb->c->stend) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack copy would overflow");
++        }
+@@ -516,0 +538 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      }

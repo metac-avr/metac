@@ -1,0 +1,53 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index dca7f4da1..cfa425c77 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -627 +627,25 @@ static GFINLINE GSF_Packet *gsfdmx_get_packet(GSF_DemuxCtx *ctx, GSF_Stream *gst
+-		gpck = gf_list_pop_back(ctx->pck_res);
++// FIXME: Crash CWE-825: Expired Pointer Dereference - Fixed by defensive copying approach
++		GSF_Packet *src_pck = gf_list_pop_back(ctx->pck_res);
++		if (src_pck) {
++			// Create a fresh copy instead of reusing potentially stale packet
++			GF_SAFEALLOC(gpck, GSF_Packet);
++			if (!gpck) {
++				// Put the popped packet back since we can't use it
++				gf_list_add(ctx->pck_res, src_pck);
++				return NULL;
++			}
++			memcpy(gpck, src_pck, sizeof(GSF_Packet));
++			// Allocate new fragments array
++			gpck->nb_alloc_frags = 10;
++			gpck->frags = gf_malloc(sizeof(GSF_PacketFragment) * gpck->nb_alloc_frags);
++			// Copy fragment data if needed
++			if (src_pck->frags && src_pck->nb_frags > 0) {
++				memcpy(gpck->frags, src_pck->frags, sizeof(GSF_PacketFragment) * src_pck->nb_frags);
++				gpck->nb_frags = src_pck->nb_frags;
++			} else {
++				gpck->nb_frags = 0;
++			}
++			// Clean up the source packet properly
++			gf_free(src_pck->frags);
++			gf_free(src_pck);
++		}
+@@ -629,4 +653,4 @@ static GFINLINE GSF_Packet *gsfdmx_get_packet(GSF_DemuxCtx *ctx, GSF_Stream *gst
+- 			GF_SAFEALLOC(gpck, GSF_Packet);
+- 			if (!gpck) return NULL;
+- 			gpck->nb_alloc_frags = 10;
+- 			gpck->frags = gf_malloc(sizeof(GSF_PacketFragment) * gpck->nb_alloc_frags);
++			GF_SAFEALLOC(gpck, GSF_Packet);
++			if (!gpck) return NULL;
++			gpck->nb_alloc_frags = 10;
++			gpck->frags = gf_malloc(sizeof(GSF_PacketFragment) * gpck->nb_alloc_frags);
+@@ -1335,0 +1360 @@ static void gsfdmx_finalize(GF_Filter *filter)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -1338,2 +1363,8 @@ static void gsfdmx_finalize(GF_Filter *filter)
+-		if (gsp->frags) gf_free(gsp->frags);
+-		gf_free(gsp);
++		if (gsp) {
++			// Clear pointer after freeing to prevent reuse
++			if (gsp->frags) {
++				gf_free(gsp->frags);
++				gsp->frags = NULL;
++			}
++			gf_free(gsp);
++		}

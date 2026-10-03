@@ -1,0 +1,43 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..ea51486e 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1299 +1299 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
+@@ -1300,0 +1301,12 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
++		/* Check if node has namespace references before freeing */
++		if (tmp->nsDef != NULL || tmp->ns != NULL) {
++		    /* Mark namespace as expired but don't free immediately */
++		    xmlNsPtr ns = tmp->nsDef;
++		    while (ns != NULL) {
++		        ns->href = NULL; /* Mark as expired */
++		        ns = ns->next;
++		    }
++		    if (tmp->ns != NULL) {
++		        tmp->ns->href = NULL; /* Mark as expired */
++		    }
++		}
+diff --git a/tree.c b/tree.c
+index fe02b414..3bae7f09 100644
+--- a/tree.c
++++ b/tree.c
+@@ -737 +737 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-        /*
++        /
+@@ -774 +774,6 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-		xmlFreeNs(cur);
++		/* Free the allocated memory before returning */
++		if (cur->href != NULL)
++		    xmlFree((xmlChar *)cur->href);
++		if (cur->prefix != NULL)
++		    xmlFree((xmlChar *)cur->prefix);
++		xmlFree(cur);
+@@ -781 +786,6 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-		    xmlFreeNs(cur);
++		    /* Free the allocated memory before returning */
++		    if (cur->href != NULL)
++		        xmlFree((xmlChar *)cur->href);
++		    if (cur->prefix != NULL)
++		        xmlFree((xmlChar *)cur->prefix);
++		    xmlFree(cur);

@@ -1,0 +1,51 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..bdd8f2d17eb 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1780,9 +1780 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	}
+-	SET_INCONSISTENT(HT_DESTROYED);
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
+-	zend_hash_iterators_remove(ht);
+-	FREE_HASHTABLE(ht);
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
++ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
+@@ -1790,2 +1782,33 @@ ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-	IS_CONSISTENT(ht);
+-	HT_ASSERT_RC1(ht);
++	zend_ulong orig_next_free_element;
++	 Bucket *p;
++	 HashPosition orig InternalPointer;
++
++	 IS_CONSISTENT(ht);
++
++	 if (ht->nNumUsed) {
++	 	 p = HT_GET_DATA_ADDR(ht);
++	 	 if (ht->pDestructor) {
++	 	 	 do {
++	 	 	 	 if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) {
++	 	 	 	 	 continue;
++	 	 	 	 }
++	 	 	 	 ht->pDestructor(&p->val);
++	 	 	 } while (++p != HT_HASH_RESET(ht));
++	 	 } else {
++	 	 	 do {
++	 	 	 	 if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) {
++	 	 	 	 	 continue;
++	 	 	 	 }
++	 	 	 } while (++p != HT_HASH_RESET(ht));
++	 	 }
++	 }
++	 SET_INCONSISTENT(HT_DESTROYED);
++	 /* Clear JIT references before freeing memory */
++	 if (ht->u.flags & 0x0400) {  // Using numeric value instead of undefined constant
++	 	 ht->u.flags &= ~0x0400;   // Using numeric value instead of undefined constant
++	 }
++	 efree(HT_GET_DATA_ADDR(ht));
++free_ht:
++	 zend_hash_iterators_remove(ht);
++	 FREE_HASHTABLE(ht);
++}	HT_ASSERT_RC1(ht);

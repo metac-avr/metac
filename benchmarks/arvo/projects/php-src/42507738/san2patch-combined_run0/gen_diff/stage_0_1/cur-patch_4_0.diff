@@ -1,0 +1,69 @@
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index dab57807796..f6fb42976cf 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -280 +280,2 @@ static ZEND_COLD zend_never_inline void zend_forbidden_dynamic_property(
+-static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
+@@ -282,2 +283,4 @@ static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
+-	zend_error(E_DEPRECATED, "Creation of dynamic property %s::$%s is deprecated",
+-		ZSTR_VAL(ce->name), ZSTR_VAL(member));
++	if (ce && member && ZSTR_VAL(ce->name) && ZSTR_VAL(member)) {
++		zend_error(E_DEPRECATED, "Creation of dynamic property %s::$%s is deprecated",
++			ZSTR_VAL(ce->name), ZSTR_VAL(member));
++	}
+@@ -292 +294,0 @@ static ZEND_COLD zend_never_inline void zend_readonly_property_modification_scop
+-
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index dce0f32e835..b4b879583ec 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2868,21 +2868,26 @@ static zend_always_inline void zend_fetch_property_address(zval *result, zval *c
+-				return;
+-			}
+-		}
+-	}
+-
+-	if (prop_op_type == IS_CONST) {
+-		name = Z_STR_P(prop_ptr);
+-	} else {
+-		name = zval_get_tmp_string(prop_ptr, &tmp_name);
+-	}
+-	ptr = zobj->handlers->get_property_ptr_ptr(zobj, name, type, cache_slot);
+-	if (NULL == ptr) {
+-		ptr = zobj->handlers->read_property(zobj, name, type, cache_slot, result);
+-		if (ptr == result) {
+-			if (UNEXPECTED(Z_ISREF_P(ptr) && Z_REFCOUNT_P(ptr) == 1)) {
+-				ZVAL_UNREF(ptr);
+-			}
+-			goto end;
+-		}
+-		if (UNEXPECTED(EG(exception))) {
+-			ZVAL_ERROR(result);
++                return;
++            }
++        }
++    }
++
++    if (prop_op_type == IS_CONST) {
++        name = Z_STR_P(prop_ptr);
++    } else {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++        if (zobj && !Z_ISERROR_P(container)) {
++            name = zval_get_tmp_string(prop_ptr, &tmp_name);
++        } else {
++            name = zval_get_tmp_string(prop_ptr, &tmp_name);
++        }
++    }
++    ptr = zobj->handlers->get_property_ptr_ptr(zobj, name, type, cache_slot);
++    if (NULL == ptr) {
++        ptr = zobj->handlers->read_property(zobj, name, type, cache_slot, result);
++        if (ptr == result) {
++            if (UNEXPECTED(Z_ISREF_P(ptr) && Z_REFCOUNT_P(ptr) == 1)) {
++                ZVAL_UNREF(ptr);
++            }
++            goto end;
++        }
++        if (UNEXPECTED(EG(exception))) {
++            ZVAL_ERROR(result);

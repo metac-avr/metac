@@ -1,0 +1,16 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..3ec7d37a3 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -184,2 +184,9 @@ MRB_API mrb_value
+-mrb_str_new(mrb_state *mrb, const char *p, mrb_int len)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ mrb_str_new(mrb_state *mrb, const char *p, mrb_int len)
++{
++  if (len < 0) len = 0;
++  if (p && len > 0) {
++    volatile const char *volatile_p = p;
++    volatile mrb_int volatile_len = len;
++    if (volatile_p == NULL || volatile_len < 0) return mrb_obj_value(str_new(mrb, NULL, 0));
++  }

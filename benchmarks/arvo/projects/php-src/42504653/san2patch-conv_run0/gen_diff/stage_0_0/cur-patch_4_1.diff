@@ -1,0 +1,46 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..8e4c9e2ddb9 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7865,22 +7865,5 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+-		if (zend_jit_trace_exit_is_bad(trace_num, exit_num)) {
+-			zend_jit_blacklist_trace_exit(trace_num, exit_num);
+-			if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_BLACKLIST) {
+-				fprintf(stderr, "---- EXIT %d/%d blacklisted\n",
+-					trace_num, exit_num);
+-			}
+-			return 0;
+-		}
+-	} else if (JIT_G(hot_side_exit) && zend_jit_trace_exit_is_hot(trace_num, exit_num)) {
+-		return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
+-	}
+-
+-	/* Return 1 to call original handler instead of the same JIT-ed trace */
+-	return (orig_opline == t->opline && EX(opline) == orig_opline);
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	ZEND_ASSERT(p->refcount > 0);
++	ZEND_RC_MOD_CHECK(p);
++	return --(p->refcount);
++}		case ZEND_FAST_CALL:
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..ba58d8a1034 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1184,0 +1186,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (GC_DELREF(p) && UNEXPECTED(GC_REF_GET_TYPE(p) == GC_REFERENCE)) {
++		return p->refcount; /* Prevent UAF by checking reference type */
++	}
+@@ -1193 +1196,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-

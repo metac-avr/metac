@@ -1,0 +1,54 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..554a3a8489 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,15 +2016,0 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+@@ -2038,0 +2024,33 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
++#define WRITE_FRAME(depth, PIXEL)                                                             \
++    static void write_frame_##depth(AVCodecContext *avctx, AVFrame *picture, Jpeg2000Tile *tile) { \
++        int compno;                                                                           \
++        PIXEL *line;                                                                          \
++        PIXEL *dst;                                                                           \
++        uint8_t *i_datap;                                                                     \
++        uint8_t *end_of_buffer = tile->buf + tile->buf_size;                                  \
++        int pixelsize = 1;                                                                    \
++        for (compno = 0; compno < tile->numcomps; compno++) {                                 \
++            Jpeg2000Component *comp = tile->comp + compno;                                    \
++            int x, y, pixelcount = 0;                                                         \
++            line = (PIXEL *)comp->data;                                                       \
++            for (y = 0; y < comp->height; y++) {                                              \
++                dst = line;                                                                   \
++                i_datap = comp->i_data + y * comp->stride;                                    \
++                for (x = 0; x < comp->width; x++) {                                           \
++                    if (dst + pixelsize <= (PIXEL*)end_of_buffer) {                           \
++                        i_datap++;                                                            \
++                        dst += pixelsize;                                                     \
++                    } else {                                                                  \
++                        av_log(avctx, AV_LOG_DEBUG, "Buffer boundary exceeded, stopping\n"); \
++                        break;                                                                \
++                    }                                                                         \
++                }                                                                             \
++                line += picture->linesize[compno] / sizeof(PIXEL);                            \
++            }                                                                                 \
++        }                                                                                     \
++    }
++
++WRITE_FRAME(8, uint8_t)
++WRITE_FRAME(16, uint16_t)
++
++#undef WRITE_FRAME

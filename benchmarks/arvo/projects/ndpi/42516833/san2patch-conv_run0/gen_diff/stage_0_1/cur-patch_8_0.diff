@@ -1,0 +1,22 @@
+diff --git a/src/lib/protocols/irc.c b/src/lib/protocols/irc.c
+index 367ec86bd..2992bb0bd 100644
+--- a/src/lib/protocols/irc.c
++++ b/src/lib/protocols/irc.c
+@@ -408,0 +409 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -410,2 +411,10 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-
+-	  snprintf(buf, sizeof(buf), "%s", &user[5]);
++          ptrdiff_t remaining_len = packet->payload_packet_len - (user - (char*)packet->payload);
++          if(remaining_len > 5) {
++            remaining_len -= 5;
++            if(remaining_len >= (ptrdiff_t)sizeof(buf))
++              remaining_len = sizeof(buf) - 1;
++          } else {
++            remaining_len = 0;
++          }
++
++	  snprintf(buf, sizeof(buf), "%.*s", (int)remaining_len, &user[5]);
+@@ -458 +467 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-							5) == 0)) {
++						5) == 0)) {

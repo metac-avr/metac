@@ -1,0 +1,58 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..7ed61066045 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,9 +1172,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
+-	}
+-}
+-
+@@ -1185,10 +1176,6 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	return --(p->refcount);
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++	uint32_t rc = --(p->refcount);
++	if (UNEXPECTED(rc == 0)) {
++		p->u.type_info |= GC_IMMUTABLE;
++	}
++	return rc;
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..df0e31154d6 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -210,5 +209,0 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		return ZEND_HASH_APPLY_KEEP;
+-	}
+-}
+-/* }}} */
+-
+@@ -219,0 +215,6 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
++	if (Z_TYPE_P(zv) == IS_STRING) {
++		zend_string *str = Z_STR_P(zv);
++		if (str && !GC_REFCOUNT(str)) {
++			return;
++		}
++	}
+@@ -223,9 +223,0 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-
+-static ZEND_COLD void zend_throw_or_error(int fetch_type, zend_class_entry *exception_ce, const char *format, ...) /* {{{ */
+-{
+-	va_list va;
+-	char *message = NULL;
+-
+-	va_start(va, format);
+-	zend_vspprintf(&message, 0, format, va);
+-

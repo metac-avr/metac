@@ -1,0 +1,38 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..0181429b90 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -726 +726 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
+-
++ 
+@@ -735 +735 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
+-        if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
++        if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+@@ -736,0 +737,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
++        }
++
++        // Validate buffer allocation to prevent buffer overflow in IDCT
++        if (s->picture_ptr->data[0]) {
++            ptrdiff_t expected_size = (ptrdiff_t)s->picture_ptr->linesize[0] * s->picture_ptr->height;
++            if (expected_size < 0 || expected_size > INT_MAX) {
++                av_log(s->avctx, AV_LOG_ERROR, "Invalid buffer size for IDCT operations\n");
++                return AVERROR_INVALIDDATA;
++            }
++        }
+@@ -738,2 +748 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
+-        for (i = 0; i < 4; i++)
+-            s->linesize[i] = s->picture_ptr->linesize[i] << s->interlaced;
++        for (i = 0; i < 4; i++)            s->linesize[i] = s->picture_ptr->linesize[i] << s->interlaced;
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 846ed0b0f8..54167b97e3 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -153 +153,7 @@ static void put_signed_pixels_clamped_c(const int16_t *block,
+-        pixels += (line_size - 8);
++        if (line_size > 8) {
++            pixels += (line_size - 8);
++        } else if (line_size > 0) {
++            pixels += line_size;
++        } else {
++            pixels += 8;
++        }

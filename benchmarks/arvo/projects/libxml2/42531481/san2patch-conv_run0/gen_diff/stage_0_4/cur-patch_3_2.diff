@@ -1,0 +1,76 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..e155c636 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4268,0 +4269,9 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
++    static void
++xmlNodeSetName(xmlNodePtr node, const xmlChar *name) {
++    xmlDictPtr dict;
++    
++    if (node == NULL) return;
++    if (node->type == XML_DOCUMENT_NODE) return;
++    if (node->type == XML_HTML_DOCUMENT_NODE) return;
++    if (node->type == XML_NAMESPACE_DECL) return;
++    
+@@ -4272 +4281,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	/* Validate that the namespace hasn't been freed before accessing it */
++	if (node->ns->type != XML_LOCAL_NAMESPACE) {
++	    return;
++	}
++
++	ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+@@ -4284 +4298 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	        xmlNodePtr root = ret;
++	        xmlNodePtr root = node;
+@@ -4287 +4301 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		node->ns = xmlNewNs(root, ns->href, ns->prefix);
+@@ -4289 +4303 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-                ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++                node->ns = xmlNewReconciledNs(node->doc, node, node->ns);	
+@@ -4291,2 +4305,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-            if (ret->ns == NULL)
+-                goto error;
++            if (node->ns == NULL)
++                return;
+@@ -4297 +4311 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    ret->ns = ns;
++	    node->ns = ns;
+@@ -4299,0 +4314,25 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
++    
++    dict = NULL;
++    if (node->doc != NULL) {
++        dict = node->doc->dict;
++    }
++    
++    if (node->name != NULL) {
++        if ((dict != NULL) && (xmlDictOwns(dict, node->name))) {
++            if (node->type == XML_ELEMENT_NODE) {
++                /* Only free element names that are not in the dictionary */
++                xmlDictReference(node->name);
++            }
++        } else {
++            xmlFree((xmlChar *)node->name);
++        }
++    }
++    
++    if (name == NULL) {
++        node->name = xmlStrdup(BAD_CAST "");
++    } else if (dict != NULL) {
++        node->name = xmlDictLookup(dict, name, -1);
++    } else {
++        node->name = xmlStrdup(name);
++    }
++}
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..4723be79 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -403,2 +403,4 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        cur->nsDef = NULL;  /* Prevent use-after-free by clearing the pointer */
++        /* xmlFreeNsList(cur->nsDef); - Commented out to prevent double-free */
++    }

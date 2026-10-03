@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..20ab7ef27ac 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -33,0 +34 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str);
++// FIXME: Crash CWE-416: Use After Free
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..7cc71e1ba89 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,10 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++		/* Remove any stale shutdown destructor entry before freeing the bucket. */
++		if (EG(objects_store).destructors.count > 0) {
++			zval *d = &EG(objects_store).destructors.buffer[0];
++			for (uint32_t i = 0; i < EG(objects_store).destructors.count; i++) {
++				if (Z_TYPE(d[i]) == IS_OBJECT && Z_OBJ(d[i]) == object) {
++					ZVAL_NULL(&d[i]);
++				}
++			}
++		}
++ 		ptr = ((char*)object) - object->handlers->offset;

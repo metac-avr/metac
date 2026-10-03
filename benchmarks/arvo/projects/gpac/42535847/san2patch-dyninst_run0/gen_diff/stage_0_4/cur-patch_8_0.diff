@@ -1,0 +1,20 @@
+diff --git a/src/isomedia/meta.c b/src/isomedia/meta.c
+index 65660dcba..cb0c03e17 100644
+--- a/src/isomedia/meta.c
++++ b/src/isomedia/meta.c
+@@ -443 +442,0 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-
+@@ -451 +450,2 @@ GF_EXPORT
+-GF_Err gf_isom_extract_meta_item_mem(GF_ISOFile *file, Bool root_meta, u32 track_num, u32 item_id, u8 **out_data, u32 *out_size, u32 *out_alloc_size, const char **out_mime, Bool use_annex_b)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ GF_Err gf_isom_extract_meta_item_mem(GF_ISOFile *file, Bool root_meta, u32 track_num, u32 item_id, u8 **out_data, u32 *out_size, u32 *out_alloc_size, const char **out_mime, Bool use_annex_b)
+@@ -453 +453,8 @@ GF_Err gf_isom_extract_meta_item_mem(GF_ISOFile *file, Bool root_meta, u32 track
+-	return gf_isom_extract_meta_item_intern(file, root_meta, track_num, item_id, NULL, out_data, out_size, out_alloc_size, out_mime, use_annex_b);
++	GF_Err err;
++	if (!file || !out_data) return GF_BAD_PARAM;
++	err = gf_isom_extract_meta_item_intern(file, root_meta, track_num, item_id, NULL, out_data, out_size, out_alloc_size, out_mime, use_annex_b);
++	if (err != GF_OK && *out_data) {
++		gf_free(*out_data);
++		*out_data = NULL;
++	}
++	return err;

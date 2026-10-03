@@ -1,0 +1,26 @@
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..bffcc7c47 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -524,0 +525,3 @@ unpack_float(mrb_state *mrb, const unsigned char * src, int srclen, mrb_value ar
++  // Check bounds before accessing memory to prevent buffer overflow
++  if (srclen < 4) return 0;
++
+@@ -1560 +1563,2 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-#ifndef MRB_NO_FLOAT
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ #ifndef MRB_NO_FLOAT
+@@ -1562 +1566,5 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
++        if (srclen - srcidx >= 4) {
++          srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
++        } else {
++          goto type_error;
++        }
+@@ -1565 +1573,5 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
++        if (srclen - srcidx >= 8) {
++          srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
++        } else {
++          goto type_error;
++        }

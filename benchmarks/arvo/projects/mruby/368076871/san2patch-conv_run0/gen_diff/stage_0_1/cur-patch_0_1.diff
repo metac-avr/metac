@@ -1,0 +1,122 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index bfa8465f3..e694dc13d 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1104,2 +1104,2 @@ intdivmod(mrb_state *mrb, mrb_int x, mrb_int y, mrb_int *divp, mrb_int *modp)
+-static mrb_value
+-int_mod(mrb_state *mrb, mrb_value x)
++static void
++udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+@@ -1107,2 +1107,12 @@ int_mod(mrb_state *mrb, mrb_value x)
+-  mrb_value y = mrb_get_arg1(mrb);
+-  mrb_int a, b;
++  /* simple cases */
++  int cmp = ucmp(xx, yy);
++  if (cmp == 0) {
++    mpz_set_int(mrb, qq, 1);
++    zero(rr);
++    return;
++  }
++  else if (cmp < 0) {
++    zero(qq);
++    mpz_set(mrb, rr, xx);
++    return;
++  }
+@@ -1110,3 +1120,4 @@ int_mod(mrb_state *mrb, mrb_value x)
+-#ifdef MRB_USE_BIGINT
+-  if (mrb_bigint_p(x)) {
+-    return mrb_bint_mod(mrb, x, y);
++  /* Check for division by zero */
++  if (yy->sn == 0) {
++    mrb_raise(mrb, E_ZERODIV_ERROR, "divided by 0");
++    return;
+@@ -1114,10 +1125,47 @@ int_mod(mrb_state *mrb, mrb_value x)
+-#endif
+-  a = mrb_integer(x);
+-  if (a == 0) return x;
+-  if (mrb_integer_p(y)) {
+-    b = mrb_integer(y);
+-    if (b == 0) mrb_int_zerodiv(mrb);
+-    if (a == MRB_INT_MIN && b == -1) return mrb_fixnum_value(0);
+-    mrb_int mod = a % b;
+-    if ((a < 0) != (b < 0) && mod != 0) {
+-      mod += b;
++
++  mpz_t q, x, y;
++
++  mrb_assert(yy->sn != 0);      /* divided by zero */
++  mpz_init(mrb, &q);
++  mpz_init(mrb, &x);
++  mpz_init(mrb, &y);
++// FIXME: Crash CWE-369: Divide By Zero
++   mpz_realloc(mrb, &x, xx->sz+1);
++  size_t yd = digits(yy);
++  size_t ns = lzb(yy->p[yd-1]);
++  ulshift(mrb, &x, xx, ns);
++  ulshift(mrb, &y, yy, ns);
++  size_t xd = digits(&x);
++  mpz_realloc(mrb, &q, xd);
++  mp_dbl_limb z = y.p[yd-1];
++  if (xd>=yd) {
++    for (size_t j=xd-yd;; j--) {
++      mp_dbl_limb_signed b=0;
++      mp_dbl_limb qhat;
++
++      if (j+yd == xd)
++        qhat = x.p[j+yd-1] / z;
++      else
++        qhat = (((mp_dbl_limb)x.p[j+yd] << DIG_SIZE) + x.p[j+yd-1]) / z;
++      if (qhat) {
++        size_t i;
++
++        for (i=0; i<yd; i++) {
++          mp_dbl_limb zz = qhat * y.p[i];
++          mp_dbl_limb_signed u = LOW(b)+x.p[i+j]-LOW(zz);
++          x.p[i+j] = LOW(u);
++          b = HIGH(b) - HIGH(zz) + HIGH(u);
++        }
++        b += x.p[i+j];
++      }
++      for (; b!=0; qhat--) {
++        mp_dbl_limb c = 0;
++        for (size_t i=0; i<yd; i++) {
++          c += (mp_dbl_limb)x.p[i+j] + (mp_dbl_limb)y.p[i];
++          x.p[i+j] = LOW(c);
++          c = HIGH(c);
++        }
++        b += c;
++      }
++      q.p[j] = (mp_limb)qhat;
++      if (j == 0) break;
+@@ -1125 +1172,0 @@ int_mod(mrb_state *mrb, mrb_value x)
+-    return mrb_int_value(mrb, mod);
+@@ -1127,8 +1174,6 @@ int_mod(mrb_state *mrb, mrb_value x)
+-#ifdef MRB_NO_FLOAT
+-  mrb_raise(mrb, E_TYPE_ERROR, "non integer modulo");
+-#else
+-  mrb_float mod;
+-
+-  flodivmod(mrb, (mrb_float)a, mrb_as_float(mrb, y), NULL, &mod);
+-  return mrb_float_value(mrb, mod);
+-#endif
++  x.sz = yy->sz;
++  urshift(mrb, rr, &x, ns);
++  trim(&q);
++  mpz_move(mrb, qq, &q);
++  mpz_clear(mrb, &x);
++  mpz_clear(mrb, &y);
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index b022e49c6..d24cd5f28 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -490,0 +491,6 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  /* Check for division by zero */
++  if (yy->sn == 0) {
++    mrb_raise(mrb, E_ZERO_DIVISION_ERROR, "divided by 0");
++    return;
++  }
++
+@@ -497 +503,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  mpz_realloc(mrb, &x, xx->sz+1);
++// FIXME: Crash CWE-369: Divide By Zero
++   mpz_realloc(mrb, &x, xx->sz+1);

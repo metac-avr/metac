@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..99d88d3e398 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55 +55,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
++	if (!p || !GC_TYPE(p) || GC_TYPE(p) > IS_CONSTANT_AST) return;
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..f509d1aea36 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1760 +1760,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF && (!Z_IS_REFCOUNTED(p->val) || Z_COUNTED(p->val)))) {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1764 +1766,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF && (!Z_IS_REFCOUNTED(p->val) || Z_COUNTED(p->val)))) {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1771 +1775 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
++					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF && (!Z_IS_REFCOUNTED(p->val) || Z_COUNTED(p->val)))) {

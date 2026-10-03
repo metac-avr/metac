@@ -1,0 +1,49 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..e0c39ceb33 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1403 +1403 @@ do {
+-} while (0)
++ } while (0)
+@@ -1435,0 +1436,4 @@ do {
++                    if (x_tu < 0 || y_tu < 0 ||
++                        x_tu >= s->ps.sps->min_tb_width ||
++                        y_tu >= s->ps.sps->min_tb_height)
++                        continue;
+@@ -1440 +1444,5 @@ do {
+-            ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
++            int ctb_x = x0 >> sps->log2_ctb_size;
++            int ctb_y = y0 >> sps->log2_ctb_size;
++            if (ctb_x >= 0 && ctb_x < sps->ctb_width &&
++                ctb_y >= 0 && ctb_y < sps->ctb_height)
++                ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..87d4e12d3d 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -44,7 +43,0 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
+-        ff_refstruct_unref(&frame->rpl_tab);
+-        frame->refPicList = NULL;
+-
+-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+-    }
+-}
+-
+@@ -52 +45,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -56,0 +51 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++    int max_ctb_addr = s->ps.sps->ctb_width * s->ps.sps->ctb_height;
+@@ -57,0 +53,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++    if (ctb_addr_ts < 0 || ctb_addr_ts >= max_ctb_addr)
++        return NULL;
+@@ -59,7 +56 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-}
+-
+-void ff_hevc_clear_refs(HEVCContext *s)
+-{
+-    int i;
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++}        ff_hevc_unref_frame(&s->DPB[i],

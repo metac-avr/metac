@@ -1,0 +1,29 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..283d90f66 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -432,0 +433,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    /* Boundary check to prevent out-of-bounds memory access */
++    if (j >= x.len || (j+yd) >= x.len) break;
+@@ -436 +438,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      for (i=0; i<yd; i++) {
++      size_t max_i = (x.len > j) ? (x.len - j) : 0;  /* Calculate safe iteration limit */
++      size_t safe_yd = (yd < max_i) ? yd : max_i;    
++      for (i=0; i<safe_yd; i++) {  /* Use calculated safe limits */
+@@ -442 +446 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if ((i+j) < x.len) b += x.p[i+j];
+@@ -444 +448 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
++    for (; b!=0 && qhat > 0; qhat--) {
+@@ -446 +450,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      for (i=0; i<yd; i++) {
++      size_t max_i = (x.len > j) ? (x.len - j) : 0;
++      size_t safe_yd = (yd < max_i) ? yd : max_i;
++      for (i=0; i<safe_yd; i++) {
+@@ -451 +457 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += c;
++      if ((i+j) < x.len && c != 0) b += c;
+@@ -453 +459 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < q.len) q.p[j] = qhat;

@@ -1,0 +1,26 @@
+diff --git a/libavcodec/cbs.c b/libavcodec/cbs.c
+index daf7f66427..b01d6bd79a 100644
+--- a/libavcodec/cbs.c
++++ b/libavcodec/cbs.c
+@@ -351,0 +352 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
++    size_t data_size;
+@@ -367 +368 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
+-    init_put_bits(&pbc, ctx->write_buffer, ctx->write_buffer_size);
++     init_put_bits(&pbc, ctx->write_buffer, ctx->write_buffer_size);
+@@ -392 +393,7 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
+-    ret = cbs_alloc_unit_data(unit, put_bytes_output(&pbc));
++    data_size = put_bytes_output(&pbc);
++    if (data_size > ctx->write_buffer_size) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid write buffer size.\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    ret = cbs_alloc_unit_data(unit, data_size);
+@@ -396 +403,6 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
+-    memcpy(unit->data, ctx->write_buffer, unit->data_size);
++    if (unit->data_size < data_size) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid unit data size.\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    memcpy(unit->data, ctx->write_buffer, data_size);

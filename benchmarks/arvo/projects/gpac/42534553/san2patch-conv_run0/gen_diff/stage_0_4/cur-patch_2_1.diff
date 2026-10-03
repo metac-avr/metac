@@ -1,0 +1,70 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..cda57eef8 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -1011,0 +1012,4 @@ static void gf_netcap_load_pck_pcap(GF_NetcapFilter *nf)
++	void gf_netcap_load_pck(GF_NetFilter *nf, u64 now)
++{
++	u32 link_type=0xFF;
++	u32 bsize;
+@@ -1040,0 +1045 @@ static void gf_netcap_load_pck_pcap(GF_NetcapFilter *nf)
++}
+@@ -3393,10 +3398,4 @@ GF_Err gf_sk_group_select(GF_SockGroup *sg, u32 usec_wait, GF_SockSelectMode mod
+-		for (i=0; i<sg->nb_socks; i++) {
+-			GF_Socket *s = gf_list_get(sg->sockets, i);
+-			if (!s->cap_info) {
+-				nb_nofs++;
+-				continue;
+-			}
+-			if (!s->cap_info->nf->read_socks) {
+-				nb_write++;
+-				continue;
+-			}
++		GF_Err gf_sg_select(GF_SockGroup *sg, u32 usec_wait, u64 now)
++{
++	u32 i, nb_nofs=0, nb_write=0, nb_closed=0, nb_tcp=0;
++	if (!sg || !sg->sockets) return GF_BAD_PARAM;
+@@ -3404,8 +3403,10 @@ GF_Err gf_sk_group_select(GF_SockGroup *sg, u32 usec_wait, GF_SockSelectMode mod
+-			gf_netcap_load_pck(s->cap_info->nf, now);
+-			if (!s->cap_info->nf->read_sock_selected) {
+-				if (s->cap_info->nf->is_eos) {
+-					if (s->flags & GF_SOCK_IS_TCP) nb_tcp++;
+-					nb_closed++;
+-				}
+-				continue;
+-			}
++	for (i=0; i<sg->nb_socks; i++) {
++		GF_Socket *s = gf_list_get(sg->sockets, i);
++		if (!s->cap_info) {
++			nb_nofs++;
++			continue;
++		}
++		if (!s->cap_info->nf->read_socks) {
++			nb_write++;
++			continue;
++		}
+@@ -3413,2 +3414,3 @@ GF_Err gf_sk_group_select(GF_SockGroup *sg, u32 usec_wait, GF_SockSelectMode mod
+-			if (s->cap_info->nf->rt && (s->cap_info->nf->pck_time > now))
+-				continue; // GF_IP_NETWORK_EMPTY;
++		if (s->cap_info->nf == NULL) {
++			continue;
++		}
+@@ -3416,2 +3418,7 @@ GF_Err gf_sk_group_select(GF_SockGroup *sg, u32 usec_wait, GF_SockSelectMode mod
+-			if (s == s->cap_info->nf->read_sock_selected)
+-				return GF_OK;
++		gf_netcap_load_pck(s->cap_info->nf, now);
++		if (!s->cap_info->nf->read_sock_selected) {
++			if (s->cap_info->nf->is_eos) {
++				if (s->flags & GF_SOCK_IS_TCP) nb_tcp++;
++				nb_closed++;
++			}
++			continue;
+@@ -3418,0 +3426,8 @@ GF_Err gf_sk_group_select(GF_SockGroup *sg, u32 usec_wait, GF_SockSelectMode mod
++
++		if (s->cap_info->nf->rt && (s->cap_info->nf->pck_time > now))
++			continue; // GF_IP_NETWORK_EMPTY;
++
++		if (s == s->cap_info->nf->read_sock_selected)
++			return GF_OK;
++	}
++}

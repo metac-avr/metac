@@ -1,0 +1,24 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 0f59ca608..e7faced2c 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -238 +238,2 @@ void ndpi_free(void *ptr) {
+-  if(_ndpi_free) {
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++   if(_ndpi_free) {
+@@ -242 +243,7 @@ void ndpi_free(void *ptr) {
+-    if(ptr)
++    if(ptr) {
++      // Validate pointer before freeing to prevent CWE-763
++      #ifdef __linux__
++      if(malloc_usable_size(ptr) > 0) {
++        free(ptr);
++      }
++      #else
+@@ -243,0 +251,2 @@ void ndpi_free(void *ptr) {
++      #endif
++    }
+@@ -250,2 +259 @@ void ndpi_flow_free(void *ptr) {
+-  if(_ndpi_flow_free)
+-    _ndpi_flow_free(ptr);
++  if(_ndpi_flow_free)    _ndpi_flow_free(ptr);

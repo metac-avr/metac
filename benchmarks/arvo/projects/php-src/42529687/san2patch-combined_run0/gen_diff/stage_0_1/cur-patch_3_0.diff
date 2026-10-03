@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..9984750721f 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35 +36 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index 6a9762eb549..0cd1b53d049 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -1197,2 +1197,3 @@ static void gc_mark_roots(gc_stack *stack)
+-			if (GC_REF_CHECK_COLOR(current->ref, GC_PURPLE)) {
+-				GC_REF_SET_COLOR(current->ref, GC_GREY);
++			if (current->ref && GC_REF_CHECK_COLOR(current->ref, GC_PURPLE)) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 				GC_REF_SET_COLOR(current->ref, GC_GREY);

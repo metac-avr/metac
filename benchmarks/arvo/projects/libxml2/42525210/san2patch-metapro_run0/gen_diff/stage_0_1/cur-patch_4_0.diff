@@ -1,0 +1,37 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index a3c47f69..9237cc91 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -2944 +2944,6 @@ htmlParseAttValue(htmlParserCtxtPtr ctxt) {
+-	ret = htmlParseHTMLAttribute(ctxt, '"');
++	if (INP_BUF_AVAIL(ctxt) > 0) {
++	    ret = htmlParseHTMLAttribute(ctxt, '"');
++	} else {
++	    htmlParseErr(ctxt, XML_ERR_ATTRIBUTE_NOT_FINISHED,
++	                 "AttValue: \" expected\n", NULL, NULL);
++	}
+@@ -2952 +2957,6 @@ htmlParseAttValue(htmlParserCtxtPtr ctxt) {
+-	ret = htmlParseHTMLAttribute(ctxt, '\'');
++	if (INP_BUF_AVAIL(ctxt) > 0) {
++	    ret = htmlParseHTMLAttribute(ctxt, '\'');
++	} else {
++	    htmlParseErr(ctxt, XML_ERR_ATTRIBUTE_NOT_FINISHED,
++	                 "AttValue: ' expected\n", NULL, NULL);
++	}
+@@ -2962 +2972,6 @@ htmlParseAttValue(htmlParserCtxtPtr ctxt) {
+-	ret = htmlParseHTMLAttribute(ctxt, 0);
++	if (INP_BUF_AVAIL(ctxt) > 0) {
++	    ret = htmlParseHTMLAttribute(ctxt, 0);
++	} else {
++	    htmlParseErr(ctxt, XML_ERR_ATTRIBUTE_WITHOUT_VALUE,
++	                 "AttValue: no value found\n", NULL, NULL);
++	}
+@@ -3775,3 +3790,5 @@ htmlParseAttribute(htmlParserCtxtPtr ctxt, xmlChar **value) {
+-        NEXT;
+-	SKIP_BLANKS;
+-	val = htmlParseAttValue(ctxt);
++         NEXT;
++	if (CUR != 0) {
++	    SKIP_BLANKS;
++	    val = htmlParseAttValue(ctxt);
++	}

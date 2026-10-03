@@ -1,0 +1,48 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..079b3866 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2636 +2636,8 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
++ static void
++xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    
++    if (idPtr != NULL) {
++        /* Clear the reference before freeing to prevent use-after-free */
++        if (idPtr->attr != NULL) {
++            idPtr->attr->psvi = NULL;
+@@ -2637,0 +2645 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
++        xmlFreeID(idPtr);
+@@ -2639,19 +2647 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+-static void
+-xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++}    xmlHashFree(table, xmlFreeIDTableEntry);
+@@ -2743 +2733 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2744,0 +2735,3 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    /* Clear the ID reference before freeing to prevent use-after-free */
++    attr->id = NULL;
++    attr->atype = 0;
+@@ -2748,3 +2740,0 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    attr->atype = 0;
+-    attr->id = NULL;
+-

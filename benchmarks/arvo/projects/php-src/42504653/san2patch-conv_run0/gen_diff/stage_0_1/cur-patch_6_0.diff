@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..f7585b1bba5 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30063 +30063,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			/* Validate pointer before use to prevent use-after-free */
++			if (object_ptr != NULL) {
++				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			} else {
++				dim = NULL;
++			}
+@@ -49650 +49655,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			/* Validate pointer before use to prevent use-after-free */
++			if (object_ptr != NULL) {
++				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			} else {
++				dim = NULL;
++			}
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..ec73162e51e 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -862,0 +864,10 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Validate execute_data pointer before use to prevent use-after-free */
++			if (execute_data && ZEND_GC_HAS_CHILDREN(Z_OBJ(execute_data->This))) {
++				/* Ensure the object is still valid */
++				zend_object *obj = Z_OBJ(execute_data->This);
++				if (obj->gc.refcount <= 0) {
++					/* Object has been freed, skip processing */
++					continue;
++				}
++			}
++		}
+@@ -874,0 +886 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++

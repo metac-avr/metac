@@ -1,0 +1,68 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..4f13362322 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -189,0 +190,6 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++    
++    if (!s || !avpkt || !gb) {
++        av_log(avctx, AV_LOG_ERROR, "Invalid input parameters\n");
++        return AVERROR(EINVAL);
++    }
++    
+@@ -194 +200 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
++     }
+@@ -227,6 +233,8 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-        for (k = 1; k <= s->diff_height; k++) {
+-            memcpy(s->frame->data[0] + x_pos * 3 +
+-                   (s->image_height - y_pos - k) * s->frame->linesize[0],
+-                   line, width * 3);
+-            /* advance source pointer to next line */
+-            line += width * 3;
++        if (s->frame && s->frame->data[0] && s->tmpblock) {
++            for (k = 1; k <= s->diff_height; k++) {
++                memcpy(s->frame->data[0] + x_pos * 3 +
++                       (s->image_height - y_pos - k) * s->frame->linesize[0],
++                       line, width * 3);
++                /* advance source pointer to next line */
++                line += width * 3;
++            }
+@@ -236,8 +244,10 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-        ret = decode_hybrid(s->tmpblock, s->zstream.next_out,
+-                      s->frame->data[0],
+-                      s->image_height - (y_pos + 1 + s->diff_height),
+-                      x_pos, s->diff_height, width,
+-                      s->frame->linesize[0], s->pal);
+-        if (ret < 0) {
+-            av_log(avctx, AV_LOG_ERROR, "decode_hybrid failed\n");
+-            return ret;
++        if (s->frame && s->frame->data[0] && s->tmpblock) {
++            ret = decode_hybrid(s->tmpblock, s->zstream.next_out,
++                          s->frame->data[0],
++                          s->image_height - (y_pos + 1 + s->diff_height),
++                          x_pos, s->diff_height, width,
++                          s->frame->linesize[0], s->pal);
++            if (ret < 0) {
++                av_log(avctx, AV_LOG_ERROR, "decode_hybrid failed\n");
++                return ret;
++            }
+@@ -465 +474,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-
+@@ -468,2 +477,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-                    memcpy(s->frame->data[0] + x, s->keyframe + x,
+-                           cur_blk_width * 3);
++                    // Validate pointers before memcpy to prevent use-after-free
++                    if (s->frame && s->frame->data[0] && s->keyframe) {
++                        if (x >= 0 && x + cur_blk_width * 3 <= s->frame->linesize[0] * s->frame->height) {
++                            memcpy(s->frame->data[0] + x, s->keyframe + x,
++                                   cur_blk_width * 3);
++                        }
++                    }
+@@ -473 +487,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-            /* skip unchanged blocks, which have size 0 */
++// FIXME: Crash CWE-416: Use After Free - FIXED
++             /* skip unchanged blocks, which have size 0 */
+@@ -485,2 +500 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if (!s->keyframe) {
+-            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);
++        if (!s->keyframe) {            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);

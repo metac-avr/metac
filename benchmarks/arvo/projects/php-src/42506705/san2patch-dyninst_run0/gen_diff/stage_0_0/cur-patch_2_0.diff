@@ -1,0 +1,23 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..b61774b2492 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -420,0 +421,7 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
++	/* Prevent use-after-free by checking GC status */
++	if (UNEXPECTED(GC_REFCOUNT(ht) == 0)) {
++		ZVAL_NULL(result);
++		return;
++	}
++	GC_DELREF(ht); /* Decrement for our temporary reference */
++	GC_ADDREF(ht); /* Restore reference count */
+@@ -429 +436,2 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -430,0 +439,6 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
++	/* Validate reference count to prevent expired pointer dereference */
++	if (UNEXPECTED(GC_REFCOUNT(ht) == 0)) {
++		goto num_undef;
++	}
++	GC_DELREF(ht); /* Temporary reference decrement */
++	GC_ADDREF(ht); /* Restore reference */

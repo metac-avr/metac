@@ -1,0 +1,27 @@
+diff --git a/src/filters/isoffin_read_ch.c b/src/filters/isoffin_read_ch.c
+index 225c8ef15..6dc1a713d 100644
+--- a/src/filters/isoffin_read_ch.c
++++ b/src/filters/isoffin_read_ch.c
+@@ -300,3 +300,6 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
+-	ch->sample->duration = 1000;
+-	ch->dts = ch->cts = 1000 * ch->au_seq_num;
+-	gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &ch->sample->data, &ch->sample->dataLength, &ch->static_sample->alloc_size, NULL, GF_FALSE);
++	// FIXME: Crash CWE-416: Use After Free
++	if (ch->sample) {
++		ch->sample->duration = 1000;
++		ch->dts = ch->cts = 1000 * ch->au_seq_num;
++		gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &ch->sample->data, &ch->sample->dataLength, &ch->static_sample->alloc_size, NULL, GF_FALSE);
++	}
+diff --git a/src/filters/isoffin_read.c b/src/filters/isoffin_read.c
+index 2f08cf8f9..19a105422 100644
+--- a/src/filters/isoffin_read.c
++++ b/src/filters/isoffin_read.c
+@@ -1482 +1482,2 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1484,0 +1486,4 @@ static GF_Err isoffin_process(GF_Filter *filter)
++				// Validate sample pointers after extraction to prevent use-after-free
++				if (ch->sample && !ch->sample->data) {
++					ch->sample = NULL;
++				}

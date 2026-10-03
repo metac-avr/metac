@@ -1,0 +1,24 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..143cce660 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -129,0 +130,4 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
++// FIXME: Crash CWE-416: Use After Free
++ 
++	/*ensure packet data is valid before processing*/
++	if (!oggpacket || !oggpacket->packet || oggpacket->bytes == 0) return;
+@@ -136 +140 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-		info->nb_chan = oggpack_read( &opb, 8);	/*nb chan*/
++		info->nb_chan = oggpack_read( &opb, 8); /*nb chan*/
+@@ -138 +142 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-		oggpack_adv( &opb, 32);	/*max rate*/
++		oggpack_adv( &opb, 32); /*max rate*/
+@@ -432 +436,3 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-					oggdmx_get_stream_info(&oggpacket, &info);
++					if (oggpacket.packet != NULL && oggpacket.packet_size > 0) {
++						oggdmx_get_stream_info(&oggpacket, &info);
++					}
+@@ -438 +444,2 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-				}
++// FIXME: Crash CWE-416: Use After Free
++ 				}

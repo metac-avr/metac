@@ -1,0 +1,38 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..33b241b6e 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -139,0 +140,2 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
++  struct RString *s;
++  
+@@ -141 +143,3 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-    return str_init_embed(mrb_obj_alloc_string(mrb), p, len);
++    s = mrb_obj_alloc_string(mrb);
++    if (!s) return NULL;
++    return str_init_embed(s, p, len);
+@@ -144 +148,3 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-    return str_init_nofree(mrb_obj_alloc_string(mrb), p, len);
++    s = mrb_obj_alloc_string(mrb);
++    if (!s) return NULL;
++    return str_init_nofree(s, p, len);
+@@ -146 +152,3 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-  return str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++  s = mrb_obj_alloc_string(mrb);
++  if (!s) return NULL;
++  return str_init_normal(mrb, s, p, len);
+@@ -212,3 +220,10 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-  shared->refcnt--;
+-  if (shared->refcnt == 0) {
+-    mrb_free(mrb, shared->ptr);
++  if (shared == NULL) return;  // Prevent dereferencing null pointer
++  
++  // Atomic decrement to prevent race conditions
++  mrb_int old_refcnt = shared->refcnt--;
++  
++  // Only free if refcnt was 1 (last reference)
++  if (old_refcnt == 1) {
++    if (shared->ptr) {
++      mrb_free(mrb, shared->ptr);
++    }
+@@ -224 +238,0 @@ str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
+-

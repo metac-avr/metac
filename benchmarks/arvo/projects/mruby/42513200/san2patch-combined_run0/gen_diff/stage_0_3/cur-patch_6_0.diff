@@ -1,0 +1,27 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..d6dc5b17d 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1200,3 +1200,17 @@ int_mod(mrb_state *mrb, mrb_value x)
+-    mrb_int mod = a % b;
+-    if ((a < 0) != (b < 0) && mod != 0) {
+-      mod += b;
++    
++    /* Check for potential integer overflow in modulo operation */
++    if (b > 0 && a < 0 && a != MRB_INT_MIN) {
++      mrb_int mod = a % b;
++      if (mod != 0) {
++        mod += b;
++      }
++      return mrb_int_value(mrb, mod);
++    } else {
++      mrb_int mod = a % b;
++      if ((a < 0) != (b < 0) && mod != 0) {
++        /* Prevent overflow when adding b to mod */
++        if ((b > 0 && mod <= MRB_INT_MAX - b) || (b < 0 && mod >= MRB_INT_MIN - b)) {
++          mod += b;
++        }
++      }
++      return mrb_int_value(mrb, mod);
+@@ -1204 +1217,0 @@ int_mod(mrb_state *mrb, mrb_value x)
+-    return mrb_int_value(mrb, mod);

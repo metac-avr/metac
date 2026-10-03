@@ -1,0 +1,44 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..d20377d4606 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -155,8 +155,12 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			garbage = Z_COUNTED_P(variable_ptr);
+-			zend_copy_to_variable(variable_ptr, value, value_type);
+-			if (GC_DELREF(garbage) == 0) {
+-				rc_dtor_func(garbage);
+-			} else { /* we need to split */
+-				/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
+-				if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
+-					gc_possible_root(garbage);
++			
++garbage = Z_COUNTED_P(variable_ptr);
++			/* Prevent use-after-free by validating garbage pointer */
++			if (garbage != NULL && (GC_TYPE(garbage) & GC_TYPE_MASK)) {
++				zend_copy_to_variable(variable_ptr, value, value_type);
++				if (GC_DELREF(garbage) == 0) {
++					rc_dtor_func(garbage);
++				} else { /* we need to split */
++					/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
++					if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
++						gc_possible_root(garbage);
++					}
+@@ -163,0 +168,5 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++				return variable_ptr;
++			} else {
++				/* Handle case where garbage pointer is invalid */
++				zend_copy_to_variable(variable_ptr, value, value_type);
++				return variable_ptr;
+@@ -165 +173,0 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			return variable_ptr;
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..b76ca66ad09 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,2 +56,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (__builtin_expect(!!(p), 1)) { /* Branch prediction optimization with null check */
++		ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

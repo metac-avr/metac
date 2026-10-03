@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..4ab06718336 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -58974,0 +58975 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -58977 +58978,3 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
+-	zend_execute_ex(execute_data);
++	if (execute_data && execute_data->opline) {
++		zend_execute_ex(execute_data);
++	}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..83f80461eb8 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1684 +1684,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++	/* Zero out critical fields to prevent expired pointer dereference */
++	ht->u.flags = 0;
++	ht->nNumOfElements = 0;
++ free_ht:
+@@ -1688,5 +1690,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-

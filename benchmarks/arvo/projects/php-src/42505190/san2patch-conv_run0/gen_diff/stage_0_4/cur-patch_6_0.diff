@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..23e7a550680 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -58975,5 +58975,12 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
+-	i_init_code_execute_data(execute_data, op_array, return_value);
+-	ZEND_OBSERVER_FCALL_BEGIN(execute_data);
+-	zend_execute_ex(execute_data);
+-	/* Observer end handlers are called from ZEND_RETURN */
+-	zend_vm_stack_free_call_frame(execute_data);
++	/* Initialize execute data with safety checks to prevent use-after-free */
++	if (execute_data != NULL && op_array != NULL) {
++		i_init_code_execute_data(execute_data, op_array, return_value);
++		ZEND_OBSERVER_FCALL_BEGIN(execute_data);
++		zend_execute_ex(execute_data);
++		/* Observer end handlers are called from ZEND_RETURN */
++		zend_vm_stack_free_call_frame(execute_data);
++	} else {
++		if (execute_data != NULL) {
++			zend_vm_stack_free_call_frame(execute_data);
++		}
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..da6a1a93361 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2441 +2441,2 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -2442,0 +2444,4 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
++	if (UNEXPECTED(Z_TYPE_P(container_ptr) == IS_UNDEF)) {
++		zend_throw_error(NULL, "Cannot use string offset as an array");
++		return;
++	}
+@@ -2453,2 +2458 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(z
+-{
+-	zval *result = EX_VAR(opline->result.var);
++{	zval *result = EX_VAR(opline->result.var);

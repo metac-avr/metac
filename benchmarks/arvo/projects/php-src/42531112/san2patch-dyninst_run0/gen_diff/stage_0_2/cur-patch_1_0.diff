@@ -1,0 +1,23 @@
+diff --git a/ext/pcre/php_pcre.c b/ext/pcre/php_pcre.c
+index 075d9fc5263..0600cb23032 100644
+--- a/ext/pcre/php_pcre.c
++++ b/ext/pcre/php_pcre.c
+@@ -658,2 +658,16 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-	if ((pp = strchr("([{< )]}>", delimiter)))
+-		delimiter = pp[5];
++	if ((pp = strchr("([{< )]}>", delimiter))) {
++		/* Alternative fix: Validate that pp is in first half of string before accessing pp[5] */
++		const char* valid_openers = "([{<";
++		if (strchr(valid_openers, *pp)) {
++			delimiter = pp[5];
++		} else {
++			/* For closing delimiters or invalid ones, keep original behavior but add safety check */
++			if (pp <= "([{< )]}>" + 4) { /* Ensure we're in valid range for opener lookup */
++				delimiter = pp[5];
++			} else {
++				php_error_docref(NULL, E_WARNING, "Invalid delimiter mapping");
++				pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
++				return NULL;
++			}
++		}
++	}

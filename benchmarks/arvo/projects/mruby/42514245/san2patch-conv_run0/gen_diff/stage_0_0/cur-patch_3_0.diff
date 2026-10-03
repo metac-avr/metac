@@ -1,0 +1,26 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..8dc4ae893 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -39,3 +39,5 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-    x->p=(mp_limb*)mrb_realloc(mrb,x->p,size*sizeof(mp_limb));
+-    for (size_t i=x->sz; i<size; i++)
+-      (x->p)[i] = 0;
++    mp_limb *new_p = (mp_limb*)mrb_realloc(mrb, x->p, size * sizeof(mp_limb));
++    if (new_p == NULL) return; /* Handle allocation failure */
++    for (size_t i = x->sz; i < size; i++)
++      new_p[i] = 0;
++    x->p = new_p;
+@@ -428 +430 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  ulshift(mrb,&y,yy,ns);
++   ulshift(mrb,&y,yy,ns);
+@@ -430,0 +433,4 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  if (xd < yd) {
++    mpz_realloc(mrb,&q,yd);
++    xd = yd;
++  }
+@@ -453 +459,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < xd) {
++      q.p[j] = qhat;
++    }

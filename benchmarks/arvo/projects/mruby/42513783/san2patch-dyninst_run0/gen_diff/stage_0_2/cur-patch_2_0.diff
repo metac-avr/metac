@@ -1,0 +1,41 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..1df3d2863 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -358,12 +358,18 @@ urshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-  mrb_assert(n < DIG_SIZE);
+-  if (n == 0)
+-    mpz_set(mrb, c1, a);
+-  else {
+-    mpz_t c;
+-    mp_limb cc = 0;
+-    mp_limb2 rm = (((mp_limb2)1<<n) - 1);
+-    mpz_init(mrb,&c); mpz_realloc(mrb,&c,(size_t)(a->sz));
+-    for (size_t i=a->sz-1; ; i--) {
+-      c.p[i] = ((a->p[i] >> n) | cc) & DIG_MASK;
+-      cc = (a->p[i] & rm) << (DIG_SIZE - n);
+-      if (i == 0) break;
++  if (n >= DIG_SIZE) n = DIG_SIZE - 1;
++  if (a && a->sz > 0) {
++    mrb_assert(n < DIG_SIZE);
++    if (n == 0)
++      mpz_set(mrb, c1, a);
++    else {
++      mpz_t c;
++      mp_limb cc = 0;
++      mp_limb2 rm = (((mp_limb2)1<<n) - 1);
++      mpz_init(mrb,&c); mpz_realloc(mrb,&c,(size_t)(a->sz));
++      for (size_t i=a->sz-1; ; i--) {
++        c.p[i] = ((a->p[i] >> n) | cc) & DIG_MASK;
++        cc = (a->p[i] & rm) << (DIG_SIZE - n);
++        if (i == 0) break;
++      }
++      trim(&c);
++      mpz_set(mrb,c1,&c);
++      mpz_clear(mrb,&c);
+@@ -371,3 +377,2 @@ urshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-    trim(&c);
+-    mpz_set(mrb,c1,&c);
+-    mpz_clear(mrb,&c);
++  } else {
++    mpz_init(mrb, c1);

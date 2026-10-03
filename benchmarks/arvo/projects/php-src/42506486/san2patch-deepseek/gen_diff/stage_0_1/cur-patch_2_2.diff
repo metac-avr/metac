@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..745bb71cf03 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -210,5 +209,0 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		return ZEND_HASH_APPLY_KEEP;
+-	}
+-}
+-/* }}} */
+-
+@@ -218 +213,5 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-		zv = Z_INDIRECT_P(zv);
++		zval *target = Z_INDIRECT_P(zv);
++		if (UNEXPECTED(!target || Z_TYPE_P(target) == IS_PTR)) {
++			return;
++		}
++		zv = target;
+@@ -230,0 +230 @@ static ZEND_COLD void zend_throw_or_error(int fetch_type, zend_class_entry *exce
++	va_end(va);
+@@ -237,0 +238,9 @@ static ZEND_COLD void zend_throw_or_error(int fetch_type, zend_class_entry *exce
++	efree(message);
++}
++/* }}} */
++	if (fetch_type & ZEND_FETCH_CLASS_EXCEPTION) {
++		zend_throw_error(exception_ce, "%s", message);
++	} else {
++		zend_error(E_ERROR, "%s", message);
++	}
++

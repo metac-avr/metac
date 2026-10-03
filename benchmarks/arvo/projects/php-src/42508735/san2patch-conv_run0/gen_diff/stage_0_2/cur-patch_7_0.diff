@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 6e809c87341..52ef5f95263 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2150 +2150,10 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++// FIXME: Crash CWE-416: Use After Free
++ 			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++
++			/* Validate object before use to prevent use-after-free */
++			if (Z_TYPE(p->val) == IS_OBJECT) {
++				zend_object *obj = Z_OBJ(p->val);
++				if (obj->gc.refcount == 0 || (obj->ce && obj->ce->name == NULL)) {
++					continue; /* Object is being/already destroyed */
++				}
++			}
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index b09ce3b990d..c396ac45a5d 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -67,0 +68,2 @@ ZEND_API void zend_object_std_dtor(zend_object *object)
++// Fixed CWE-416: Use After Free by clearing object handle
++						object->handle = 0xFFFFFFFF;

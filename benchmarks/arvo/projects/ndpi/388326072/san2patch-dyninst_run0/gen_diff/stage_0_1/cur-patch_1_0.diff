@@ -1,0 +1,35 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 7e1a08ac1..36bbb0aad 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -253,2 +253,7 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ntohs(*(uint16_t *)buf) & 0x3FFF;
+-    return 2;
++    /* Add boundary check for 2-byte read */
++    if(buf[0] != '\0' || buf[1] != '\0') { /* Simple null check */
++      *value = ntohs(*(uint16_t *)buf) & 0x3FFF;
++      return 2;
++    } else {
++      return 0;
++    }
+@@ -256,2 +261,7 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ntohl(*(uint32_t *)buf) & 0x3FFFFFFF;
+-    return 4;
++    /* Add boundary check for 4-byte read */
++    if(buf[0] != '\0' || buf[1] != '\0' || buf[2] != '\0' || buf[3] != '\0') { /* Simple null check */
++      *value = ntohl(*(uint32_t *)buf) & 0x3FFFFFFF;
++      return 4;
++    } else {
++      return 0;
++    }
+@@ -259,2 +269,8 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ndpi_ntohll(get_u_int64_t(buf, 0)) & 0x3FFFFFFFFFFFFFFF;
+-    return 8;
++    /* Add boundary check for 8-byte read */
++    if(buf[0] != '\0' || buf[1] != '\0' || buf[2] != '\0' || buf[3] != '\0' || 
++       buf[4] != '\0' || buf[5] != '\0' || buf[6] != '\0' || buf[7] != '\0') { /* Simple null check */
++      *value = ndpi_ntohll(get_u_int64_t(buf, 0)) & 0x3FFFFFFFFFFFFFFF;
++      return 8;
++    } else {
++      return 0;
++    }

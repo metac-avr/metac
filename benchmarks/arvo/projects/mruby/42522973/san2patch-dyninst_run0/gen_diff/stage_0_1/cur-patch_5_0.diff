@@ -1,0 +1,30 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..d011ac711 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -643 +643 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -647 +647 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super && !mrb_broken_link(c->super)) mrb_gc_mark(mrb, (struct RBasic*)c->super);
+@@ -651 +651,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   case MRB_TT_OBJECT:
+@@ -653 +654 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (((struct RObject*)obj)->iv && !mrb_broken_iv_link(((struct RObject*)obj)->iv)) mrb_gc_mark_iv(mrb, (struct RObject*)obj);
+@@ -660,2 +661,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper && !mrb_broken_link(p->upper)) mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++      if (p->e.env && !mrb_broken_link(p->e.env)) mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
+@@ -1132,0 +1134,4 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++          /* Pre-nullify instance variables to prevent use-after-free */
++          if (p->as.basic.iv) {
++            p->as.basic.iv = NULL;
++          }
+@@ -1156 +1161 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
++       unlink_heap_page(gc, page);

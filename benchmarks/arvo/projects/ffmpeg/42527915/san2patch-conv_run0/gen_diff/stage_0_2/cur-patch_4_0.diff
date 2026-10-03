@@ -1,0 +1,24 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..a77e7ad5c0 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -489 +489,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-            goto fail;
++            ret = AVERROR_INVALIDDATA; // Store error code instead of immediate goto
++            goto cleanup_and_fail;
+@@ -494,2 +495,3 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-            goto fail;
+-        }
++            ret = AVERROR_INVALIDDATA; // Store error code instead of immediate goto
++            goto cleanup_and_fail;
++         }
+@@ -499,3 +501,3 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        goto fail;
+-    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
+-fail:
++        goto cleanup_and_fail;
++    ret = vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++cleanup_and_fail:
+@@ -504 +506 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    return AVERROR_INVALIDDATA;
++    return ret;

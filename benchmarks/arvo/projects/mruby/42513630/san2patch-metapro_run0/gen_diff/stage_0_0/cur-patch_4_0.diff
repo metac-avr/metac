@@ -1,0 +1,23 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 239492add..e318881b0 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1825,0 +1826,3 @@ cmpnum(mrb_state *mrb, mrb_value v1, mrb_value v2)
++    if (!mrb_bigint_p(v2)) {
++      return -2;
++    }
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..4b701d066 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -37 +37,2 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
+@@ -39,2 +40,4 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-    x->p=(mp_limb*)mrb_realloc(mrb,x->p,size * sizeof(mp_limb));
+-    for (size_t i=x->sz; i<size; i++)
++    void* temp = mrb_realloc(mrb, x->p, size * sizeof(mp_limb));
++    if (!temp) return; // Check for successful allocation
++    x->p = (mp_limb*)temp;
++    for (size_t i = x->sz; i < size; i++)

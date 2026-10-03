@@ -1,0 +1,37 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..de055a933 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1220,2 +1220,6 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				if (cfg->num_constraint_info > 1) {
++					gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
++				}
++				if (cfg->num_constraint_info > 0) {
++					gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				}
+@@ -1234,2 +1238,5 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				if (cfg->ptl_sublayer_present_mask & (1<<idx))
+-					gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++				if (cfg->ptl_sublayer_present_mask & (1<<idx)) {
++					if (idx < 8) { // Add bounds check for sublayer_level_idc array access
++						gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++					}
++				}
+@@ -1240 +1247,3 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				if (idx < cfg->num_sub_profiles) { // Add bounds check for sub_profiles_idc array access
++					gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				}
+@@ -1254,0 +1264,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++		if (!ar) continue; // Add null check for array parameter
++
+@@ -1268,0 +1280,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			if (!sl) continue; // Add null check for NALU parameter
++			
+@@ -1274 +1287,3 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			gf_bs_write_data(bs, sl->data, sl->size);
++			if (sl->data && sl->size > 0) { // Add bounds check for data access
++				gf_bs_write_data(bs, sl->data, sl->size);
++			}

@@ -1,0 +1,26 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..62f89fbc 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2499 +2499 @@ xmlFreeID(xmlIDPtr id) {
+-    if (id->value != NULL)
++    if (id->value != NULL) {
+@@ -2501 +2501,3 @@ xmlFreeID(xmlIDPtr id) {
+-    if (id->name != NULL)
++        id->value = NULL;
++    }
++    if (id->name != NULL) {
+@@ -2502,0 +2505,2 @@ xmlFreeID(xmlIDPtr id) {
++        id->name = NULL;
++    }
+@@ -2743 +2747 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2749,5 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    /* Fix CWE-825: Expired Pointer Dereference - Check if ID is already freed */
++    if (attr->id != NULL) {
++        if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }

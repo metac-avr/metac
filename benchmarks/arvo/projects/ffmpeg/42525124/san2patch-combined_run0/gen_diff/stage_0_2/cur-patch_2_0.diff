@@ -1,0 +1,47 @@
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index 6ea6c46d8f..a31b933f88 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -187 +187,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     }
+@@ -201,0 +203,4 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    // Ensure we have sufficient data for the get_bits operations
++    if (headsize * 8 < offset + 2)
++        return AVERROR_INVALIDDATA;
+@@ -203 +208,10 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    tb.den = (const uint32_t[]){100, 1000, 1, 1}[ctrl] + get_bits_long(gb, (const uint32_t[]){0, 0, 10, 30}[ctrl]);
++    
++    // Validate that we have enough bits for tb.den calculation
++    int tb_den_bits = (const uint32_t[]){0, 0, 10, 30}[ctrl];
++    if (headsize * 8 < get_bits_count(gb) + tb_den_bits)
++        return AVERROR_INVALIDDATA;
++    tb.den = (const uint32_t[]){100, 1000, 1, 1}[ctrl] + get_bits_long(gb, tb_den_bits);
++    
++    // Validate that we have enough bits for tb.num calculation
++    if (headsize * 8 < get_bits_count(gb) + 2)
++        return AVERROR_INVALIDDATA;
+@@ -205 +219,6 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    tb.num = (const uint32_t[]){1, 1001, 1, 1}[ctrl] + get_bits_long(gb, (const uint32_t[]){0, 0, 8, 10}[ctrl]);
++    
++    // Validate that we have enough bits for tb.num calculation
++    int tb_num_bits = (const uint32_t[]){0, 0, 8, 10}[ctrl];
++    if (headsize * 8 < get_bits_count(gb) + tb_num_bits)
++        return AVERROR_INVALIDDATA;
++    tb.num = (const uint32_t[]){1, 1001, 1, 1}[ctrl] + get_bits_long(gb, tb_num_bits);
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index 65dc080ddb..193f61e8e8 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -327,0 +328,9 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++// Bounds checking added to prevent buffer overflow
++    if (n <= 0 || n > 25) {
++        return 0;
++    }
++    
++    if (s->index + ((n + 7) >> 3) > s->buffer_end - s->buffer) {
++        return 0;
++    }
++    

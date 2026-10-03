@@ -1,0 +1,18 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..aa0206bfd47 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -8989 +8989,8 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-
++// FIXME: Crash CWE-416: Use After Free
++	if (EX(func)) {
++		ZEND_ASSERT(EX(func)->common.fn_flags & ZEND_ACC_GENERATOR);
++		if (UNEXPECTED(zend_jit_trace_bailout_after_free(trace_buffer))) {
++			JIT_G(tracing) = 0;
++			return 0;
++		}
++	}
+@@ -9001,2 +9008 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-			const zend_op_array *op_array = trace_buffer[0].op_array;
+-			const zend_op *opline = trace_buffer[1].opline;
++			const zend_op_array *op_array = trace_buffer[0].op_array;			const zend_op *opline = trace_buffer[1].opline;

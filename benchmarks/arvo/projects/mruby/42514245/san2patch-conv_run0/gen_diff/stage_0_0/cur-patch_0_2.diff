@@ -1,0 +1,85 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..0c2758ec4 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -431,0 +432,41 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  static void
++udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++{
++  /* simple cases */
++  int cmp = ucmp(xx, yy);
++  if (cmp == 0) {
++    mpz_set_int(mrb, qq, 1);
++    zero(rr);
++    return;
++  }
++  else if (cmp < 0) {
++    zero(qq);
++    mpz_set(mrb, rr, yy);
++    return;
++  }
++
++  mpz_t q, x, y;
++  size_t i;
++
++  if (uzero(yy)) return;        /* divided by zero */
++  mpz_init(mrb,&q); mpz_init(mrb,&x); mpz_init(mrb,&y);
++  mpz_realloc(mrb,&x,xx->sz+1);
++  size_t yd = digits(yy);
++  size_t ns = lzb(yy->p[yd-1]);
++  ulshift(mrb,&x,xx,ns);
++  ulshift(mrb,&y,yy,ns);
++  size_t xd = digits(&x);
++  mpz_realloc(mrb,&q,xd);
++  mp_limb2 z = y.p[yd-1];
++  
++  // Check for valid loop bounds before entering the loop
++  if (xd < yd) {
++    // This should not happen due to earlier checks, but be safe
++    urshift(mrb,rr,&x,ns);
++    trim(&q);
++    mpz_set(mrb,qq,&q);
++    mpz_clear(mrb,&x); mpz_clear(mrb,&y);
++    mpz_clear(mrb,&q);
++    return;
++  }
++  
+@@ -432,0 +474,6 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    // Ensure we don't access beyond array bounds
++    if (j > xd || j + yd > x.sz || j + yd - 1 >= x.sz) {
++      // If we're out of bounds, break to avoid undefined behavior
++      break;
++    }
++    
+@@ -436,0 +484,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        // Additional bounds check for x.p[i+j]
++        if (i+j >= x.sz) break;
++        
+@@ -442 +492,6 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      // Check bounds before accessing x.p[i+j]
++      if (i+j < x.sz) {
++        b += x.p[i+j];
++      } else {
++        b = 0; // Reset b if we're out of bounds
++      }
+@@ -444 +499 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
++    for (; b!=0 && qhat > 0; qhat--) {  // Also check qhat to prevent underflow
+@@ -446,0 +502,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        // Bounds check for both x.p[i+j] accesses
++        if (i+j >= x.sz) break;
++        
+@@ -453 +511,4 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    // Ensure we don't write beyond q array bounds
++    if (j < q.sz) {
++      q.p[j] = qhat;
++    }
+@@ -461,0 +523,6 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  urshift(mrb,rr,&x,ns);
++  trim(&q);
++  mpz_set(mrb,qq,&q);
++  mpz_clear(mrb,&x); mpz_clear(mrb,&y);
++  mpz_clear(mrb,&q);
++}

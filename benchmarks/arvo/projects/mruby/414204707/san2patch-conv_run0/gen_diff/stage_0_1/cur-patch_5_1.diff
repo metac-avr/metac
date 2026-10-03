@@ -1,0 +1,64 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..4c246e3de 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779,6 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
+-    break;
+-  }
+-}
+-
+@@ -787 +781,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -791,0 +787,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  /* Check if object is valid before adding to gray list */
++  if (obj->tt < 0 || obj->tt >= MRB_TT_MAXDEFINE) return;
+@@ -793,8 +790 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++}  case MRB_TT_OBJECT:
+diff --git a/src/range.c b/src/range.c
+index fc126be80..9a23bc2c2 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -380,26 +380,5 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-    if (mrb_float_p(end)) {
+-      mrb_float a = (mrb_float)mrb_integer(beg);
+-      mrb_float b = mrb_float(end);
+-
+-      if (a > b) {
+-        return mrb_ary_new_capa(mrb, 0);
+-      }
+-      ary = mrb_ary_new_capa(mrb, (mrb_int)(b - a) + 1);
+-      mrb_value *ptr = RARRAY_PTR(ary);
+-      mrb_int i = 0;
+-      if (RANGE_EXCL(r)) {
+-        while (a < b) {
+-          ptr[i++] = mrb_int_value(mrb, (mrb_int)a);
+-          ARY_SET_LEN(RARRAY(ary), i);
+-          a += 1.0;
+-        }
+-      }
+-      else {
+-        while (a <= b) {
+-          ptr[i++] = mrb_int_value(mrb, (mrb_int)a);
+-          ARY_SET_LEN(RARRAY(ary), i);
+-          a += 1.0;
+-        }
+-      }
+-      return ary;
+-    }
++    static void
++obj_free(mrb_state *mrb, struct RBasic *obj, int end)
++{
++  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
++  switch (obj->tt) {

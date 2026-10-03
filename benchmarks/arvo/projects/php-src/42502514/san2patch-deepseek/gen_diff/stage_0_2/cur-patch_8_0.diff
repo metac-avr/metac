@@ -1,0 +1,14 @@
+diff --git a/ext/opcache/ZendAccelerator.c b/ext/opcache/ZendAccelerator.c
+index ece89bf3482..eeae971c1fc 100644
+--- a/ext/opcache/ZendAccelerator.c
++++ b/ext/opcache/ZendAccelerator.c
+@@ -1492,0 +1493,9 @@ static zend_persistent_script *cache_script_in_shared_memory(zend_persistent_scr
++	/* Clear any SSA data attached to the optimized op_array before caching.
++	 * This invalidates stale pointers left after NOP removal and op_array
++	 * compaction, ensuring subsequent consumers do not dereference expired
++	 * pointers. */
++	if (new_persistent_script->script.op_array) {
++		zend_ssa_destroy(new_persistent_script->script.ssa);
++		new_persistent_script->script.ssa = NULL;
++	}
++

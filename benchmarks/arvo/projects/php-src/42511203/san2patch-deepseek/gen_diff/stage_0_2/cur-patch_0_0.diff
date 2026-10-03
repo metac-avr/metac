@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..88c87c47f89 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -27158 +27158 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
+-			   UNEXPECTED(!Z_ISREF_P(value_ptr))) {
++ 			   UNEXPECTED(!Z_ISREF_P(value_ptr))) {
+@@ -27160,2 +27160,12 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
+-		variable_ptr = zend_wrong_assign_to_variable_reference(
+-			variable_ptr, value_ptr OPLINE_CC EXECUTE_DATA_CC);
++		if (UNEXPECTED(!Z_ISREF_P(variable_ptr))) {
++			zval *old_variable_ptr = variable_ptr;
++			Z_TRY_ADDREF_P(old_variable_ptr);
++			variable_ptr = zend_wrong_assign_to_variable_reference(
++				variable_ptr, value_ptr OPLINE_CC EXECUTE_DATA_CC);
++			if (UNEXPECTED(Z_TYPE_P(old_variable_ptr) == IS_UNDEF)) {
++				zval_ptr_dtor_nogc(old_variable_ptr);
++			}
++		} else {
++			variable_ptr = zend_wrong_assign_to_variable_reference(
++				variable_ptr, value_ptr OPLINE_CC EXECUTE_DATA_CC);
++		}

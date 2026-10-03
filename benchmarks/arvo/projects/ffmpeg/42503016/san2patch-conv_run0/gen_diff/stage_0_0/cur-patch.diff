@@ -1,0 +1,28 @@
+diff --git a/libavcodec/argo.c b/libavcodec/argo.c
+index 66f3d96480..8d9b007e4f 100644
+--- a/libavcodec/argo.c
++++ b/libavcodec/argo.c
+@@ -163,5 +163,7 @@ static int decode_mad1(AVCodecContext *avctx, AVFrame *frame)
+-                for (int x = 0; x < w; x += 8) {
+-                    int fill = bytestream2_get_byte(gb);
+-                    uint8_t *ddst = dst + x;
+-
+-                    for (int by = 0; by < 8; by++) {
++            for (int x = 0; x < w; x += 8) {
++                int fill = bytestream2_get_byte(gb);
++                uint8_t *ddst = dst + x;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
++                for (int by = 0; by < 8; by++) {
++                    if (ddst + 8 <= dst + (h * l)) {
+@@ -169 +170,0 @@ static int decode_mad1(AVCodecContext *avctx, AVFrame *frame)
+-                        ddst += l;
+@@ -170,0 +172 @@ static int decode_mad1(AVCodecContext *avctx, AVFrame *frame)
++                    ddst += l;
+@@ -172,2 +173,0 @@ static int decode_mad1(AVCodecContext *avctx, AVFrame *frame)
+-
+-                dst += 8 * l;
+@@ -174,0 +175,3 @@ static int decode_mad1(AVCodecContext *avctx, AVFrame *frame)
++
++            dst += 8 * l;
++        }

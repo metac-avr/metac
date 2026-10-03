@@ -1,0 +1,25 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..e1d60e42e39 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -755,0 +756,17 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
++static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht, zval *dim, zval *container, int type)
++{
++	zval *retval;
++	zend_ulong hval;
++	zend_string *offset_key;
++
++	ZEND_HASH_FOREACH_KEY(ht, hval, offset_key) {
++		if (!offset_key) {
++			if (!zend_hash_index_exists(ht, hval)) {
++				goto num_index;
++			}
++			continue;
++		}
++		if (ZSTR_LEN(offset_key) != ZSTR_LEN(Z_STR_P(dim)) ||
++				memcmp(ZSTR_VAL(offset_key), Z_STRVAL_P(dim), ZSTR_LEN(offset_key))) {
++			continue;
++		}
+@@ -757 +774 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	}
++	} ZEND_HASH_FOREACH_END();

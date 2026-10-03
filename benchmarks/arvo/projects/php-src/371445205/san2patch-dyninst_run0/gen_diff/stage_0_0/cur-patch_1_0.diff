@@ -1,0 +1,13 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..64fc5432f46 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -275 +275,7 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-				zend_hash_add_new(named_params, attribute_data->args[i].name, &val);
++				zend_string *name = attribute_data->args[i].name;
++				if (name && !GC_DELREF(name)) {
++					zend_hash_add_new(named_params, name, &val);
++					GC_ADDREF(name);
++				} else {
++					zval_ptr_dtor(&val);
++				}

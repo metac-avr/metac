@@ -1,0 +1,75 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..1c3620c80 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1665,4 +1665,8 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-		if (ts->ess[pid]) {
+-			//this is component reuse across programs, overwrite the previously declared stream ...
+-			if (status & GF_M2TS_TABLE_FOUND) {
+-				GF_LOG(GF_LOG_INFO, GF_LOG_CONTAINER, ("[MPEG-2 TS] PID %d reused across programs %d and %d, not completely supported\n", pid, ts->ess[pid]->program->number, es->program->number ) );
++		static GF_M2TS_ES *gf_m2ts_section_filter_pid(GF_M2TS_Demuxer *ts, u32 pid, u32 *status)
++{
++	u32 nb_es, nb_hevc_temp, nb_shvc, nb_shvc_temp, nb_mhvc, nb_mhvc_temp;
++	GF_M2TS_PMT *pmt;
++	GF_M2TS_ES *es;
++	GF_M2TS_PES *pes;
++	pes = NULL;
++	nb_hevc_temp = nb_shvc = nb_shvc_temp = nb_mhvc = nb_mhvc_temp = 0;
+@@ -1670,3 +1674,4 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-				//add stream to program but don't reassign the pid table until the stream is playing (>GF_M2TS_PES_FRAMING_SKIP)
+-				gf_list_add(pmt->program->streams, es);
+-				if (!(es->flags & GF_M2TS_ES_IS_SECTION) ) gf_m2ts_set_pes_framing(pes, GF_M2TS_PES_FRAMING_SKIP);
++	if (ts->ess[pid]) {
++		//this is component reuse across programs, overwrite the previously declared stream ...
++		if (status & GF_M2TS_TABLE_FOUND) {
++			GF_LOG(GF_LOG_INFO, GF_LOG_CONTAINER, ("[MPEG-2 TS] PID %d reused across programs %d and %d, not completely supported\n", pid, ts->ess[pid]->program->number, es->program->number ) );
+@@ -1674,6 +1679,3 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-				nb_es++;
+-				//skip assignment below
+-				es = NULL;
+-			}
+-			/*watchout for pmt update - FIXME this likely won't work in most cases*/
+-			else {
++			//add stream to program but don't reassign the pid table until the stream is playing (>GF_M2TS_PES_FRAMING_SKIP)
++			gf_list_add(pmt->program->streams, es);
++			if (!(es->flags & GF_M2TS_ES_IS_SECTION) ) gf_m2ts_set_pes_framing(pes, GF_M2TS_PES_FRAMING_SKIP);
+@@ -1681 +1683,6 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-				GF_M2TS_ES *o_es = ts->ess[es->pid];
++			nb_es++;
++			//skip assignment below
++			es = NULL;
++		}
++		/*watchout for pmt update - FIXME this likely won't work in most cases*/
++		else {
+@@ -1683,11 +1690,12 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-				if ((o_es->stream_type == es->stream_type)
+-				        && ((o_es->flags & GF_M2TS_ES_STATIC_FLAGS_MASK) == (es->flags & GF_M2TS_ES_STATIC_FLAGS_MASK))
+-				        && (o_es->mpeg4_es_id == es->mpeg4_es_id)
+-				        && ((o_es->flags & GF_M2TS_ES_IS_SECTION) || ((GF_M2TS_PES *)o_es)->lang == ((GF_M2TS_PES *)es)->lang)
+-				   ) {
+-					gf_free(es);
+-					es = NULL;
+-				} else {
+-					gf_m2ts_es_del(o_es, ts);
+-					ts->ess[es->pid] = NULL;
+-				}
++			GF_M2TS_ES *o_es = ts->ess[es->pid];
++
++			if ((o_es->stream_type == es->stream_type)
++			        && ((o_es->flags & GF_M2TS_ES_STATIC_FLAGS_MASK) == (es->flags & GF_M2TS_ES_STATIC_FLAGS_MASK))
++			        && (o_es->mpeg4_es_id == es->mpeg4_es_id)
++			        && ((o_es->flags & GF_M2TS_ES_IS_SECTION) || ((GF_M2TS_PES *)o_es)->lang == ((GF_M2TS_PES *)es)->lang)
++			   ) {
++				gf_free(es);
++				es = NULL;
++			} else {
++				gf_m2ts_es_del(o_es, ts);
++				ts->ess[es->pid] = NULL;
+@@ -1695,0 +1704,2 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
++	}
++}
+@@ -3116 +3126,3 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-			gf_m2ts_es_del(ts->ess[i], ts);
++			GF_M2TS_ES *es = ts->ess[i];
++			ts->ess[i] = NULL; // Nullify before freeing to prevent use-after-free
++			gf_m2ts_es_del(es, ts);

@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index d1ca0ee62ae..b099a350c2b 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4335 +4335 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-							if (level == 0) {
++						if (level == 0) {
+@@ -4343 +4343,8 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-			}
++// FIXME: Crash CWE-416: Use After Free
++
++				/* Clear stack slots before releasing their values during unwinding. */
++				for (zval *arg = ZEND_CALL_ARG(call, 1); arg < ZEND_CALL_VAR_NUM(call, ZEND_CALL_NUM_ARGS(call)); arg++) {
++					zval_ptr_dtor_nogc(arg);
++					ZVAL_UNDEF(arg);
++				}
++ 			}
+@@ -4355,2 +4362 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-			} else if (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
+-				zend_string_release_ex(call->func->common.function_name, 0);
++			} else if (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {				zend_string_release_ex(call->func->common.function_name, 0);

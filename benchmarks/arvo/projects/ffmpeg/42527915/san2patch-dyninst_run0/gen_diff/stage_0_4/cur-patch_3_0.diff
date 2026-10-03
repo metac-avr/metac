@@ -1,0 +1,30 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..641efcca19 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -427,0 +428,5 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    VLC_MULTI_ELEM *local_table = NULL;
++
++    // Validate input parameters to prevent accessing freed memory
++    if (!table || !single || !buf)
++        return AVERROR(EINVAL);
+@@ -439,3 +444,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++        // Check if memory is valid before accessing
++        if (single && single->table) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        }
+@@ -495 +503 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -499,0 +508,6 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    
++    if (!multi->table) {
++        av_log(logctx, AV_LOG_ERROR, "VLC table is NULL\n");
++        return AVERROR_INVALIDDATA;
++    }
++    

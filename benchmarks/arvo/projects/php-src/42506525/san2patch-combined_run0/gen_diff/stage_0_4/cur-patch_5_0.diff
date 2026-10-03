@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..bdeb2772a95 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1433,5 +1433,9 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-
+-	_zend_hash_del_el_ex(ht, idx, p, prev);
+-	if (p->key) {
+-		zend_string_release(p->key);
+-		p->key = NULL;
++// FIXME: Crash CWE-416: Use After Free
++ 
++	/* Validate pointer before accessing to prevent use-after-free */
++	if (ht != NULL && p != NULL) {
++		_zend_hash_del_el_ex(ht, idx, p, prev);
++		if (p->key) {
++			zend_string_release(p->key);
++			p->key = NULL;
++		}

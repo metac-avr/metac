@@ -1,0 +1,40 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..d059d2bf3 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1235 +1235,2 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-  case MRB_GC_STATE_MARK:
++// FIXME: Crash CWE-416: Use After Free
++   case MRB_GC_STATE_MARK:
+@@ -1237 +1238,17 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      return incremental_marking_phase(mrb, gc, limit);
++      /* Validate gray list objects before marking to prevent use-after-free */
++      mrb_gc_object *obj = gc->gray_list;
++      while (obj) {
++        if (is_dead(gc, obj)) {
++          obj = obj->gcnext;
++          continue;
++        }
++        break;
++      }
++      if (obj) {
++        return incremental_marking_phase(mrb, gc, limit);
++      } else {
++        gc->gray_list = NULL;
++        final_marking_phase(mrb, gc);
++        prepare_incremental_sweep(mrb, gc);
++        return 0;
++      }
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..a0446d202 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -264 +264,2 @@ void
+-mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
++// FIXME: Crash CWE-416: Use After Free
++ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+@@ -266 +267,3 @@ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+-  mark_tbl(mrb, obj->iv);
++  if (obj && obj->iv) {
++    mark_tbl(mrb, obj->iv);
++  }

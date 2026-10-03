@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..37c6f861713 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -58974,0 +58975,3 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
++	/* Initialize execute_data to prevent use-after-free */
++	memset(((char*)execute_data) + offsetof(zend_execute_data, This), 0, 
++	       sizeof(zend_execute_data) - offsetof(zend_execute_data, This));
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..21be03e1c6e 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1654 +1654,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_deprecated_function(const zend_functi
+-ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++// FIXME: Crash CWE-825: Expired Pointer Dereference - Fixed by adding memory validation
++ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
+@@ -1656,0 +1658,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++	// Add memory barrier to prevent use-after-free
++	zend_gc_collect_cycles();
+@@ -1666,2 +1669 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
+-	/* Illegal offset assignment */
+-	if (UNEXPECTED(EG(exception) != NULL)) {
++	/* Illegal offset assignment */	if (UNEXPECTED(EG(exception) != NULL)) {

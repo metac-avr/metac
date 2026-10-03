@@ -1,0 +1,28 @@
+diff --git a/src/filter_core/filter_pid.c b/src/filter_core/filter_pid.c
+index c9289e2bb..7c524c59b 100644
+--- a/src/filter_core/filter_pid.c
++++ b/src/filter_core/filter_pid.c
+@@ -5697,6 +5697,6 @@ static GF_Err gf_filter_pid_set_property_full(GF_FilterPid *pid, u32 prop_4cc, c
+-	if (value && (prop_4cc == GF_PROP_PID_ID) && !pid->name) {
+-		char szName[100];
+-		sprintf(szName, "PID%d", value->value.uint);
+-		gf_filter_pid_set_name(pid, szName);
+-	}
+-	return gf_props_set_property(map, prop_4cc, prop_name, dyn_name, value);
++    if (value && (prop_4cc == GF_PROP_PID_ID) && !pid->name) {
++        char szName[100];
++        snprintf(szName, sizeof(szName), "PID%d", value->value.uint);  // Use safe snprintf instead of sprintf
++        gf_filter_pid_set_name(pid, szName);
++    }
++    return gf_props_set_property(map, prop_4cc, prop_name, dyn_name, value);
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..c5ec86986 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1801,0 +1802,6 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
++		// Add bounds checking for nb_es before proceeding
++		if (nb_es <= 0 || nb_es > gf_list_count(pmt->program->streams)) {
++			GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[M2TS] Invalid nb_es value detected: %d\n", nb_es));
++			nb_es = 0;
++		}
++

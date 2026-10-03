@@ -1,0 +1,31 @@
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..c27b8e7b0 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -461,4 +461,11 @@ static u8 BS_ReadByte(GF_BitStream *bs)
+-			if ((bs->nb_zeros==2) && (res==0x03) && (bs->position<bs->size) && (bs->original[bs->position]<0x04)) {
+-				bs->nb_zeros = 0;
+-				bs->nb_removed++;
+-				res = bs->original[bs->position++];
++			if ((bs->nb_zeros==2) && (res==0x03) && (bs->position<bs->size)) {
++				if (bs->original[bs->position]<0x04) {
++					bs->nb_zeros = 0;
++					bs->nb_removed++;
++					if (bs->position >= bs->size) {
++						if (bs->EndOfStream) bs->EndOfStream(bs->par);
++						if (!bs->overflow_state) bs->overflow_state = 1;
++						return 0;
++					}
++					res = bs->original[bs->position++];
++				}
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..91a6ea92c 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -479,0 +480 @@ static void dump_mdcv(FILE *dump, GF_BitStream *bs, Bool isMPEG)
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -480,0 +482,4 @@ static void dump_mdcv(FILE *dump, GF_BitStream *bs, Bool isMPEG)
++	
++	// Validate that we have sufficient data before reading
++	if (!bs || gf_bs_available(bs) < (3*2*2 + 2*2 + 2*4)) return;
++	

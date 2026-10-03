@@ -1,0 +1,31 @@
+diff --git a/libavformat/imf_cpl.c b/libavformat/imf_cpl.c
+index ad84a68b13..fb4d2cf22a 100644
+--- a/libavformat/imf_cpl.c
++++ b/libavformat/imf_cpl.c
+@@ -152 +152,2 @@ static void imf_trackfile_virtual_track_init(FFIMFTrackFileVirtualTrack *track)
+-static void imf_base_resource_init(FFIMFBaseResource *rsrc)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ static void imf_base_resource_init(FFIMFBaseResource *rsrc)
+@@ -153,0 +155 @@ static void imf_base_resource_init(FFIMFBaseResource *rsrc)
++    if (!rsrc) return;
+@@ -675 +677 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
+-            > INT_MAX / sizeof(FFIMFTrackFileResource))
++             > INT_MAX / sizeof(FFIMFTrackFileResource))
+@@ -676,0 +679,6 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
++    
++    // Fix: Ensure proper allocation size calculation with overflow protection
++    size_t total_resources = cpl->main_image_2d_track->resource_count + resource_elem_count;
++    if (total_resources > SIZE_MAX / sizeof(FFIMFTrackFileResource))
++        return AVERROR(ENOMEM);
++        
+@@ -679,2 +687 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
+-                          (cpl->main_image_2d_track->resource_count + resource_elem_count)
+-                              * sizeof(FFIMFTrackFileResource));
++                          total_resources * sizeof(FFIMFTrackFileResource));
+@@ -688,0 +696,6 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
++        // Fix: Add bounds check before accessing array
++        if (cpl->main_image_2d_track->resource_count >= total_resources) {
++            av_log(NULL, AV_LOG_ERROR, "Resource count exceeds allocated bounds\n");
++            return AVERROR(ENOMEM);
++        }
++        

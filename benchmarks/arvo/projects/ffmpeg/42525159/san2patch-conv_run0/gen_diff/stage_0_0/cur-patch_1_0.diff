@@ -1,0 +1,20 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..28377cd942 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,2 +2017,7 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
++                        if ((uintptr_t)dst < (uintptr_t)end_of_buffer) {                                 \
++                            i_datap++;                                                                \
++                            dst += pixelsize;                                                         \
++                        } else {                                                                      \
++                            av_log(avctx, AV_LOG_WARNING, "Skipping out-of-bounds write\n");         \
++                            continue;                                                                 \
++                        }                                                                             \
+@@ -2025 +2030,2 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-    }
++// Patched CWE-787: Added bounds checking to prevent buffer overflow
++     }
+@@ -2038 +2043,0 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-

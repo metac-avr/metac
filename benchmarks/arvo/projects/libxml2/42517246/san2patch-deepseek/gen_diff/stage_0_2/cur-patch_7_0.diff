@@ -1,0 +1,42 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..db659480 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -839,0 +840,2 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++    xmlNodePtr cur;
++    xmlAttrPtr attr;
+@@ -848 +850 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-    else
++    else {
+@@ -849,0 +852,31 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++        if ((result != NULL) && (target->dict != NULL)) {
++            cur = result;
++            while (cur != NULL) {
++                if (cur->type == XML_ELEMENT_NODE) {
++                    if (cur->name != NULL)
++                        cur->name = xmlDictLookup(target->dict, cur->name, -1);
++                    attr = cur->properties;
++                    while (attr != NULL) {
++                        if (attr->name != NULL)
++                            attr->name = xmlDictLookup(target->dict, attr->name, -1);
++                        if (attr->children != NULL && attr->children->content != NULL)
++                            attr->children->content = xmlDictLookup(target->dict, attr->children->content, -1);
++                        attr = attr->next;
++                    }
++                    if (cur->children != NULL)
++                        cur = cur->children;
++                    else if (cur->next != NULL)
++                        cur = cur->next;
++                    else {
++                        while ((cur->parent != NULL) && (cur->parent->next == NULL))
++                            cur = cur->parent;
++                        cur = (cur->parent != NULL) ? cur->parent->next : NULL;
++                    }
++                } else {
++                    if (cur->content != NULL)
++                        cur->content = xmlDictLookup(target->dict, cur->content, -1);
++                    cur = cur->next;
++                }
++            }
++        }
++    }

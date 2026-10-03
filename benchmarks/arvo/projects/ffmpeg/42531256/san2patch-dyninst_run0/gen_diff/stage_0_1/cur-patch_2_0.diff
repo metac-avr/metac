@@ -1,0 +1,23 @@
+diff --git a/libavcodec/cbs_h266_syntax_template.c b/libavcodec/cbs_h266_syntax_template.c
+index 06f9f29e08..b8b7aed40a 100644
+--- a/libavcodec/cbs_h266_syntax_template.c
++++ b/libavcodec/cbs_h266_syntax_template.c
+@@ -341,2 +341,8 @@ static int FUNC(vui_payload) (CodedBitstreamContext *ctx, RWContext *rw,
+-        CHECK(FUNC(payload_extension) (ctx, rw, &current->extension_data,
+-                                       vui_payload_size, current_position));
++        // Add null check and size validation
++        if (current && vui_payload_size > 0) {
++            // Ensure we don't exceed reasonable bounds
++            if (vui_payload_size < 1000000) { // Add reasonable upper bound
++                CHECK(FUNC(payload_extension) (ctx, rw, &current->extension_data,
++                                               vui_payload_size, current_position));
++            }
++        }
+@@ -348 +354,2 @@ static int FUNC(vui_payload) (CodedBitstreamContext *ctx, RWContext *rw,
+-}
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ }
+@@ -359 +366,2 @@ static int FUNC(extension_data) (CodedBitstreamContext *ctx, RWContext *rw,
+-    for (k = 0; cbs_h2645_read_more_rbsp_data(rw); k++)
++    // Add counter limit to prevent excessive iterations
++    for (k = 0; cbs_h2645_read_more_rbsp_data(rw) && k < (SIZE_MAX >> 1); k++)

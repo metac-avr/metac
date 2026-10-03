@@ -1,0 +1,50 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..3befd69391a 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74,2 +74,8 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
++i_zval_ptr_dtor(&ref->val);
++	/* Add safety check to prevent use-after-free */
++	if (ref && ((zend_uintptr_t)ref & 0x3) == 0) {  /* Basic alignment check */
++		volatile zend_reference *safe_ref = ref;  /* Volatile to prevent optimization */
++		if (safe_ref != NULL) {
++			efree_size((void*)safe_ref, sizeof(zend_reference));
++		}
++	}
+@@ -82 +88,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +91,4 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	/* Validate pointer before dereferencing */
++	if (zval_ptr && ((zend_uintptr_t)zval_ptr & 0x7) == 0) {  /* Alignment validation */
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -90 +100 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr != NULL && Z_REFCOUNTED_P(zval_ptr)) {
+@@ -92,4 +102,3 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++		/* Prevent expired pointer access with null check */
++		if (ref != NULL && GC_DELREF(ref) == 0) {
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..d49c8ce21bd 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -192,3 +192,6 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			if (object && object->handlers && object->handlers->free_obj) {
++				GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++				GC_SET_REFCOUNT(object, 1);
++				object->handlers->free_obj(object);
++			}

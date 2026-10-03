@@ -1,0 +1,20 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..e37f5b640 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -339,0 +340 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  mrb_callinfo *old_ci = c->ci;
+@@ -345,0 +347 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *old_base = c->cibase;
+@@ -348 +350,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -352,0 +356,5 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    
++    // Update old_ci pointer if it was pointing into the old allocation
++    if (old_ci >= old_base && old_ci < (old_base + size)) {
++      old_ci = c->cibase + (old_ci - old_base);
++    }
+@@ -2722 +2729,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

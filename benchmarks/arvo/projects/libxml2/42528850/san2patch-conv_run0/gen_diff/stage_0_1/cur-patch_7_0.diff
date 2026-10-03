@@ -1,0 +1,39 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..3ec3ee25 100644
+--- a/tree.c
++++ b/tree.c
+@@ -819,2 +819,9 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++    
++    /* Set pointers to NULL before freeing to avoid use-after-free */
++    char *href_temp = (char *) cur->href;
++    char *prefix_temp = (char *) cur->prefix;
++    cur->href = NULL;
++    cur->prefix = NULL;
++    
++    if (href_temp != NULL) xmlFree(href_temp);
++    if (prefix_temp != NULL) xmlFree(prefix_temp);
+diff --git a/parser.c b/parser.c
+index 11bb5199..20883ff1 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7502 +7502,14 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		    xmlNodePtr safe_cur = cur;
++		    xmlNsPtr safe_ns = NULL;
++		    
++		    if (safe_cur->nsDef != NULL) {
++		        safe_ns = safe_cur->nsDef;
++		        safe_cur->nsDef = NULL;
++		    }
++		    
++		    nw = xmlDocCopyNode(safe_cur, ctxt->myDoc, 1);
++		    
++		    if (safe_ns != NULL) {
++		        xmlFreeNsList(safe_ns);
++		    }
++		    
+@@ -7505 +7518 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-			    nw->_private = cur->_private;
++			    nw->_private = safe_cur->_private;

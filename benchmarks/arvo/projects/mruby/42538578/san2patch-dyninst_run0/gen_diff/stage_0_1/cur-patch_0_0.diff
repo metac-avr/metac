@@ -1,0 +1,31 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..a0755b2a8 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -345,0 +346 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *old_cibase = c->cibase;
+@@ -348 +349,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -351 +353,7 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    
++    if (old_cibase != c->cibase) {
++      ptrdiff_t ci_offset = ci - old_cibase;
++      ci = c->cibase + ci_offset;
++    }
++    
++    c->ci = ci;
+@@ -2710 +2718,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
+@@ -2717 +2726,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-        mrb_ary_concat(mrb, regs[a], splat);
++        // Check if regs[a] is still valid before concatenating
++        if (mrb_type(regs[a]) == MRB_TT_ARRAY) {
++          mrb_ary_concat(mrb, regs[a], splat);
++        }
+@@ -2722 +2733,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

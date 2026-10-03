@@ -1,0 +1,16 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..18247d6afc 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1440,4 +1440,7 @@ do {
+-            ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
+-            if (pps->transquant_bypass_enable_flag &&
+-                lc->cu.cu_transquant_bypass_flag)
+-                set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++            // Validate references before deblocking to prevent expired pointer dereference
++            if (lc && lc->ref && pps) {
++                ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
++                if (pps->transquant_bypass_enable_flag &&
++                    lc->cu.cu_transquant_bypass_flag)
++                    set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++            }

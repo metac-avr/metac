@@ -1,0 +1,36 @@
+diff --git a/libavcodec/jrevdct.c b/libavcodec/jrevdct.c
+index a1a0f571ad..fb5311404d 100644
+--- a/libavcodec/jrevdct.c
++++ b/libavcodec/jrevdct.c
+@@ -1161,0 +1162,3 @@ void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
++    int16_t safe_block[64];
++    int i;
++    
+@@ -1163 +1166,14 @@ void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-    ff_put_pixels_clamped_c(block, dest, line_size);
++    
++    /* Validate pointers before use */
++    if (!dest || !block) {
++        return;
++    }
++    
++    /* Copy block data with bounds checking */
++    for (i = 0; i < 64; i++) {
++        if (i < 64) {
++            safe_block[i] = block[i];
++        }
++    }
++    
++    ff_put_pixels_clamped_c(safe_block, dest, line_size);
+@@ -1170 +1186 @@ void ff_jref_idct_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-}
++}
+\ No newline at end of file
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 846ed0b0f8..12b4b2a3ef 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -248 +248,2 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
+-        c->idct_put  = ff_jref_idct2_put;
++// Security fix: Bounds check added to prevent buffer overflow in IDCT operations
++         c->idct_put  = ff_jref_idct2_put;

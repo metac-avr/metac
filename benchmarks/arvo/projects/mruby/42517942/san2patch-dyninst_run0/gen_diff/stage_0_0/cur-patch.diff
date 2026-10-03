@@ -1,0 +1,40 @@
+diff --git a/src/string.c b/src/string.c
+index 1b5aecff2..d57a023ef 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -138,2 +138,3 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-{
+-  if (RSTR_EMBEDDABLE_P(len)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
++  if (len >= 0 && len <= MRB_INT_MAX && RSTR_EMBEDDABLE_P(len)) {
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..d3558ad04 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -800,0 +801,3 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
++  // Validate input parameters
++  if (slen < 0 || src == NULL) return 0;
++
+@@ -819,0 +823,4 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
++  // Prevent negative count and integer overflow
++  if (count < 0) count = 0;
++  if (slen > 0 && count > slen * 2) count = slen * 2;
++
+@@ -825 +832 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-  while (slen > 0 && count > 0) {
++  while (slen > 0 && count > 0 && sptr >= (const char *)src) {
+@@ -831,5 +838,2 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-    *dptr++ = hexadecimal[a];
+-    count--;
+-
+-    if (count > 0) {
+-      *dptr++ = hexadecimal[b];
++    if (dptr) { // Null check for destination pointer
++      *dptr++ = hexadecimal[a];
+@@ -836,0 +841,5 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
++
++      if (count > 0 && dptr) {
++        *dptr++ = hexadecimal[b];
++        count--;
++      }

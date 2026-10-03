@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..3d00f84ea13 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1831 +1831,8 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		if (Z_TYPE(p->val) == IS_INDIRECT) {
++			zval *zv = Z_REFVAL(p->val);
++			if (Z_REFCOUNTED_P(zv) && GC_DELREF(Z_GC_P(zv)) == 0) {
++				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++			}
++		} else {
++			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..6d703410d3f 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -275 +274 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
++	

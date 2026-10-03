@@ -1,0 +1,26 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 11d6a24a3..6af703186 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -2465,0 +2466,16 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
++  /*
++   * Avoid accessing an uninitialized or misaligned serializer by
++   * allocating it with calloc, which returns memory that is properly
++   * aligned for any object and zeroed. Then explicitly call the
++   * serializer initialization helper to ensure every member has a
++   * defined value before packet_processing() dereferences it.
++   */
++  ndpi_serializer *serializer = calloc(1, sizeof(ndpi_serializer));
++  if (serializer == NULL) {
++    return(nproto);
++  }
++  if (ndpi_init_serializer_ll(serializer, flow) != 0) {
++    free(serializer);
++    return(nproto);
++  }
++
+@@ -2467 +2483 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
+-  return(packet_processing(workflow, time_ms, vlan_id, tunnel_type, iph, iph6,
++  return(packet_processing(flow, time_ms, vlan_id, tunnel_type, iph, iph6,
+@@ -2477,0 +2494 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
++

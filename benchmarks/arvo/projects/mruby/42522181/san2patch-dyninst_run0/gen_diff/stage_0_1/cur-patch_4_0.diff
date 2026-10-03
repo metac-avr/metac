@@ -1,0 +1,16 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..02f9d135a 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1097,2 +1097,4 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (!is_dead(gc, obj)) {
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    }
+@@ -1202,0 +1205,4 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Ensure page is not referenced before freeing */
++      if (gc->atomic_gray_list == (struct RBasic*)page) {
++        gc->atomic_gray_list = page->next;
++      }

@@ -1,0 +1,29 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..25ac82937 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -117,0 +118,3 @@ stack_init(mrb_state *mrb)
++  
++  // Track maximum safe stack position
++  c->stack_max = c->stbase + (STACK_INIT_SIZE - 1);
+@@ -1707 +1710,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1719 +1723,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      /* push callinfo */
++      /* push callinfo with bounds checking */
++      if ((mrb->c->ci + 1) >= mrb->c->ciend) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "call stack overflow");
++      }
+@@ -1757 +1764,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        /* pop stackpos */
++        /* pop stackpos with safety check */
++        if (mrb->c->ci <= mrb->c->cibase) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "cannot pop from empty call stack");
++        }
+@@ -1767,0 +1778,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Stack extension with proper bounds validation */
++        if ((irep->nregs < 4 ? 4 : irep->nregs) > (mrb->c->stend - mrb->c->stack)) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "insufficient stack space");
++        }

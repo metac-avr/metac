@@ -1,0 +1,134 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..8655ca1f 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1162,37 +1162,13 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		switch (set->nodeTab[i]->type) {
+-		    case XML_TEXT_NODE:
+-		    case XML_CDATA_SECTION_NODE:
+-		    case XML_ELEMENT_NODE:
+-		    case XML_ENTITY_REF_NODE:
+-		    case XML_ENTITY_NODE:
+-		    case XML_PI_NODE:
+-		    case XML_COMMENT_NODE:
+-		    case XML_DOCUMENT_NODE:
+-		    case XML_HTML_DOCUMENT_NODE:
+-		    case XML_XINCLUDE_END:
+-			break;
+-		    case XML_XINCLUDE_START: {
+-	                xmlNodePtr tmp, cur = set->nodeTab[i];
+-
+-			cur = cur->next;
+-			while (cur != NULL) {
+-			    switch(cur->type) {
+-				case XML_TEXT_NODE:
+-				case XML_CDATA_SECTION_NODE:
+-				case XML_ELEMENT_NODE:
+-				case XML_ENTITY_REF_NODE:
+-				case XML_ENTITY_NODE:
+-				case XML_PI_NODE:
+-				case XML_COMMENT_NODE:
+-				    tmp = xmlXIncludeCopyNode(ctxt, target,
+-							      source, cur);
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
+-				    }
+-				    cur = cur->next;
+-				    continue;
+-				default:
+-				    break;
+-			    }
++		/* Prevent use-after-free by validating node before access */
++		if (set->nodeTab[i] != NULL) {  /* Use null check instead of non-existent validation function */
++		    switch (set->nodeTab[i]->type) {
++			case XML_TEXT_NODE:
++			case XML_CDATA_SECTION_NODE:
++			case XML_ELEMENT_NODE:
++			case XML_ENTITY_REF_NODE:
++			case XML_ENTITY_NODE:
++			case XML_PI_NODE:
++			case XML_COMMENT_NODE:
++			case XML_DOCUMENT_NODE:
++			case XML_HTML_DOCUMENT_NODE:
++			case XML_XINCLUDE_END:
+@@ -1199,0 +1176,30 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			case XML_XINCLUDE_START: {
++			    xmlNodePtr tmp, cur = set->nodeTab[i];
++
++			    cur = cur->next;
++			    while (cur != NULL) {
++				/* Additional safety check for current node */
++				if (cur == NULL) break;
++				switch(cur->type) {
++				    case XML_TEXT_NODE:
++				    case XML_CDATA_SECTION_NODE:
++				    case XML_ELEMENT_NODE:
++				    case XML_ENTITY_REF_NODE:
++				    case XML_ENTITY_NODE:
++				    case XML_PI_NODE:
++				    case XML_COMMENT_NODE:
++					tmp = xmlXIncludeCopyNode(ctxt, target,
++							          source, cur);
++					if (last == NULL) {
++					    list = last = tmp;
++					} else {
++					    last = xmlAddNextSibling(last, tmp);
++					}
++					cur = cur->next;
++					continue;
++				    default:
++					break;
++				}
++				break;
++			    }
++			    continue;
+@@ -1201 +1207,10 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-			continue;
++			case XML_ATTRIBUTE_NODE:
++			case XML_NAMESPACE_DECL:
++			case XML_DOCUMENT_TYPE_NODE:
++			case XML_DOCUMENT_FRAG_NODE:
++			case XML_NOTATION_NODE:
++			case XML_DTD_NODE:
++			case XML_ELEMENT_DECL:
++			case XML_ATTRIBUTE_DECL:
++			case XML_ENTITY_DECL:
++			    continue; /* for */
+@@ -1203,20 +1218,15 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    case XML_ATTRIBUTE_NODE:
+-		    case XML_NAMESPACE_DECL:
+-		    case XML_DOCUMENT_TYPE_NODE:
+-		    case XML_DOCUMENT_FRAG_NODE:
+-		    case XML_NOTATION_NODE:
+-		    case XML_DTD_NODE:
+-		    case XML_ELEMENT_DECL:
+-		    case XML_ATTRIBUTE_DECL:
+-		    case XML_ENTITY_DECL:
+-			continue; /* for */
+-		}
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    if (last == NULL)
++			list = last = xmlXIncludeCopyNode(ctxt, target, source,
++				                          set->nodeTab[i]);
++		    else {
++			if (set->nodeTab[i] != NULL) {  /* Validate before copy with null check */
++			    xmlAddNextSibling(last,
++				    xmlXIncludeCopyNode(ctxt, target, source,
++					                set->nodeTab[i]));
++			    if (last->next != NULL)
++				last = last->next;
++			}
++		    }
++		} else {
++		    /* Node is invalid, skip processing */
++		    continue;

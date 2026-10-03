@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..cddaf956d70 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -275 +274 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
++	
+@@ -276,0 +276,2 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
++		/* Destroy object store before symbol table to prevent use-after-free */
++		zend_objects_store_mark_destructed(&EG(objects_store));
+@@ -282,2 +283 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-		} else {
+-			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
++		} else {			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..006313107b8 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352,3 +1352,8 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
+-		ZVAL_UNDEF(&p->val);
+-		ht->pDestructor(&tmp);
++// Validate that p->val is accessible before copying
++		if (Z_TYPE(p->val) != IS_UNDEF) {
++			ZVAL_COPY_VALUE(&tmp, &p->val);
++			ZVAL_UNDEF(&p->val);
++			ht->pDestructor(&tmp);
++		} else {
++			ZVAL_UNDEF(&p->val);
++		}

@@ -1,0 +1,30 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..1b0e8433 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2736,0 +2737 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    xmlIDPtr id;
+@@ -2743 +2744 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745 +2746,5 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++    /* Store reference and validate before removal */
++    id = attr->id;
++    if (id == NULL || id->value == NULL) return(-1);
++    
++    if (xmlHashRemoveEntry(table, id->value, xmlFreeIDTableEntry) < 0)
+diff --git a/tree.c b/tree.c
+index 8e0b346a..d0f301ba 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2078 +2078,2 @@ xmlFreeProp(xmlAttrPtr cur) {
+-    /* Check for ID removal -> leading to invalid references ! */
++// FIXME: Crash CWE-416: Use After Free
++     /* Check for ID removal -> leading to invalid references ! */
+@@ -2080 +2081,4 @@ xmlFreeProp(xmlAttrPtr cur) {
+-	    xmlRemoveID(cur->doc, cur);
++        xmlChar* temp_name = cur->name; 
++        if (temp_name != NULL) {  
++            xmlRemoveID(cur->doc, cur);
++        }

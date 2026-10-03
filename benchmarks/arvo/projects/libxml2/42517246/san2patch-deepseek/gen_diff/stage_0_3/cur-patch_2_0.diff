@@ -1,0 +1,24 @@
+diff --git a/tree.c b/tree.c
+index 6a42f118..1eb075fd 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4310,5 +4310,14 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    else if (node->name != NULL) {
+-        if ((doc != NULL) && (doc->dict != NULL))
+-	    ret->name = xmlDictLookup(doc->dict, node->name, -1);
+-	else
+-	    ret->name = xmlStrdup(node->name);
++     else if (node->name != NULL) {
++	xmlChar *safeName = xmlStrdup(node->name);
++	if (safeName != NULL) {
++	    if ((doc != NULL) && (doc->dict != NULL)) {
++		const xmlChar *dictName = xmlDictLookup(doc->dict, safeName, -1);
++		if (dictName != NULL) {
++		    xmlFree(safeName);
++		    safeName = (xmlChar *) dictName;
++		}
++	    }
++	    ret->name = safeName;
++	} else {
++	    ret->name = NULL;
++	}

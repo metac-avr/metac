@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..20ac6dc6cc1 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30087 +30087 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	SAVE_OPLINE();
++SAVE_OPLINE();
+@@ -30090 +30090,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	if (EXPECTED(Z_TYPE_P(object_ptr) == IS_ARRAY)) {
++// FIXME: Crash CWE-416: Use After Free
++  	if (EXPECTED(Z_TYPE_P(object_ptr) == IS_ARRAY)) {
+@@ -30092 +30093,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-		SEPARATE_ARRAY(object_ptr);
++		// Check if array is still valid before separating
++		if (Z_ARR_P(object_ptr) && !(GC_FLAGS(Z_ARR_P(object_ptr)) & GC_IMMUTABLE)) {
++			SEPARATE_ARRAY(object_ptr);
++		}
+@@ -30097,0 +30102 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..108789ff53c 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683,6 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	if (HT_GET_DATA_ADDR(ht)) {
++		efree(HT_GET_DATA_ADDR(ht));
++		HT_GET_DATA_ADDR(ht) = NULL;
++	}
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:

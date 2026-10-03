@@ -1,0 +1,15 @@
+diff --git a/ext/opcache/ZendAccelerator.c b/ext/opcache/ZendAccelerator.c
+index ece89bf3482..67891ce4495 100644
+--- a/ext/opcache/ZendAccelerator.c
++++ b/ext/opcache/ZendAccelerator.c
+@@ -1490 +1490,9 @@ static zend_persistent_script *cache_script_in_shared_memory(zend_persistent_scr
+-	zend_optimize_script(&new_persistent_script->script, ZCG(accel_directives).optimization_level, ZCG(accel_directives).opt_debug_level);
++
++	/* Temporarily disable optimizations that mutate op_array layout while
++	 * SSA references may still be alive, preventing expired pointer
++	 * dereferences in zend_ssa_remove_nops and related passes. */
++	if (ZCG(accel_directives).optimization_level != 0) {
++		zend_optimize_script(&new_persistent_script->script, 0, ZCG(accel_directives).opt_debug_level);
++	} else {
++		zend_optimize_script(&new_persistent_script->script, ZCG(accel_directives).optimization_level, ZCG(accel_directives).opt_debug_level);
++	}

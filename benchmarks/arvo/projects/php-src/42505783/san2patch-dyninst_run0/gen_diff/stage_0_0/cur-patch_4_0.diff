@@ -1,0 +1,12 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..5b7def338db 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1201 +1201 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-{
++ {
+@@ -1225 +1225,3 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-		memcpy(ZSTR_VAL(result_str), ZSTR_VAL(op1_str), op1_len);
++		zend_string *safe_op1_str = zend_string_copy(op1_str);  // Fix: Create a copy to prevent use-after-free
++		memcpy(ZSTR_VAL(result_str), ZSTR_VAL(safe_op1_str), op1_len);
++		zend_string_release(safe_op1_str);  // Release the copied string

@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..bd3b3057b7b 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74,4 +73,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
+-}
+-
+@@ -84,7 +80 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
+-}
+-/* }}} */
+-
+-ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
+@@ -92,4 +82,10 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++		if (ref && GC_REFCOUNT(ref) > 0) {
++			i_zval_ptr_dtor(zval_ptr);
++		} else {
++			i_zval_ptr_dtor(zval_ptr);
++		}
++	} else {
++		i_zval_ptr_dtor(zval_ptr);
++	}
++}
++/* }}} */				zend_string *str = (zend_string*)ref;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..bd691b32efa 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,6 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		if (object->handlers != NULL) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}

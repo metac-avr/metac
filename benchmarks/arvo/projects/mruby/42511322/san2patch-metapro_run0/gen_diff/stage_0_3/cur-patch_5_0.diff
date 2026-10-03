@@ -1,0 +1,30 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..82cb372bf 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -99 +99,2 @@ static inline void
+-stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+@@ -100,0 +102,2 @@ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
++  if (!size) return;
++  if (!dst || !src) return;
+@@ -186,10 +189,8 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-  envadjust(mrb, oldbase, newstack, oldsize);
+-  mrb->c->stbase = newstack;
+-  mrb->c->stend = mrb->c->stbase + size;
+-
+-  /* Raise an exception if the new stack size will be too large,
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+-  if (size > MRB_STACK_MAX) {
+-    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+-  }
+-}
++  
++  /* Calculate offset difference for pointer adjustment */
++  ptrdiff_t offset_diff = newstack - oldbase;
++  
++  /* Update all call info stack pointers */
++  mrb_callinfo *ci = mrb->c->ci;
++  while (ci >= mrb->c->cibase) {
++    if (ci->stack

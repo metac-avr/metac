@@ -1,0 +1,19 @@
+diff --git a/src/error.c b/src/error.c
+index c622df789..8a0646794 100644
+--- a/src/error.c
++++ b/src/error.c
+@@ -515 +514,0 @@ frozen_error(mrb_state *mrb, mrb_value v)
+-
+@@ -523 +522,2 @@ MRB_API void
+-mrb_check_frozen(mrb_state *mrb, void *o)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mrb_check_frozen(mrb_state *mrb, void *o)
+@@ -525 +525,5 @@ mrb_check_frozen(mrb_state *mrb, void *o)
+-  if (mrb_frozen_p((struct RBasic*)o)) {
++  struct RBasic *b = (struct RBasic*)o;
++  if (o == NULL || (uintptr_t)b % alignof(struct RBasic) != 0) {
++    mrb_raise(mrb, E_TYPE_ERROR, "invalid object for frozen check");
++  }
++  if (mrb_frozen_p(b)) {
+@@ -535,0 +540 @@ mrb_check_frozen_value(mrb_state *mrb, mrb_value v)
++

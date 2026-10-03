@@ -1,0 +1,17 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..af127e71 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3634,2 +3634,10 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
++		(cur->type != XML_COMMENT_NODE)) {
++		/* Clear the name pointer before freeing to prevent use-after-free */
++		xmlChar *name_to_free = (xmlChar *) cur->name;
++		cur->name = NULL;
++		DICT_FREE(name_to_free);
++	    }
++	    /* Clear content pointer before freeing to prevent use-after-free */
++	    if (cur->content != NULL) {
++	        cur->content = NULL;
++	    }

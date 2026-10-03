@@ -1,0 +1,26 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index bfa8465f3..b252f0ed2 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1110 +1110,2 @@ int_mod(mrb_state *mrb, mrb_value x)
+-#ifdef MRB_USE_BIGINT
++// FIXME: Crash CWE-369: Divide By Zero
++ #ifdef MRB_USE_BIGINT
+@@ -1111,0 +1113,17 @@ int_mod(mrb_state *mrb, mrb_value x)
++    switch (mrb_type(y)) {
++      case MRB_TT_BIGINT:
++        if (mrb_bint_cmp(mrb, y, mrb_bint_zero(mrb)) == 0) {
++          mrb_int_zerodiv(mrb);
++        }
++        break;
++      case MRB_TT_FIXNUM:
++        if (mrb_integer(y) == 0) {
++          mrb_int_zerodiv(mrb);
++        }
++        break;
++      default:
++        if (mrb_equal(mrb, y, mrb_int_value(mrb, 0))) {
++          mrb_int_zerodiv(mrb);
++        }
++        break;
++    }

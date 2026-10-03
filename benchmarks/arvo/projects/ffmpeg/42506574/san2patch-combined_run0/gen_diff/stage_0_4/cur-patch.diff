@@ -1,0 +1,33 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..7bba84c598 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -726 +726,5 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
+-
++// Fixed CWE-787: Added bounds checking before buffer operations
++        if (!s->picture_ptr) {
++            return -1;
++        }
++ 
+@@ -735 +739 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
+-        if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
++        if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8 && s->picture_ptr->data[1])
+@@ -738,2 +742 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
+-        for (i = 0; i < 4; i++)
+-            s->linesize[i] = s->picture_ptr->linesize[i] << s->interlaced;
++        for (i = 0; i < 4; i++)            s->linesize[i] = s->picture_ptr->linesize[i] << s->interlaced;
+@@ -2529,3 +2532,9 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            s->ls          = 0;
+-            s->progressive = 1;
+-            if ((ret = ff_mjpeg_decode_sof(s)) < 0)
++// Fixed: Added bounds checking before enabling progressive mode
++            if (s->width > 0 && s->height > 0) {
++                s->ls          = 0;
++                s->progressive = 1;
++                if ((ret = ff_mjpeg_decode_sof(s)) < 0)
++                    goto fail;
++            } else {
++                av_log(avctx, AV_LOG_ERROR, "Invalid dimensions for progressive JPEG\n");
++                ret = AVERROR_INVALIDDATA;
+@@ -2532,0 +2542 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
++            }

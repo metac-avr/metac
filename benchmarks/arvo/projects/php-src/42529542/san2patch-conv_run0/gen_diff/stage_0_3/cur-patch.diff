@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index feeff659bd5..a1d32495dcd 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -649 +649,5 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return ex->func->op_array.opcodes[0].lineno;
++			if (ex->func && ex->func->op_array.opcodes) {
++				return ex->func->op_array.opcodes[0].lineno;
++			} else {
++				return 0;
++			}
+@@ -651 +655 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-		if (EG(exception) && ex->opline->opcode == ZEND_HANDLE_EXCEPTION &&
++		if (EG(exception) && ex->opline && ex->opline->opcode == ZEND_HANDLE_EXCEPTION &&
+@@ -653 +657,2 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return EG(opline_before_exception)->lineno;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			return EG(opline_before_exception)->lineno;
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 46da1ebd21e..d0adb3d0a8c 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1596,3 +1596,4 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
+-	zend_string *filename;
+-	uint32_t lineno;
+-	va_list args;
++	zend_string *filename = NULL;
++	uint32_t lineno = 0;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++  	va_list args;
+@@ -1602 +1603 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
+-	zend_error_va_list(type, filename, lineno, format, args);
++	zend_error_va_list(type, filename ? filename : zend_empty_string, lineno, format, args);

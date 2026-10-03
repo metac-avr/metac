@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..406fd9df3d1 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -300,3 +300,2 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-
+-		do {
+-			zval_ptr_dtor_nogc(p);
++		while (num_args--) {
++			if (EXPECTED(p)) zval_ptr_dtor_nogc(p);
+@@ -304 +303 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-		} while (--num_args);
++		}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 4714ab37101..868c040843b 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3229 +3229,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-	cleanup_unfinished_calls(execute_data, throw_op_num);
++	/* Prevent expired pointer dereference by checking validity before cleanup */
++	if (execute_data && throw_op) {
++		cleanup_unfinished_calls(execute_data, throw_op_num);
++	}

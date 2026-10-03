@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..fb51dc9c9b0 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1236,0 +1237,3 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
++// FIXME: Crash CWE-416: Use After Free
++		/* Save the old bucket count before reallocating */
++		uint32_t old_num_used = ht->nNumUsed;
+@@ -1238 +1241 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
+-		memcpy(ht->arData, old_buckets, sizeof(Bucket) * ht->nNumUsed);
++		memcpy(ht->arData, old_buckets, sizeof(Bucket) * old_num_used);
+@@ -1411 +1414,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ht->pDestructor(&tmp);
++		if (&tmp) { // Validate copied value before destructor call
++			ht->pDestructor(&tmp);
++		}

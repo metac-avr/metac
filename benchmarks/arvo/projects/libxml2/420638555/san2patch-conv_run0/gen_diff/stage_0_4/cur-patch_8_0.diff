@@ -1,0 +1,21 @@
+diff --git a/tree.c b/tree.c
+index e2357131..a54abb34 100644
+--- a/tree.c
++++ b/tree.c
+@@ -5530 +5530 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-        return(1);
++         return(1);
+@@ -5535,0 +5536,13 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
++        /* Validate node pointer and check for expired/deallocated memory */
++        if (node->type != XML_ELEMENT_NODE) {
++            node = node->parent;
++            continue;
++        }
++        
++        /* Additional safety check to prevent use-after-free */
++        if (((void*)node < (void*)0x1000) || ((uintptr_t)node & 0x3)) {
++            /* Suspicious pointer, skip this node */
++            node = node->parent;
++            continue;
++        }
++        

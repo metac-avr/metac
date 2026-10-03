@@ -1,0 +1,39 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..840f5423e 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -115 +115 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Allocate stack with explicit size validation */
+@@ -117 +117,6 @@ stack_init(mrb_state *mrb)
+-  c->stend = c->stbase + STACK_INIT_SIZE;
++  if (c->stbase != NULL) {
++    c->stend = c->stbase + STACK_INIT_SIZE;
++  } else {
++    c->stend = NULL;
++    return; /* Early exit on allocation failure */
++  }
+@@ -119 +124 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  /* Allocate call info with explicit size validation */
+@@ -121 +126,7 @@ stack_init(mrb_state *mrb)
+-  c->ciend = c->cibase + CALLINFO_INIT_SIZE;
++  if (c->cibase != NULL) {
++    c->ciend = c->cibase + CALLINFO_INIT_SIZE;
++  } else {
++    c->ciend = NULL;
++    return; /* Early exit on allocation failure */
++  }
++  
+@@ -1707 +1718,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1710,0 +1723,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      if (a < 0 || a >= (mrb->c->stend - mrb->c->stack)) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "invalid register access");
++      }
+@@ -1755,0 +1771,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        if (ci->stack < mrb->c->stack || ci->stack >= mrb->c->stend) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack access out of bounds");
++        }

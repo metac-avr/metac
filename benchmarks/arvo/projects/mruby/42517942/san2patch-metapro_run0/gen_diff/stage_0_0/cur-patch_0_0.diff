@@ -1,0 +1,22 @@
+diff --git a/src/string.c b/src/string.c
+index 1b5aecff2..8353b5bc0 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -71 +71,3 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
++  if (len < 0 || len > RSTRING_EMBED_LEN_MAX) return NULL;
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..267b05bbc 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -817 +817,5 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-  if (count == -1)
++  if (count == -1) {
++    // Check for integer overflow before multiplication
++    if (slen > INT_MAX / 2) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "string size too big");
++    }
+@@ -818,0 +823 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
++  }

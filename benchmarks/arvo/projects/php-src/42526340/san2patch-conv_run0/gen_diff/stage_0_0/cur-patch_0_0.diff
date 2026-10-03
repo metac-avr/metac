@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 9efe205abe0..a1b9c197501 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -216 +216,6 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		return ZEND_HASH_APPLY_REMOVE;
++		/* Check if object is still valid before accessing it */
++		zend_object *obj = Z_OBJ_P(zv);
++		if (obj && !(GC_FLAGS(obj) & GC_IMMEDIATE)) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
++		return ZEND_HASH_APPLY_KEEP;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..ed4ac4449c0 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// FIXME: Crash CWE-416: Use After Free
++		/* Add defensive check to ensure object is not already freed */
++		if (GC_TYPE(object) != IS_NULL) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}

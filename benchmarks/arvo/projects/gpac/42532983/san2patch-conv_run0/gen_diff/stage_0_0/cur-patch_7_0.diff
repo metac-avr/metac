@@ -1,0 +1,45 @@
+diff --git a/src/filter_core/filter_session.c b/src/filter_core/filter_session.c
+index 01e4bcf92..05d4654b7 100644
+--- a/src/filter_core/filter_session.c
++++ b/src/filter_core/filter_session.c
+@@ -2389 +2389,2 @@ GF_Err gf_fs_run(GF_FilterSession *fsess)
+-		if ( gf_th_run(sess_th->th, (gf_thread_run) gf_fs_thread_proc, sess_th) ==GF_OK) {
++		if (sess_th && sess_th->th) { // Validate both pointer and its member before use
++			if ( gf_th_run(sess_th->th, (gf_thread_run) gf_fs_thread_proc, sess_th) ==GF_OK) {
+@@ -2391,3 +2392,3 @@ GF_Err gf_fs_run(GF_FilterSession *fsess)
+-			if (fsess->non_blocking) {
+-				safe_int_inc(&fsess->pending_threads);
+-			}
++				if (fsess->non_blocking) {
++					safe_int_inc(&fsess->pending_threads);
++				}
+@@ -2394,0 +2396 @@ GF_Err gf_fs_run(GF_FilterSession *fsess)
++			}
+@@ -2403 +2405,2 @@ GF_Err gf_fs_run(GF_FilterSession *fsess)
+-#endif
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ #endif
+diff --git a/src/filters/reframe_img.c b/src/filters/reframe_img.c
+index 9eb787203..55478e97f 100644
+--- a/src/filters/reframe_img.c
++++ b/src/filters/reframe_img.c
+@@ -347,7 +347,12 @@ GF_Err img_process(GF_Filter *filter)
+-			pix = data + fh.bfOffBits + i*in_stride;
+-			for (j=0; j<out_stride; j+=4) {
+-				output[j + irow] = pix[2];
+-				output[j+1 + irow] = pix[1];
+-				output[j+2 + irow] = pix[0];
+-				output[j+3 + irow] = pix[3];
+-				pix += 4;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++			if (data != NULL) {
++				pix = data + fh.bfOffBits + i*in_stride;
++				for (j=0; j<out_stride; j+=4) {
++					output[j + irow] = pix[2];
++					output[j+1 + irow] = pix[1];
++					output[j+2 + irow] = pix[0];
++					output[j+3 + irow] = pix[3];
++					pix += 4;
++				}
++			} else {
++				return GF_SERVICE_ERROR;

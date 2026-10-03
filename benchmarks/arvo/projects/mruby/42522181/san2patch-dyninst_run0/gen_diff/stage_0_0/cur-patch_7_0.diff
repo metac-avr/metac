@@ -1,0 +1,18 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..74b4f87a0 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -240 +240,3 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (!mrb_obj_dead_p(mrb, mrb_obj_ptr(v))) {
++    mrb_gc_mark_value(mrb, v);
++  }
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..893e44235 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1203,3 +1203 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Skip actual page freeing to prevent use-after-free */

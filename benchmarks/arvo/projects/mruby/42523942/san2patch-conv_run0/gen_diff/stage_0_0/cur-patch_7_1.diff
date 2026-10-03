@@ -1,0 +1,28 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..544fb542f 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779,6 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
+-    break;
+-  }
+-}
+-
+@@ -792,9 +786,5 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-  add_gray_list(mrb, &mrb->gc, obj);
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  /* Prevent use-after-free by ensuring GC is in valid state */
++  if (mrb->gc.state != MRB_GC_STATE_SWEEP) {
++    add_gray_list(mrb, &mrb->gc, obj);
++  }
++}  case MRB_TT_OBJECT:
+@@ -1241,0 +1232 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      gc->gray_list = NULL;  /* Clear gray list to prevent UAF */

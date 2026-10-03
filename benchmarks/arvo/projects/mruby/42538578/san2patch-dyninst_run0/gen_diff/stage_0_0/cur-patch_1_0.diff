@@ -1,0 +1,38 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..f9c84f1b5 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -354,8 +354,11 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-  ci->mid = mid;
+-  CI_PROC_SET(ci, proc);
+-  ci->blk = blk;
+-  ci->stack = ci[-1].stack + push_stacks;
+-  ci->n = argc & 0xf;
+-  ci->nk = (argc>>4) & 0xf;
+-  ci->cci = cci;
+-  ci->u.target_class = target_class;
++  
++  if (ci >= c->cibase && ci < c->ciend) {
++    ci->mid = mid;
++    CI_PROC_SET(ci, proc);
++    ci->blk = blk;
++    ci->stack = ci[-1].stack + push_stacks;
++    ci->n = argc & 0xf;
++    ci->nk = (argc>>4) & 0xf;
++    ci->cci = cci;
++    ci->u.target_class = target_class;
++  }
+@@ -2710 +2713,7 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
++      if (mrb->c->ci && (mrb->c->ci < mrb->c->cibase || mrb->c->ci >= mrb->c->cibase + mrb->c->ciacc)) {
++        mrb->c->ci = NULL;
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++        goto L_RAISE;
++      }
+@@ -2722 +2730,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

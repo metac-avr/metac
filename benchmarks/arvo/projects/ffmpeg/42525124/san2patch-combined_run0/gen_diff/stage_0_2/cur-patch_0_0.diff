@@ -1,0 +1,38 @@
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index 6ea6c46d8f..f4954904e6 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -187 +187,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     }
+@@ -201,0 +203,4 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    // Validate bitstream access before reading critical bits
++    if (get_bits_count(gb) + 2 > headsize * 8)
++        return AVERROR_INVALIDDATA;
+@@ -202,0 +208,4 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    // Validate bitstream access before reading tb.den bits
++    if ((const uint32_t[]){0, 0, 10, 30}[ctrl] > 0 && get_bits_count(gb) + (const uint32_t[]){0, 0, 10, 30}[ctrl] > headsize * 8)
++        return AVERROR_INVALIDDATA;
+@@ -203,0 +213,4 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    // Validate bitstream access before reading tb.num bits
++    if (get_bits_count(gb) + 2 > headsize * 8)
++        return AVERROR_INVALIDDATA;
+@@ -204,0 +218,4 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    // Validate bitstream access before reading tb.num bits
++    if ((const uint32_t[]){0, 0, 8, 10}[ctrl] > 0 && get_bits_count(gb) + (const uint32_t[]){0, 0, 8, 10}[ctrl] > headsize * 8)
++        return AVERROR_INVALIDDATA;
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index 65dc080ddb..e342b365f7 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -327,0 +328,5 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++    // Check bounds before reading to prevent out-of-bounds access
++    if (n <= 0 || n > 25 || get_bits_left(s) < n) {
++        av_log(NULL, AV_LOG_ERROR, "Invalid bit count or insufficient bits available\n");
++        return 0;
++    }

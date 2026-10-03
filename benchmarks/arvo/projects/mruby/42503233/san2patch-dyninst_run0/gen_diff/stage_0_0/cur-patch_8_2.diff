@@ -1,0 +1,35 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..75c4fda68 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -190,6 +189,0 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+-  if (size > MRB_STACK_MAX) {
+-    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+-  }
+-}
+-
+@@ -199,0 +194,3 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    if (room > MRB_STACK_MAX - (mrb->c->stend - mrb->c->ci->stack)) {
++      mrb_raise(mrb, E_RUNTIME_ERROR, "stack extension too large");
++    }
+@@ -202,10 +199 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-}
+-
+-static inline struct REnv*
+-uvenv(mrb_state *mrb, mrb_int up)
+-{
+-  const struct RProc *proc = mrb->c->ci->proc;
+-  struct REnv *e;
+-
+-  while (up--) {
+-    proc = proc->upper;
++}    proc = proc->upper;
+@@ -515 +503,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++      if (argc > 0) {
++        if ((size_t)argc > (size_t)(mrb->c->stend - (ci->stack + 1))) {
++          mrb_raisef(mrb, E_RUNTIME_ERROR, "stack overflow in funcall");
++        }
+@@ -516,0 +508 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      }

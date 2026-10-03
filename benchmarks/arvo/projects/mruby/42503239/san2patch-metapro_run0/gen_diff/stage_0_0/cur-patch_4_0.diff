@@ -1,0 +1,54 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..403d02a86 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -485 +485,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if (n + 1 < (mrb->c->stend - mrb->c->stbase)) {
++        ci->stack[n+1] = args;
++      } else {
++        goto stack_overflow;
++      }
+@@ -498 +502,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if (n + 1 < (mrb->c->stend - mrb->c->stbase)) {
++        ci->stack[n+1] = args;
++      } else {
++        goto stack_overflow;
++      }
+@@ -513 +521,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    ci->stack[0] = self;
++    if ((ci->stack + 0) < mrb->c->stend) {
++      ci->stack[0] = self;
++    } else {
++      goto stack_overflow;
++    }
+@@ -515,3 +527,12 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
+-      ci->stack[argc+1] = blk;
++      if (argc > 0) {
++        if ((ci->stack + 1 + argc) <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          goto stack_overflow;
++        }
++      }
++      if ((ci->stack + argc + 1) < mrb->c->stend) {
++        ci->stack[argc+1] = blk;
++      } else {
++        goto stack_overflow;
++      }
+@@ -520 +541,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[2] = blk;
++      if ((ci->stack + 2) < mrb->c->stend) {
++        ci->stack[2] = blk;
++      } else {
++        goto stack_overflow;
++      }
+@@ -531,0 +557,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    goto func_end;
++
++stack_overflow:
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++func_end:;

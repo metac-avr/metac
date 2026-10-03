@@ -1,0 +1,23 @@
+diff --git a/libavutil/buffer.c b/libavutil/buffer.c
+index e4562a79b1..bff2228927 100644
+--- a/libavutil/buffer.c
++++ b/libavutil/buffer.c
+@@ -129 +129 @@ static void buffer_replace(AVBufferRef **dst, AVBufferRef **src)
+-    if (atomic_fetch_sub_explicit(&b->refcount, 1, memory_order_acq_rel) == 1) {
++    if (b && atomic_fetch_sub_explicit(&b->refcount, 1, memory_order_acq_rel) == 1) {
+@@ -131 +131 @@ static void buffer_replace(AVBufferRef **dst, AVBufferRef **src)
+-         * so we have to read the flag now to avoid use-after-free. */
++          * so we have to read the flag now to avoid use-after-free. */
+@@ -133 +133,2 @@ static void buffer_replace(AVBufferRef **dst, AVBufferRef **src)
+-        b->free(b->opaque, b->data);
++        if (b->free)
++            b->free(b->opaque, b->data);
+diff --git a/libavcodec/hevc_ps.c b/libavcodec/hevc_ps.c
+index 348e4d8de2..ec8022b4f6 100644
+--- a/libavcodec/hevc_ps.c
++++ b/libavcodec/hevc_ps.c
+@@ -448 +448 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
+-        return AVERROR(ENOMEM);
++         return AVERROR(ENOMEM);
+@@ -460,0 +461 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
++

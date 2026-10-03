@@ -1,0 +1,22 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..848fe5e62 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -185 +185,2 @@ int is_version_with_ietf_long_header(uint32_t version)
+-int quic_len(const uint8_t *buf, uint64_t *value)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ int quic_len(const uint8_t *buf, uint64_t *value)
+@@ -186,0 +188,3 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  // Note: This function signature lacks buffer length, making proper bounds checking impossible
++  // A proper fix would require changing the function signature to include buffer length
++  if (!buf || !value) return 0;
+@@ -193 +197,2 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ntohs(*(uint16_t *)buf) & 0x3FFF;
++    // Potential out-of-bounds read if buf is less than 2 bytes
++    *value = ntohs(*((uint16_t*)buf)) & 0x3FFF;
+@@ -196 +201,2 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ntohl(*(uint32_t *)buf) & 0x3FFFFFFF;
++    // Potential out-of-bounds read if buf is less than 4 bytes
++    *value = ntohl(*((uint32_t*)buf)) & 0x3FFFFFFF;
+@@ -198,0 +205 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++    // Potential out-of-bounds read if buf is less than 8 bytes

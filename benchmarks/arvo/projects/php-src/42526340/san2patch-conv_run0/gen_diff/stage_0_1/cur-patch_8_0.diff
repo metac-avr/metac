@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..58b17b39d94 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -203,0 +204 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(NULL);
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index 6a9762eb549..e45167853bc 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -600,2 +600,14 @@ static void gc_grow_root_buffer(void)
+-	GC_G(buf) = perealloc(GC_G(buf), sizeof(gc_root_buffer) * new_size, 1);
+-	GC_G(buf_size) = new_size;
++	/* Prevent use-after-free by checking buffer validity */
++	if (GC_G(buf_size) > 0 && GC_G(buf) != NULL) {
++		gc_root_buffer *current_buf = GC_G(buf);
++		GC_G(buf) = perealloc(GC_G(buf), sizeof(gc_root_buffer) * new_size, 1);
++		/* Ensure we don't leave dangling pointers */
++		if (GC_G(buf) == NULL && new_size > 0) {
++			GC_G(buf) = current_buf;
++		} else {
++			GC_G(buf_size) = new_size;
++		}
++	} else {
++		GC_G(buf) = perealloc(GC_G(buf), sizeof(gc_root_buffer) * new_size, 1);
++		GC_G(buf_size) = new_size;
++	}

@@ -1,0 +1,34 @@
+diff --git a/xinclude.c b/xinclude.c
+index 72a88c99..a1b1905d 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2399,0 +2400 @@ xmlXIncludeProcessNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
++    xmlNodePtr cur;
+@@ -2402 +2403 @@ xmlXIncludeProcessNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
+-        (node->doc == NULL) || (ctxt == NULL))
++         (node->doc == NULL) || (ctxt == NULL))
+@@ -2403,0 +2405,9 @@ xmlXIncludeProcessNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
++    
++    /* Pre-process nodes to remove ID attributes before freeing */
++    for (cur = node; cur != NULL; cur = cur->next) {
++        if (cur->type == XML_ELEMENT_NODE && cur->properties != NULL) {
++            xmlUnlinkNode(cur);
++            xmlReconciliateNs(cur->doc, cur);
++        }
++    }
++    
+diff --git a/valid.c b/valid.c
+index 1ecc762c..dc3340b7 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2745,5 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    /* Validate ID entry before removal to prevent accessing freed memory */
++    if (attr->id->value != NULL && xmlHashLookup(table, attr->id->value) != NULL) {
++        if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }

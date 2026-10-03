@@ -1,0 +1,21 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..c5feec09 100644
+--- a/tree.c
++++ b/tree.c
+@@ -746 +746 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-	    if (xmlStrEqual(prev->prefix, cur->prefix))
++	    if (cur->prefix != NULL && xmlStrEqual(prev->prefix ? prev->prefix : BAD_CAST "", cur->prefix ? cur->prefix : BAD_CAST ""))
+@@ -750 +750 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-		if (xmlStrEqual(prev->prefix, cur->prefix))
++		if (cur->prefix != NULL && xmlStrEqual(prev->prefix ? prev->prefix : BAD_CAST "", cur->prefix ? cur->prefix : BAD_CAST ""))
+@@ -3697,3 +3697,2 @@ xmlFreeNode(xmlNodePtr cur) {
+-        if (cur->properties != NULL)
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
++        /* Fix use-after-free by ensuring namespace pointers are cleared before property freeing */
++        if (cur->nsDef != NULL) {
+@@ -3700,0 +3700,4 @@ xmlFreeNode(xmlNodePtr cur) {
++            cur->nsDef = NULL;  /* Clear the namespace list pointer */
++        }
++        if (cur->properties != NULL)
++             xmlFreePropList(cur->properties);

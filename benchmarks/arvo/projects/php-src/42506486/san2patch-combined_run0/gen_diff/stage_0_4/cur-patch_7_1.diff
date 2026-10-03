@@ -1,0 +1,66 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..05ec45755e4 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1313 +1313 @@ ZEND_API void ZEND_FASTCALL zend_hash_rehash(HashTable *ht)
+-static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx, Bucket *p, Bucket *prev)
++static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+@@ -1315,3 +1315,4 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-	if (!(HT_FLAGS(ht) & HASH_FLAG_PACKED)) {
+-		if (prev) {
+-			Z_NEXT(prev->val) = Z_NEXT(p->val);
++	if (Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (!GC_DELREF(ref)) {
++			rc_dtor_func(ref);
+@@ -1319,16 +1320,2 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-			HT_HASH(ht, p->h | ht->nTableMask) = Z_NEXT(p->val);
+-		}
+-	}
+-	idx = HT_HASH_TO_IDX(idx);
+-	ht->nNumOfElements--;
+-	if (ht->nInternalPointer == idx || UNEXPECTED(HT_HAS_ITERATORS(ht))) {
+-		uint32_t new_idx;
+-
+-		new_idx = idx;
+-		while (1) {
+-			new_idx++;
+-			if (new_idx >= ht->nNumUsed) {
+-				break;
+-			} else if (Z_TYPE(ht->arData[new_idx].val) != IS_UNDEF) {
+-				break;
+-			}
++			/* Skip garbage collection during shutdown to prevent use-after-free */
++			gc_check_possible_root(ref);
+@@ -1336,21 +1322,0 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		if (ht->nInternalPointer == idx) {
+-			ht->nInternalPointer = new_idx;
+-		}
+-		zend_hash_iterators_update(ht, idx, new_idx);
+-	}
+-	if (ht->nNumUsed - 1 == idx) {
+-		do {
+-			ht->nNumUsed--;
+-		} while (ht->nNumUsed > 0 && (UNEXPECTED(Z_TYPE(ht->arData[ht->nNumUsed-1].val) == IS_UNDEF)));
+-		ht->nInternalPointer = MIN(ht->nInternalPointer, ht->nNumUsed);
+-	}
+-	if (p->key) {
+-		zend_string_release(p->key);
+-	}
+-	if (ht->pDestructor) {
+-		zval tmp;
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
+-		ZVAL_UNDEF(&p->val);
+-		ht->pDestructor(&tmp);
+-	} else {
+-		ZVAL_UNDEF(&p->val);
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..0b8b4f4633a 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -46 +46,4 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-			gc_check_possible_root(ref);
++			/* Skip garbage collection during shutdown to prevent use-after-free */
++			if (!EG(full_tables_cleanup)) {
++				gc_check_possible_root(ref);
++			}

@@ -1,0 +1,41 @@
+diff --git a/libavformat/jpegxl_probe.c b/libavformat/jpegxl_probe.c
+index a3845b037d..223070698b 100644
+--- a/libavformat/jpegxl_probe.c
++++ b/libavformat/jpegxl_probe.c
+@@ -295,0 +296,9 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++    static int jpegxl_read_header(JpegXLHeader *header, GetBitContext *gb, int validate_level)
++{
++    uint32_t num_extra_channels;
++    uint32_t extensions;
++    int extra_fields = header->version == 0xd0 || header->version == 0xe0 || header->version == 0xe1;
++    int all_default = header->version >= 0x10 && header->version <= 0xb0;
++    int xyb_encoded = 0;
++    int have_icc_profile = 0;
++
+@@ -327,0 +337,2 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++                        if (get_bits_left(gb) < 42)
++                            return -1;
+@@ -337,0 +349,2 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++                            if (get_bits_left(gb) < 126)
++                                return -1;
+@@ -346,0 +360,2 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++                    if (get_bits_left(gb) < 24)
++                        return -1;
+@@ -361 +376,3 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-        if (extra_fields && !jxl_bits(1))
++        if (extra_fields && !jxl_bits(1)) {
++            if (get_bits_left(gb) < 49)
++                return -1;
+@@ -362,0 +380 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++        }
+@@ -367 +385,3 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-                if (extensions & (UINT64_C(1) << i))
++                if (extensions & (UINT64_C(1) << i)) {
++                    if (get_bits_left(gb) < 64)
++                        return -1;
+@@ -368,0 +389 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++                }
+@@ -372,0 +394,3 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++    return 0;
++}
++

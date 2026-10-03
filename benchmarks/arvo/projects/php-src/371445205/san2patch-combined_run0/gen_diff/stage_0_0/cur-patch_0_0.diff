@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..c78dd020268 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -251,0 +252 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		GC_ADDREF(filename); /* Prevent premature freeing */
+@@ -291 +292 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-
++ 
+@@ -298,0 +300 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		GC_DELREF(filename); /* Release reference */
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..200700a1ad2 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6778,0 +6779 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	zend_bool obj_initialized = 0;
+@@ -6780 +6781,3 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
++	if (SUCCESS == zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
++		obj_initialized = 1;
++	} else {
+@@ -6784 +6787,5 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	RETURN_COPY_VALUE(&obj);
++	if (obj_initialized) {
++		RETURN_COPY_VALUE(&obj);
++	} else {
++		RETURN_NULL();
++	}
+@@ -6790,2 +6797 @@ ZEND_METHOD(ReflectionEnum, __construct)
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++	if (EG(exception)) {		RETURN_THROWS();

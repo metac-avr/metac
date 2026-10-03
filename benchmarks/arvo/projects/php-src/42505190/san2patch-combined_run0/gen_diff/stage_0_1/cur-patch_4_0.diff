@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..c426dd94f45 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -58979,0 +58980,2 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
++	/* Clear any dangling references to prevent use-after-free */
++	EX(prev_execute_data) = NULL;
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..6e8e5be12fb 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (EXPECTED(p != NULL && GC_TYPE(p) <= IS_CONSTANT_AST)) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

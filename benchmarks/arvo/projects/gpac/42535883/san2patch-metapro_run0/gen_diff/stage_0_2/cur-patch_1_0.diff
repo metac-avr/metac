@@ -1,0 +1,48 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..0aec776b0 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1187 +1187 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-	u32 i, count;
++  	u32 i, count;
+@@ -1220,2 +1220,11 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				// Validate array access to prevent out-of-bounds read
++				if (cfg->general_constraint_info && cfg->num_constraint_info > 0) {
++					if (cfg->num_constraint_info > 1) {
++						gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
++					}
++					if (cfg->num_constraint_info > 0) {
++						gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++					}
++				} else {
++					gf_bs_write_int(bs, 0, 6);
++				}
+@@ -1234,2 +1243,6 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				if (cfg->ptl_sublayer_present_mask & (1<<idx))
+-					gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++				if (cfg->ptl_sublayer_present_mask & (1<<idx)) {
++					// Validate sublayer_level_idc access
++					if (cfg->sublayer_level_idc) {
++						gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++					}
++				}
+@@ -1240 +1253,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				// Validate sub_profiles_idc access
++				if (cfg->sub_profiles_idc) {
++					gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				}
+@@ -1254,0 +1271,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++		if (!ar) continue;
++
+@@ -1268,0 +1287,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			if (!sl) continue;
++			
+@@ -1274 +1294,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			gf_bs_write_data(bs, sl->data, sl->size);
++			// Validate data access
++			if (sl->data && sl->size > 0) {
++				gf_bs_write_data(bs, sl->data, sl->size);
++			}

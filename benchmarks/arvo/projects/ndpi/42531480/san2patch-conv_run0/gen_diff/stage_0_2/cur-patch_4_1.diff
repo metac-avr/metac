@@ -1,0 +1,318 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..3a20cc846 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,3 +2381,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
++static void sslDissectClientHello(struct ndpi_detection_module_struct *ndpi_struct, struct ndpi_flow_struct *flow)
++{
++  struct ndpi_packet_struct *packet = &ndpi_struct->packet;
+@@ -2385 +2385,262 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++  u_int16_t dport = 0, sport = 0;
++  int ret.1;
++  u_int8_t handshake_type;
++  u_int32_t handshake_len;
++  u_int32_t tls_version;
++  u_int8_t session_id_len;
++  u_int16_t cipher_len, compression_len;
++  u_int16_t extensions_len;
++  u_int32_t packet_bytes_left;
++  u_int32_t.1 offset;
++  u_int32_t.1 handshake_buffer_len;
++  u_int8_t *handshake_buffer;
++  u_int8_t alpn_length_buf[2];
++  u_int8_t alpn_str[64];
++  u_int8_t alpn_str_len;
++  u_int16_t.1 i, j, k;
++  u_int16_t.1 extension_offset;
++  u_int8_t ja3.1;
++  char ja3_str[2048];
++  u_int8_t ja3_str_len;
++  u_int8_t ja3_str_written;
++  u_int16_t.1 num_ciphers;
++  u_int16_t.1 num_extensions;
++  u_int16_t.1 num_alpn;
++  u_int8_t alpn_found;
++  u_int8_t ssl_version_detected;
++  u_int8_t server_name_list_len;
++  u_int8_t server_name_type;
++  u_int16_t server_name_len;
++  u_int8_t *server_name;
++  u_int8_t signature_algorithm_len;
++  u_int16_t signature_algorithm;
++  u_int8_t signature_algorithm_count;
++  u_int8_t key_share_entry_len;
++  u_int16_t key_share_group;
++  u_int8_t psk_key_exchange_mode;
++  u_int8_t supported_versions_count;
++  u_int16_t supported_version;
++  u_int8_t supported_version_count;
++  u_int16_t supported_version_value;
++  u_int8_t key_exchange_len;
++  u_int16_t key_exchange_group;
++  u_int8_t key_exchange_type;
++  u_int16_t key_exchange_value;
++  u_int8_t key_exchange_data_len;
++  u_int8_t *key_exchange_data;
++  u_int8_t psk_identity_len;
++  u_int16_t psk_identity;
++  u_int8_t psk_binder_len;
++  u_int8_t *psk_binder;
++  u_int8_t psk_binder_entry_len;
++  u_int8_t *psk_binder_entry;
++  u_int8_t psk_binder_entry_data_len;
++  u_int8_t *psk_binder_entry_data;
++  u_int8_t early_data_indication;
++  u_int8_t ticket_len;
++  u_int8_t *ticket;
++  u_int32_t ticket_age_add;
++  u_int8_t ticket_nonce_len;
++  u_int8_t *ticket_nonce;
++  u_int16_t ticket_cipher_suite;
++  u_int8_t ticket_hash_algorithm;
++  u_int8_t ticket_signature_algorithm;
++  u_int16_t ticket_group;
++  u_int16_t ticket_key_exchange_algorithm;
++  u_int16_t ticket_signature_scheme;
++  u_int8_t ticket_encrypted_extensions_len;
++  u_int8_t *ticket_encrypted_extensions;
++  u_int16_t ticket_early_data_context_len;
++  u_int8_t *ticket_early_data_context;
++  u_int8_t ticket_application_settings_len;
++  u_int8_t *ticket_application_settings;
++  u_int8_t ticket_certificate_request_context_len;
++  u_int8_t *ticket_certificate_request_context;
++  u_int16_t ticket_certificate_request_extensions_len;
++  u_int8_t *ticket_certificate_request_extensions;
++  u_int8_t ticket_certificate_request_extension_type;
++  u_int16_t ticket_certificate_request_extension_length;
++  u_int8_t *ticket_certificate_request_extension_data;
++  u_int8_t ticket_certificate_request_distinguished_names_len;
++  u_int8_t *ticket_certificate_request_distinguished_names;
++  u_int8_t ticket_certificate_request_signature_hash_algorithms_len;
++  u_int8_t *ticket_certificate_request_signature_hash_algorithms;
++  u_int8_t ticket_certificate_request_authorities_len;
++  u_int8_t *ticket_certificate_request_authorities;
++  u_int8_t ticket_certificate_request_trusted_ca_indication_len;
++  u_int8_t *ticket_certificate_request_trusted_ca_indication;
++  u_int8_t ticket_certificate_request_trusted_ca_indication_entry_len;
++  u_int8_t *ticket_certificate_request_trusted_ca_indication_entry;
++  u_int8_t ticket_certificate_request_trusted_ca_indication_entry_data_len;
++  u_int8_t *ticket_certificate_request_trusted_ca_indication_entry_data;
++  u_int8_t ticket_certificate_request_status_request_len;
++  u_int8_t *ticket_certificate_request_status_request;
++  u_int8_t ticket_certificate_request_status_request_entry_len;
++  u_int8_t *ticket_certificate_request_status_request_entry;
++  u_int8_t ticket_certificate_request_status_request_entry_data_len;
++  u_int8_t *ticket_certificate_request_status_request_entry_data;
++  u_int8_t ticket_certificate_request_user_mapping_len;
++  u_int8_t *ticket_certificate_request_user_mapping;
++  u_int8_t ticket_certificate_request_user_mapping_entry_len;
++  u_int8_t *ticket_certificate_request_user_mapping_entry;
++  u_int8_t ticket_certificate_request_user_mapping_entry_data_len;
++  u_int8_t *ticket_certificate_request_user_mapping_entry_data;
++  u_int8_t ticket_certificate_request_client_certificate_type_len;
++  u_int8_t *ticket_certificate_request_client_certificate_type;
++  u_int8_t ticket_certificate_request_client_certificate_type_entry_len;
++  u_int8_t *ticket_certificate_request_client_certificate_type_entry;
++  u_int8_t ticket_certificate_request_client_certificate_type_entry_data_len;
++  u_int8_t *ticket_certificate_request_client_certificate_type_entry_data;
++  u_int8_t ticket_certificate_request_server_certificate_type_len;
++  u_int8_t *ticket_certificate_request_server_certificate_type;
++  u_int8_t ticket_certificate_request_server_certificate_type_entry_len;
++  u_int8_t *ticket_certificate_request_server_certificate_type_entry;
++  u_int8_t ticket_certificate_request_server_certificate_type_entry_data_len;
++  u_int8_t *ticket_certificate_request_server_certificate_type_entry_data;
++  u_int8_t ticket_certificate_request_certificate_authorities_len;
++  u_int8_t *ticket_certificate_request_certificate_authorities;
++  u_int8_t ticket_certificate_request_certificate_authorities_entry_len;
++  u_int8_t *ticket_certificate_request_certificate_authorities_entry;
++  u_int8_t ticket_certificate_request_certificate_authorities_entry_data_len;
++  u_int8_t *ticket_certificate_request_certificate_authorities_entry_data;
++  u_int8_t ticket_certificate_request_oid_filters_len;
++  u_int8_t *ticket_certificate_request_oid_filters;
++  u_int8_t ticket_certificate_request_oid_filters_entry_len;
++  u_int8_t *ticket_certificate_request_oid_filters_entry;
++  u_int8_t ticket_certificate_request_oid_filters_entry_data_len;
++  u_int8_t *ticket_certificate_request_oid_filters_entry_data;
++  u_int8_t ticket_certificate_request_pre_shared_key_len;
++  u_int8_t *ticket_certificate_request_pre_shared_key;
++  u_int8_t ticket_certificate_request_pre_shared_key_entry_len;
++  u_int8_t *ticket_certificate_request_pre_shared_key_entry;
++  u_int8_t ticket_certificate_request_pre_shared_key_entry_data_len;
++  u_int8_t *ticket_certificate_request_pre_shared_key_entry_data;
++  u_int8_t ticket_certificate_request_early_data_indication_len;
++  u_int8_t *ticket_certificate_request_early_data_indication;
++  u_int8_t ticket_certificate_request_early_data_indication_entry_len;
++  u_int8_t *ticket_certificate_request_early_data_indication_entry;
++  u_int8_t ticket_certificate_request_early_data_indication_entry_data_len;
++  u_int8_t *ticket_certificate_request_early_data_indication_entry_data;
++  u_int8_t ticket_certificate_request_ticket_age_len;
++  u_int8_t *ticket_certificate_request_ticket_age;
++  u_int8_t ticket_certificate_request_ticket_age_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_age_entry;
++  u_int8_t ticket_certificate_request_ticket_age_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_age_entry_data;
++  u_int8_t ticket_certificate_request_ticket_nonce_len;
++  u_int8_t *ticket_certificate_request_ticket_nonce;
++  u_int8_t ticket_certificate_request_ticket_nonce_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_nonce_entry;
++  u_int8_t ticket_certificate_request_ticket_nonce_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_nonce_entry_data;
++  u_int8_t ticket_certificate_request_ticket_cipher_suite_len;
++  u_int8_t *ticket_certificate_request_ticket_cipher_suite;
++  u_int8_t ticket_certificate_request_ticket_cipher_suite_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_cipher_suite_entry;
++  u_int8_t ticket_certificate_request_ticket_cipher_suite_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_cipher_suite_entry_data;
++  u_int8_t ticket_certificate_request_ticket_hash_algorithm_len;
++  u_int8_t *ticket_certificate_request_ticket_hash_algorithm;
++  u_int8_t ticket_certificate_request_ticket_hash_algorithm_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_hash_algorithm_entry;
++  u_int8_t ticket_certificate_request_ticket_hash_algorithm_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_hash_algorithm_entry_data;
++  u_int8_t ticket_certificate_request_ticket_signature_algorithm_len;
++  u_int8_t *ticket_certificate_request_ticket_signature_algorithm;
++  u_int8_t ticket_certificate_request_ticket_signature_algorithm_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_signature_algorithm_entry;
++  u_int8_t ticket_certificate_request_ticket_signature_algorithm_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_signature_algorithm_entry_data;
++  u_int8_t ticket_certificate_request_ticket_group_len;
++  u_int8_t *ticket_certificate_request_ticket_group;
++  u_int8_t ticket_certificate_request_ticket_group_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_group_entry;
++  u_int8_t ticket_certificate_request_ticket_group_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_group_entry_data;
++  u_int8_t ticket_certificate_request_ticket_key_exchange_algorithm_len;
++  u_int8_t *ticket_certificate_request_ticket_key_exchange_algorithm;
++  u_int8_t ticket_certificate_request_ticket_key_exchange_algorithm_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_key_exchange_algorithm_entry;
++  u_int8_t ticket_certificate_request_ticket_key_exchange_algorithm_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_key_exchange_algorithm_entry_data;
++  u_int8_t ticket_certificate_request_ticket_signature_scheme_len;
++  u_int8_t *ticket_certificate_request_ticket_signature_scheme;
++  u_int8_t ticket_certificate_request_ticket_signature_scheme_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_signature_scheme_entry;
++  u_int8_t ticket_certificate_request_ticket_signature_scheme_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_signature_scheme_entry_data;
++  u_int8_t ticket_certificate_request_ticket_encrypted_extensions_len;
++  u_int8_t *ticket_certificate_request_ticket_encrypted_extensions;
++  u_int8_t ticket_certificate_request_ticket_encrypted_extensions_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_encrypted_extensions_entry;
++  u_int8_t ticket_certificate_request_ticket_encrypted_extensions_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_encrypted_extensions_entry_data;
++  u_int8_t ticket_certificate_request_ticket_early_data_context_len;
++  u_int8_t *ticket_certificate_request_ticket_early_data_context;
++  u_int8_t ticket_certificate_request_ticket_early_data_context_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_early_data_context_entry;
++  u_int8_t ticket_certificate_request_ticket_early_data_context_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_early_data_context_entry_data;
++  u_int8_t ticket_certificate_request_ticket_application_settings_len;
++  u_int8_t *ticket_certificate_request_ticket_application_settings;
++  u_int8_t ticket_certificate_request_ticket_application_settings_entry_len;
++  u_int8_t *ticket_certificate_request_ticket_application_settings_entry;
++  u_int8_t ticket_certificate_request_ticket_application_settings_entry_data_len;
++  u_int8_t *ticket_certificate_request_ticket_application_settings_entry_data;
++
++  memset(&ja3, 0, sizeof(ja3));
++
++  if(packet->payload_packet_len == 0) return(-1);
++
++  if((packet->payload[0] != 0x16) || (packet->payload[1] != 0x03) || (packet->payload[2] < 0x01) || (packet->payload[2] > 0x03))
++    return(-2);
++
++  offset = 5;
++  handshake_type = packet->payload[offset];
++  handshake_len = (packet->payload[offset+1] << 16) + (packet->payload[offset+2] << 8) + packet->payload[offset+3];
++  tls_version = (packet->payload[1] << 8) + packet->payload[2];
++  offset += 4;
++
++  if(handshake_type != 0x01)
++    return(-3);
++
++  if(handshake_len > packet->payload_packet_len - offset)
++    return(-4);
++
++  if(tls_version < 0x0301)
++    return(-5);
++
++  session_id_len = packet->payload[offset];
++  offset += 1 + session_id_len;
++
++  cipher_len = (packet->payload[offset] << 8) + packet->payload[offset+1];
++  offset += 2;
++
++  if(cipher_len > handshake_len)
++    return(-6);
++
++  compression_len = packet->payload[offset];
++  offset += 1 + compression_len;
++
++  extensions_len = (packet->payload[offset] << 8) + packet->payload[offset+1];
++  offset += 2;
++
++  if(extensions_len > handshake_len)
++    return(-7);
++
++  extension_offset = 0;
++  while(extension_offset < extensions_len) {
++    u_int16_t extension_id = (packet->payload[offset+extension_offset] << 8) + packet->payload[offset+extension_offset+1];
++    u_int16_t extension_len = (packet->payload[offset+extension_offset+2] << 8) + packet->payload[offset+extension_offset+3];
++    extension_offset += 4;
++
++    if(extension_id == 0x000a) { /* signature_algorithms */
++      u_int16_t tot_signature_algorithms_len = ntohs(*((u_int16_t*)&packet->payload[offset+extension_offset]));
++      u_int16_t sa_size = tot_signature_algorithms_len / 2;
++      u_int16_t s_offset = offset+extension_offset+2;
++      u_int16_t i, id;
++
++      if(s_offset + tot_signature_algorithms_len <= packet->payload_packet_len) {
++	memcpy(&ja.client.signature_algorithms,
++	       &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
++      }
+@@ -2387,5 +2648 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++      ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+@@ -2393,2 +2650,9 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
+-		}
++      for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<packet->payload_packet_len; i++) {
++	int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++			       sizeof(ja.client.signature_algorithms_str)-i*2,
++			       "%02X", packet->payload[s_offset+i]);
++	if(s_offset+i*2+1 < packet->payload_packet_len) {
++	  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++	} else {
++	  break;
++	}
+@@ -2396,2 +2660,7 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++	if(rc < 0) break;
++      }
++    } else if(extension_id == 0x0010) { /* application_layer_protocol_negotiation */
++      // ... rest of the code
++    }
++    extension_offset += extension_len;
++  }
+@@ -2399,4 +2668,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++  return(0); /* Not found */
++}		    continue;
+@@ -2873 +3140 @@ static void ndpi_search_tls_wrapper(struct ndpi_detection_module_struct *ndpi_st
+-				    struct ndpi_flow_struct *flow) {
++			    struct ndpi_flow_struct *flow) {
+@@ -2883,0 +3151,3 @@ static void ndpi_search_tls_wrapper(struct ndpi_detection_module_struct *ndpi_st
++  if(packet->payload_packet_len == 0)
++    return;
++

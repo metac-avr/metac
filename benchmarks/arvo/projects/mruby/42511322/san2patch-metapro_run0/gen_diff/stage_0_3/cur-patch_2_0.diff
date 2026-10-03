@@ -1,0 +1,45 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..a903877a0 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -180,0 +181,13 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Store current stack pointer positions relative to base */
++  struct mrb_context *c = mrb->c;
++  mrb_int ci_count = c->ci - c->cibase + 1;
++  mrb_int *stack_offsets = (mrb_int*)alloca(sizeof(mrb_int) * ci_count);
++  mrb_int j;
++  for (j = 0; j < ci_count; j++) {
++    if ((c->cibase + j)->stack) {
++      stack_offsets[j] = (c->cibase + j)->stack - oldbase;
++    } else {
++      stack_offsets[j] = -1;
++    }
++  }
++
+@@ -189,0 +203,7 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Update stack pointers to point to new memory locations */
++  for (j = 0; j < ci_count; j++) {
++    if (stack_offsets[j] != -1) {
++      (c->cibase + j)->stack = newstack + stack_offsets[j];
++    }
++  }
++
+@@ -191 +211 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
++ to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+@@ -199 +219,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -200,0 +222 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    mrb_value *old_stbase = mrb->c->stbase;
+@@ -201,0 +224,9 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    /* Fix expired pointers by updating all call frame stack references */
++    mrb_callinfo *ci = mrb->c->cibase;
++    while (ci <= mrb->c->ci) {
++      if (ci->stack) {
++        ptrdiff_t offset = ci->stack - old_stbase;
++        ci->stack = mrb->c->stbase + offset;
++      }
++      ci++;
++    }

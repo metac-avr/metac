@@ -1,0 +1,26 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..5832f54af 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -294,2 +294,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	if(packet->content_disposition_line.ptr[attachment_len] == '\"') {
+-	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '\"') {
++	if(packet->content_disposition_line.ptr[attachment_len] == '"') {
++	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '"') {
+@@ -306 +306,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -308 +309,5 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
++	      // Add boundary check to prevent buffer overflow
++	      char* src_ptr = (char*)packet->content_disposition_line.ptr+attachment_len+1;
++	      size_t remaining_bytes = packet->content_disposition_line.len - (attachment_len+1);
++	      if (remaining_bytes >= (filename_len-2)) {
++	        strncpy(flow->http.filename, src_ptr,
+@@ -310 +315,4 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      flow->http.filename[filename_len-2] = '\0';
++	        flow->http.filename[filename_len-2] = '\0';
++	      } else {
++	        flow->http.filename[0] = '\0'; // Null terminate on error
++	      }

@@ -1,0 +1,48 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..8538aa107 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -485 +485,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if (n + 1 < mrb->c->stend - mrb->c->stbase) {
++        ci->stack[n+1] = args;
++      } else {
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++      }
+@@ -498 +502,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if (n + 1 < mrb->c->stend - mrb->c->stbase) {
++        ci->stack[n+1] = args;
++      } else {
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++      }
+@@ -513 +521,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    ci->stack[0] = self;
++    if (mrb->c->stbase <= ci->stack && ci->stack < mrb->c->stend) {
++      ci->stack[0] = self;
++    } else {
++      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
+@@ -515,3 +527,12 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
+-      ci->stack[argc+1] = blk;
++      if (argc > 0) {
++        if (ci->stack + 1 + argc <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++        }
++      }
++      if (ci->stack + argc + 1 < mrb->c->stend) {
++        ci->stack[argc+1] = blk;
++      } else {
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++      }
+@@ -520 +541,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[2] = blk;
++      if (ci->stack + 2 < mrb->c->stend) {
++        ci->stack[2] = blk;
++      } else {
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++      }

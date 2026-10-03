@@ -1,0 +1,32 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..0a0c29ec85 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -656 +656,7 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    }
++        /* Add safety check for buffer validity before proceeding */
++        if (s->jpgframe && s->jpgframe->buf[0] && 
++            (!s->jpgframe->data[0] || !s->jpgframe->linesize[0])) {
++            av_log(avctx, AV_LOG_ERROR, "Corrupted JPEG frame buffer detected\n");
++            return AVERROR_INVALIDDATA;
++        }
++     }
+@@ -701 +707 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-        av_frame_unref(s->jpgframe);
++        if (s->jpgframe) av_frame_unref(s->jpgframe);
+@@ -719 +725 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    av_frame_unref(s->jpgframe);
++    if (s->jpgframe) av_frame_unref(s->jpgframe);
+@@ -2000 +2006,3 @@ static int decode_frame(AVCodecContext *avctx,
+-                av_freep(&five_planes);
++                if (five_planes && five_planes != (void*)-1) {
++                    av_freep(&five_planes);
++                }
+@@ -2002 +2010 @@ static int decode_frame(AVCodecContext *avctx,
+-            }
++             }
+@@ -2007 +2015,3 @@ static int decode_frame(AVCodecContext *avctx,
+-                    av_freep(&five_planes);
++                    if (five_planes && five_planes != (void*)-1) {
++                        av_freep(&five_planes);
++                    }

@@ -1,0 +1,26 @@
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index d4e9276da1..d428017b5e 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -402 +402,5 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
+-    OPEN_READER(re, s);
++    // Boundary check to prevent heap-buffer-overflow
++    if (s->buffer_ptr >= s->buffer_end) {
++        return 0;
++    }
++     OPEN_READER(re, s);
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..3fa57c384d 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -237 +237 @@ static int find_headers_search(FLACParseContext *fpc, uint8_t *buf,
+-        if ((AV_RB16(buf + i) & 0xFFFE) == 0xFFF8) {
++        if (i + 1 < buf_size && (AV_RB16(buf + i) & 0xFFFE) == 0xFFF8) { // Ensure buffer has 2 bytes
+@@ -243,0 +244 @@ static int find_headers_search(FLACParseContext *fpc, uint8_t *buf,
++        if (i + 3 >= buf_size) break; // Ensure full 4-byte read is possible
+@@ -246,2 +247,3 @@ static int find_headers_search(FLACParseContext *fpc, uint8_t *buf,
+-            for (j = 0; j < 4; j++) {
+-                if ((AV_RB16(buf + i + j) & 0xFFFE) == 0xFFF8) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             for (j = 0; j < 4; j++) {
++                if (i + j + 1 < buf_size && (AV_RB16(buf + i + j) & 0xFFFE) == 0xFFF8) { // Check bounds

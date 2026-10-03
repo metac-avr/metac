@@ -1,0 +1,52 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..1aa8b05d4d 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,17 +2017 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
++static void WRITE_FRAME(int bits, PIXEL *line, int pixelsize, int planar, int x, int y, int w, int h, PIXEL *dst, const PIXEL *line_end, const uint8_t *i_datap, int pixel_size, Jpeg2000Cblk *cblk)
+@@ -2035,4 +2019,24 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++    int x_copy;
++    
++    if (planar) {
++        x_copy = 0;
++    } else {
++        int cpy = FFMIN(s->avctx->width - (int)(dst - picture->data[0]) / pixel_size, cblk->w);
++        memcpy(dst, i_datap, pixel_size * cpy);
++        i_datap += cpy;
++        dst += pixel_size * cpy;
++        x_copy = cpy;
++    }
++
++    // Fixed: Bounds validation added to prevent out-of-bounds write
++    if (planar && x_copy < cblk->w) {
++        for (; x_copy < cblk->w; x_copy++) {
++            if ((uintptr_t)dst + pixel_size <= (uintptr_t)line_end) {
++                *((PIXEL*)dst) = *i_datap++;
++            } else {
++                i_datap++;
++            }
++            dst += pixel_size;
++        }
++    }
++}

@@ -1,0 +1,22 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..4db56bd9a 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -507,3 +507,14 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
+-			section->data_size = sec->length - section_start;
+-			section->data = (unsigned char*)gf_malloc(sizeof(unsigned char)*section->data_size);
+-			memcpy(section->data, sec->section + section_start, sizeof(unsigned char)*section->data_size);
++// FIXED: Crash CWE-125: Out-of-bounds Read
++                        if (sec->section && section_start <= sec->length) {
++ 				section->data_size = sec->length - section_start;
++				section->data = (unsigned char*)gf_malloc(sizeof(unsigned char)*section->data_size);
++			        if (section->data && sec->section + section_start >= sec->section) {
++					memcpy(section->data, sec->section + section_start, sizeof(unsigned char)*section->data_size);
++				} else {
++					gf_free(section);
++					return;
++				}
++			} else {
++				gf_free(section);
++				return;
++			}

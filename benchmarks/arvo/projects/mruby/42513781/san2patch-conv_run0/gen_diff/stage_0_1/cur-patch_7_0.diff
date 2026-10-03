@@ -1,0 +1,21 @@
+diff --git a/src/vm.c b/src/vm.c
+index 424567a18..3b5a7f456 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1726 +1726,8 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-          recv = p->body.func(mrb, recv);
++          /* Check for valid receiver object before method call */
++          if (!mrb_obj_is_kind_of(mrb, recv, mrb->object_class) && !mrb_nil_p(recv)) {
++            recv = p->body.func(mrb, recv);
++          } else if (!mrb_nil_p(recv)) {
++            recv = p->body.func(mrb, recv);
++          } else {
++            mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid receiver");
++          }
+@@ -1730 +1737,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-            check_method_noarg(mrb, ci);
++             check_method_noarg(mrb, ci);
++          }
++          /* Validate receiver is not nil before calling method function */
++          if (mrb_nil_p(recv)) {
++            mrb_raise(mrb, E_ARGUMENT_ERROR, "method called on nil");

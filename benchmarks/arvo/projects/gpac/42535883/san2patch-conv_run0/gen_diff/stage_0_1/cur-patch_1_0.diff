@@ -1,0 +1,41 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..4ba83a85b 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1220,2 +1220,7 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				// Validate constraint info bounds before accessing
++				if (cfg->general_constraint_info && cfg->num_constraint_info <= 64) {
++					gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
++					gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				} else {
++					gf_bs_write_int(bs, 0, 6);
++				}
+@@ -1234,2 +1239,6 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				if (cfg->ptl_sublayer_present_mask & (1<<idx))
+-					gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++				if (cfg->ptl_sublayer_present_mask & (1<<idx)) {
++					// Ensure sublayer_level_idc access is within bounds
++					if (cfg->sublayer_level_idc && idx < 8) {
++						gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++					}
++				}
+@@ -1240 +1249,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				// Validate sub_profiles_idc bounds before accessing
++				if (cfg->sub_profiles_idc && idx < cfg->num_sub_profiles && cfg->num_sub_profiles <= 16) {
++					gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				}
+@@ -1254,0 +1267,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++		if (!ar) continue;
++
+@@ -1268,0 +1283,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			if (!sl) continue;
++			
+@@ -1274 +1290,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			gf_bs_write_data(bs, sl->data, sl->size);
++			// Validate data pointer and size before writing
++			if (sl->data && sl->size > 0 && sl->size <= 0x1000000) {
++				gf_bs_write_data(bs, sl->data, sl->size);
++			}

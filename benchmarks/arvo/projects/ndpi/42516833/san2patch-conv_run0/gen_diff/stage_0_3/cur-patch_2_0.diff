@@ -1,0 +1,17 @@
+diff --git a/src/lib/protocols/irc.c b/src/lib/protocols/irc.c
+index 367ec86bd..d0688c4fb 100644
+--- a/src/lib/protocols/irc.c
++++ b/src/lib/protocols/irc.c
+@@ -408,0 +409 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -411 +412,9 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-	  snprintf(buf, sizeof(buf), "%s", &user[5]);
++	  /* Prevent out-of-bounds read by checking available space */
++	  size_t remaining_len = strlen(&user[5]);
++	  if(remaining_len >= sizeof(buf)) {
++	    /* Handle case where source data exceeds buffer size */
++	    memcpy(buf, &user[5], sizeof(buf) - 1);
++	    buf[sizeof(buf) - 1] = '\0';
++	  } else {
++	    snprintf(buf, sizeof(buf), "%s", &user[5]);
++	  }

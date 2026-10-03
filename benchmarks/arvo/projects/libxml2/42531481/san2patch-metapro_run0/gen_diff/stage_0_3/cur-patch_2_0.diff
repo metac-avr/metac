@@ -1,0 +1,22 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..2ccc8b29 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
++
++	/* Add defensive check to prevent accessing freed namespace */
++	if (node->doc == NULL || node->ns->context == NULL) {
++	    goto error;
++	}
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..7b1b45a6 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346 +1346,4 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++	        /* Defensive check: invalidate namespace pointers before freeing */
++                tmp->ns = NULL;
++                tmp->nsDef = NULL;

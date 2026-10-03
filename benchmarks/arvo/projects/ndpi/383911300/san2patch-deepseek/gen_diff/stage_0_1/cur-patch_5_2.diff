@@ -1,0 +1,39 @@
+diff --git a/src/lib/ndpi_serializer.c b/src/lib/ndpi_serializer.c
+index 63877cd69..4b91810b5 100644
+--- a/src/lib/ndpi_serializer.c
++++ b/src/lib/ndpi_serializer.c
+@@ -222,0 +223,16 @@ int ndpi_init_serializer_ll(ndpi_serializer *_serializer,
++static inline int ndpi_extend_serializer_buffer(ndpi_private_serializer_buffer *buffer, u_int32_t min_len) {
++  u_int32_t new_size;
++  void *r;
++
++  if(min_len < NDPI_SERIALIZER_DEFAULT_BUFFER_INCR) {
++    if(buffer->initial_size < NDPI_SERIALIZER_DEFAULT_BUFFER_INCR) {
++      min_len = buffer->initial_size;
++    } else {
++      min_len = NDPI_SERIALIZER_DEFAULT_BUFFER_INCR;
++    }
++  }
++
++  new_size = buffer->size + min_len;
++  new_size = ((new_size / 4) + 1) * 4; /* required by zmq encryption */
++
++  r = ndpi_realloc((void *) buffer->data, buffer->size, new_size);
+@@ -224 +240,5 @@ int ndpi_init_serializer_ll(ndpi_serializer *_serializer,
+-  ndpi_reset_serializer(_serializer);
++  if(r == NULL)
++    return(-1);
++
++  buffer->data = r;
++  buffer->size = new_size;
+@@ -236,9 +256 @@ int ndpi_init_serializer(ndpi_serializer *_serializer,
+-/* ********************************** */
+-
+-static inline int ndpi_extend_serializer_buffer(ndpi_private_serializer_buffer *buffer, u_int32_t min_len) {
+-  u_int32_t new_size;
+-  void *r;
+-
+-  if(min_len < NDPI_SERIALIZER_DEFAULT_BUFFER_INCR) {
+-    if(buffer->initial_size < NDPI_SERIALIZER_DEFAULT_BUFFER_INCR) {
+-      if(min_len < buffer->initial_size)
++/* ********************************** */      if(min_len < buffer->initial_size)

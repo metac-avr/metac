@@ -1,0 +1,31 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 10b4b0cd..ae34fa0f 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -601 +601 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
++if (child == NULL)
+@@ -609 +609,2 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     xmlNodePtr cur = node;
+@@ -610,0 +612 @@ nodeGetTree(xmlNodePtr node) {
++    if (cur == NULL) return NULL;
+@@ -621,2 +623 @@ nodeGetTree(xmlNodePtr node) {
+- * A node is reachable if its tree, identified by the root node,
+- * is reachable. If a non-document tree is unreachable, it can be
++ * A node is reachable if its tree, identified by the root node, * is reachable. If a non-document tree is unreachable, it can be
+diff --git a/tree.c b/tree.c
+index a8869fd9..e5f3b910 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3609,0 +3610,9 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    /* Nullify parent/children references before freeing */
++	    if (cur->parent != NULL) {
++	        if (cur->parent->children == cur)
++	            cur->parent->children = NULL;
++	        if (cur->parent->last == cur)
++	            cur->parent->last = NULL;
++	        cur->parent = NULL;
++	    }
++	    

@@ -1,0 +1,21 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..8678f5d4 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2093,0 +2094,12 @@ xmlFreePropList(xmlAttrPtr cur) {
++        /* Temporarily nullify dictionary-owned strings before freeing */
++        xmlChar* saved_name = NULL;
++        xmlChar* saved_content = NULL;
++        if (cur->name && xmlDictOwns(cur->doc ? cur->doc->dict : NULL, cur->name)) {
++            saved_name = cur->name;
++            cur->name = NULL;
++        }
++        if (cur->children && cur->children->content && 
++            xmlDictOwns(cur->doc ? cur->doc->dict : NULL, cur->children->content)) {
++            saved_content = cur->children->content;
++            cur->children->content = NULL;
++        }
+@@ -2094,0 +2107,3 @@ xmlFreePropList(xmlAttrPtr cur) {
++        /* Restore the pointers (they remain in dictionary) */
++        if (saved_name) cur->name = saved_name;
++        if (saved_content) cur->children->content = saved_content;

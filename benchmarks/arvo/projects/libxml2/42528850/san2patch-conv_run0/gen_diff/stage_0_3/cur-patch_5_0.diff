@@ -1,0 +1,51 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..e84b10be 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202,3 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++	// Add safety check to prevent accessing freed namespace
++	if (node->ns != NULL) {
++	     xmlNsPtr ns;
+@@ -4210,0 +4213,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
++	    // Additional validation before accessing node->ns again
++	    if (node->ns != NULL) {
+@@ -4216 +4220,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		if (ns->href != NULL && ns->prefix != NULL)
++		    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+@@ -4219,0 +4225,3 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
++	    } else {
++		ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	    }
+@@ -4225,0 +4234 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
++	}
+diff --git a/parser.c b/parser.c
+index 11bb5199..448724ea 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7502,8 +7502,16 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw != NULL) {
+-			if (nw->_private == NULL)
+-			    nw->_private = cur->_private;
+-			if (firstChild == NULL){
+-			    firstChild = nw;
+-			}
+-			nw = xmlAddChild(ctxt->node, nw);
++		    nw = NULL;
++		    /* Prevent use-after-free by checking node validity before copy */
++		    if (cur != NULL) {
++		        /* Additional safety check to ensure node and namespaces are accessible */
++		        if (((void*)cur >= (void*)0x1000) &&  /* Basic memory address sanity check */
++		            ((cur->type >= XML_ELEMENT_NODE) && (cur->type <= XML_DTD_NODE))) {
++			    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		        }
++		        if (nw != NULL) {
++			    if (nw->_private == NULL)
++			        nw->_private = cur->_private;
++			    if (firstChild == NULL){
++			        firstChild = nw;
++			    }
++			    nw = xmlAddChild(ctxt->node, nw);
++		        }

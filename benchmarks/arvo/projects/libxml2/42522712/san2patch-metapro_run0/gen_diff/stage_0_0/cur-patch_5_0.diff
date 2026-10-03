@@ -1,0 +1,38 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index b8b6bd23..0f1c95d8 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3014 +3014,4 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
+-        if (err == 0)
++        if (err == 0) {
++            size_t remaining_bytes = INPUT_END - CUR_PTR;
++            if (len > remaining_bytes)
++                len = remaining_bytes;
+@@ -3015,0 +3019 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
++        }
+@@ -3303 +3307 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	}
++        }
+@@ -3305 +3309,10 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	URI = htmlParseSystemLiteral(ctxt);
++	
++	/* Fix: Validate parser context before system literal parsing */
++	if (ctxt->input != NULL && ctxt->input->cur != NULL && 
++	    ctxt->input->end != NULL && ctxt->input->cur < ctxt->input->end) {
++	    URI = htmlParseSystemLiteral(ctxt);
++	} else {
++	    htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++	                 "Invalid parser state for SYSTEM literal\n", NULL, NULL);
++	    URI = NULL;
++	}
+@@ -3327 +3340,9 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	    URI = htmlParseSystemLiteral(ctxt);
++	    /* Fix: Validate parser context before system literal parsing */
++	    if (ctxt->input != NULL && ctxt->input->cur != NULL && 
++	        ctxt->input->end != NULL && ctxt->input->cur < ctxt->input->end) {
++	        URI = htmlParseSystemLiteral(ctxt);
++	    } else {
++	        htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++	                     "Invalid parser state for SYSTEM literal\n", NULL, NULL);
++	        URI = NULL;
++	    }

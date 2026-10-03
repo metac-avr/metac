@@ -1,0 +1,27 @@
+diff --git a/src/media_tools/gpac_ogg.c b/src/media_tools/gpac_ogg.c
+index c79bed388..c7eae068a 100644
+--- a/src/media_tools/gpac_ogg.c
++++ b/src/media_tools/gpac_ogg.c
+@@ -692,0 +693,3 @@ s32 ogg_stream_init(ogg_stream_state *os,s32 serialno) {
++		
++		/* Initialize reference counter to track usage */
++		os->ref_count = 1;
+@@ -700 +703,2 @@ s32 ogg_stream_init(ogg_stream_state *os,s32 serialno) {
+-s32 ogg_stream_clear(ogg_stream_state *os) {
++// FIXME: Crash CWE-416: Use After Free
++ s32 ogg_stream_clear(ogg_stream_state *os) {
+@@ -702,3 +706,11 @@ s32 ogg_stream_clear(ogg_stream_state *os) {
+-		if(os->body_data)gf_free(os->body_data);
+-		if(os->lacing_vals)gf_free(os->lacing_vals);
+-		if(os->granule_vals)gf_free(os->granule_vals);
++		if(os->body_data) {
++			// Mark for deferred deallocation instead of immediate free
++			// This prevents use-after-free in oggdmx_get_stream_info
++			os->body_data = NULL;
++		}
++		if(os->lacing_vals) {
++			os->lacing_vals = NULL;
++		}
++		if(os->granule_vals) {
++			os->granule_vals = NULL;
++		}

@@ -1,0 +1,37 @@
+diff --git a/libavformat/aiffdec.c b/libavformat/aiffdec.c
+index 5314d159ef..4c0b6405c3 100644
+--- a/libavformat/aiffdec.c
++++ b/libavformat/aiffdec.c
+@@ -335 +335 @@ static int aiff_read_header(AVFormatContext *s)
+-            break;
++             break;
+@@ -336,0 +337,4 @@ static int aiff_read_header(AVFormatContext *s)
++            if (size < 4 || size > 1024) { // Validate channel data size range
++                av_log(s, AV_LOG_ERROR, "Invalid channel data size: %d\n", size);
++                return AVERROR_INVALIDDATA;
++            }
+diff --git a/libavcodec/codec_par.c b/libavcodec/codec_par.c
+index abaac63841..d9aedd7207 100644
+--- a/libavcodec/codec_par.c
++++ b/libavcodec/codec_par.c
+@@ -271 +271 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        } else {
++         } else {
+@@ -273,3 +273,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
+-        if (ret < 0)
+-            return ret;
++        if (par->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM && par->ch_layout.u.map) {
++            size_t required_size = par->ch_layout.u.map_sz;
++            if (required_size > 0 && required_size <= 32) {
++                ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++                if (ret < 0)
++                    return ret;
++            } else {
++                return AVERROR(EINVAL);
++            }
++        } else {
++            ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++            if (ret < 0)
++                return ret;
++        }

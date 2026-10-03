@@ -1,0 +1,64 @@
+diff --git a/libavcodec/faanidct.c b/libavcodec/faanidct.c
+index 3921f82dae..7baa9b46dd 100644
+--- a/libavcodec/faanidct.c
++++ b/libavcodec/faanidct.c
+@@ -106,17 +106,24 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-            dest[0*stride + i]= av_clip_uint8(((int)dest[0*stride + i]) + lrintf(os07 + od07));
+-            dest[7*stride + i]= av_clip_uint8(((int)dest[7*stride + i]) + lrintf(os07 - od07));
+-            dest[1*stride + i]= av_clip_uint8(((int)dest[1*stride + i]) + lrintf(os16 + od16));
+-            dest[6*stride + i]= av_clip_uint8(((int)dest[6*stride + i]) + lrintf(os16 - od16));
+-            dest[2*stride + i]= av_clip_uint8(((int)dest[2*stride + i]) + lrintf(os25 + od25));
+-            dest[5*stride + i]= av_clip_uint8(((int)dest[5*stride + i]) + lrintf(os25 - od25));
+-            dest[3*stride + i]= av_clip_uint8(((int)dest[3*stride + i]) + lrintf(os34 - od34));
+-            dest[4*stride + i]= av_clip_uint8(((int)dest[4*stride + i]) + lrintf(os34 + od34));
+-        }else{
+-            dest[0*stride + i]= av_clip_uint8(lrintf(os07 + od07));
+-            dest[7*stride + i]= av_clip_uint8(lrintf(os07 - od07));
+-            dest[1*stride + i]= av_clip_uint8(lrintf(os16 + od16));
+-            dest[6*stride + i]= av_clip_uint8(lrintf(os16 - od16));
+-            dest[2*stride + i]= av_clip_uint8(lrintf(os25 + od25));
+-            dest[5*stride + i]= av_clip_uint8(lrintf(os25 - od25));
+-            dest[3*stride + i]= av_clip_uint8(lrintf(os34 - od34));
+-            dest[4*stride + i]= av_clip_uint8(lrintf(os34 + od34));
++            if (0*stride + i < 64 && 7*stride + i < 64 && 1*stride + i < 64 && 6*stride + i < 64 &&
++                2*stride + i < 64 && 5*stride + i < 64 && 3*stride + i < 64 && 4*stride + i < 64) {
++                dest[0*stride + i]= av_clip_uint8(((int)dest[0*stride + i]) + lrintf(os07 + od07));
++                dest[7*stride + i]= av_clip_uint8(((int)dest[7*stride + i]) + lrintf(os07 - od07));
++                dest[1*stride + i]= av_clip_uint8(((int)dest[1*stride + i]) + lrintf(os16 + od16));
++                dest[6*stride + i]= av_clip_uint8(((int)dest[6*stride + i]) + lrintf(os16 - od16));
++                dest[2*stride + i]= av_clip_uint8(((int)dest[2*stride + i]) + lrintf(os25 + od25));
++                dest[5*stride + i]= av_clip_uint8(((int)dest[5*stride + i]) + lrintf(os25 - od25));
++                dest[3*stride + i]= av_clip_uint8(((int)dest[3*stride + i]) + lrintf(os34 - od34));
++                dest[4*stride + i]= av_clip_uint8(((int)dest[4*stride + i]) + lrintf(os34 + od34));
++            }
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         }else{
++            if (0*stride + i < 64 && 7*stride + i < 64 && 1*stride + i < 64 && 6*stride + i < 64 &&
++                2*stride + i < 64 && 5*stride + i < 64 && 3*stride + i < 64 && 4*stride + i < 64) {
++                dest[0*stride + i]= av_clip_uint8(lrintf(os07 + od07));
++                dest[7*stride + i]= av_clip_uint8(lrintf(os07 - od07));
++                dest[1*stride + i]= av_clip_uint8(lrintf(os16 + od16));
++                dest[6*stride + i]= av_clip_uint8(lrintf(os16 - od16));
++                dest[2*stride + i]= av_clip_uint8(lrintf(os25 + od25));
++                dest[5*stride + i]= av_clip_uint8(lrintf(os25 - od25));
++                dest[3*stride + i]= av_clip_uint8(lrintf(os34 - od34));
++                dest[4*stride + i]= av_clip_uint8(lrintf(os34 + od34));
++            }
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..e534a19042 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -2561,3 +2561,6 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
+-                s->progressive && s->cur_scan && s->got_picture)
+-                mjpeg_idct_scan_progressive_ac(s);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
++                s->progressive && s->cur_scan && s->got_picture) {
++                if (s->mb_width > 0 && s->mb_height > 0)
++                    mjpeg_idct_scan_progressive_ac(s);
++            }
+@@ -2573,2 +2576 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-                if (s->bottom_field == !s->interlace_polarity)
+-                    break;
++                if (s->bottom_field == !s->interlace_polarity)                    break;

@@ -1,0 +1,24 @@
+diff --git a/libavcodec/vvc/vvc_ps.c b/libavcodec/vvc/vvc_ps.c
+index ac96ed9f43..12714b61ba 100644
+--- a/libavcodec/vvc/vvc_ps.c
++++ b/libavcodec/vvc/vvc_ps.c
+@@ -997,2 +997,5 @@ int ff_vvc_decode_aps(VVCParamSets *ps, const CodedBitstreamUnit *unit)
+-            ff_refstruct_replace(&ps->lmcs_list[aps->aps_adaptation_parameter_set_id], aps);
+-            break;
++            if (aps->aps_params_byte_aligned_length <= 928)
++                ff_refstruct_replace(&ps->lmcs_list[aps->aps_adaptation_parameter_set_id], aps);
++            else
++                return AVERROR_INVALIDDATA;
++             break;
+diff --git a/libavcodec/refstruct.c b/libavcodec/refstruct.c
+index 7597f6d0ee..92e163fd9a 100644
+--- a/libavcodec/refstruct.c
++++ b/libavcodec/refstruct.c
+@@ -161 +161 @@ void ff_refstruct_replace(void *dstp, const void *src)
+-{
++ {
+@@ -162,0 +163 @@ void ff_refstruct_replace(void *dstp, const void *src)
++    if (!dstp) return;
+@@ -170 +171 @@ void ff_refstruct_replace(void *dstp, const void *src)
+-        memcpy(dstp, &dst, sizeof(dst));
++        if (dstp) memcpy(dstp, &dst, sizeof(dst));

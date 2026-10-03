@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..f6751c2a8dd 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1301 +1301,4 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	if (!Z_REFCOUNTED_P(pz)) return 0;
++	zend_refcounted_h *counted = Z_COUNTED_P(pz);
++	if (counted && GC_REFCOUNT(counted) == 0) return 0;
++	return GC_REFCOUNT(counted);
+@@ -1311,0 +1315 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..d0a6a088113 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// Fixed CWE-416: Use After Free by ensuring object is not accessed after being marked invalid
++ 		if (IS_OBJ_VALID(EG(objects_store).object_buckets[handle])) {
++ 			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++ 		}

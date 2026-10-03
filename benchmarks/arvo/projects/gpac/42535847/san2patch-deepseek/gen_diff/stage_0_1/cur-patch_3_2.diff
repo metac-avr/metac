@@ -1,0 +1,73 @@
+diff --git a/src/isomedia/meta.c b/src/isomedia/meta.c
+index 65660dcba..87e8e3b42 100644
+--- a/src/isomedia/meta.c
++++ b/src/isomedia/meta.c
+@@ -367,10 +367,30 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-		if (hvcc) {
+-			if (! hvcc->config) {
+-				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("Missing HEVC config in hvcC\n"));
+-			} else {
+-				if (use_annex_b) {
+-					hvcc->config->write_annex_b = GF_TRUE;
+-					gf_odf_hevc_cfg_write_bs(hvcc->config, item_bs);
+-					hvcc->config->write_annex_b = GF_FALSE;
+-				}
+-				nalu_size_length = hvcc->config->nal_unit_size;
++		static GF_Err gf_meta_get_item_info_from_iloc(GF_ISOFile *file, u32 item_index, GF_ItemInfo *item_info, Bool use_annex_b)
++{
++	GF_Err e;
++	u32 i, item_id, item_type, extents, offset, length;
++	GF_ItemLocationBox *iloc;
++	GF_DataMap *dat;
++	GF_BitStream *item_bs;
++	GF_ItemProtectionBox *ipro;
++	GF_AVCConfig *avcc;
++	GF_HEVCConfig *hvcc;
++	char szName[100];
++
++	e = gf_isom_get_meta_item_info(file, 1, item_info->item_index, &item_id, &item_type, &item_info->item_offset, &extents, &offset, &length, &iloc, &drm, &item_bs, &item_info->entry_type, &item_info->protection_index, &item_info->item_brand);
++	if (e) return e;
++
++	if (!item_bs) return GF_ISOM_INVALID_FILE;
++
++	gf_odf_get_extra_property(item_bs, "hvcC", &hvcc);
++	gf_odf_get_extra_property(item_bs, "avcC", &avcc);
++	gf_odf_get_extra_property(item_bs, "hvcC", &hvcc);
++	gf_odf_get_extra_property(item_bs, "avcC", &avcc);
++	if (hvcc) {
++		if (! hvcc->config) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("Missing HEVC config in hvcC\n"));
++			return GF_ISOM_INVALID_FILE;
++		} else {
++			if (use_annex_b) {
++				hvcc->config->write_annex_b = GF_TRUE;
++				gf_odf_hevc_cfg_write_bs(hvcc->config, item_bs);
++				hvcc->config->write_annex_b = GF_FALSE;
+@@ -378,10 +398,11 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-		} else if (avcc) {
+-			if (! avcc->config) {
+-				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("Missing AVC config in avcC\n"));
+-			} else {
+-				if (use_annex_b) {
+-					avcc->config->write_annex_b = GF_TRUE;
+-					gf_odf_avc_cfg_write_bs(avcc->config, item_bs);
+-					avcc->config->write_annex_b = GF_FALSE;
+-				}
+-				nalu_size_length = avcc->config->nal_unit_size;
++			nalu_size_length = hvcc->config->nal_unit_size;
++		}
++	} else if (avcc) {
++		if (! avcc->config) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("Missing AVC config in avcC\n"));
++			return GF_ISOM_INVALID_FILE;
++		} else {
++			if (use_annex_b) {
++				avcc->config->write_annex_b = GF_TRUE;
++				gf_odf_avc_cfg_write_bs(avcc->config, item_bs);
++				avcc->config->write_annex_b = GF_FALSE;
+@@ -388,0 +410 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
++			nalu_size_length = avcc->config->nal_unit_size;
+@@ -390,0 +413,3 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
++	return GF_OK;
++}
++	}

@@ -1,0 +1,29 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..c53b962007 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -577,2 +577,5 @@ static int gen_alias_map(JXLEntropyDecoder *dec, JXLSymbolDistribution *dist, in
+-            overfull[overfull_pos++] = i;
+-        else if (dist->cutoffs[i] < bucket_size)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             overfull[overfull_pos++] = i;
++        else if (dist->cutoffs[i] < bucket_size) {
++            if (underfull_pos >= 256)
++                return AVERROR_INVALIDDATA;
+@@ -579,0 +583 @@ static int gen_alias_map(JXLEntropyDecoder *dec, JXLSymbolDistribution *dist, in
++        }
+@@ -583,0 +588,2 @@ static int gen_alias_map(JXLEntropyDecoder *dec, JXLSymbolDistribution *dist, in
++        if (underfull_pos >= 256)
++            return AVERROR_INVALIDDATA;
+@@ -598 +604,3 @@ static int gen_alias_map(JXLEntropyDecoder *dec, JXLSymbolDistribution *dist, in
+-        if (dist->cutoffs[o] < bucket_size)
++        if (dist->cutoffs[o] < bucket_size) {
++            if (underfull_pos >= 256)
++                return AVERROR_INVALIDDATA;
+@@ -600 +608,3 @@ static int gen_alias_map(JXLEntropyDecoder *dec, JXLSymbolDistribution *dist, in
+-        else if (dist->cutoffs[o] > bucket_size)
++        } else if (dist->cutoffs[o] > bucket_size) {
++            if (overfull_pos >= 256)
++                return AVERROR_INVALIDDATA;
+@@ -601,0 +612 @@ static int gen_alias_map(JXLEntropyDecoder *dec, JXLSymbolDistribution *dist, in
++        }

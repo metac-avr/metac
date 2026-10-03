@@ -1,0 +1,39 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..8acd45f1b37 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -755,0 +756,20 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
++static zend_never_inline zval *zend_fetch_dimension_address_read(zval *container, zval *dim, int type)
++{
++	zval *retval;
++	HashTable *ht;
++	zend_ulong hval = 0;
++	zend_string *offset_key = NULL;
++
++	if (UNEXPECTED(Z_TYPE_P(container) == IS_STRING)) {
++		if (Z_TYPE_P(dim) == IS_LONG) {
++			zend_long offset = Z_LVAL_P(dim);
++			if (UNEXPECTED(offset < 0 || offset >= (zend_long)Z_STRLEN_P(container))) {
++				if (type == BP_VAR_R || type == BP_VAR_RW) {
++					zend_throw_error(NULL, "Cannot access offset of type %s on string", zend_get_type_by_const(Z_TYPE_P(container)));
++				}
++				return NULL;
++			}
++			retval = zend_fetch_dimension_str_address_read(&Z_STR_P(container), offset);
++			ZVAL_STRINGL(retval, Z_STRVAL_P(container) + offset, 1);
++			return retval;
++		}
+@@ -758 +778,8 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	return zend_hash_lookup(ht, offset_key);
++	Z_TRY_ADDREF_P(dim);
++	retval = zend_hash_lookup(ht, offset_key);
++	if (UNEXPECTED(!retval)) {
++		zval_ptr_dtor(dim);
++		return NULL;
++	}
++	zval_ptr_dtor(dim);
++	return retval;
+@@ -764,3 +790,0 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
+-{

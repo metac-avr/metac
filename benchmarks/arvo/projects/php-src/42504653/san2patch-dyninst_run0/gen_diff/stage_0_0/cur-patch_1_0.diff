@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..2afd0cc00e5 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1183 +1184,2 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
++	ZEND_ASSERT(p != NULL);
++	if (p->refcount == 0) return 0;
+@@ -1193 +1194,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..2a0bb001616 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30065 +30065,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++			/* Ensure object_ptr is valid before dereferencing to prevent use-after-free */
++			if (EXPECTED(object_ptr != NULL)) {
++				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++			}
+@@ -49652 +49655,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++			/* Ensure object_ptr is valid before dereferencing to prevent use-after-free */
++			if (EXPECTED(object_ptr != NULL)) {
++				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++			}

@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..b95b2732c78 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -290,2 +290,5 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-	efree(args);
+-
++	if (args) {
++		efree(args);
++		args = NULL;
++	}
++ 
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..e145d50e2df 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1838,2 +1838,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
+-					if (EXPECTED(p->key)) {
++// FIXME: Crash CWE-416: Use After Free
++ 					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(p->key) && !GC_DEL_CHECK(p->key)) {
+@@ -1847 +1848 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						if (EXPECTED(p->key)) {
++						if (EXPECTED(p->key) && !GC_DEL_CHECK(p->key)) {

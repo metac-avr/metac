@@ -1,0 +1,39 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..515e4212 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -366 +366 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-    const unsigned char *cur;
++            const unsigned char *cur;
+@@ -374,2 +374,2 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-
+-    if (ctxt->input->end - ctxt->input->cur < INPUT_CHUNK)
++ 
++    if (ctxt->input->end - ctxt->input->cur < INPUT_CHUNK) {
+@@ -376,0 +377,5 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++        /* Refresh pointer after potential realloc */
++        cur = ctxt->input->cur;
++    } else {
++        cur = ctxt->input->cur;
++    }
+@@ -386,2 +391 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        if (*ctxt->input->cur < 0x80) {
+-            if (*ctxt->input->cur == 0) {
++        if (*cur < 0x80) {            if (*ctxt->input->cur == 0) {
+@@ -3455 +3459 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
+-    while ((cur != 0) &&
++            while ((cur != 0) &&
+@@ -3457 +3461,3 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
+-	    (r != '-') || (q != '-'))) {
++// FIXME: Crash CWE-416: Use After Free
++ 	    (r != '-') || (q != '-'))) {
++	 xmlChar *old_buf = buf;
+@@ -3478,0 +3485,8 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	    if (buf != old_buf) {
++	       ptrdiff_t q_offset = (xmlChar *)q - old_buf;
++	        ptrdiff_t r_offset = (xmlChar *)r - old_buf;
++	        ptrdiff_t cur_offset = (xmlChar *)cur - old_buf;
++	        q = (int)(buf + q_offset);
++	        r = (int)(buf + r_offset);
++	        cur = (int)(buf + cur_offset);
++	    }

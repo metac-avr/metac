@@ -1,0 +1,48 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index 229d9890251..fa72703bb2d 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2320,2 +2320,2 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-			time_str = "now";
+-			time_str_len = sizeof("now") - 1;
++		time_str = "now";
++		time_str_len = sizeof("now") - 1;
+@@ -2325,0 +2326,20 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
++	/* Extract error details before they become invalid */
++	struct {
++		int count;
++		char *msg;
++		int pos;
++		char ch;
++	} error_info = {0, NULL, 0, 0};
++	
++	if (err && err->error_count > 0 && err->error_messages) {
++		error_info.count = err->error_count;
++		if (err->error_messages[0].message) {
++			const char *src_msg = err->error_messages[0].message;
++			size_t len = strlen(src_msg);
++			error_info.msg = malloc(len + 1);
++			if (error_info.msg) strcpy(error_info.msg, src_msg);
++		}
++		error_info.pos = err->error_messages[0].position;
++		error_info.ch = err->error_messages[0].character;
++	}
++
+@@ -2328 +2348,2 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-
++	// Fixed: Copy error data before freeing to avoid accessing freed memory
++	 
+@@ -2330 +2351 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	if ((flags & PHP_DATE_INIT_CTOR) && err && err->error_count) {
++	if ((flags & PHP_DATE_INIT_CTOR) && error_info.count > 0 && error_info.msg) {
+@@ -2333 +2354 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-			err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
++			error_info.pos, error_info.ch, error_info.msg);
+@@ -2335 +2356,2 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	if (err && err->error_count) {
++	if (error_info.count > 0) {
++		if (error_info.msg) free(error_info.msg);
+@@ -2340,2 +2362 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-
+-	if (timezone_object) {
++	if (error_info.msg) free(error_info.msg);	if (timezone_object) {

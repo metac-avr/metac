@@ -1,0 +1,19 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..94d2dd8b8 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2388,2 +2388,5 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
++		  {
++		    if(s_offset+i*2 + 2 > total_len) break;
++		    int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 					 sizeof(ja.client.signature_algorithms_str)-i*2,
+@@ -2391 +2394 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++		    ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
+@@ -2393 +2396,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
++		    if(rc < 0) break;
++		  }

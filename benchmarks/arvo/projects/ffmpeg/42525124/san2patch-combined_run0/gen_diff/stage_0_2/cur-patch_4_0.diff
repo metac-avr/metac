@@ -1,0 +1,53 @@
+diff --git a/libavformat/jpegxl_probe.c b/libavformat/jpegxl_probe.c
+index a3845b037d..9b3a641eda 100644
+--- a/libavformat/jpegxl_probe.c
++++ b/libavformat/jpegxl_probe.c
+@@ -211 +211,2 @@ static void jpegxl_skip_bit_depth(GetBitContext *gb)
+-static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++// Fixed: Added comprehensive bounds validation to prevent buffer overflow
++ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
+@@ -212,0 +214,4 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++    // Pre-validate minimum required bits for the entire function
++    if (get_bits_left(gb) < 8) // Minimum for initial operations
++        return -1;
++        
+@@ -221,0 +227,5 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++        
++        // Validate available bits before each operation
++        if (get_bits_left(gb) < 100) // Conservative estimate for remaining operations
++            return -1;
++            
+@@ -225,0 +236,4 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++        
++        // Safety check for calculated name_len
++        if (name_len > 1071)
++            return -1;
+@@ -227,0 +242,3 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++        // Minimal bits needed for this path
++        if (get_bits_left(gb) < 32)
++            return -1;
+@@ -230,0 +248,3 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++    // Validate we have enough bits to skip the name
++    if (get_bits_left(gb) < 8 * name_len + 32) // +32 for safety margin
++        return -1;
+@@ -233 +253,3 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
+-    if (!all_default && type == FF_JPEGXL_CT_ALPHA)
++    if (!all_default && type == FF_JPEGXL_CT_ALPHA) {
++        if (get_bits_left(gb) < 1)
++            return -1;
+@@ -234,0 +257 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++    }
+@@ -236 +259,3 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
+-    if (type == FF_JPEGXL_CT_SPOT_COLOR)
++    if (type == FF_JPEGXL_CT_SPOT_COLOR) {
++        if (get_bits_left(gb) < 16 * 4)
++            return -1;
+@@ -237,0 +263 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++    }
+@@ -239 +265,3 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
+-    if (type == FF_JPEGXL_CT_CFA)
++    if (type == FF_JPEGXL_CT_CFA) {
++        if (get_bits_left(gb) < 32)
++            return -1;
+@@ -240,0 +269 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++    }

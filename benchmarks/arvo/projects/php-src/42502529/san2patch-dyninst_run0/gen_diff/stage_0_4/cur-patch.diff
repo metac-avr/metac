@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..4dcf3469a11 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -388,0 +389 @@ void shutdown_executor(void) /* {{{ */
++// FIXME: Crash CWE-416: Use After Free
+@@ -390,0 +392,4 @@ void shutdown_executor(void) /* {{{ */
++	/* Force garbage collection before shutdown to avoid dangling references */
++	if (!fast_shutdown) {
++		zend_gc_collect_cycles();
++	}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..da29a77b1a5 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1946 +1946,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-		if (result & ZEND_HASH_APPLY_REMOVE) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (result & ZEND_HASH_APPLY_REMOVE) {
+@@ -1948 +1949 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++			if (ht && p) _zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);

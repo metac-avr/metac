@@ -1,0 +1,42 @@
+diff --git a/libavformat/jpegxl_probe.c b/libavformat/jpegxl_probe.c
+index a3845b037d..98058d7f4d 100644
+--- a/libavformat/jpegxl_probe.c
++++ b/libavformat/jpegxl_probe.c
+@@ -377 +377,4 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-            jxl_bits_skip(16 * 16);
++            if (headsize >= 289 + (16 * 16 + 7) / 8)
++                jxl_bits_skip(16 * 16);
++            else
++                return -1;
+@@ -380 +383,4 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-            jxl_bits_skip(16 * 15);
++            if (headsize >= 289 + (16 * 16 + 16 * 15 + 7) / 8)
++                jxl_bits_skip(16 * 15);
++            else
++                return -1;
+@@ -382 +388,4 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-            jxl_bits_skip(16 * 55);
++            if (headsize >= 289 + (16 * 16 + 16 * 15 + 16 * 55 + 7) / 8)
++                jxl_bits_skip(16 * 55);
++            else
++                return -1;
+@@ -384 +393,4 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-            jxl_bits_skip(16 * 210);
++            if (headsize >= 289 + (16 * 16 + 16 * 15 + 16 * 55 + 16 * 210 + 7) / 8)
++                jxl_bits_skip(16 * 210);
++            else
++                return -1;
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index 6ea6c46d8f..1d24041811 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -187 +187,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     }
+@@ -201,0 +203,5 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    // Validate that we have enough bits remaining before accessing them
++    if (get_bits_left(gb) < 64) // Need at least 64 bits for the following operations
++        return AVERROR_INVALIDDATA;
++        

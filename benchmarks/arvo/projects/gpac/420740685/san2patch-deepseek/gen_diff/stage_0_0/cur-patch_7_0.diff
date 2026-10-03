@@ -1,0 +1,26 @@
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..0d91b7419 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -522,3 +522,5 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-		memcpy(szLang, stream->sub.language, 3);
+-		szLang[3]=0;
+-		gf_filter_pid_set_property(opid, GF_PROP_PID_LANGUAGE, &PROP_STRING(szLang) );
++		if (stream->sub.language && stream->sub.language_len >= 3) {
++			memcpy(szLang, stream->sub.language, 3);
++			szLang[3]=0;
++			gf_filter_pid_set_property(opid, GF_PROP_PID_LANGUAGE, &PROP_STRING(szLang) );
++		}
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..c5e4a8fa1 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1784 +1784 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-		//translate hierarchy descriptors indexes into PIDs - check whether the PMT-index rules are the same for HEVC
++		//Translate hierarchy descriptors indexes into PIDs - check whether the PMT-index rules are the same for HEVC
+@@ -1801,0 +1802,5 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
++	if ((status&GF_M2TS_TABLE_FOUND) && (pmt->program->stream_type[0] >= 0x80 || pmt->program->stream_type[1] >= 0x80 || pmt->program->stream_type[2] >= 0x80)) {
++			GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[M2TS] Invalid stream_type value, ignoring PMT\n"));
++			return;
++		}
++

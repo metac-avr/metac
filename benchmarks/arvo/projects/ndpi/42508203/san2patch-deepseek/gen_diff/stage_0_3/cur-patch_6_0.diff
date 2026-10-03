@@ -1,0 +1,16 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index cf1e6282b..36d6ae519 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1289,2 +1289,9 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
+-  NDPI_LOG_DBG(ndpi_struct, "search HTTP\n");
+-  ndpi_check_http_tcp(ndpi_struct, flow);
++  if(flow->l4.tcp->http.parsed_headers && flow->l4.tcp->http.content_type.ptr) {
++    u_int16_t safe_len = flow->l4.tcp->http.content_type.len;
++    if(safe_len > (flow->l4.tcp->http.parsed_headers_end - flow->l4.tcp->http.content_type.ptr))
++      safe_len = flow->l4.tcp->http.parsed_headers_end - flow->l4.tcp->http.content_type.ptr;
++    ndpi_check_http_tcp(ndpi_struct, flow, safe_len);
++  } else {
++    NDPI_LOG_DBG(ndpi_struct, "search HTTP\n");
++    ndpi_check_http_tcp(ndpi_struct, flow, 0);
++  }

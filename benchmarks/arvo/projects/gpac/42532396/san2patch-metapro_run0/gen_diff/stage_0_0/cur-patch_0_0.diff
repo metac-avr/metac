@@ -1,0 +1,41 @@
+diff --git a/src/filters/load_text.c b/src/filters/load_text.c
+index 877b285a8..fdc556cce 100644
+--- a/src/filters/load_text.c
++++ b/src/filters/load_text.c
+@@ -673,0 +674 @@ static GF_Err txtin_setup_srt(GF_Filter *filter, GF_TXTIn *ctx, Bool gen_dsi_onl
++		// Initialize curLine to prevent out-of-bounds read
+@@ -954 +955 @@ static GF_Err txtin_process_srt(GF_Filter *filter, GF_TXTIn *ctx, GF_FilterPacke
+-	u32 sh, sm, ss, sms, eh, em, es, ems, txt_line, char_len;
++u32 sh, sm, ss, sms, eh, em, es, ems, txt_line, char_len;
+@@ -957 +958,3 @@ static GF_Err txtin_process_srt(GF_Filter *filter, GF_TXTIn *ctx, GF_FilterPacke
+-	char szLine[2048];
++	char *szLine = gf_malloc(2048);
++	if (!szLine) return GF_OUT_OF_MEM;
++	memset(szLine, 0, 2048);
+@@ -962 +965,2 @@ static GF_Err txtin_process_srt(GF_Filter *filter, GF_TXTIn *ctx, GF_FilterPacke
+-	if (!ctx->is_setup) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	if (!ctx->is_setup) {
+@@ -965 +969,8 @@ static GF_Err txtin_process_srt(GF_Filter *filter, GF_TXTIn *ctx, GF_FilterPacke
+-		if (e || !ctx->unframed) return e;
++		if (e || !ctx->unframed) {
++			gf_free(szLine);
++			return e;
++		}
++	}
++	if (!ctx->opid) {
++		gf_free(szLine);
++		return GF_NOT_SUPPORTED;
+@@ -967 +977,0 @@ static GF_Err txtin_process_srt(GF_Filter *filter, GF_TXTIn *ctx, GF_FilterPacke
+-	if (!ctx->opid) return GF_NOT_SUPPORTED;
+@@ -970,2 +980,8 @@ static GF_Err txtin_process_srt(GF_Filter *filter, GF_TXTIn *ctx, GF_FilterPacke
+-		if (!ctx->playstate) return GF_OK;
+-		else if (ctx->playstate==2) return GF_EOS;
++		if (!ctx->playstate) {
++			gf_free(szLine);
++			return GF_OK;
++		}
++		else if (ctx->playstate==2) {
++			gf_free(szLine);
++			return GF_EOS;
++		}

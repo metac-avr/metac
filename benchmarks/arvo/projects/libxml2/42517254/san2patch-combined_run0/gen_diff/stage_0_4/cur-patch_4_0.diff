@@ -1,0 +1,37 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..ffc1970c 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1159,0 +1160 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		// Fixed CWE-416: Use After Free - Add null checks after node operations
+@@ -1192,0 +1194,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++					// Ensure last is not null after operation
++					if (last == NULL) break;
+@@ -1194,0 +1198,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++				    // Double-check cur validity
++				    if (cur == NULL) break;
+@@ -1213,0 +1219,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		// Prevent use-after-free by checking node validity
++		if (set->nodeTab[i] == NULL) continue;
+@@ -1218 +1225,4 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
++		    xmlNodePtr copy_node = set->nodeTab[i];
++		    // Verify node is still valid before copying
++		    if (copy_node != NULL) {
++		        xmlAddNextSibling(last,
+@@ -1220,3 +1230,4 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++				                copy_node));
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2557 +2568,6 @@ xmlXIncludeProcessTreeFlagsData(xmlNodePtr tree, int flags, void *data) {
+-    ctxt->base = xmlStrdup((xmlChar *)tree->doc->URL);
++    // Check if URL exists before duplicating to prevent use-after-free
++    if (tree->doc->URL != NULL) {
++        ctxt->base = xmlStrdup((xmlChar *)tree->doc->URL);
++    } else {
++        ctxt->base = NULL;
++    }

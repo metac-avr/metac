@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index af5f3821723..8b502fd478f 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1260 +1260,3 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	ZEND_RC_MOD_CHECK(p);
++	return ++(p->refcount);
+@@ -1268 +1270,3 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (p == NULL) return 0; // Fix for Use After Free - check for null pointer before dereferencing
+@@ -1273,9 +1277 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		++p->refcount;
+-	}
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
++static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {	if (!(p->u.type_info & GC_IMMUTABLE)) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..a166d161c54 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -10492 +10492 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_NEW_SPEC_CONST_UNUSED_HANDLER(
+-
++ 
+@@ -10525 +10525,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_NEW_SPEC_CONST_UNUSED_HANDLER(
+-		Z_ADDREF_P(result);
++		if (Z_OBJ_P(result) != NULL) {
++			Z_ADDREF_P(result);
++		}

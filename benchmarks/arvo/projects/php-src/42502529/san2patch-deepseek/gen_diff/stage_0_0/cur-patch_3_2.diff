@@ -1,0 +1,95 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index e59642292ba..9644da58346 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3257,61 +3257,3 @@ ZEND_API bool ZEND_FASTCALL zend_verify_ref_assignable_zval(zend_reference *ref,
+-	zend_property_info *prop;
+-
+-	/* The value must satisfy each property type, and coerce to the same value for each property
+-	 * type. Remember the first coerced type and value we've seen for this purpose. */
+-	zend_property_info *first_prop = NULL;
+-	zval coerced_value;
+-	ZVAL_UNDEF(&coerced_value);
+-
+-	ZEND_ASSERT(Z_TYPE_P(zv) != IS_REFERENCE);
+-	ZEND_REF_FOREACH_TYPE_SOURCES(ref, prop) {
+-		int result = i_zend_verify_type_assignable_zval(prop, zv, strict);
+-		if (result == 0) {
+-type_error:
+-			zend_throw_ref_type_error_zval(prop, zv);
+-			zval_ptr_dtor(&coerced_value);
+-			return 0;
+-		}
+-
+-		if (result < 0) {
+-			if (!first_prop) {
+-				first_prop = prop;
+-				ZVAL_COPY(&coerced_value, zv);
+-				if (!zend_verify_weak_scalar_type_hint(
+-						ZEND_TYPE_FULL_MASK(prop->type), &coerced_value)) {
+-					goto type_error;
+-				}
+-			} else if (Z_ISUNDEF(coerced_value)) {
+-				/* A previous property did not require coercion, but this one does,
+-				 * so they are incompatible. */
+-				goto conflicting_coercion_error;
+-			} else {
+-				zval tmp;
+-				ZVAL_COPY(&tmp, zv);
+-				if (!zend_verify_weak_scalar_type_hint(ZEND_TYPE_FULL_MASK(prop->type), &tmp)) {
+-					zval_ptr_dtor(&tmp);
+-					goto type_error;
+-				}
+-				if (!zend_is_identical(&coerced_value, &tmp)) {
+-					zval_ptr_dtor(&tmp);
+-					goto conflicting_coercion_error;
+-				}
+-				zval_ptr_dtor(&tmp);
+-			}
+-		} else {
+-			if (!first_prop) {
+-				first_prop = prop;
+-			} else if (!Z_ISUNDEF(coerced_value)) {
+-				/* A previous property required coercion, but this one doesn't,
+-				 * so they are incompatible. */
+-conflicting_coercion_error:
+-				zend_throw_conflicting_coercion_error(first_prop, prop, zv);
+-				zval_ptr_dtor(&coerced_value);
+-				return 0;
+-			}
+-		}
+-	} ZEND_REF_FOREACH_TYPE_SOURCES_END();
+-
+-	if (!Z_ISUNDEF(coerced_value)) {
+-		zval_ptr_dtor(zv);
+-		ZVAL_COPY_VALUE(zv, &coerced_value);
+-	}
++static void ZEND_FASTCALL zend_jit_assign_const_to_typed_ref(zend_reference *ref, zval *value)
++{
++	zval variable;
+@@ -3319 +3261,3 @@ ZEND_API bool ZEND_FASTCALL zend_verify_ref_assignable_zval(zend_reference *ref,
+-	return 1;
++	ZVAL_REF(&variable, ref);
++	zend_assign_to_variable(&variable, value, IS_CONST, ZEND_CALL_USES_STRICT_TYPES(EG(current_execute_data)));
++}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 585364a5739..a5da1f2f1d8 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1747 +1747,2 @@ static zend_always_inline void zend_jit_assign_to_typed_ref_helper(zend_referenc
+-static void ZEND_FASTCALL zend_jit_assign_const_to_typed_ref(zend_reference *ref, zval *value)
++// FIXME: Crash CWE-416: Use After Free
++ static void ZEND_FASTCALL zend_jit_assign_const_to_typed_ref(zend_reference *ref, zval *value)
+@@ -1749 +1750,8 @@ static void ZEND_FASTCALL zend_jit_assign_const_to_typed_ref(zend_reference *ref
+-	zend_jit_assign_to_typed_ref_helper(ref, value, IS_CONST);
++	zval variable;
++	zend_result result;
++
++	ZVAL_REF(&variable, ref);
++	result = zend_assign_to_variable(&variable, value, IS_CONST, ZEND_CALL_USES_STRICT_TYPES(EG(current_execute_data)));
++	if (UNEXPECTED(result != SUCCESS)) {
++		zval_ptr_dtor(value);
++	}
+@@ -1760 +1768 @@ static void ZEND_FASTCALL zend_jit_assign_var_to_typed_ref(zend_reference *ref,
+-}
++}}

@@ -1,0 +1,67 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..8ca1f8a8 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2220,0 +2221,14 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    /*
++     * Check against the risk of generating a multi-rooted document
++     */
++
++    if (ctxt->incTab[nr]->ref == NULL) {
++        /*
++         * Shrink the inclusion table to avoid dangling references
++         */
++        xmlXIncludeErr(ctxt, NULL, XML_XINCLUDE_NO_HREF,
++                       "xmlXIncludeDoProcess: href or xpointer not found\n",
++                       NULL);
++        return(-1);
++    }
++
+@@ -2230 +2244,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	ctxt->incTab[nr]->inc =
++        xmlXPathObjectPtr xptr_copy = ctxt->incTab[nr]->xptr; 
++        ctxt->incTab[nr]->inc =
+@@ -2232,2 +2247,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		                    ctxt->incTab[nr]->xptr);
+-	xmlXPathFreeObject(ctxt->incTab[nr]->xptr);
++	                    xptr_copy);
++        if (xptr_copy == ctxt->incTab[nr]->xptr) {
++            xmlXPathFreeObject(ctxt->incTab[nr]->xptr);
++        }
+@@ -2242,0 +2260,18 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++
++    if (list == NULL)
++        return(-1);
++    
++    return(0);
++}
++
++/**
++ * xmlXIncludeSetFlags:
++ * @ctxt:  an XInclude processing context
++ * @flags: a set of xmlParserOption used for parsing XML includes
++ *
++ * Set the flags used for further processing of XML resources.
++ *
++ * Returns 0 in case of success and -1 in case of error.
++ */
++int
++xmlXIncludeSetFlags(xmlXIncludeCtxtPtr ctxt, int flags) {     */
+@@ -2495,0 +2531 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++    /*
+@@ -2503,3 +2539,4 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-	if ((ctxt->incTab[i]->inc != NULL) ||
+-            (ctxt->incTab[i]->xptr != NULL) ||
+-	    (ctxt->incTab[i]->emptyFb != 0))	/* (empty fallback) */
++	if (ctxt->incTab[i] != NULL && 
++	    ((ctxt->incTab[i]->inc != NULL) ||
++             (ctxt->incTab[i]->xptr != NULL) ||
++	    (ctxt->incTab[i]->emptyFb != 0)))	/* (empty fallback) */
+@@ -2523,0 +2561,7 @@ int
++xmlXIncludeSetFlags(xmlXIncludeCtxtPtr ctxt, int flags) { * @flags: a set of xmlParserOption used for parsing XML includes
++ *
++ * Set the flags used for further processing of XML resources.
++ *
++ * Returns 0 in case of success and -1 in case of error.
++ */
++int

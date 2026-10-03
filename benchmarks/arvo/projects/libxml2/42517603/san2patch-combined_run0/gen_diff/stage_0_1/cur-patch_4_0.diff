@@ -1,0 +1,76 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..b1305669 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2076 +2076 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-            xmlFreeNodeList(list);
++            if (list) xmlFreeNodeList(list);
+@@ -2089 +2089,6 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	    xmlAddPrevSibling(cur, end);
++	    /* Defensive check: ensure cur is not freed before access */
++            if (cur != NULL) {
++	        xmlAddPrevSibling(cur, end);
++            } else {
++                xmlFreeNode(end);
++            }
+@@ -2094,2 +2099,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	xmlUnlinkNode(cur);
+-	xmlFreeNode(cur);
++	if (cur != NULL) {
++	    xmlUnlinkNode(cur);
++	    xmlFreeNode(cur);
++	}
+@@ -2103 +2110 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-        if (ref->fallback)
++        if (ref->fallback && cur != NULL)
+@@ -2105 +2112 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	cur->type = XML_XINCLUDE_START;
++	if (cur != NULL) cur->type = XML_XINCLUDE_START;
+@@ -2107,4 +2114,6 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-        for (child = cur->children; child != NULL; child = next) {
+-            next = child->next;
+-            xmlUnlinkNode(child);
+-            xmlFreeNode(child);
++        if (cur != NULL) {
++            for (child = cur->children; child != NULL; child = next) {
++                next = child->next;
++                xmlUnlinkNode(child);
++                xmlFreeNode(child);
++            }
+@@ -2112 +2121,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	end = xmlNewDocNode(cur->doc, cur->ns, cur->name, NULL);
++	end = NULL;
++	if (cur != NULL) end = xmlNewDocNode(cur->doc, cur->ns, cur->name, NULL);
+@@ -2115,2 +2125,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-			   "failed to build node\n", NULL);
+-            xmlFreeNodeList(list);
++			"failed to build node\n", NULL);
++            if (list) xmlFreeNodeList(list);
+@@ -2120 +2130 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	xmlAddNextSibling(cur, end);
++	if (cur != NULL) xmlAddNextSibling(cur, end);
+@@ -2129 +2139,6 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	    xmlAddPrevSibling(end, cur);
++	    /* Defensive check: ensure end is not freed before access */
++            if (end != NULL) {
++	        xmlAddPrevSibling(end, cur);
++            } else {
++                xmlFreeNode(cur);
++            }
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..cf8ebd08 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1345 +1345 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-        if ((reader->preserves > 0) &&
++	if ((reader->preserves > 0) &&
+@@ -1364,3 +1364,6 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Add safety check to prevent use-after-free */
++		if (tmp != NULL) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		}

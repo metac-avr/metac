@@ -1,0 +1,19 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..abb3de3968f 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1201 +1201,2 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -1214,0 +1216 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
++			/* Add safety check to prevent use-after-free */
+@@ -1222 +1224,2 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-			GC_DELREF(op1_str);
++			/* Ensure string is not garbage collected during operation */
++			GC_ADDREF(op1_str);
+@@ -1229,0 +1233,4 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
++	if (!ZSTR_IS_INTERNED(op1_str) && GC_REFCOUNT(op1_str) > 1) {
++		GC_DELREF(op1_str); /* Release the temporary reference */
++	}
++

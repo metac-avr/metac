@@ -1,0 +1,54 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..a6965fa27 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -185,18 +185,29 @@ int is_version_with_ietf_long_header(uint32_t version)
+-int quic_len(const uint8_t *buf, uint64_t *value)
+-{
+-  *value = buf[0];
+-  switch((*value) >> 6) {
+-  case 0:
+-    (*value) &= 0x3F;
+-    return 1;
+-  case 1:
+-    *value = ntohs(*(uint16_t *)buf) & 0x3FFF;
+-    return 2;
+-  case 2:
+-    *value = ntohl(*(uint32_t *)buf) & 0x3FFFFFFF;
+-    return 4;
+-  case 3:
+-    *value = ndpi_ntohll(get_u_int64_t(buf, 0)) & 0x3FFFFFFFFFFFFFFF;
+-    return 8;
+-  default: /* No Possible */
+-    return 0;
++int quic_len(const uint8_t *buf, uint64_t *value, size_t buf_len)
++{
++  if (buf_len >= 1) {
++    *value = buf[0];
++    switch((*value) >> 6) {
++    case 0:
++      (*value) &= 0x3F;
++      return 1;
++    case 1:
++      if (buf_len >= 2) {
++        *value = ntohs(*(uint16_t *)buf) & 0x3FFF;
++        return 2;
++      }
++      break;
++    case 2:
++      if (buf_len >= 4) {
++        *value = ntohl(*(uint32_t *)buf) & 0x3FFFFFFF;
++        return 4;
++      }
++      break;
++    case 3:
++      if (buf_len >= 8) {
++        *value = ndpi_ntohll(get_u_int64_t(buf, 0)) & 0x3FFFFFFFFFFFFFFF;
++        return 8;
++      }
++      break;
++    default: /* No Possible */
++      return 0;
++    }
+@@ -203,0 +215 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  return 0;

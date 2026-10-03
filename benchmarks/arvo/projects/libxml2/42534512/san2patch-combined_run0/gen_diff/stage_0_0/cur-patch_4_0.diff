@@ -1,0 +1,25 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..c2fd7ed9 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3637,0 +3638,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Zero out the node structure before freeing to prevent dangling pointers */
++	    memset(cur, 0, sizeof(xmlNode));
+@@ -6857,2 +6860,7 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr ret = xmlSetNsProp(node, ns, localname, value);
++            /* Validate node integrity after potential free operation */
++            if (node == NULL || node->type != XML_ELEMENT_NODE)
++                return(NULL);
++            return(ret);
++        }
+@@ -6861 +6869,5 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr ret = xmlSetNsProp(node, NULL, name, value);
++    /* Validate node integrity after potential free operation */
++    if (node == NULL || node->type != XML_ELEMENT_NODE)
++        return(NULL);
++    return(ret);

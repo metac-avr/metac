@@ -1,0 +1,40 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 69eaeb052..dd8cd35c0 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -179,11 +179,5 @@ static void ndpi_trecurse(ndpi_node *root, void (*action)(const void *, ndpi_VIS
+-{
+-  if(root->left == (ndpi_node *)0 && root->right == (ndpi_node *)0)
+-    (*action)(root, ndpi_leaf, level, user_data);
+-  else {
+-    (*action)(root, ndpi_preorder, level, user_data);
+-    if(root->left != (ndpi_node *)0)
+-      ndpi_trecurse(root->left, action, level + 1, user_data);
+-    (*action)(root, ndpi_postorder, level, user_data);
+-    if(root->right != (ndpi_node *)0)
+-      ndpi_trecurse(root->right, action, level + 1, user_data);
+-    (*action)(root, ndpi_endorder, level, user_data);
++ {
++  if(root == NULL || (root->left == (ndpi_node *)0 && root->right == (ndpi_node *)0)) {
++    if(root != NULL) // Fix for CWE-825: Validate root before use
++      (*action)(root, ndpi_leaf, level, user_data);
++    return;
+@@ -190,0 +185,7 @@ static void ndpi_trecurse(ndpi_node *root, void (*action)(const void *, ndpi_VIS
++  (*action)(root, ndpi_preorder, level, user_data);
++  if(root->left != (ndpi_node *)0)
++    ndpi_trecurse(root->left, action, level + 1, user_data);
++  (*action)(root, ndpi_postorder, level, user_data);
++  if(root->right != (ndpi_node *)0)
++    ndpi_trecurse(root->right, action, level + 1, user_data);
++  (*action)(root, ndpi_endorder, level, user_data);
+@@ -199,3 +200,7 @@ void ndpi_twalk(const void *vroot, void (*action)(const void *, ndpi_VISIT, int,
+-
+-  if(root != (ndpi_node *)0 && action != (void (*)(const void *, ndpi_VISIT, int, void*))0)
+-    ndpi_trecurse(root, action, 0, user_data);
++ 
++  if(root != (ndpi_node *)0 && action != (void (*)(const void *, ndpi_VISIT, int, void*))0) {
++    /* Add basic sanity check for expired pointer before traversal */
++    volatile char *test_access = (volatile char *)root;
++    if(test_access != NULL)
++      ndpi_trecurse(root, action, 0, user_data);
++  }

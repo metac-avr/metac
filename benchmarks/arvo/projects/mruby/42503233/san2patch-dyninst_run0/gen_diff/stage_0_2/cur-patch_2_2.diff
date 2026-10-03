@@ -1,0 +1,48 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..cc12a8a03 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -190,9 +190 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+-  if (size > MRB_STACK_MAX) {
+-    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+-  }
+-}
+-
+-MRB_API void
+-mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++ {
+@@ -199,0 +192,4 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    /* Guard against infinite recursion causing stack overflow */
++    if (mrb->recur_depth > 1000) {
++      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
+@@ -202,10 +198 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-}
+-
+-static inline struct REnv*
+-uvenv(mrb_state *mrb, mrb_int up)
+-{
+-  const struct RProc *proc = mrb->c->ci->proc;
+-  struct REnv *e;
+-
+-  while (up--) {
+-    proc = proc->upper;
++}    proc = proc->upper;
+@@ -478,0 +466,9 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    if (mid == MRB_SYM_EQ) {
++      static mrb_int eq_recursion_count = 0;
++      if (++eq_recursion_count > 100) {
++        eq_recursion_count = 0;
++        mrb_raise(mrb, E_RUNTIME_ERROR, "equality comparison recursion limit exceeded");
++      }
++    }
++    
+@@ -531,0 +528,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    if (mid == MRB_SYM_EQ) {
++      static mrb_int eq_recursion_count = 0;
++      eq_recursion_count = 0;
++    }

@@ -1,0 +1,28 @@
+diff --git a/src/lib/protocols/kerberos.c b/src/lib/protocols/kerberos.c
+index 2694b072f..048b9cdfd 100644
+--- a/src/lib/protocols/kerberos.c
++++ b/src/lib/protocols/kerberos.c
+@@ -313 +313,3 @@ static int krb_parse(struct ndpi_detection_module_struct * const ndpi_struct,
+-  if (flow->protos.kerberos.hostname[0] == '\0' && text[length - 1] != '$')
++
++  // Check bounds before accessing text[length - 1] and calling strncpy_lower
++  if (flow->protos.kerberos.hostname[0] == '\0' && length > 0 && text[length - 1] != '$')
+@@ -315,5 +317,9 @@ static int krb_parse(struct ndpi_detection_module_struct * const ndpi_struct,
+-    strncpy_lower(flow->protos.kerberos.hostname, sizeof(flow->protos.kerberos.hostname),
+-                  text, length);
+-  } else if (flow->protos.kerberos.username[0] == '\0') {
+-    strncpy_lower(flow->protos.kerberos.username, sizeof(flow->protos.kerberos.username),
+-                  text, length - 1);
++    // Ensure length doesn't exceed buffer size and is non-negative
++    if(length >= 0 && length < (int)sizeof(flow->protos.kerberos.hostname))
++      strncpy_lower(flow->protos.kerberos.hostname, sizeof(flow->protos.kerberos.hostname),
++                    text, length);
++  } else if (flow->protos.kerberos.username[0] == '\0' && length > 0) {
++    // Ensure (length - 1) doesn't exceed buffer size and is non-negative
++    if((length - 1) >= 0 && (length - 1) < (int)sizeof(flow->protos.kerberos.username))
++      strncpy_lower(flow->protos.kerberos.username, sizeof(flow->protos.kerberos.username),
++                    text, length - 1);
+@@ -325,2 +331 @@ static int krb_parse(struct ndpi_detection_module_struct * const ndpi_struct,
+-static void ndpi_int_kerberos_add_connection(struct ndpi_detection_module_struct *ndpi_struct,
+-					     struct ndpi_flow_struct *flow) {
++static void ndpi_int_kerberos_add_connection(struct ndpi_detection_module_struct *ndpi_struct,					     struct ndpi_flow_struct *flow) {

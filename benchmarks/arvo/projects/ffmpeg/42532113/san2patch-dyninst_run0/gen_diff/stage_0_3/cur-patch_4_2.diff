@@ -1,0 +1,44 @@
+diff --git a/libavcodec/vvc/vvc_ps.c b/libavcodec/vvc/vvc_ps.c
+index ac96ed9f43..0f4722a33c 100644
+--- a/libavcodec/vvc/vvc_ps.c
++++ b/libavcodec/vvc/vvc_ps.c
+@@ -994 +994,4 @@ int ff_vvc_decode_aps(VVCParamSets *ps, const CodedBitstreamUnit *unit)
+-            ret = aps_decode_alf(&ps->alf_list[aps->aps_adaptation_parameter_set_id], aps);
++            if (aps->aps_adaptation_parameter_set_id < MAX_APS_COUNT)
++                ret = aps_decode_alf(&ps->alf_list[aps->aps_adaptation_parameter_set_id], aps);
++            else
++                ret = AVERROR_INVALIDDATA;
+@@ -997,2 +1000,6 @@ int ff_vvc_decode_aps(VVCParamSets *ps, const CodedBitstreamUnit *unit)
+-            ff_refstruct_replace(&ps->lmcs_list[aps->aps_adaptation_parameter_set_id], aps);
+-            break;
++            if (aps->aps_adaptation_parameter_set_id < MAX_APS_COUNT)
++                ff_refstruct_replace(&ps->lmcs_list[aps->aps_adaptation_parameter_set_id], aps);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++            else
++                ret = AVERROR_INVALIDDATA;
++             break;
+@@ -1000 +1007,7 @@ int ff_vvc_decode_aps(VVCParamSets *ps, const CodedBitstreamUnit *unit)
+-            ret = aps_decode_scaling(&ps->scaling_list[aps->aps_adaptation_parameter_set_id], aps);
++            if (aps->aps_adaptation_parameter_set_id < MAX_APS_COUNT)
++                ret = aps_decode_scaling(&ps->scaling_list[aps->aps_adaptation_parameter_set_id], aps);
++            else
++                ret = AVERROR_INVALIDDATA;
++            break;
++        default:
++            ret = AVERROR_INVALIDDATA;
+diff --git a/libavcodec/refstruct.c b/libavcodec/refstruct.c
+index 7597f6d0ee..5fbe080303 100644
+--- a/libavcodec/refstruct.c
++++ b/libavcodec/refstruct.c
+@@ -161 +161 @@ void ff_refstruct_replace(void *dstp, const void *src)
+-{
++ {
+@@ -162,0 +163,8 @@ void ff_refstruct_replace(void *dstp, const void *src)
++    
++    if (!dstp) return;
++    if (!src) {
++        memset(&dst, 0, sizeof(dst));
++        memcpy(dstp, &dst, sizeof(dst));
++        return;
++    }
++    

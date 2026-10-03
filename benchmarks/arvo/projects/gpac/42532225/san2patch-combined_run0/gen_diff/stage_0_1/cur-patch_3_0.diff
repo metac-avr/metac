@@ -1,0 +1,32 @@
+diff --git a/src/filters/load_bt_xmt.c b/src/filters/load_bt_xmt.c
+index f0d299e0f..793a35ae8 100644
+--- a/src/filters/load_bt_xmt.c
++++ b/src/filters/load_bt_xmt.c
+@@ -832,2 +832,3 @@ static const char* my_strstr(const char *str, const char *pat, u32 str_len)
+-	//basically a memmem clone (we don't use for portability reasons)
+-	while (1) {
++	// Fixed: Check bounds before memchr call to prevent out-of-bounds read
++	const char *search_end = str + str_len;
++	while (str <= search_end - len_pat) {
+@@ -835,0 +837,2 @@ static const char* my_strstr(const char *str, const char *pat, u32 str_len)
++		// Ensure next is within valid bounds
++		if (next > search_end - len_pat) return NULL;
+@@ -894 +897,2 @@ static const char *ctxload_probe_data(const u8 *probe_data, u32 size, GF_FilterP
+-	//we should refine by getting the xmlns attribute value rather than searching for its value...
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	//we should refine by getting the xmlns attribute value rather than searching for its value...
+@@ -896 +900 @@ static const char *ctxload_probe_data(const u8 *probe_data, u32 size, GF_FilterP
+-	if (my_strstr(probe_data, "http://www.w3.org/1999/XSL/Transform", probe_size)
++	if (my_strstr(probe_data, "http://www.w3.org/1999/XSL/Transform", probe_size < 5000 ? probe_size : 5000)
+@@ -899 +903 @@ static const char *ctxload_probe_data(const u8 *probe_data, u32 size, GF_FilterP
+-		|| my_strstr(probe_data, "urn:mpeg:mpeg4:xmta:schema:2002", probe_size)
++		|| my_strstr(probe_data, "urn:mpeg:mpeg4:xmta:schema:2002", probe_size < 5000 ? probe_size : 5000)
+@@ -902,2 +906,2 @@ static const char *ctxload_probe_data(const u8 *probe_data, u32 size, GF_FilterP
+-	} else if (my_strstr(probe_data, "<X3D", probe_size)
+-		|| my_strstr(probe_data, "http://www.web3d.org/specifications/x3d-3.0.xsd", probe_size)
++	} else if (my_strstr(probe_data, "<X3D", probe_size < 5000 ? probe_size : 5000)
++		|| my_strstr(probe_data, "http://www.web3d.org/specifications/x3d-3.0.xsd", probe_size < 5000 ? probe_size : 5000)
+@@ -906,2 +910 @@ static const char *ctxload_probe_data(const u8 *probe_data, u32 size, GF_FilterP
+-	} else if (my_strstr(probe_data, "<saf", probe_size)
+-		|| my_strstr(probe_data, "urn:mpeg:mpeg4:SAF:2005", probe_size)
++	} else if (my_strstr(probe_data, "<saf", probe_size < 5000 ? probe_size : 5000)		|| my_strstr(probe_data, "urn:mpeg:mpeg4:SAF:2005", probe_size)

@@ -1,0 +1,111 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..26d9bfd5366 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756 +756,92 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
++static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim)
++{
++	zval *retval = NULL;
++	zend_string *offset_key;
++	zend_ulong hval;
++	zend_long lval;
++
++	if (dim) {
++		if (Z_TYPE_P(dim) == IS_STRING) {
++			if (ZEND_HANDLE_NUMERIC(Z_STRVAL_P(dim), hval)) {
++				goto num_index;
++			}
++			offset_key = Z_STR_P(dim);
++			goto string_index;
++		}
++		if (Z_TYPE_P(dim) == IS_LONG) {
++			hval = Z_LVAL_P(dim);
++			goto num_index;
++		}
++		if (Z_TYPE_P(dim) == IS_DOUBLE) {
++			double dval = Z_DVAL_P(dim);
++			if (zend_dval_to_lval_safe(dval, &lval)) {
++				if (zend_ulong_overflow(lval, &hval)) {
++					goto num_index;
++				}
++				goto string_index_conv;
++			}
++			return NULL;
++		}
++		if (Z_TYPE_P(dim) == IS_TRUE) {
++			hval = 1;
++			goto num_index;
++		}
++		if (Z_TYPE_P(dim) == IS_FALSE || Z_TYPE_P(dim) == IS_NULL) {
++			offset_key = ZSTR_EMPTY_ALLOC();
++			goto string_index;
++		}
++		if (Z_TYPE_P(dim) == IS_RESOURCE) {
++			zend_error(E_WARNING, "Resource ID#" ZEND_LONG_FMT " used as offset, casting to integer (" ZEND_LONG_FMT ")", Z_RES_HANDLE_P(dim), Z_RES_HANDLE_P(dim));
++			hval = Z_RES_HANDLE_P(dim);
++			goto num_index;
++		}
++
++		if (Z_TYPE_P(dim) == IS_REFERENCE) {
++			dim = Z_REFVAL_P(dim);
++			if (Z_TYPE_P(dim) == IS_STRING) {
++				if (ZEND_HANDLE_NUMERIC(Z_STRVAL_P(dim), hval)) {
++					goto num_index;
++				}
++				offset_key = Z_STR_P(dim);
++				goto string_index;
++			}
++			if (Z_TYPE_P(dim) == IS_LONG) {
++				hval = Z_LVAL_P(dim);
++				goto num_index;
++			}
++			if (Z_TYPE_P(dim) == IS_DOUBLE) {
++				double dval = Z_DVAL_P(dim);
++				if (zend_dval_to_lval_safe(dval, &lval)) {
++					if (zend_ulong_overflow(lval, &hval)) {
++						goto num_index;
++					}
++					goto string_index_conv;
++				}
++				return NULL;
++			}
++			if (Z_TYPE_P(dim) == IS_TRUE) {
++				hval = 1;
++				goto num_index;
++			}
++			if (Z_TYPE_P(dim) == IS_FALSE || Z_TYPE_P(dim) == IS_NULL) {
++				offset_key = ZSTR_EMPTY_ALLOC();
++				goto string_index;
++			}
++			if (Z_TYPE_P(dim) == IS_RESOURCE) {
++				zend_error(E_ERROR, "Resource ID#" ZEND_LONG_FMT " used as offset, casting to integer (" ZEND_LONG_FMT ")", Z_RES_HANDLE_P(dim), Z_RES_HANDLE_P(dim));
++				hval = Z_RES_HANDLE_P(dim);
++				goto num_index;
++			}
++		}
++	}
++
++	ZEND_ASSERT(0);
++	return NULL;
++
++string_index_conv:
++	if (lval >= 0) {
++		return NULL;
++	}
++	offset_key = zend_long_to_str(lval);
++	if (UNEXPECTED(EG(exception))) {
++		return NULL;
+@@ -758 +849,4 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	return zend_hash_lookup(ht, offset_key);
++
++string_index:
++	retval = zend_hash_lookup(ht, offset_key);
++	return retval;
+@@ -763,5 +857 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
+-{
+-	zend_long offset;
++}	zend_long offset;

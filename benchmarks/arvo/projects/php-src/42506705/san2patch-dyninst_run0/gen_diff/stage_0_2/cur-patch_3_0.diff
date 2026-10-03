@@ -1,0 +1,76 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..222335ee2ea 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -385,30 +385,37 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-	switch (Z_TYPE_P(dim)) {
+-		case IS_LONG:
+-			hval = Z_LVAL_P(dim);
+-			goto num_index;
+-		case IS_STRING:
+-			offset_key = Z_STR_P(dim);
+-			goto str_index;
+-		case IS_UNDEF:
+-			zend_jit_undefined_op_helper(EG(current_execute_data)->opline->op2.var);
+-			ZEND_FALLTHROUGH;
+-		case IS_NULL:
+-			offset_key = ZSTR_EMPTY_ALLOC();
+-			goto str_index;
+-		case IS_DOUBLE:
+-			hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
+-			goto num_index;
+-		case IS_RESOURCE:
+-			zend_use_resource_as_offset(dim);
+-			hval = Z_RES_HANDLE_P(dim);
+-			goto num_index;
+-		case IS_FALSE:
+-			hval = 0;
+-			goto num_index;
+-		case IS_TRUE:
+-			hval = 1;
+-			goto num_index;
+-		default:
+-			zend_jit_illegal_offset();
+-			undef_result_after_exception();
+-			return;
++	/* Check if the array is still valid before accessing it */
++	if (ht && GC_DEL_REFCOUNT(ht->gc) > 0) {
++		switch (Z_TYPE_P(dim)) {
++			case IS_LONG:
++				hval = Z_LVAL_P(dim);
++				goto num_index;
++			case IS_STRING:
++				offset_key = Z_STR_P(dim);
++				goto str_index;
++			case IS_UNDEF:
++				zend_jit_undefined_op_helper(EG(current_execute_data)->opline->op2.var);
++				ZEND_FALLTHROUGH;
++			case IS_NULL:
++				offset_key = ZSTR_EMPTY_ALLOC();
++				goto str_index;
++			case IS_DOUBLE:
++				hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++				goto num_index;
++			case IS_RESOURCE:
++				zend_use_resource_as_offset(dim);
++				hval = Z_RES_HANDLE_P(dim);
++				goto num_index;
++			case IS_FALSE:
++				hval = 0;
++				goto num_index;
++			case IS_TRUE:
++				hval = 1;
++				goto num_index;
++			default:
++				zend_jit_illegal_offset();
++				undef_result_after_exception();
++				return;
++		}
++	} else {
++		/* Array is invalid, return null result */
++		ZVAL_NULL(result);
++		return;
+@@ -429 +436,2 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-
++// FIXME: Crash CWE-416: Use After Free
++ 

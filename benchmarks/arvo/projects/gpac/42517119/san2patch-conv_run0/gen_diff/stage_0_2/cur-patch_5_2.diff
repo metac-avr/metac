@@ -1,0 +1,46 @@
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index d7f39328b..cddb777f4 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -736,0 +737,14 @@ GF_Err urn_box_size(GF_Box *s)
++#ifndef GPAC_DISABLE_ISOM
++
++gf_err unkn_box_read(GF_Box *s, GF_BitStream *bs)
++{
++	GF_Err e;
++	u32 bytesToRead;
++	GF_UnknownBox *ptr = (GF_UnknownBox *)s;
++	if (!s) return GF_BAD_PARAM;
++	if (!bs) return GF_BAD_PARAM;
++
++	bytesToRead = (u32)(ptr->size);
++	if (!bytesToRead) return GF_OK;
++	if (bytesToRead > 1000000) {
++		return GF_ISOM_INVALID_MEDIA;
+@@ -738,2 +751,0 @@ GF_Err urn_box_size(GF_Box *s)
+-	return GF_OK;
+-}
+@@ -741 +753,4 @@ GF_Err urn_box_size(GF_Box *s)
+-#endif /*GPAC_DISABLE_ISOM_WRITE*/
++	ptr->data = (char*)gf_malloc(bytesToRead);
++	if (ptr->data == NULL) return GF_OUT_OF_MEM;
++	ptr->dataSize = bytesToRead;
++	gf_bs_read_data(bs, ptr->data, ptr->dataSize);
+@@ -743,6 +758 @@ GF_Err urn_box_size(GF_Box *s)
+-void unkn_box_del(GF_Box *s)
+-{
+-	GF_UnknownBox *ptr = (GF_UnknownBox *) s;
+-	if (!s) return;
+-	if (ptr->data) gf_free(ptr->data);
+-	gf_free(ptr);
++	return GF_OK;
+@@ -751,8 +761 @@ void unkn_box_del(GF_Box *s)
+-
+-GF_Err unkn_box_read(GF_Box *s, GF_BitStream *bs)
+-{
+-	GF_Err e;
+-	u32 bytesToRead, sub_size, sub_a;
+-	GF_BitStream *sub_bs;
+-	GF_UnknownBox *ptr = (GF_UnknownBox *)s;
+-	if (ptr->size > 0xFFFFFFFF) return GF_ISOM_INVALID_FILE;
++#endif /*GPAC_DISABLE_ISOM*/	if (ptr->size > 0xFFFFFFFF) return GF_ISOM_INVALID_FILE;

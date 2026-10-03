@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 3eb2930205e..422448f86a9 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3854 +3854,2 @@ static void zend_check_symbol(zval *pz)
+-ZEND_API void execute_internal(zend_execute_data *execute_data, zval *return_value)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void execute_internal(zend_execute_data *execute_data, zval *return_value)
+@@ -3855,0 +3857,9 @@ ZEND_API void execute_internal(zend_execute_data *execute_data, zval *return_val
++	zval *arg;
++	uint32_t i;
++
++	for (i = 0; i < EX_NUM_ARGS(); i++) {
++		arg = EX_VAR_NUM(i);
++		if (Z_TYPE_P(arg) == IS_STRING) {
++			Z_ADDREF_P(arg);
++		}
++	}

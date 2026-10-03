@@ -1,0 +1,15 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..193323c98 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -500,3 +500,7 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    if (j%2)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
+-    else
++    if (j%2) {
++      // Prevent integer overflow by checking bounds before operation
++      if (HALFDIGITBITS < sizeof(uint32_t) * 8 && qhat <= (UINT32_MAX >> HALFDIGITBITS))
++        q.p[j/2] |= qhat << HALFDIGITBITS;
++      else
++        mrb_raise(mrb, E_RANGE_ERROR, "shift operation would overflow");
++    } else

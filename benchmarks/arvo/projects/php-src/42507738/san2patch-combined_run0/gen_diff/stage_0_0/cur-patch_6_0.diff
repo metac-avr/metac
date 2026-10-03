@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..cc91a7dbf2f 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// Fixed: Add null check before accessing object->handlers to prevent use-after-free
++		if (object && object->handlers) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}
+diff --git a/Zend/zend.c b/Zend/zend.c
+index e42fc648a4d..b42178b51b7 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1522,0 +1523,4 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
++	zend_object *obj = EG(current_execute_data)->This.value.obj;
++	if (obj) {
++		GC_ADDREF(obj);
++	}
+@@ -1524,0 +1529,3 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
++	if (obj) {
++		GC_DELREF(obj);
++	}

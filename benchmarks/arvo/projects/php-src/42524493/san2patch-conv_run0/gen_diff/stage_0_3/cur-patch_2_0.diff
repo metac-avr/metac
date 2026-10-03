@@ -1,0 +1,26 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index bbddd459704..d1d3dabc54b 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1260,0 +1261 @@ void zend_call_destructors(void) /* {{{ */
++	int saved_flags;
+@@ -1262,0 +1264,4 @@ void zend_call_destructors(void) /* {{{ */
++	} zend_catch {
++		/* Disable garbage collection during cleanup to prevent use-after-free */
++		saved_flags = GC_FLAGS(CG(objects_store).object_buckets);
++		GC_FLAGS(CG(objects_store).object_buckets) = saved_flags | GC_PURGED;
+@@ -1272,2 +1277 @@ ZEND_API void zend_deactivate(void) /* {{{ */
+-	zend_try {
+-		shutdown_scanner();
++	zend_try {		shutdown_scanner();
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..c8c7657d1d0 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++// FIXME: Crash CWE-416: Use After Free
+@@ -202,0 +204 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Ensure object is removed from all callback chains before freeing */
+@@ -203,0 +206,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Additional safety: mark object as fully destroyed */
++		GC_TYPE(object) = IS_NULL;

@@ -1,0 +1,24 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..31bca368510 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -397 +397,8 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-			goto str_index;
++// FIXME: Crash CWE-416: Use After Free
++ 			if (ht && !(GC_FLAGS(ht) & GC_IMMUTABLE) && !GC_IS_RECURSIVE(ht)) {
++				goto str_index;
++			} else {
++				zend_jit_illegal_offset();
++				undef_result_after_exception();
++				return;
++			}
+@@ -462 +469,8 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_is_helper(zend_array *ht, zval *dim
+-			goto str_index;
++// FIXME: Crash CWE-416: Use After Free
++ 			if (ht && !(GC_FLAGS(ht) & GC_IMMUTABLE) && !GC_IS_RECURSIVE(ht)) {
++				goto str_index;
++			} else {
++				zend_jit_illegal_offset();
++				undef_result_after_exception();
++				return;
++			}

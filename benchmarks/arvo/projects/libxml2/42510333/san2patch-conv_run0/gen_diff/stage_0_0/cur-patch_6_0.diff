@@ -1,0 +1,28 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..85e215c3 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2218 +2218,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		       "XInclude error: would result in multiple root nodes\n",
++// FIXME: Crash CWE-416: Use After Free
++ 		       "XInclude error: would result in multiple root nodes\n",
+@@ -2220,0 +2222 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++            list = NULL;  /* Prevent use-after-free by nullifying the pointer */
+@@ -2258,0 +2261 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++            list = NULL;  /* Prevent use-after-free by nullifying the pointer */
+diff --git a/tree.c b/tree.c
+index 8077348a..39ebd2c7 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699 +3699,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
++xmlFreeNsList((xmlNsPtr) cur);
++	cur = NULL;  // Fix CWE-416: Set pointer to NULL after freeing to prevent use-after-free
+@@ -3702 +3703,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-    if (cur->doc != NULL) dict = cur->doc->dict;
++// FIXME: Crash CWE-416: Use After Free
++     if (cur->doc != NULL) dict = cur->doc->dict;
+@@ -3709,2 +3711 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-            cur = cur->children;
+-            depth += 1;
++            cur = cur->children;            depth += 1;

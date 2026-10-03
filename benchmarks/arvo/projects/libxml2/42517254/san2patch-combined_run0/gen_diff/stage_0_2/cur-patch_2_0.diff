@@ -1,0 +1,20 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..c6e08e29 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1160 +1160,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (set->nodeTab[i] == NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 		if (set->nodeTab[i] == NULL)
+@@ -1194 +1195,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    cur = cur->next;
++				    if (cur != NULL)
++				        cur = cur->next;
+@@ -2276,2 +2278,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	xmlUnlinkNode(cur);
+-	xmlFreeNode(cur);
++	/* Validate node before freeing and clear references */
++	if (cur != NULL) {
++	    xmlUnlinkNode(cur);
++	    xmlFreeNode(cur);
++	}

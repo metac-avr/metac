@@ -1,0 +1,194 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..182f01560 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -902,0 +903,9 @@ static int processTLSBlock(struct ndpi_detection_module_struct *ndpi_struct,
++  static void ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct, struct ndpi_flow_struct *flow)
++{
++  struct ndpi_packet_struct *packet = &flow->packet;
++  int ret = 0; /* Initialize ret variable */
++  /* Check if we have enough data */
++  if(packet->payload_packet_len < 5) {
++    return; /* Not enough data */
++  }
++
+@@ -949,0 +959 @@ static int processTLSBlock(struct ndpi_detection_module_struct *ndpi_struct,
++}
+@@ -2381,3 +2391,107 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
++static int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct, struct ndpi_flow_struct *flow, uint8_t quic_version)
++{
++  struct ndpi_packet_struct *packet = &flow->packet;
++  u_int16_t ciphersuite_len, compression_len, extensions_len, tot_signature_algorithms_len;
++  u_int32_t i, j, k, id, sa_size, s_offset, extension_offset;
++  u_int16_t server_port;
++  int duplicate_found = 0, last_signature = -1;
++  u_int8_t handshake_protocol_version_major, handshake_protocol_version_minor;
++  u_int8_t protocol_version_major, protocol_version_minor;
++  u_int16_t tls_version_major, tls_version_minor;
++  u_int16_t ext_len, random_len, session_id_len;
++  u_int8_t *random_ptr;
++  u_int8_t *session_id_ptr;
++  u_int16_t cipher_suite_len;
++  u_int8_t *cipher_suites_ptr;
++  u_int8_t compression_methods_len;
++  u_int8_t *compression_methods_ptr;
++  u_int16_t extensions_length;
++  u_int8_t *extensions_ptr;
++  u_int16_t extension_type;
++  u_int16_t extension_length;
++  u_int8_t *extension_data;
++  u_int16_t signature_algorithms_len;
++  u_int8_t *signature_algorithms_ptr;
++  u_int16_t supported_versions_len;
++  u_int8_t *supported_versions_ptr;
++  u_int16_t key_share_len;
++  u_int8_t *key_share_ptr;
++  u_int16_t psk_key_exchange_modes_len;
++  u_int8_t *psk_key_exchange_modes_ptr;
++  u_int16_t pre_shared_key_len;
++  u_int8_t *pre_shared_key_ptr;
++  u_int16_t early_data_len;
++  u_int8_t *early_data_ptr;
++  u_int16_t supported_groups_len;
++  u_int8_t *supported_groups_ptr;
++  u_int16_t ec_point_formats_len;
++  u_int8_t *ec_point_formats_ptr;
++  u_int16_t status_request_len;
++  u_int8_t *status_request_ptr;
++  u_int16_t signed_certificate_timestamp_len;
++  u_int8_t *signed_certificate_timestamp_ptr;
++  u_int16_t application_layer_protocol_negotiation_len;
++  u_int8_t *application_layer_protocol_negotiation_ptr;
++  u_int16_t server_name_len;
++  u_int8_t *server_name_ptr;
++  u_int16_t max_fragment_length_len;
++  u_int8_t *max_fragment_length_ptr;
++  u_int16_t client_certificate_type_len;
++  u_int8_t *client_certificate_type_ptr;
++  u_int16_t server_certificate_type_len;
++  u_int8_t *server_certificate_type_ptr;
++  u_int16_t use_srtp_len;
++  u_int8_t *use_srtp_ptr;
++  u_int16_t heartbeat_len;
++  u_int8_t *heartbeat_ptr;
++  u_int16_t application_layer_protocol_negotiation_ext_len;
++  u_int8_t *application_layer_protocol_negotiation_ext_ptr;
++  u_int16_t client_authz_len;
++  u_int8_t *client_authz_ptr;
++  u_int16_t server_authz_len;
++  u_int8_t *server_authz_ptr;
++  u_int16_t certificate_type_len;
++  u_int8_t *certificate_type_ptr;
++  u_int16_t next_protocol_negotiation_len;
++  u_int8_t *next_protocol_negotiation_ptr;
++  u_int16_t channel_id_len;
++  u_int8_t *channel_id_ptr;
++  u_int16_t padding_len;
++  u_int8_t *padding_ptr;
++  u_int16_t renegotiation_info_len;
++  u_int8_t *renegotiation_info_ptr;
++  u_int16_t trusted_ca_keys_len;
++  u_int8_t *trusted_ca_keys_ptr;
++  u_int16_t truncated_hmac_len;
++  u_int8_t *truncated_hmac_ptr;
++  u_int16_t encrypt_then_mac_len;
++  u_int8_t *encrypt_then_mac_ptr;
++  u_int16_t extended_master_secret_len;
++  u_int8_t *extended_master_secret_ptr;
++  u_int16_t session_ticket_len;
++  u_int8_t *session_ticket_ptr;
++  u_int16_t delegated_credentials_len;
++  u_int8_t *delegated_credentials_ptr;
++  u_int16_t pre_shared_key_ext_len;
++  u_int8_t *pre_shared_key_ext_ptr;
++  u_int16_t early_data_indication_len;
++  u_int8_t *early_data_indication_ptr;
++  u_int16_t supported_versions_ext_len;
++  u_int8_t *supported_versions_ext_ptr;
++  u_int16_t cookie_len;
++  u_int8_t *cookie_ptr;
++  u_int16_t psk_key_exchange_modes_ext_len;
++  u_int8_t *psk_key_exchange_modes_ext_ptr;
++  u_int16_t certificate_authorities_len;
++  u_int8_t *certificate_authorities_ptr;
++  u_int16_t oid_filters_len;
++  u_int8_t *oid_filters_ptr;
++  u_int16_t signature_algorithms_cert_len;
++  u_int8_t *signature_algorithms_cert_ptr;
++  u_int16_t key_share_ext_len;
++  u_int8_t *key_share_ext_ptr;
++  
++  /* Bounds checking */
++  if(packet->payload_packet_len < 6) {
++    return -1;
++  }
+@@ -2385 +2499,36 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++  /* Extract lengths safely with bounds checking */
++  if(packet->payload_packet_len >= 43) {
++    random_len = ntohs(*(u_int16_t*)&packet->payload[41]);
++    if(43 + random_len > packet->payload_packet_len) {
++      return -1; /* Invalid length */
++    }
++    session_id_len = packet->payload[43 + random_len];
++    if(44 + random_len + session_id_len > packet->payload_packet_len) {
++      return -1; /* Invalid length */
++    }
++    cipher_suite_len = ntohs(*(u_int16_t*)&packet->payload[44 + random_len + session_id_len]);
++    if(46 + random_len + session_id_len + cipher_suite_len > packet->payload_packet_len) {
++      return -1; /* Invalid length */
++    }
++    compression_methods_len = packet->payload[46 + random_len + session_id_len + cipher_suite_len];
++    if(47 + random_len + session_id_len + cipher_suite_len + compression_methods_len > packet->payload_packet_len) {
++      return -1; /* Invalid length */
++    }
++    extensions_length = ntohs(*(u_int16_t*)&packet->payload[47 + random_len + session_id_len + cipher_suite_len + compression_methods_len]);
++    if(49 + random_len + session_id_len + cipher_suite_len + compression_methods_len + extensions_length > packet->payload_packet_len) {
++      return -1; /* Invalid length */
++    }
++  } else {
++    return -1; /* Not enough data */
++  }
++
++#ifdef TLS_HANDLE_SIGNATURE_ALGORITMS
++  ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++
++  for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len && s_offset+i*2+2<=packet->payload_packet_len; i++) {
++    int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++                           sizeof(ja.client.signature_algorithms_str)-i*2,
++                           "%02X", packet->payload[s_offset+i]);
++    if(s_offset + i*2 + 2 <= packet->payload_packet_len) {  
++      ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++    }
+@@ -2387,5 +2536,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++    if(rc < 0) break;
++  }
+@@ -2393,2 +2539,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
+-		}
++  for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 <= packet->payload_packet_len; i+=2) {
++    u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+@@ -2396,2 +2542,6 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++    if(last_signature == signature_algo) {
++      /* Consecutive duplication */
++      duplicate_found = 1;
++    }
++  }
++#endif /* TLS_HANDLE_SIGNATURE_ALGORITMS */
+@@ -2399,4 +2549,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++  return 0;
++}		    continue;

@@ -1,0 +1,51 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..adcdbf99 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2636,9 +2636,2 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
+-        }
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+-static void
++// FIXME: Crash CWE-416: Use After Free
++ static void
+@@ -2645,0 +2639,4 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    if (idPtr != NULL && idPtr->doc != NULL && idPtr->attr != NULL) {
++        xmlRemoveID(idPtr->doc, idPtr->attr);
++    }
+@@ -2647,11 +2644 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++}    xmlHashFree(table, xmlFreeIDTableEntry);
+diff --git a/xinclude.c b/xinclude.c
+index 72a88c99..9d30e634 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1980 +1980,11 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-            next = child->next;
++             next = child->next;
++            /* Clean up ID references before node deletion to avoid dangling pointers */
++            if (child->doc != NULL) {
++                xmlAttrPtr attr;
++                for (attr = child->properties; attr != NULL; attr = attr->next) {
++                    if ((attr->ns == NULL) && (xmlStrEqual(attr->name, BAD_CAST "id"))) {
++                        xmlRemoveID(child->doc, attr);
++                        break; /* ID attributes are unique per element */
++                    }
++                }
++            }

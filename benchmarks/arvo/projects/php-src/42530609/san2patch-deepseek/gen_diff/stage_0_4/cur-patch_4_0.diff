@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..6aad051bb58 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
++[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (EXPECTED(GC_TYPE(p) != IS_OBJECT || !(GC_FLAGS(p) & ZEND_OBJECT_IS_DESTRUCTOR_CALLED))) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+@@ -67,2 +69 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
+-}
++	efree(str);}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..8e5fe4e8623 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -204 +204,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		efree(ptr);
++		/* Only free memory when the object bucket is still valid. */
++		if (IS_OBJ_VALID(EG(objects_store).object_buckets[handle])) {
++			efree(ptr);
++		}

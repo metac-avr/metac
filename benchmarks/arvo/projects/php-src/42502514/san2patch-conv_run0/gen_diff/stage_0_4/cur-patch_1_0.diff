@@ -1,0 +1,20 @@
+diff --git a/Zend/Optimizer/dfa_pass.c b/Zend/Optimizer/dfa_pass.c
+index 9eddbde3b71..415828b6a73 100644
+--- a/Zend/Optimizer/dfa_pass.c
++++ b/Zend/Optimizer/dfa_pass.c
+@@ -255 +255 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
+-				if (call_info->caller_call_opline) {
++	if (call_info->caller_call_opline) {
+@@ -263 +263,9 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
+-		op_array->last = target;
++		// Fixed CWE-825: Expired Pointer Dereference
++		// Validate shiftlist pointer before use to prevent expired pointer dereference
++		if (shiftlist && op_array) {
++			op_array->last = target;
++		}
++	}
++	// Ensure shiftlist is not accessed after being freed
++	if (shiftlist) {
++		free_alloca(shiftlist, use_heap);
+@@ -265 +272,0 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
+-	free_alloca(shiftlist, use_heap);

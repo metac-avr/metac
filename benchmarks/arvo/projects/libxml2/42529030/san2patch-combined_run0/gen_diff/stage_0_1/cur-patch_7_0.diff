@@ -1,0 +1,31 @@
+diff --git a/error.c b/error.c
+index 1b4fe767..6af49720 100644
+--- a/error.c
++++ b/error.c
+@@ -185,0 +186,3 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
++    /* Validate buffer bounds before accessing memory */
++    if ((cur < base) || (cur >= input->end))
++	return;
+@@ -211,0 +215,3 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
++	/* Check bounds before accessing cur */
++	if ((cur < input->base) || (cur >= input->end))
++	    break;
+@@ -218,0 +225,3 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
++    /* Validate that start pointer is within buffer bounds */
++    if ((start < input->base) || (start >= input->end) || (n > (unsigned int)(input->end - start)))
++	return;
+diff --git a/parser.c b/parser.c
+index 19f2e615..5e14e555 100644
+--- a/parser.c
++++ b/parser.c
+@@ -8274,2 +8274,8 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
+-    xmlBufResetInput(input->buf->buffer, input);
+-
++    /* Reset input pointers safely to avoid dangling references after buffer reallocation */
++    if (input->buf && input->buf->buffer && input->buf->buffer->content) {
++        xmlBufResetInput(input->buf->buffer, input);
++    } else {
++        /* Clear pointers to prevent access to potentially freed memory */
++        input->base = input->cur = NULL;
++    }
++ 

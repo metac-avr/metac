@@ -1,0 +1,23 @@
+diff --git a/libavcodec/cbs_h266_syntax_template.c b/libavcodec/cbs_h266_syntax_template.c
+index 06f9f29e08..d67200d9a8 100644
+--- a/libavcodec/cbs_h266_syntax_template.c
++++ b/libavcodec/cbs_h266_syntax_template.c
+@@ -932,4 +932,7 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
+-                if (!current->vps_default_ptl_dpb_hrd_max_tid_flag)
+-                    us(3, vps_hrd_max_tid[i], 0,
+-                       current->vps_max_sublayers_minus1, 1, i);
+-                else
++                if (!current->vps_default_ptl_dpb_hrd_max_tid_flag) {
++                    if (i < current->vps_num_ols_timing_hrd_params_minus1 + 1)  // Bounds check using existing variable
++                        us(3, vps_hrd_max_tid[i], 0,
++                            current->vps_max_sublayers_minus1, 1, i);
++                    else
++                        return AVERROR_INVALIDDATA;
++                } else
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index cdd7901518..29c9e1070a 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1060 +1060 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
+-        return err;
++         return err;

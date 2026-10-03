@@ -1,0 +1,25 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 54e9a85808c..5c8784e3e6e 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1264,0 +1265,3 @@ void zend_call_destructors(void) /* {{{ */
++	} zend_catch {
++		/* Clear destructor queue to prevent use-after-free */
++		zend_hash_clean(&EG(regular_list));
+@@ -1274,2 +1277 @@ ZEND_API void zend_deactivate(void) /* {{{ */
+-	zend_try {
+-		shutdown_scanner();
++	zend_try {		shutdown_scanner();
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..49bbe777293 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -196,0 +197,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		
++		// Remove object from destructor queue before freeing to prevent use-after-free
++		zend_hash_del(&EG(regular_list), handle);
++		
+@@ -202 +206,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-416: Use After Free
++ 		ptr = ((char*)object) - object->handlers->offset;

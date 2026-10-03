@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..f589be0c214 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -129 +129,14 @@ ZEND_METHOD(SensitiveParameterValue, getValue)
+-	ZVAL_COPY(return_value, OBJ_PROP_NUM(Z_OBJ_P(ZEND_THIS), 0));
++	zval *prop = OBJ_PROP_NUM(Z_OBJ_P(ZEND_THIS), 0);
++	if (EXPECTED(prop != NULL)) {
++		if (Z_TYPE_P(prop) == IS_STRING && Z_STR_P(prop) != NULL) {
++			if (GC_REFCOUNT(Z_STR_P(prop)) > 0) {
++				ZVAL_COPY(return_value, prop);
++			} else {
++				ZVAL_NULL(return_value);
++			}
++		} else {
++			ZVAL_COPY(return_value, prop);
++		}
++	} else {
++		ZVAL_NULL(return_value);
++	}
+@@ -131 +143,0 @@ ZEND_METHOD(SensitiveParameterValue, getValue)
+-

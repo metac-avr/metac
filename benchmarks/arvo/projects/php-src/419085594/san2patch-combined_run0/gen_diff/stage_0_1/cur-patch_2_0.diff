@@ -1,0 +1,75 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..52e511085f5 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -46004 +46004,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-				}
++// FIXME: Crash CWE-416: Use After Free
++ 				}
++			}
++			if (var_ptr != NULL && !Z_ISUNDEF_P(var_ptr)) {
++				zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			} else {
++				ZVAL_EMPTY_STRING(var_ptr);
++				zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
+@@ -46006 +46012,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-			zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..12b65857e37 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,9 +1894,22 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
+-			ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_CONCAT);
+-			ZVAL_STR(&op1_copy, zval_get_string_func(op1));
+-			if (UNEXPECTED(EG(exception))) {
+-				zval_ptr_dtor_str(&op1_copy);
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}
++			if (op1 && ZEND_IS_FREEABLE_P(op1)) {
++				ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_CONCAT);
++				ZVAL_STR(&op1_copy, zval_get_string_func(op1));
++				if (UNEXPECTED(EG(exception))) {
++					zval_ptr_dtor_str(&op1_copy);
++					if (orig_op1 != result) {
++						ZVAL_UNDEF(result);
++					}
++					return FAILURE;
++				}
++				if (result == op1) {
++					if (UNEXPECTED(op1 == op2)) {
++						op2 = &op1_copy;
++					}
++				}
++				op1 = &op1_copy;
++			} else if (!op1) {
+@@ -1907,4 +1920,14 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			}
+-			if (result == op1) {
+-				if (UNEXPECTED(op1 == op2)) {
+-					op2 = &op1_copy;
++			} else {
++				ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_CONCAT);
++				ZVAL_STR(&op1_copy, zval_get_string_func(op1));
++				if (UNEXPECTED(EG(exception))) {
++					zval_ptr_dtor_str(&op1_copy);
++					if (orig_op1 != result) {
++						ZVAL_UNDEF(result);
++					}
++					return FAILURE;
++				}
++				if (result == op1) {
++					if (UNEXPECTED(op1 == op2)) {
++						op2 = &op1_copy;
++					}
+@@ -1911,0 +1935 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
++				op1 = &op1_copy;
+@@ -1913 +1936,0 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			op1 = &op1_copy;

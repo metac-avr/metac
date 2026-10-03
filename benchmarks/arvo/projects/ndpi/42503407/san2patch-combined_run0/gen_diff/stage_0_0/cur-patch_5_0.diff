@@ -1,0 +1,22 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..f1df7fc86 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -185 +185,2 @@ int is_version_with_ietf_long_header(uint32_t version)
+-int quic_len(const uint8_t *buf, uint64_t *value)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ int quic_len(const uint8_t *buf, uint64_t *value)
+@@ -186,0 +188,3 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  if (buf == NULL || value == NULL) {
++    return 0;
++  }
+@@ -1629 +1633 @@ static void ndpi_search_quic(struct ndpi_detection_module_struct *ndpi_struct,
+-  if(!clear_payload) {
++  if(!clear_payload || clear_payload_len == 0) {
+@@ -1639,0 +1644,6 @@ static void ndpi_search_quic(struct ndpi_detection_module_struct *ndpi_struct,
++  
++  /* Validate crypto_data_len to prevent out-of-bounds access */
++  if(crypto_data && (crypto_data_len == 0 || crypto_data_len > clear_payload_len)) {
++    NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++    return;
++  }

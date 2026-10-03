@@ -1,0 +1,20 @@
+diff --git a/tree.c b/tree.c
+index e4425f10..8b59bddc 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3749,3 +3749,12 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
+-	    xmlFree(cur);
++		(cur->type != XML_COMMENT_NODE)) {
++	        if (cur->doc && cur->doc->dict && 
++	            !xmlDictOwns(cur->doc->dict, cur->name))
++	            xmlFree((xmlChar *) cur->name);
++	        else
++	            DICT_FREE(cur->name)
++	    }
++	    if (cur->doc && cur->doc->dict && 
++	        !xmlDictOwns(cur->doc->dict, (const xmlChar *) cur))
++	        xmlFree(cur);
++	    else
++	        DICT_FREE(cur)

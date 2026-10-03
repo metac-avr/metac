@@ -1,0 +1,44 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..72ecadd0c7 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -349,6 +348,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -357 +351,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -359 +354,3 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
++        uint8_t *old_keyframedata = s->keyframedata;
++        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0) {
++            s->keyframedata = old_keyframedata;  // Restore old pointer on failure
+@@ -360,0 +358 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        }
+@@ -366,5 +363,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-
+-    ff_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
+-            s->image_width, s->image_height, s->block_width, s->block_height,
+-            h_blocks, v_blocks, h_part, v_part);
+-
+@@ -465 +457,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-
+@@ -468,2 +460,4 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-                    memcpy(s->frame->data[0] + x, s->keyframe + x,
+-                           cur_blk_width * 3);
++                    if (s->keyframe != NULL) {
++                        memcpy(s->frame->data[0] + x, s->keyframe + x,
++                               cur_blk_width * 3);
++                    }
+@@ -473 +467 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-            /* skip unchanged blocks, which have size 0 */
++             /* skip unchanged blocks, which have size 0 */
+@@ -485,2 +479 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if (!s->keyframe) {
+-            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);
++        if (!s->keyframe) {            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);

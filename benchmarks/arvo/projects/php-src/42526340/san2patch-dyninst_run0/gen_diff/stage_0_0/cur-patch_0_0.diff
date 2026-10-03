@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 9efe205abe0..49d58101951 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -216 +216,5 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		return ZEND_HASH_APPLY_REMOVE;
++		if (Z_OBJ_P(zv)->handlers) {
++			return ZEND_HASH_APPLY_REMOVE;
++		} else {
++			return ZEND_HASH_APPLY_KEEP;
++		}
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index 4d40b76854d..840cf3f21fe 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -177,9 +177,2 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-			} else {
+-				EG(exception) = old_exception;
+-			}
+-		}
+-		OBJ_RELEASE(object);
+-	}
+-}
+-
+-ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+@@ -189,0 +183 @@ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++	object->gc.u.v.flags = 0; // Initialize garbage collection flags to prevent use-after-free
+@@ -197,2 +191 @@ ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object,
+-	if (old_object->ce->default_properties_count) {
+-		zval *src = old_object->properties_table;
++	if (old_object->ce->default_properties_count) {		zval *src = old_object->properties_table;

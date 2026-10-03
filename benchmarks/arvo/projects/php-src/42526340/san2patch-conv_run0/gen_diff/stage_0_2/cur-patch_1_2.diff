@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..960d0b3de81 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1251,2 +1251,5 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
++#ifndef ZEND_TYPES_H
++#define ZEND_TYPES_H
++
++#ifdef ZEND_ENABLE_ZVAL_LONG64
++# define ZEND_MM_ALIGNMENT 8
+@@ -1254,4 +1257 @@ extern ZEND_API bool zend_rc_debug;
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
++# define ZEND_MM_ALIGNMENT 4
+@@ -1259,0 +1260 @@ extern ZEND_API bool zend_rc_debug;
++// Add missing function declarations to fix build errors
+@@ -1260,0 +1262 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (p == NULL) return 0;
+@@ -1264,0 +1267 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
++	if (p == NULL) return 0;
+@@ -1270,0 +1274 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (p == NULL) return 0;
+@@ -1273,0 +1278,5 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p == NULL) return 0;
++	return --(p->refcount);
++}}
++
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..2850285d143 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -196,0 +197,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Prevent expired pointer dereference by marking object as invalid immediately */
++		object->ce = NULL;

@@ -1,0 +1,25 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..b6db14f0 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2502,0 +2503,3 @@ xmlFreeID(xmlIDPtr id) {
++    /* Clear pointers to prevent use-after-free */
++    id->value = NULL;
++    id->name = NULL;
+diff --git a/xinclude.c b/xinclude.c
+index 72a88c99..5602c2b8 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2135,2 +2135,3 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-    for (i = start; i < ctxt->incNr; i++) {
+-	if (ctxt->incTab[i]->replace != 0) {
++// FIXME: Crash CWE-416: Use After Free
++     for (i = start; i < ctxt->incNr; i++) {
++	if (ctxt->incTab[i] != NULL && ctxt->incTab[i]->replace != 0) {
+@@ -2138 +2139,2 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            ctxt->incTab[i]->replace = 0;
++            if (ctxt->incTab[i] != NULL)
++                ctxt->incTab[i]->replace = 0;
+@@ -2144 +2146 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            if (ctxt->incTab[i]->inc != NULL) {
++            if (ctxt->incTab[i] != NULL && ctxt->incTab[i]->inc != NULL) {

@@ -1,0 +1,46 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index e71cdca50..0535ad406 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -2412,2 +2412,8 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-		pres = gf_list_get(cfg->stream.presentations, i);
+-		if (!pres || !pres->substream_groups) {
++	pres = gf_list_get(cfg->stream.presentations, i);
++	if (!pres || !pres->substream_groups) {
++		continue;
++	}
++
++	for (j = 0; pres && j < gf_list_count(pres->substream_groups); j++) {
++		group = gf_list_get(pres->substream_groups, j);
++		if (!group || !group->substreams) {
+@@ -2417,3 +2423,3 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-		for (j = 0; pres && j < gf_list_count(pres->substream_groups); j++) {
+-			group = gf_list_get(pres->substream_groups, j);
+-			if (!group || !group->substreams) {
++		for (s = 0; group && s < gf_list_count(group->substreams); s++) {
++			subs = gf_list_get(group->substreams, s);
++			if (!subs) {
+@@ -2423,10 +2429,4 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-			for (s = 0; group && s < gf_list_count(group->substreams); s++) {
+-				subs = gf_list_get(group->substreams, s);
+-				if (!subs) {
+-					continue;
+-				}
+-
+-				gf_free(subs);
+-			}
+-			gf_list_del(group->substreams);
+-			gf_free(group);
++			gf_free(subs);
++			// Fix: Clear the pointer in the list to prevent dangling pointer access
++			gf_list_rem(group->substreams, s);
++			s--;
+@@ -2434,2 +2434,2 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-		gf_list_del(pres->substream_groups);
+-		gf_free(pres);
++		gf_list_del(group->substreams);
++		gf_free(group);
+@@ -2436,0 +2437,3 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
++	gf_list_del(pres->substream_groups);
++	gf_free(pres);
++}

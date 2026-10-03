@@ -1,0 +1,26 @@
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..59b41069c 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326,8 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    {
++      struct RString *s = mrb_str_ptr(key);
++      if (s && (s->flags & MRB_STR_DEAD) == 0) {
++        hash_code = mrb_str_hash(mrb, key);
++      } else {
++        hash_code = 0;
++      }
++    }
+@@ -343 +350,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-416: Use After Free
++     break;
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..b47ecc280 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1675,0 +1676,3 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
++  /* Check if input pointer is valid before processing */
++  if (!s) return hval;
++  

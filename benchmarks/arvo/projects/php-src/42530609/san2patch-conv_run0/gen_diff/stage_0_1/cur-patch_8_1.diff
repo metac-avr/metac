@@ -1,0 +1,40 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..980dd01db3f 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,7 +46,0 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+-	[IS_OBJECT] =       (zend_rc_dtor_func_t)zend_objects_store_del,
+-	[IS_RESOURCE] =     (zend_rc_dtor_func_t)zend_list_free,
+-	[IS_REFERENCE] =    (zend_rc_dtor_func_t)zend_reference_destroy,
+-	[IS_CONSTANT_AST] = (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+-
+@@ -56,0 +50,14 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	/* Fix for CWE-416: Use After Free - Clear dangling references before object destruction */
++	if (GC_TYPE(p) == IS_OBJECT && EG(current_execute_data)) {
++		zend_execute_data *ex = EG(current_execute_data);
++		while (ex) {
++			uint32_t i;
++			for (i = 0; i < ex->func->op_array.last_var; i++) {
++				zval *cv = ZEND_CALL_VAR_NUM(ex, ex->func->op_array.vars[i]);
++				if (cv && Z_TYPE_P(cv) == IS_OBJECT && Z_OBJ_P(cv) == (zend_object*)p) {
++					ZVAL_NULL(cv);
++				}
++			}
++			ex = ex->prev_execute_data;
++		}
++	}
+@@ -58,11 +65 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-{
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++}}

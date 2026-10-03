@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..6b4ee14be0b 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -791 +791 @@ static zend_always_inline zval *_zend_hash_add_or_update_i(HashTable *ht, zend_s
+-			if (ht->pDestructor) {
++			if (ht->pDestructor && data) {  /* Check pointer validity before calling destructor */
+@@ -797 +797 @@ static zend_always_inline zval *_zend_hash_add_or_update_i(HashTable *ht, zend_s
+-	}
++  	}
+@@ -799 +799 @@ static zend_always_inline zval *_zend_hash_add_or_update_i(HashTable *ht, zend_s
+-	ZEND_HASH_IF_FULL_DO_RESIZE(ht);		/* If the Hash table is full, resize it */
++	ZEND_HASH_IF_FULL_DO_RESIZE(ht);       /* If the Hash table is full, resize it */
+@@ -2154 +2154,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (result & ZEND_HASH_APPLY_REMOVE) {
++// FIXME: Crash CWE-416: Use After Free
++ 			if (result & ZEND_HASH_APPLY_REMOVE) {
+@@ -2156 +2157,3 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				if (p >= ht->arData && p < (ht->arData + ht->nTableSize)) {
++					_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				}

@@ -1,0 +1,67 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 0f59ca608..b49445da4 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -4906,3 +4906,6 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-       flow_is_proto(flow, NDPI_PROTOCOL_MAIL_IMAPS)) {
+-      if(flow->protos.tls_quic.server_names)
+-	ndpi_free(flow->protos.tls_quic.server_names);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++        flow_is_proto(flow, NDPI_PROTOCOL_MAIL_IMAPS)) {
++      if(flow->protos.tls_quic.server_names) {
++        if(((uintptr_t)flow->protos.tls_quic.server_names & (sizeof(void*)-1)) == 0) /* Check alignment */
++	  ndpi_free(flow->protos.tls_quic.server_names);
++      }
+@@ -4910,2 +4913,4 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.alpn)
+-	ndpi_free(flow->protos.tls_quic.alpn);
++      if(flow->protos.tls_quic.alpn) {
++        if(((uintptr_t)flow->protos.tls_quic.alpn & (sizeof(void*)-1)) == 0) /* Check alignment */
++	  ndpi_free(flow->protos.tls_quic.alpn);
++      }
+@@ -4913,2 +4918,4 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.tls_supported_versions)
+-	ndpi_free(flow->protos.tls_quic.tls_supported_versions);
++      if(flow->protos.tls_quic.tls_supported_versions) {
++        if(((uintptr_t)flow->protos.tls_quic.tls_supported_versions & (sizeof(void*)-1)) == 0) /* Check alignment */
++	  ndpi_free(flow->protos.tls_quic.tls_supported_versions);
++      }
+@@ -4916,2 +4923,4 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.issuerDN)
+-	ndpi_free(flow->protos.tls_quic.issuerDN);
++      if(flow->protos.tls_quic.issuerDN) {
++        if(((uintptr_t)flow->protos.tls_quic.issuerDN & (sizeof(void*)-1)) == 0) /* Check alignment */
++	  ndpi_free(flow->protos.tls_quic.issuerDN);
++      }
+@@ -4919,2 +4928,4 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.subjectDN)
+-	ndpi_free(flow->protos.tls_quic.subjectDN);
++      if(flow->protos.tls_quic.subjectDN) {
++        if(((uintptr_t)flow->protos.tls_quic.subjectDN & (sizeof(void*)-1)) == 0) /* Check alignment */
++	  ndpi_free(flow->protos.tls_quic.subjectDN);
++      }
+@@ -4922,2 +4933,4 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.encrypted_sni.esni)
+-	ndpi_free(flow->protos.tls_quic.encrypted_sni.esni);
++      if(flow->protos.tls_quic.encrypted_sni.esni) {
++        if(((uintptr_t)flow->protos.tls_quic.encrypted_sni.esni & (sizeof(void*)-1)) == 0) /* Check alignment */
++	  ndpi_free(flow->protos.tls_quic.encrypted_sni.esni);
++      }
+diff --git a/example/reader_util.c b/example/reader_util.c
+index a7c970de7..d3275cf07 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -295,2 +295 @@ void ndpi_report_payload_stats() {
+-
+-    HASH_DEL(pstats, p);
++HASH_DEL(pstats, p);
+@@ -303 +302,2 @@ void ndpi_report_payload_stats() {
+-
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ 
+@@ -304,0 +305 @@ void ndpi_free_flow_info_half(struct ndpi_flow_info *flow) {
++  if(flow == NULL) return;
+@@ -315,2 +316 @@ extern u_int32_t current_ndpi_memory, max_ndpi_memory;
+-static void *ndpi_malloc_wrapper(size_t size) {
+-  current_ndpi_memory += size;
++static void *ndpi_malloc_wrapper(size_t size) {  current_ndpi_memory += size;

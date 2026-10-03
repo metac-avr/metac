@@ -1,0 +1,20 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..1bfb76888 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -37 +37,2 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
+@@ -39,2 +40,4 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-    x->p=(mp_limb*)mrb_realloc(mrb,x->p,size * sizeof(mp_limb));
+-    for (size_t i=x->sz; i<size; i++)
++    mp_limb* new_p = (mp_limb*)mrb_realloc(mrb, x->p, size * sizeof(mp_limb));
++    if (new_p == NULL) return;  // Handle allocation failure
++    x->p = new_p;
++    for (size_t i = x->sz; i < size; i++)
+@@ -862 +865 @@ mpz_xor(mrb_state *mrb, mpz_t *z, mpz_t *x, mpz_t *y)  /* not the most efficient
+-  mpz_realloc(mrb,z,(size_t)sz);
++  mpz_realloc(mrb,z,(size_t)sz + 1);  /* Allocate extra space to prevent overflow */
+@@ -864,0 +868 @@ mpz_xor(mrb_state *mrb, mpz_t *z, mpz_t *x, mpz_t *y)  /* not the most efficient
++  (z->p)[sz] = 0;  /* Initialize the extra element to zero */

@@ -1,0 +1,28 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..8d43afcb2 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -791,0 +792 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if ((obj->color & GC_COLOR_MASK) == GC_GRAY) return;
+@@ -1252 +1253 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    /* unknown state */
++/* unknown state */
+@@ -1260 +1261,11 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
++  /* Force complete marking phase before any sweeping */
++  if (gc->state != MRB_GC_STATE_ROOT) {
++    gc->state = MRB_GC_STATE_MARK;
++    do {
++      incremental_gc(mrb, gc, SIZE_MAX);
++    } while (gc->state != MRB_GC_STATE_SWEEP);
++  }
++  
++  /* Complete sweep phase */

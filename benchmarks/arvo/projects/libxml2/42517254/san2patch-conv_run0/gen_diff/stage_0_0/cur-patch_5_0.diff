@@ -1,0 +1,37 @@
+diff --git a/tree.c b/tree.c
+index 6a42f118..b76669b4 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3877,2 +3877,4 @@ xmlFreeNode(xmlNodePtr cur) {
+-        (cur->type != XML_COMMENT_NODE))
+-	DICT_FREE(cur->name)
++        (cur->type != XML_COMMENT_NODE)) {
++        DICT_FREE(cur->name)
++        cur->name = NULL;  /* Prevent use-after-free by clearing pointer */
++    }
+@@ -3881,6 +3883 @@ xmlFreeNode(xmlNodePtr cur) {
+-}
+-
+-/**
+- * xmlUnlinkNode:
+- * @cur:  the node
+- *
++} *
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..e85c675a 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1498 +1498,2 @@ xmlXIncludeLoadDoc(xmlXIncludeCtxtPtr ctxt, const xmlChar *url, int nr) {
+-#ifdef LIBXML_XPTR_ENABLED
++// Fixed CWE-416: Use After Free - Check node validity before XPointer processing
++ #ifdef LIBXML_XPTR_ENABLED
+@@ -1505,2 +1506,7 @@ xmlXIncludeLoadDoc(xmlXIncludeCtxtPtr ctxt, const xmlChar *url, int nr) {
+-    if (fragment != NULL) {	/* if this is an XPointer eval */
+-	ctxt->parseFlags |= XML_PARSE_NOENT;
++    if (fragment != NULL) { /* if this is an XPointer eval */
++        /* Validate that referenced nodes are still valid before processing */
++        if (ctxt != NULL && ctxt->incs != NULL && nr >= 0) {
++	    ctxt->parseFlags |= XML_PARSE_NOENT;
++        } else {
++            return -1; /* Invalid context or node reference */
++        }

@@ -1,0 +1,27 @@
+diff --git a/src/variable.c b/src/variable.c
+index 3088783ec..be937d64f 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -239,0 +240 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++  if (!mrb) return 0;
+@@ -247 +248 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
+-  iv_foreach(mrb, t, iv_mark_i, 0);
++  if (t) iv_foreach(mrb, t, iv_mark_i, 0);
+@@ -257,2 +258 @@ void
+-mrb_gc_free_gv(mrb_state *mrb)
+-{
++mrb_gc_free_gv(mrb_state *mrb){
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..550cc1ae2 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1156,3 +1156,6 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Add safety check to prevent expired pointer dereference */
++      if (page != NULL) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }

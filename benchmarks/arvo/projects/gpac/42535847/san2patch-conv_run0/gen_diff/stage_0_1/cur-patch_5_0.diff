@@ -1,0 +1,29 @@
+diff --git a/src/isomedia/meta.c b/src/isomedia/meta.c
+index 65660dcba..88e44640c 100644
+--- a/src/isomedia/meta.c
++++ b/src/isomedia/meta.c
+@@ -371,4 +371,8 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-				if (use_annex_b) {
+-					hvcc->config->write_annex_b = GF_TRUE;
+-					gf_odf_hevc_cfg_write_bs(hvcc->config, item_bs);
+-					hvcc->config->write_annex_b = GF_FALSE;
++				if (use_annex_b && hvcc->config) {
++					// Validate config pointer is not expired/invalid before use
++					if (gf_odf_hevc_cfg_is_valid(hvcc->config)) {
++						hvcc->config->write_annex_b = GF_TRUE;
++						gf_odf_hevc_cfg_write_bs(hvcc->config, item_bs);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 						hvcc->config->write_annex_b = GF_FALSE;
++					}
+@@ -382,4 +386,7 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-				if (use_annex_b) {
+-					avcc->config->write_annex_b = GF_TRUE;
+-					gf_odf_avc_cfg_write_bs(avcc->config, item_bs);
+-					avcc->config->write_annex_b = GF_FALSE;
++				if (use_annex_b && avcc->config) {
++					// Validate config pointer is not expired/invalid before use
++					if (gf_odf_avc_cfg_is_valid(avcc->config)) {
++						avcc->config->write_annex_b = GF_TRUE;
++						gf_odf_avc_cfg_write_bs(avcc->config, item_bs);
++						avcc->config->write_annex_b = GF_FALSE;
++					}

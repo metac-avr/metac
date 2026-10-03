@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..51660570aa9 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -41 +41 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (Z_REFCOUNTED_P(zval_ptr) && !GC_IS_FREED(Z_COUNTED_P(zval_ptr))) {
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..bdeac073d0b 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -391 +391,5 @@ void shutdown_executor(void) /* {{{ */
+-	zend_shutdown_executor_values(fast_shutdown);
++	/* Check if garbage collection is in progress to avoid accessing freed memory */
++	zend_bool skip_executor_cleanup = GC_G(gc_running);
++	if (!skip_executor_cleanup) {
++		zend_shutdown_executor_values(fast_shutdown);
++	}

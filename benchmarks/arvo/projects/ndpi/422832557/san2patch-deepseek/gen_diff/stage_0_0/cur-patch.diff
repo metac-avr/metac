@@ -1,0 +1,16 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 4c33aec1a..db3f71ca3 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1048,3 +1048,8 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+-  if(packet->server_line.ptr != NULL)
+-    ndpi_check_http_server(ndpi_struct, flow, (const char *)packet->server_line.ptr, packet->server_line.len);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++  if(packet->server_line.ptr != NULL) {
++    u_int16_t server_len = packet->server_line.len;
++    if(server_len >= sizeof(flow->http.server))
++      server_len = sizeof(flow->http.server) - 1;
++    ndpi_check_http_server(ndpi_struct, flow, (const char *)packet->server_line.ptr, server_len);
++  }

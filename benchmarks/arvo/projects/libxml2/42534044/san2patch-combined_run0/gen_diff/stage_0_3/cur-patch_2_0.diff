@@ -1,0 +1,29 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..d0fdf816 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3635,0 +3636,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Zero out critical fields to prevent dangling pointer access */
++	    memset(&cur->next, 0, sizeof(xmlNodePtr));
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..edbc20f1 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -593 +593 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
++if (child == NULL)
+@@ -601,3 +601,8 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
+-
+-    while (cur->parent)
++// FIXME: Crash CWE-416: Use After Free
++     xmlNodePtr cur = node;
++
++    while (cur != NULL && cur->parent != NULL) {
++        if (cur->type <= XML_ELEMENT_NODE || cur->type >= XML_ENTITY_DECL) {
++            if (cur->name == NULL) 
++                return NULL;
++        }
+@@ -604,0 +610 @@ nodeGetTree(xmlNodePtr node) {
++    }

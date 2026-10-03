@@ -1,0 +1,38 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index 229d9890251..c05c3ba64c5 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2327,15 +2327,18 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	update_errors_warnings(err);
+-
+-	/* If called from a constructor throw an exception */
+-	if ((flags & PHP_DATE_INIT_CTOR) && err && err->error_count) {
+-		/* spit out the first library error message, at least */
+-		zend_throw_exception_ex(NULL, 0, "Failed to parse time string (%s) at position %d (%c): %s", time_str,
+-			err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
+-	}
+-	if (err && err->error_count) {
+-		timelib_time_dtor(dateobj->time);
+-		dateobj->time = 0;
+-		return 0;
+-	}
+-
+-	if (timezone_object) {
++	if (err) {
++		int error_count = err->error_count;
++		timelib_error_message *error_messages = err->error_messages;
++		update_errors_warnings(err);
++		/* If called from a constructor throw an exception */
++		if ((flags & PHP_DATE_INIT_CTOR) && error_count) {
++			/* spit out the first library error message, at least */
++			zend_throw_exception_ex(NULL, 0, "Failed to parse time string (%s) at position %d (%c): %s", time_str,
++				error_messages[0].position, error_messages[0].character, error_messages[0].message);
++		}
++		if (error_count) {
++			timelib_time_dtor(dateobj->time);
++			dateobj->time = 0;
++			return 0;
++		}
++	} else {
++		update_errors_warnings(err);
++	}	if (timezone_object) {

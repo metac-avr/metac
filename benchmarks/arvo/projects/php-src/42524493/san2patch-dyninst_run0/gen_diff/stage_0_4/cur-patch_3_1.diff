@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..e687013af44 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -215,0 +216,4 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++		/* Check if the object is still valid before accessing it */
++		if (EXPECTED(zv != NULL) && EXPECTED(Z_OBJ_P(zv) != NULL)) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..8d10fdf550f 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1301 +1301,5 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	zend_refcounted_h *p = Z_COUNTED_P(pz);
++	if (!p || (uintptr_t)p < 0x1000 || (uintptr_t)p > ~(uintptr_t)0x1000) {
++		return 0;
++	}
++	return GC_REFCOUNT(p);
+@@ -1311,0 +1316 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++

@@ -1,0 +1,30 @@
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index 6ea6c46d8f..062c011718 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -187 +187 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    }
++     }
+@@ -201,0 +202,4 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    // Bounds check before reading bits
++    if (offset + 2 > headsize * 8)
++        return AVERROR_INVALIDDATA;
+@@ -202,0 +207,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    if (offset + 2 + (const uint32_t[]){0, 0, 10, 30}[ctrl] > headsize * 8)
++        return AVERROR_INVALIDDATA;
+@@ -203,0 +210,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    if (get_bits_count(gb) + 2 > headsize * 8)
++        return AVERROR_INVALIDDATA;
+@@ -204,0 +213,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    if (get_bits_count(gb) + (const uint32_t[]){0, 0, 8, 10}[ctrl] > headsize * 8)
++        return AVERROR_INVALIDDATA;
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index 65dc080ddb..c4328f62e4 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -331,0 +332,4 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++    // Check if skip would go beyond buffer bounds
++    if (s->index + n > 8 * (s->buffer_end - s->buffer)) {
++        return 0; // Return safe value instead of reading OOB
++    }

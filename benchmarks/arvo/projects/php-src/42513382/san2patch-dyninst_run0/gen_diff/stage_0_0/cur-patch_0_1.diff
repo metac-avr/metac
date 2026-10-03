@@ -1,0 +1,42 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..a0b1a181b35 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -276,0 +277,2 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
++	if (intern == NULL) return NULL;
++	if (intern->obj == NULL) return NULL;
+@@ -284,0 +287 @@ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{
++	if (class_type == NULL) return NULL;
+@@ -285,0 +289 @@ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{
++	if (intern == NULL) return NULL;
+@@ -295,2 +299 @@ static zval *reflection_instantiate(zend_class_entry *pce, zval *object) /* {{{
+-{
+-	object_init_ex(object, pce);
++{	object_init_ex(object, pce);
+@@ -6964 +6967 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
++if (zend_parse_parameters_none() == FAILURE) {
+@@ -6971,0 +6975,6 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
++	// Fixed CWE-125: Out-of-bounds Read - Added null check and bounds validation before accessing enum case value
++	if (Z_TYPE(ref->value) == IS_OBJECT && Z_OBJ(ref->value) != NULL) {
++		zend_object *obj = Z_OBJ(ref->value);
++		if (obj->ce != NULL && obj->handlers != NULL) {
++			ZEND_ASSERT(intern->ce->enum_backing_type != IS_UNDEF);
++			zval *member_p = zend_enum_fetch_case_value(obj);
+@@ -6973,4 +6982,7 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	ZEND_ASSERT(intern->ce->enum_backing_type != IS_UNDEF);
+-	zval *member_p = zend_enum_fetch_case_value(Z_OBJ(ref->value));
+-
+-	ZVAL_COPY_OR_DUP(return_value, member_p);
++			ZVAL_COPY_OR_DUP(return_value, member_p);
++		} else {
++			RETURN_NULL();
++		}
++	} else {
++		RETURN_NULL();
++	}
+@@ -6983,3 +6995 @@ ZEND_METHOD(ReflectionFiber, __construct)
+-	reflection_object *intern;
+-
+-	object = ZEND_THIS;
++	reflection_object *intern;	object = ZEND_THIS;

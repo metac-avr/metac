@@ -1,0 +1,55 @@
+diff --git a/src/variable.c b/src/variable.c
+index 3088783ec..bff0a9558 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -230,7 +229,0 @@ iv_copy(mrb_state *mrb, iv_tbl *t)
+-static void
+-iv_free(mrb_state *mrb, iv_tbl *t)
+-{
+-  mrb_free(mrb, t->ptr);
+-  mrb_free(mrb, t);
+-}
+-
+@@ -240 +233,6 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (!mrb_immediate_p(v)) {
++    struct RBasic *obj = mrb_basic_ptr(v);
++    if (obj->tt != MRB_TT_FREE && !mrb_object_dead_p(mrb, obj)) {
++      mrb_gc_mark_value(mrb, v);
++    }
++  }
+@@ -242,10 +240 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-}
+-
+-static void
+-mark_tbl(mrb_state *mrb, iv_tbl *t)
+-{
+-  iv_foreach(mrb, t, iv_mark_i, 0);
+-}
+-
+-void
+-mrb_gc_mark_gv(mrb_state *mrb)
++}mrb_gc_mark_gv(mrb_state *mrb)
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..b8d98eb55 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -643 +643 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -647 +647,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super && !is_dead(gc, (struct RBasic*)c->super)) {
++        mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      }
+@@ -660,2 +662,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper && !is_dead(gc, (struct RBasic*)p->upper)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++      }
++      if (p->e.env && !is_dead(gc, (struct RBasic*)p->e.env)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      }
+@@ -664 +669,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-

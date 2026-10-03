@@ -1,0 +1,17 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..12bb2e846 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -189,0 +190,10 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Update all call info stack pointers to prevent use-after-free */
++  mrb_callinfo *ci = mrb->c->ci;
++  while (ci >= mrb->c->cibase) {
++    if (ci->stack) {
++      ptrdiff_t stack_off = ci->stack - oldbase;
++      ci->stack = newstack + stack_off;
++    }
++    ci--;
++  }
++
+@@ -196,0 +207 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++

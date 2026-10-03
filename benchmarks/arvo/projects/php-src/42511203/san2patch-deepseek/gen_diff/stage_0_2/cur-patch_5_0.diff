@@ -1,0 +1,42 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..f59dcc67fcc 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -39580,8 +39580,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_CONST_HA
+-		do {
+-			if (IS_CONST != IS_UNUSED && UNEXPECTED(Z_ISREF_P(var_ptr))) {
+-				zend_reference *ref = Z_REF_P(var_ptr);
+-				var_ptr = Z_REFVAL_P(var_ptr);
+-				if (UNEXPECTED(ZEND_REF_HAS_TYPE_SOURCES(ref))) {
+-					zend_binary_assign_op_typed_ref(ref, value OPLINE_CC EXECUTE_DATA_CC);
+-					break;
+-				}
++		if (UNEXPECTED(Z_TYPE_P(var_ptr) == IS_UNDEF || Z_TYPE_P(var_ptr) == IS_NULL)) {
++			FREE_OP((opline+1)->op1_type, (opline+1)->op1.var);
++			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++				ZVAL_NULL(EX_VAR(opline->result.var));
+@@ -39589,2 +39585,13 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_CONST_HA
+-			zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
+-		} while (0);
++		} else {
++			do {
++				if (IS_CONST != IS_UNUSED && UNEXPECTED(Z_ISREF_P(var_ptr))) {
++					zend_reference *ref = Z_REF_P(var_ptr);
++					var_ptr = Z_REFVAL_P(var_ptr);
++					if (UNEXPECTED(ZEND_REF_HAS_TYPE_SOURCES(ref))) {
++						zend_binary_assign_op_typed_ref(ref, value OPLINE_CC EXECUTE_DATA_CC);
++						break;
++					}
++				}
++				zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			} while (0);
+@@ -39592,2 +39599,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_CONST_HA
+-		if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
+-			ZVAL_COPY(EX_VAR(opline->result.var), var_ptr);
++			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++				ZVAL_COPY(EX_VAR(opline->result.var), var_ptr);
++			}
++			FREE_OP((opline+1)->op1_type, (opline+1)->op1.var);
+@@ -39595 +39603,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_CONST_HA
+-		FREE_OP((opline+1)->op1_type, (opline+1)->op1.var);

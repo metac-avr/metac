@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..e0f9f6ce9 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -478,0 +479 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
+@@ -481 +482,8 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    mrb_stack_extend(mrb, argc + 3);
++    
++    // Validate stack extension size to prevent buffer overflow
++    mrb_int required_stack = argc + 3;
++    if (required_stack < 0 || required_stack > MRB_STACK_MAX) {
++      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
++    
++    mrb_stack_extend(mrb, required_stack);
+@@ -507 +515,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-        mrb_stack_extend(mrb, p->body.irep->nregs + argc);
++        mrb_int proc_stack_size = p->body.irep->nregs + argc;
++        if (proc_stack_size < 0 || proc_stack_size > MRB_STACK_MAX) {
++          mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++        }
++        mrb_stack_extend(mrb, proc_stack_size);

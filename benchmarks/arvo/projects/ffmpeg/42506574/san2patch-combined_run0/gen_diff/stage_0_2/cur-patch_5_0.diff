@@ -1,0 +1,35 @@
+diff --git a/libavcodec/jrevdct.c b/libavcodec/jrevdct.c
+index a1a0f571ad..ace3f51582 100644
+--- a/libavcodec/jrevdct.c
++++ b/libavcodec/jrevdct.c
+@@ -1161 +1161 @@ void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-{
++ {
+@@ -1163 +1163,4 @@ void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-    ff_put_pixels_clamped_c(block, dest, line_size);
++    // Prevent out-of-bounds write by validating parameters
++    if (block != NULL && dest != NULL) {
++        ff_put_pixels_clamped_c(block, dest, line_size);
++    }
+@@ -1170 +1173 @@ void ff_jref_idct_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-}
++}
+\ No newline at end of file
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..24414bee2b 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -1622 +1622,2 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-            int16_t (*block)[64] = &s->blocks[c][block_idx];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             int16_t (*block)[64] = &s->blocks[c][block_idx];
+@@ -1624,3 +1625,6 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-                s->idsp.idct_put(ptr, linesize, *block);
+-                if (s->bits & 7)
+-                    shift_output(s, ptr, linesize);
++                // Prevent buffer overflow by checking available space
++                if (mb_y * 8 + 8 <= (s->height >> s->avctx->lowres)) {
++                    s->idsp.idct_put(ptr, linesize, *block);
++                    if (s->bits & 7)
++                        shift_output(s, ptr, linesize);
++                }

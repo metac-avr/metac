@@ -1,0 +1,50 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..b1ea24450 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -147,0 +149 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  if (t->ptr == NULL) return 0; /* Add null pointer check for t->ptr */
+@@ -159,2 +161,5 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-        *pp = vals[pos];
+-        return key;
++        if (vals + pos < (union mt_ptr*)((char*)t->ptr + t->alloc * sizeof(union mt_ptr))) { /* Bounds check */
++          *pp = vals[pos];
++          return key;
++        }
++        return 0;
+@@ -166,0 +172 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (pos >= t->alloc) return 0; /* Add bounds check */
+@@ -169 +175,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      *pp = vals[pos];
++      if (vals + pos >= (union mt_ptr*)t->ptr && vals + pos < (union mt_ptr*)((char*)t->ptr + t->alloc * sizeof(union mt_ptr))) { /* Bounds check */
++        *pp = vals[pos];
+@@ -171,3 +178,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      if (pos < 0x100) {
+-        mt_cache[cpos] = pos;
+-      }
++        if (pos < 0x100) {
++          mt_cache[cpos] = pos;
++        }
+@@ -175 +182,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      return key;
++        return key;
++      }
++      return 0;
+diff --git a/src/vm.c b/src/vm.c
+index 6f6b9b001..4a8463ceb 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1763 +1763,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      recv = regs[0];
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       recv = regs[0];
+@@ -1764,0 +1766,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      
++      // Validate target_class before method search to prevent expired pointer dereference
++      if (ci->u.target_class == NULL) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid target class for method call");
++      }

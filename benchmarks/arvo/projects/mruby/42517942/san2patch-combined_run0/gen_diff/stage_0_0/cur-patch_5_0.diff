@@ -1,0 +1,66 @@
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..eafa5ed99 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -1507 +1507 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      srcidx -= count;
++      if (count > srcidx) srcidx = 0; else srcidx -= count;
+@@ -1512 +1512 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      srcidx = count;
++      if (count > srclen) srcidx = srclen; else srcidx = count;
+@@ -1516,0 +1517,2 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
++    if (srcidx < 0) srcidx = 0;
++    if (srcidx > srclen) srcidx = srclen;
+@@ -1518 +1520,2 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-    switch (dir) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     switch (dir) {
+@@ -1520 +1523 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      srcidx += unpack_hex(mrb, sptr, srclen - srcidx, result, count, flags);
++      if (srcidx < srclen) srcidx += unpack_hex(mrb, sptr, srclen - srcidx, result, count, flags);
+@@ -1523 +1526 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      srcidx += unpack_str(mrb, sptr, srclen - srcidx, result, count, flags);
++      if (srcidx < srclen) srcidx += unpack_str(mrb, sptr, srclen - srcidx, result, count, flags);
+@@ -1526 +1529 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      srcidx += unpack_base64(mrb, sptr, srclen - srcidx, result);
++      if (srcidx < srclen) srcidx += unpack_base64(mrb, sptr, srclen - srcidx, result);
+@@ -1529 +1532 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-      srcidx += unpack_qenc(mrb, sptr, srclen - srcidx, result);
++      if (srcidx < srclen) srcidx += unpack_qenc(mrb, sptr, srclen - srcidx, result);
+@@ -1542,0 +1546,2 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
++      if (srcidx < 0) srcidx = 0;
++      if (srcidx > srclen) srcidx = srclen;
+@@ -1546 +1551 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_char(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx < srclen) srcidx += unpack_char(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1549 +1554 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_short(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx < srclen) srcidx += unpack_short(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1552 +1557 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_long(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx < srclen) srcidx += unpack_long(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1555 +1560 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_quad(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx < srclen) srcidx += unpack_quad(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1558 +1563 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_BER(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx < srclen) srcidx += unpack_BER(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1562 +1567 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx < srclen) srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1565 +1570 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx < srclen) srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1569 +1574 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_utf8(mrb, sptr, srclen - srcidx, result, flags);
++        if (srcidx < srclen) srcidx += unpack_utf8(mrb, sptr, srclen - srcidx, result, flags);
+@@ -1591 +1596,4 @@ mrb_pack_unpack(mrb_state *mrb, mrb_value str)
+-  return pack_unpack(mrb, str, 0);
++  if (!mrb_nil_p(str)) {
++    return pack_unpack(mrb, str, 0);
++  }
++  return mrb_nil_value();
+@@ -1601,2 +1609 @@ void
+-mrb_mruby_pack_gem_init(mrb_state *mrb)
+-{
++mrb_mruby_pack_gem_init(mrb_state *mrb){

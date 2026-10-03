@@ -1,0 +1,27 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..163561d02 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1252 +1252 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    /* unknown state */
++/* unknown state */
+@@ -1260 +1260,2 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -1263,0 +1265,3 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
++  
++  /* Clear marking queue to avoid expired pointer dereference vulnerability */
++  gc->mark_stack_pos = gc->mark_stack_start;
+@@ -1369 +1373 @@ mrb_full_gc(mrb_state *mrb)
+-    /* finish half baked GC cycle */
++    /* finish half backed GC cycle */
+@@ -1371 +1375,7 @@ mrb_full_gc(mrb_state *mrb)
+-  }
++    /* Clear marking queues to prevent expired pointer dereference */
++    while (gc->gray_list) {
++      mrb_gc_markable *obj = gc->gray_list;
++      gc->gray_list = obj->gcnext;
++      obj->gcnext = NULL;
++    }
++   }

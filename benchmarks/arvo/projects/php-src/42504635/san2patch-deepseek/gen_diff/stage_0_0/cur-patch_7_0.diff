@@ -1,0 +1,13 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..6da78502ef2 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55 +55,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -57 +58,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (EXPECTED(GC_REFCOUNT(p) == 0)) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

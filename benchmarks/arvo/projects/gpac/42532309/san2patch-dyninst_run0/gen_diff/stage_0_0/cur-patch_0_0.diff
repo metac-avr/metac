@@ -1,0 +1,36 @@
+diff --git a/src/filters/reframe_mp3.c b/src/filters/reframe_mp3.c
+index f5a852d4d..e2de79105 100644
+--- a/src/filters/reframe_mp3.c
++++ b/src/filters/reframe_mp3.c
+@@ -643,15 +643,16 @@ GF_Err mp3_dmx_process(GF_Filter *filter)
+-			//make sure we are sync!
+-			if (sync[size] !=0xFF) {
+-				if ((sync[size]=='T') && (sync[size+1]=='A') && (sync[size+2]=='G')) {
+-					skip_id3v1=GF_TRUE;
+-				} else {
+-					GF_LOG(ctx->is_sync ? GF_LOG_WARNING : GF_LOG_DEBUG, GF_LOG_MEDIA, ("[MP3Dmx] invalid frame, resyncing\n"));
+-					ctx->is_sync = GF_FALSE;
+-					goto drop_byte;
+-				}
+-			}
+-		}
+-		//otherwise wait for next frame, unless if end of stream
+-		else if (pck) {
+-			break;
+-		}
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                        //make sure we are sync!
++                        if (sync[size] !=0xFF) {
++                                if ((size+2 < remain-bytes_skipped) && (sync[size]=='T') && (sync[size+1]=='A') && (sync[size+2]=='G')) {
++                                        skip_id3v1=GF_TRUE;
++                                } else {
++                                        GF_LOG(ctx->is_sync ? GF_LOG_WARNING : GF_LOG_DEBUG, GF_LOG_MEDIA, ("[MP3Dmx] invalid frame, resyncing\n"));
++                                        ctx->is_sync = GF_FALSE;
++                                        goto drop_byte;
++                                }
++                        }
++                }
++                //otherwise wait for next frame, unless if end of stream
++                else if (pck) {
++                        break;
++                }

@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..481eefc87bc 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,2 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+@@ -1153 +1151,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1155 +1154 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	return p ? p->refcount : 0;
+@@ -1165,2 +1164 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
+-}
++	return ++(p->refcount);}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..9e793836883 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1684 +1684 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++// Fixed CWE-416: Use After Free - Clear pointer to prevent reuse
+@@ -1685,0 +1686 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	ht = NULL;
+@@ -1688,5 +1688,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-

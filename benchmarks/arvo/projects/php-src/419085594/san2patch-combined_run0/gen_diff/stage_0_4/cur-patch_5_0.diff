@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..108ae5d3f89 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1413,0 +1414,4 @@ static zend_always_inline int zend_binary_op(zval *ret, zval *op1, zval *op2 OPL
++	if (UNEXPECTED(ret == NULL || op1 == NULL || op2 == NULL)) {
++		return FAILURE;
++	}
++
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..06bede63576 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45977 +45977 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-		dim = NULL;
++ 		dim = NULL;
+@@ -46006 +46006,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-			zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			
++			zval *safe_value = value;
++			zval temp_copy;
++			if (value) {
++				ZVAL_COPY(&temp_copy, value);
++				safe_value = &temp_copy;
++			}
++			zend_binary_op(var_ptr, var_ptr, safe_value OPLINE_CC);
++			if (safe_value == &temp_copy) {
++				zval_ptr_dtor(safe_value);
++			}

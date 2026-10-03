@@ -1,0 +1,52 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..e011c88ac92 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756,10 +756 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
+-	}
+-	return zend_hash_lookup(ht, offset_key);
+-
+-num_index:
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
++static zend_always_inline zend_long zend_dval_to_lval_safe(double d)
+@@ -767 +758,6 @@ static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int typ
+-	zend_long offset;
++	zend_long l = zend_dval_to_lval(d);
++	if (!zend_is_long_compatible(d, l)) {
++		zend_value_error("Implicit conversion from float to int loses precision");
++	}
++	return l;
++}	zend_long offset;
+diff --git a/Zend/zend_operators.h b/Zend/zend_operators.h
+index 410745cbc34..fd95ac1211e 100644
+--- a/Zend/zend_operators.h
++++ b/Zend/zend_operators.h
+@@ -138,18 +137,0 @@ static zend_always_inline bool zend_is_long_compatible(double d, zend_long l) {
+-	return (double)l == d;
+-}
+-
+-ZEND_API void zend_incompatible_double_to_long_error(double d);
+-ZEND_API void zend_incompatible_string_to_long_error(const zend_string *s);
+-
+-static zend_always_inline zend_long zend_dval_to_lval_safe(double d)
+-{
+-	zend_long l = zend_dval_to_lval(d);
+-	if (!zend_is_long_compatible(d, l)) {
+-		zend_incompatible_double_to_long_error(d);
+-	}
+-	return l;
+-}
+-
+-#define ZEND_IS_DIGIT(c) ((c) >= '0' && (c) <= '9')
+-#define ZEND_IS_XDIGIT(c) (((c) >= 'A' && (c) <= 'F') || ((c) >= 'a' && (c) <= 'f'))
+-
+@@ -159,0 +142,4 @@ static zend_always_inline zend_uchar is_numeric_string_ex(const char *str, size_
++		return _is_numeric_string_ex(str, length, lval, dval, allow_errors, oflow_info, trailing_data);
++	}
++	return is_numeric_string_ex(str, length, lval, dval, allow_errors, NULL, NULL);
++}	if (*str > '9') {

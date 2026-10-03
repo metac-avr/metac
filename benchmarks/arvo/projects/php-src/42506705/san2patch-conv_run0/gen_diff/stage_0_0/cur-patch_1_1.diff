@@ -1,0 +1,20 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..e8f522761f4 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -420,0 +421,7 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
++	/* Validate hash table before access - prevent use-after-free */
++	if (UNEXPECTED(GC_DELREF(&ht->gc) < 0)) {
++		GC_ADDREF(&ht->gc);
++		ZVAL_NULL(result);
++		return;
++	}
++	GC_ADDREF(&ht->gc);
+@@ -430,0 +438,7 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
++	/* Check if hash table is valid before accessing elements */
++	if (UNEXPECTED(GC_DELREF(&ht->gc) < 0)) {
++		GC_ADDREF(&ht->gc);
++		ZVAL_NULL(result);
++		goto num_undef;
++	}
++	GC_ADDREF(&ht->gc);

@@ -1,0 +1,25 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..ccad70062 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -506,0 +507,6 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
++			// Ensure section_start is within valid bounds before proceeding
++			if (section_start >= sec->section_size) {
++				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Section start position out of bounds\n"));
++				gf_free(section);
++				return;
++			}
+@@ -508,3 +514,10 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
+-			section->data = (unsigned char*)gf_malloc(sizeof(unsigned char)*section->data_size);
+-			memcpy(section->data, sec->section + section_start, sizeof(unsigned char)*section->data_size);
+-			gf_list_add(t->sections, section);
++			// Additional bounds check to prevent out-of-bounds read
++			if (section->data_size > 0 && (section_start + section->data_size) <= sec->section_size) {
++				section->data = (unsigned char*)gf_malloc(sizeof(unsigned char)*section->data_size);
++				memcpy(section->data, sec->section + section_start, sizeof(unsigned char)*section->data_size);
++				gf_list_add(t->sections, section);
++			} else {
++				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Section data would exceed buffer bounds\n"));
++				gf_free(section);
++				return;
++			}

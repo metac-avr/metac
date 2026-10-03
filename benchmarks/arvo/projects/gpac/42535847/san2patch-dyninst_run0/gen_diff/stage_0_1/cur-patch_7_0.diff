@@ -1,0 +1,40 @@
+diff --git a/src/filters/isoffin_read_ch.c b/src/filters/isoffin_read_ch.c
+index 225c8ef15..05d5772e3 100644
+--- a/src/filters/isoffin_read_ch.c
++++ b/src/filters/isoffin_read_ch.c
+@@ -300 +300,2 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
+-	ch->sample->duration = 1000;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	ch->sample->duration = 1000;
+@@ -302 +303,8 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
+-	gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &ch->sample->data, &ch->sample->dataLength, &ch->static_sample->alloc_size, NULL, GF_FALSE);
++	GF_Err extract_err = GF_OK;
++	if (ch->owner && ch->owner->mov) { // Validate pointers before use
++		extract_err = gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &ch->sample->data, &ch->sample->dataLength, &ch->static_sample->alloc_size, NULL, GF_FALSE);
++	}
++	if (extract_err != GF_OK) {
++		ch->last_state = extract_err;
++		return;
++	}
+diff --git a/src/filters/isoffin_read.c b/src/filters/isoffin_read.c
+index 2f08cf8f9..79b45267e 100644
+--- a/src/filters/isoffin_read.c
++++ b/src/filters/isoffin_read.c
+@@ -1482 +1482,2 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -1484 +1485,8 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-				isor_reader_get_sample_from_item(ch);
++				// Add bounds check and null pointer validation
++				if (ch && ch->item_id && ch->item_id <= ch->max_item_id) {
++					isor_reader_get_sample_from_item(ch);
++				} else {
++					// Return error instead of crashing
++					ch->last_state = GF_INVALID_CONFIGURATION;
++					break;
++				}
+@@ -1494,2 +1502 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-				}
+-			}
++				}			}

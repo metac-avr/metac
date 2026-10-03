@@ -1,0 +1,16 @@
+diff --git a/ext/opcache/jit/zend_jit.c b/ext/opcache/jit/zend_jit.c
+index 5143b977ed9..7352d94a330 100644
+--- a/ext/opcache/jit/zend_jit.c
++++ b/ext/opcache/jit/zend_jit.c
+@@ -426 +426 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
+-						return 1;
++return 1;
+@@ -428,0 +429,8 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
++// Fixed CWE-416: Use After Free - Added memory safety check before accessing array
++			if (call_info && call_info->caller_call_opline) {
++				zend_object *obj = (call_info->caller_call_opline->op1_type == IS_VAR) ? 
++					Z_OBJ_P(EX_VAR(call_info->caller_call_opline->op1.var)) : NULL;
++				if (obj && GC_IS_REFCOUNTED(obj) && GC_DELREF(obj) <= 0) {
++					return 0; // Object is being destroyed, avoid use-after-free
++				}
++			}

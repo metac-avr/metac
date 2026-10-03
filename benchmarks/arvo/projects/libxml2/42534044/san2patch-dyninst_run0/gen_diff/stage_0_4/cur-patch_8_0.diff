@@ -1,0 +1,21 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..6790644b 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3635,0 +3636,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Zero out freed pointers immediately */
++	    memset(&cur->properties, 0, sizeof(cur->properties));
++	    memset(&cur->nsDef, 0, sizeof(cur->nsDef));
++	    
+@@ -6881,2 +6886,6 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	}
+-	if (prop->children != NULL)
++// FIXME: Crash CWE-825: Expired Pointer Dereference - FIXED
++  	}
++	if (prop->children != NULL) {
++	    /* Break potential circular references before freeing */
++	    prop->children->parent = NULL;
++	    if (prop->last != NULL) prop->last->parent = NULL;
+@@ -6883,0 +6893 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++	}

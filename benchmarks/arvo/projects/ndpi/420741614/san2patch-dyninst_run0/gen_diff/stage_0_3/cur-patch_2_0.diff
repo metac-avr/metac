@@ -1,0 +1,46 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index dcdde6966..325ea1382 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -7133 +7133,3 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", kind);
++		  int max_write_len = sizeof(options_fp) - options_fp_len - 1;
++		  if(max_write_len > 0) { 
++		    rc = snprintf(&options_fp[options_fp_len], max_write_len + 1, "%02x", kind);
+@@ -7135,2 +7137,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp)))
+-		    break;
++		    if((rc < 0) || (rc > max_write_len))
++		      break;
+@@ -7138 +7140,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  options_fp_len += rc;
++  		    options_fp_len += rc;
++		  } else break;
+@@ -7140 +7143,3 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&fingerprint[fp_idx], sizeof(fingerprint)-fp_idx, "%s%u", (i > 0) ? "-" : "", kind);
++		  int max_write_len = sizeof(fingerprint) - fp_idx - 1;
++		  if(max_write_len > 0) { 
++		    rc = snprintf(&fingerprint[fp_idx], max_write_len + 1, "%s%u", (i > 0) ? "-" : "", kind);
+@@ -7142,2 +7147,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(fp_idx + rc) == sizeof(fingerprint)))
+-		    break;
++		    if((rc < 0) || (rc > max_write_len))
++		      break;
+@@ -7145 +7150,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  fp_idx += rc;
++		    fp_idx += rc;
++		  } else break;
+@@ -7196,5 +7202,8 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-			rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", options[j]);
+-			if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp))) break;
+-
+-			options_fp_len += rc;
+-			j++, opt_len--;
++		        int max_write_len = sizeof(options_fp) - options_fp_len - 1;
++		        if(max_write_len > 0) {
++		          rc = snprintf(&options_fp[options_fp_len], max_write_len + 1, "%02x", options[j]);
++		          if((rc < 0) || (rc > max_write_len)) break;
++
++		          options_fp_len += rc;
++		          j++, opt_len--;
++		        } else break;

@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..fb968c4c3c6 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -291 +291 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-
++ 
+@@ -298,0 +299,6 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++	} else {
++		// Ensure filename is properly handled even if not used in call frame
++		if (filename) {
++			zend_string_addref(filename);
++			zend_string_release(filename);
++		}
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..b7db7b9073d 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,6 +6770 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
+-		}
++        }
+@@ -6777,0 +6773 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -6778,0 +6775 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	zend_bool success;
+@@ -6780 +6777,2 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
++	success = zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename);
++	if (SUCCESS != success) {
+@@ -6783 +6781,8 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-
++	
++	// Clone the zval to ensure we have our own copy and avoid use-after-free
++	if (Z_TYPE(obj) == IS_OBJECT) {
++		zend_object *clone_obj = zend_objects_clone_obj(&obj);
++		if (clone_obj) {
++			ZVAL_OBJ(&obj, clone_obj);
++		}
++	}
+@@ -6790,2 +6795 @@ ZEND_METHOD(ReflectionEnum, __construct)
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++	if (EG(exception)) {		RETURN_THROWS();

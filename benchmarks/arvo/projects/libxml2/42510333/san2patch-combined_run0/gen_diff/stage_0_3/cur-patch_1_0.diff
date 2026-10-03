@@ -1,0 +1,19 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..c7172c8d 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2539,0 +2540 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
++    int result;
+@@ -2546 +2547,4 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
+-    return(xmlXIncludeProcessTreeFlagsData(tree, flags, data));
++    result = xmlXIncludeProcessTreeFlagsData(tree, flags, data);
++    /* Ensure no dangling pointers after processing */
++    doc = NULL;  /* Prevent accidental reuse */
++    return(result);
+diff --git a/tree.c b/tree.c
+index 8077348a..a096e86b 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3750,0 +3751,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    /* Fix: Clear all node pointers to prevent dangling references */
++	    memset(&(cur->parent), 0, sizeof(xmlNodePtr) * 4); /* parent, children, last, next */

@@ -1,0 +1,31 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..437ba801b 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -185 +185,2 @@ int is_version_with_ietf_long_header(uint32_t version)
+-int quic_len(const uint8_t *buf, uint64_t *value)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ int quic_len(const uint8_t *buf, uint64_t *value)
+@@ -186,0 +188,3 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  if (!buf || !value) {
++    return 0;
++  }
+@@ -193 +197 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ntohs(*(uint16_t *)buf) & 0x3FFF;
++    *value = ntohs(*((const uint16_t *)buf)) & 0x3FFF;
+@@ -196 +200 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ntohl(*(uint32_t *)buf) & 0x3FFFFFFF;
++    *value = ntohl(*((const uint32_t *)buf)) & 0x3FFFFFFF;
+@@ -1263,0 +1268,4 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
++    if(5 >= packet->payload_len) {
++      NDPI_LOG_DBG(ndpi_struct, "Packet too short for dest_conn_id_len\n");
++      return NULL;
++    }
+@@ -1271 +1279,6 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
+-    source_conn_id_len = packet->payload[6 + dest_conn_id_len];
++    /* Prevent out-of-bounds read by checking buffer boundaries */
++    if(6 + dest_conn_id_len >= packet->payload_len) {
++      NDPI_LOG_DBG(ndpi_struct, "Buffer overflow prevented in source_conn_id_len access\n");
++      return NULL;
++    }
++     source_conn_id_len = packet->payload[6 + dest_conn_id_len];

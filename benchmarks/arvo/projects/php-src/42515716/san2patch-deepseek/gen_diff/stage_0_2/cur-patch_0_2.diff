@@ -1,0 +1,83 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..c78f8d1451d 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2322,0 +2323,18 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
++static int php_date_initialize(php_date_obj *dateobj, const char *time_str, size_t time_str_len, const char *format, zval *timezone_object, int flags)
++{
++	timelib_time   *now = NULL;
++	timelib_tzinfo *tzi = NULL;
++	timelib_error_container *err = NULL;
++	int type = TIMELIB_ZONETYPE_ID, new_dst = 0;
++	char *new_abbr = NULL;
++	timelib_sll new_offset = 0;
++	time_t sec;
++	suseconds_t usec;
++	int options = 0;
++
++	if (dateobj->time) {
++		timelib_time_dtor(dateobj->time);
++		dateobj->time = NULL;
++	}
++
++	if (format) {
+@@ -2343 +2361 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = 0;
++		dateobj->time = NULL;
+@@ -2346,0 +2365,56 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
++	if (timezone_object) {
++		php_date_obj *tzobj = zend_object_store_get_object(timezone_object TSRMLS_CC);
++		timelib_tzinfo *tzi = php_date_timezone_get_tzinfo(tzobj TSRMLS_CC);
++		if (!tzi) {
++			return 0;
++		}
++		type = TIMELIB_ZONETYPE_ID;
++		new_abbr = NULL;
++		new_offset = 0;
++	} else if (dateobj->time->tz_info) {
++		type = TIMELIB_ZONETYPE_ID;
++		new_abbr = NULL;
++		new_offset = 0;
++	} else {
++		type = TIMELIB_ZONETYPE_ABBR;
++		new_abbr = NULL;
++		new_offset = -dateobj->time->offset;
++	}
++
++	now = timelib_time_ctor();
++	now->zone_type = type;
++	switch (type) {
++		case TIMELIB_ZONETYPE_ID:
++			now->tz_info = tzi;
++			break;
++		case TIMELIB_ZONETYPE_ABBR:
++			now->tz_info = NULL;
++			now->offset = new_offset;
++			now->abbr = new_abbr;
++			break;
++	}
++
++	php_date_get_current_time_with_fraction(&sec, &usec);
++	timelib_unixtime2local(now, (timelib_sll) sec);
++	php_date_set_time_fraction(now, usec);
++
++	if (!format
++		|| (format && (!strcmp(format, DATE_FORMAT_RFC3339) ||
++					   !strcmp(format, DATE_FORMAT_RFC3339_EXTENDED) ||
++					   !strcmp(format, DATE_FORMAT_ISO8601) ||
++					   !strcmp(format, DATE_FORMAT_ISO8601_EXTENDED)))
++	) {
++		options = TIMELIB_NO_CLONE;
++	}
++	if (flags & PHP_DATE_INIT_FORMAT) {
++		options |= TIMELIB_NO_CLONE;
++	}
++	timelib_fill_holes(dateobj->time, now, options);
++
++	timelib_update_ts(dateobj->time, tzi);
++	timelib_time_dtor(now);
++
++	return 1;
++}		return 0;
++	}
++

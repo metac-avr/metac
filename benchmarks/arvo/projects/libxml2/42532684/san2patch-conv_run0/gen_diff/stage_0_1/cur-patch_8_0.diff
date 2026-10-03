@@ -1,0 +1,42 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..d524c8ca 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2560 +2560,7 @@ xmlAddIDSafe(xmlDocPtr doc, const xmlChar *value, xmlAttrPtr attr,
+-    }
++        /* Fixed CWE-825: Expired Pointer Dereference by adding defensive check */
++        if (table && !xmlHashLookup(table, value)) {
++            /* Table is valid and entry doesn't exist, safe to proceed */
++        } else {
++            return(-1);
++        }
++     }
+@@ -2636,9 +2642 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
+-        }
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+-static void
++ static void
+@@ -2646,12 +2644,5 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    if ((idPtr != NULL) && (idPtr->value != NULL)) {
++        xmlFreeID(idPtr);
++    }
++}    xmlHashFree(table, xmlFreeIDTableEntry);

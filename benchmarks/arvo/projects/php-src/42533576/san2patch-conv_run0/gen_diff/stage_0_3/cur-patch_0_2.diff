@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index c07fdfe7acf..07c4d9abee6 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -32,0 +33 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -36 +37,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref != NULL) {
++			rc_dtor_func(ref);
++		}
+@@ -46 +50,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		}
++	}
++}		} else {
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index d1ca0ee62ae..4606e9fe8af 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4355,2 +4355 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-			} else if (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
+-				zend_string_release_ex(call->func->common.function_name, 0);
++			} else if (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {				zend_string_release_ex(call->func->common.function_name, 0);

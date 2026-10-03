@@ -1,0 +1,18 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..e39546ccf 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -742 +742,2 @@ mpz_mul_2exp(mrb_state *mrb, mpz_t *z, mpz_t *x, mrb_int e)
+-      y.p[i+digs] = x->p[i];
++// FIXME: Crash CWE-416: Use After Free
++       y.p[i+digs] = x->p[i];
+@@ -744 +745,8 @@ mpz_mul_2exp(mrb_state *mrb, mpz_t *z, mpz_t *x, mrb_int e)
+-      ulshift(mrb,z,&y,bs);
++      mpz_t shifted;
++      mpz_init(mrb, &shifted);
++      mpz_realloc(mrb,&shifted,y.sz);
++      for (size_t i=0;i<y.sz;i++)
++        shifted.p[i] = y.p[i];
++      ulshift(mrb,&shifted,&shifted,bs);
++      mpz_set(mrb,z,&shifted);
++      mpz_clear(mrb,&shifted);

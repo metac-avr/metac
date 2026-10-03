@@ -1,0 +1,34 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..66ae1dcc 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2745,6 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    /* Check if the ID entry still exists and its value matches before removing */
++    xmlIDPtr id_entry = xmlHashLookup(table, attr->id->value);
++    if (id_entry != NULL && id_entry == attr->id) {
++        if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }
+diff --git a/xinclude.c b/xinclude.c
+index 72a88c99..02d96934 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1980 +1980 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-            next = child->next;
++             next = child->next;
+@@ -1981,0 +1982,10 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++            /* Clear ID attributes before freeing node to prevent use-after-free */
++            if (child->type == XML_ELEMENT_NODE) {
++                xmlAttrPtr attr = child->properties;
++                while (attr != NULL) {
++                    if (attr->atype == XML_ATTRIBUTE_ID) {
++                        xmlRemoveID(child->doc, attr);
++                    }
++                    attr = attr->next;
++                }
++            }

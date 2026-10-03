@@ -1,0 +1,27 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..fa4224646 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -345,0 +346,3 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *old_cibase = c->cibase;
++    mrb_value *old_regs = c->stack;
++    ptrdiff_t regs_offset = old_regs - (mrb_value*)old_cibase;
+@@ -348 +351,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -352,0 +357,4 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    
++    if (old_cibase != c->cibase) {
++      c->stack = (mrb_value*)c->cibase + regs_offset;
++    }
+@@ -2710 +2718,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// Patched: Handle potential dangling pointer after realloc
++     CASE(OP_ARYCAT, B) {
++      // Refresh regs pointer in case of realloc in cipush
++      if (mrb->c->ci->proc && mrb->c->ci->pc) {
++        regs = mrb->c->ci->stackent;
++      }
+@@ -2722 +2734,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

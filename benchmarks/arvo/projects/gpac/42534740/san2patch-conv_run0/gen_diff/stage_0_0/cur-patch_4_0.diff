@@ -1,0 +1,56 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index eee917756..ad3bfae9d 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -348,0 +349 @@ static GF_Err gsfdmx_read_prop(GF_BitStream *bs, GF_PropertyValue *p)
++		if (!p->value.string_list.vals) return GF_OUT_OF_MEM;
+@@ -351 +352,3 @@ static GF_Err gsfdmx_read_prop(GF_BitStream *bs, GF_PropertyValue *p)
+-			char *str = gf_malloc(sizeof(char)*(len+1));
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			char *str = gf_malloc(sizeof(char)*(len+1));
++			if (!str) return GF_OUT_OF_MEM;
+@@ -354 +357,6 @@ static GF_Err gsfdmx_read_prop(GF_BitStream *bs, GF_PropertyValue *p)
+-			p->value.string_list.vals[i] = str;
++			if (p->value.string_list.vals) {
++				p->value.string_list.vals[i] = str;
++			} else {
++				gf_free(str);
++				return GF_OUT_OF_MEM;
++			}
+@@ -996,4 +1004,21 @@ static GF_Err gsfdmx_process_packets(GF_Filter *filter, GSF_DemuxCtx *ctx, GSF_S
+-			if (!gpck->corrupted)
+-				e = gsfdmx_parse_pid_info(filter, ctx, gst, gpck, (gpck->pck_type==GFS_PCKTYPE_PID_INFO_UPDATE) ? GF_TRUE : GF_FALSE);
+-			else
+-				e = GF_CORRUPTED_DATA;
++			if (!gpck->corrupted) {
++				GF_PropertyEntry *prop_entry = NULL;
++				if (p && (p->value.string_list.nb_items > 0)) {
++					if (p->value.string_list.vals != NULL) {
++						for (i=0; i<p->value.string_list.nb_items; i++) {
++							if (p->value.string_list.vals[i] != NULL) {
++								// Valid pointer, proceed safely
++								e = gsfdmx_parse_pid_info(filter, ctx, gst, gpck, (gpck->pck_type==GFS_PCKTYPE_PID_INFO_UPDATE) ? GF_TRUE : GF_FALSE);
++								break;
++							}
++						}
++					} else {
++						// Handle NULL vals array
++						e = GF_OUT_OF_MEM;
++					}
++				} else {
++					e = gsfdmx_parse_pid_info(filter, ctx, gst, gpck, (gpck->pck_type==GFS_PCKTYPE_PID_INFO_UPDATE) ? GF_TRUE : GF_FALSE);
++				}
++			} else {
++					e = GF_CORRUPTED_DATA;
++				}
+@@ -1019,3 +1044,7 @@ static GF_Err gsfdmx_process_packets(GF_Filter *filter, GSF_DemuxCtx *ctx, GSF_S
+-			if (gpck->corrupted) gf_filter_pck_set_corrupted(gpck->pck, GF_TRUE);
+-			e = gf_filter_pck_send(gpck->pck);
+-			gpck->pck = NULL;
++			if (gpck->pck) {
++				gf_filter_pck_set_corrupted(gpck->pck, gpck->corrupted);
++				e = gf_filter_pck_send(gpck->pck);
++				gpck->pck = NULL;
++			} else {
++				e = GF_OK;
++			}

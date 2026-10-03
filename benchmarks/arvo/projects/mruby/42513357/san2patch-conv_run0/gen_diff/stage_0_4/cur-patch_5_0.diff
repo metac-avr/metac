@@ -1,0 +1,22 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..f1cf990b3 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -693,2 +693,5 @@ mpz_get_str(mrb_state *mrb, char *s, mrb_int sz, mrb_int base, mpz_t *x)
+-    *s='0';
+-    *(s+1)='\0';
++    if (sz >= 2) { // Check buffer size before writing
++      *s='0';
++      *(s+1)='
++';
++    }
+@@ -703 +706 @@ mpz_get_str(mrb_state *mrb, char *s, mrb_int sz, mrb_int base, mpz_t *x)
+-    *ps++= '-';
++    if (ps - s < sz) *ps++= '-'; // Boundary check
+@@ -717 +720 @@ mpz_get_str(mrb_state *mrb, char *s, mrb_int sz, mrb_int base, mpz_t *x)
+-  for (;p>=t;p--,ps++)
++  for (;p>=t && ps-s < sz-1;p--,ps++) // Prevent writing beyond buffer
+@@ -719 +722,2 @@ mpz_get_str(mrb_state *mrb, char *s, mrb_int sz, mrb_int base, mpz_t *x)
+-  *ps='\0';
++  if (ps-s < sz) *ps='
++'; // Ensure null termination within bounds

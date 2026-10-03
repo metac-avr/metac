@@ -1,0 +1,51 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..2b57780403f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54421,2 +54421,6 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-		if (UNEXPECTED(!OPLINE)) {
++			zend_execute_data *saved_ex = ex;
++			((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++			if (UNEXPECTED(!OPLINE)) {
++				ex = saved_ex;
++				return;
++			}
+@@ -54424 +54428 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		if (UNEXPECTED((ret = ((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU)) != 0)) {
++			if (UNEXPECTED((ret = ((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU)) != 0)) {
+@@ -54428,8 +54432,7 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-			HYBRID_CASE(ZEND_ASSIGN_STATIC_PROP_OP_SPEC):
+-				VM_TRACE(ZEND_ASSIGN_STATIC_PROP_OP_SPEC)
+-				ZEND_ASSIGN_STATIC_PROP_OP_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-				HYBRID_BREAK();
+-			HYBRID_CASE(ZEND_PRE_INC_STATIC_PROP_SPEC):
+-				VM_TRACE(ZEND_PRE_INC_STATIC_PROP_SPEC)
+-				ZEND_PRE_INC_STATIC_PROP_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-				HYBRID_BREAK();
++				HYBRID_CASE(ZEND_ASSIGN_STATIC_PROP_OP_SPEC):
++					VM_TRACE(ZEND_ASSIGN_STATIC_PROP_OP_SPEC)
++					ZEND_ASSIGN_STATIC_PROP_OP_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++					HYBRID_BREAK();
++				HYBRID_CASE(ZEND_PRE_INC_STATIC_PROP_SPEC):
++					VM_TRACE(ZEND_PRE_INC_STATIC_PROP_SPEC)
++					ZEND_PRE_INC_STATIC_PROP_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);				HYBRID_BREAK();
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..d98dcc59f0e 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,9 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+-#endif
+-
+@@ -1154,0 +1146 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (p == NULL) return 0;
+@@ -1166 +1158 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-}
++}}

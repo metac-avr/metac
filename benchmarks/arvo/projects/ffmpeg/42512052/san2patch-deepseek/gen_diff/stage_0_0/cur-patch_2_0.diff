@@ -1,0 +1,18 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 32874a5a19..f3c014bf56 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -1761,2 +1761,11 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
+-//            for () {
+-//            reset_ls_coding_parameters(s, 0);
++            int i;
++            for (i = 0; i < nb_components; i++) {
++                if (s->comp_index[i] < 0) {
++                    av_log(s->avctx, AV_LOG_ERROR, "Invalid component index\n");
++                    return AVERROR_INVALIDDATA;
++                }
++                if (s->ls_codec_parameters[i].offset + s->width > s->picture->linesize[0] * s->height) {
++                    av_log(s->avctx, AV_LOG_ERROR, "Invalid JPEG-LS offset\n");
++                    return AVERROR_INVALIDDATA;
++                }
++            }

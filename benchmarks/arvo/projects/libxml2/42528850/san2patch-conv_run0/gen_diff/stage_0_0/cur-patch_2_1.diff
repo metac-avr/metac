@@ -1,0 +1,34 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..97b44edb 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1299 +1299 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
+@@ -1300,0 +1301,6 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
++		/* Add reference validation before freeing node */
++		if (tmp->type == XML_ELEMENT_NODE || tmp->type == XML_ATTRIBUTE_NODE) {
++		    /* Clear namespace references to prevent dangling pointers */
++		    tmp->ns = NULL;
++		    tmp->nsDef = NULL;
++		}
+diff --git a/tree.c b/tree.c
+index fe02b414..a92d2388 100644
+--- a/tree.c
++++ b/tree.c
+@@ -774 +774,6 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-		xmlFreeNs(cur);
++		/* Properly clean up namespace to avoid use-after-free */
++		if (cur->href)
++		    xmlFree((char *)cur->href);
++		if (cur->prefix)
++		    xmlFree((char *)cur->prefix);
++		xmlFree(cur);
+@@ -781 +786,6 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-		    xmlFreeNs(cur);
++		    /* Properly clean up namespace to avoid use-after-free */
++		    if (cur->href)
++		        xmlFree((char *)cur->href);
++		    if (cur->prefix)
++		        xmlFree((char *)cur->prefix);
++		    xmlFree(cur);

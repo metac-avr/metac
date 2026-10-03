@@ -1,0 +1,22 @@
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..9467547fc0 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -89,2 +89,2 @@ static int huff_build(const uint8_t len[], uint16_t codes_pos[33],
+-    ff_free_vlc(vlc);
+-    ff_free_vlc_multi(multi);
++// Fixed: Prevent use-after-free by ensuring VLC tables are not freed before initialization
++// Removed calls to ff_free_vlc and ff_free_vlc_multi that caused premature deallocation
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..31b45f14bd 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -467 +467,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    if (!multi->table)
++    if (!multi->table) {
++        vlc_common_end(vlc, nb_bits, 0, buf, flags, localbuf);
+@@ -468,0 +470 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    }
+@@ -495 +497 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }

@@ -1,0 +1,22 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..73b0603fd 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -830 +830,4 @@ void gf_net_close_capture()
+-		if (nf->dst) gf_free(nf->dst);
++		if (nf->dst) {
++			gf_free(nf->dst);
++			nf->dst = NULL;
++		}
+@@ -1482,3 +1485,8 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		else
+-			gf_netcap_load_pck_pcap(nf);
+-
++		else {
++			// Validate capture state before packet loading to prevent use-after-free
++			if (nf != NULL && nf->cap_bs != NULL) {
++				gf_netcap_load_pck_pcap(nf);
++			}
++		}
++// FIXME: Crash CWE-416: Use After Free
++ 

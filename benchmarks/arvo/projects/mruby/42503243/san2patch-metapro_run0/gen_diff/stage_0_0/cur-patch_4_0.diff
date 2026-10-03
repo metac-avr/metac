@@ -1,0 +1,24 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..6ff8085c7 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -463 +463 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    mrb_callinfo *ci = mrb->c->ci;
++    mrb_callinfo *ci = mrb->c->c->ci;
+@@ -515,2 +515,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       if (argc > 0) {
++         if ((ci->stack + 1 + argc) <= (mrb->c->stend)) {
++           stack_copy(ci->stack+1, argv, argc);
++         }
++       }
+@@ -1381,0 +1386,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      if ((char*)(regs + a + 1) > (char*)mrb->c->stend) {
++        mrb_stack_extend(mrb, a + 1);
++      }
+@@ -1392,2 +1399 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-    CASE(OP_GETMCNST, BB) {
+-      mrb_value val;
++    CASE(OP_GETMCNST, BB) {      mrb_value val;

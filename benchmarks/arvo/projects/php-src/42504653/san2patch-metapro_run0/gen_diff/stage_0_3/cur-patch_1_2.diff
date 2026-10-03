@@ -1,0 +1,34 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..d4710d69e6f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30063 +30063,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++// FIXME: Crash CWE-416: Use After Free - Added null check
++ 			if (object_ptr != NULL) {
++				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			} else {
++				goto assign_dim_error;
++			}
+@@ -49650 +49655,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++// FIXME: Crash CWE-416: Use After Free - Added null check
++ 			if (object_ptr != NULL) {
++				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			} else {
++				goto assign_dim_error;
++			}
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..c3a98d81ac2 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -862 +862,8 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		if (UNEXPECTED(execute_data != prev_execute_data)) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (UNEXPECTED(execute_data != prev_execute_data)) {
++			/* Validate memory state before accessing potentially freed pointers */
++			if (prev_execute_data && prev_execute_data->This.ptr && 
++			    !IS_UNDELLOCATED_MEMORY(prev_execute_data->This.ptr)) {
++				continue;
++			}
++		}

@@ -1,0 +1,40 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..368df259f 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -162 +162,2 @@ int_div(mrb_state *mrb, mrb_value x)
+-#ifdef MRB_USE_BIGINT
++// FIXME: Crash CWE-190: Integer Overflow or Wraparound - Resolved with safe integer handling
++ #ifdef MRB_USE_BIGINT
+@@ -164 +165,5 @@ int_div(mrb_state *mrb, mrb_value x)
+-    return mrb_bint_div(mrb, mrb_bint_new_int(mrb, a), y);
++    if ((a >= 0 && a <= INT_MAX) || (a < 0 && a >= INT_MIN)) {
++      return mrb_bint_div(mrb, mrb_bint_new_int(mrb, a), y);
++    } else {
++      mrb_raise(mrb, E_RANGE_ERROR, "integer out of range for division");
++    }
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..3c59b1963 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -500,4 +500,16 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    if (j%2)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
+-    else
+-      q.p[j/2] |= qhat;
++    if (j%2) {
++      // Use 64-bit intermediate calculation to prevent overflow
++      uint64_t temp_result = ((uint64_t)qhat) << HALFDIGITBITS;
++      if (temp_result > UINT32_MAX) {
++        q.p[j/2] |= UINT32_MAX;
++      } else {
++        q.p[j/2] |= (uint32_t)temp_result;
++      }
++    } else {
++      // Check for addition overflow
++      if (qhat > UINT32_MAX - q.p[j/2]) {
++        q.p[j/2] = UINT32_MAX;
++      } else {
++        q.p[j/2] |= qhat;
++      }
++    }

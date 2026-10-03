@@ -1,0 +1,33 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..a39e6b7c 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1214,9 +1214,13 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		if (last == NULL) {
++		    xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
++					              set->nodeTab[i]);
++		    if (new_node != NULL)
++		        list = last = new_node;
++		} else {
++		    xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
++					                set->nodeTab[i]);
++		    if (new_node != NULL) {
++		        xmlAddNextSibling(last, new_node);
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2275 +2279,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++          */
+@@ -2277,0 +2283 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	break;  /* Exit the processing loop to prevent accessing freed node */

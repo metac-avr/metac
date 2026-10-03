@@ -1,0 +1,31 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..9c3876c104 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -2447,0 +2448 @@ static int read_quant_matrix_ext(MpegEncContext *s, GetBitContext *gb)
++// FIXME: Crash CWE-787: Out-of-bounds Write
+@@ -2452,0 +2454,10 @@ static void extension_and_user_data(MpegEncContext *s, GetBitContext *gb, int id
++    // Validate input parameters
++    if (s == NULL || gb == NULL) {
++        return;
++    }
++    
++    // Ensure sufficient bits are available before reading
++    if (get_bits_left(gb) < 32) {
++        return;
++    }
++    
+@@ -2456,0 +2468,4 @@ static void extension_and_user_data(MpegEncContext *s, GetBitContext *gb, int id
++            // Verify enough bits remain for the operation
++            if (get_bits_left(gb) < 36) {
++                return;
++            }
+@@ -2459 +2474,5 @@ static void extension_and_user_data(MpegEncContext *s, GetBitContext *gb, int id
+-            if (extension_type == QUANT_MATRIX_EXT_ID)
++            if (extension_type == QUANT_MATRIX_EXT_ID) {
++                // Check remaining bits before reading quant matrix extension
++                if (get_bits_left(gb) < 0) {
++                    return;
++                }
+@@ -2460,0 +2480 @@ static void extension_and_user_data(MpegEncContext *s, GetBitContext *gb, int id
++            }

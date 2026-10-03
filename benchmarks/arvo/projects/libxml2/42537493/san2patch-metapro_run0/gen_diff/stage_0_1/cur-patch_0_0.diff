@@ -1,0 +1,39 @@
+diff --git a/encoding.c b/encoding.c
+index 3d336fb1..29b2d2b7 100644
+--- a/encoding.c
++++ b/encoding.c
+@@ -1033 +1033,2 @@ int
+-xmlOpenCharEncodingHandler(const char *name, int output,
++// FIXME: Crash CWE-416: Use After Free
++ xmlOpenCharEncodingHandler(const char *name, int output,
+@@ -1035 +1036,10 @@ xmlOpenCharEncodingHandler(const char *name, int output,
+-    return(xmlCreateCharEncodingHandler(name, output, NULL, NULL, out));
++    if (out == NULL)
++        return XML_ERR_ARGUMENT;
++    
++    int result = xmlCreateCharEncodingHandler(name, output, NULL, NULL, out);
++    
++    if (result != XML_ERR_OK && out != NULL) {
++        *out = NULL;
++    }
++    
++    return result;
+@@ -1045,2 +1055 @@ xmlOpenCharEncodingHandler(const char *name, int output,
+- * If the encoding is UTF-8, this will return a no-op handler that
+- * shouldn't be used.
++ * If the encoding is UTF-8, this will return a no-op handler that * shouldn't be used.
+diff --git a/HTMLtree.c b/HTMLtree.c
+index cdfaed97..d887afe7 100644
+--- a/HTMLtree.c
++++ b/HTMLtree.c
+@@ -1111 +1111,4 @@ htmlSaveFileFormat(const char *filename, xmlDocPtr cur,
+-        xmlCharEncCloseFunc(handler);
++        if (handler != NULL) {
++            xmlCharEncCloseFunc(handler);
++            handler = NULL;
++        }
+@@ -1117,0 +1121,4 @@ htmlSaveFileFormat(const char *filename, xmlDocPtr cur,
++    if (handler != NULL) {
++        xmlCharEncCloseFunc(handler);
++        handler = NULL;
++    }

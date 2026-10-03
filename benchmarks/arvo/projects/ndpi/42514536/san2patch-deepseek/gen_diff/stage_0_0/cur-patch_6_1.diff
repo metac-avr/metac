@@ -1,0 +1,73 @@
+diff --git a/src/lib/protocols/softether.c b/src/lib/protocols/softether.c
+index 8a80e6322..dc6896fc1 100644
+--- a/src/lib/protocols/softether.c
++++ b/src/lib/protocols/softether.c
+@@ -219,0 +220,3 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
++{
++  value_siz = dissect_softether_tuples(payload, payload_len, &val1, &val2);
++  if (value_siz == 0)
+@@ -221,5 +224,2 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
+-    value_siz = dissect_softether_tuples(payload, payload_len, &val1, &val2);
+-    if (value_siz == 0)
+-    {
+-      break;
+-    }
++    break;
++  }
+@@ -227,11 +227,3 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
+-    if (got_hostname == 1)
+-    {
+-      if (val1.type == VALUE_STR && val1.value_size > 0)
+-      {
+-        size_t len = ndpi_min(val1.value_size, sizeof(flow->protos.softether.hostname) - 1);
+-        strncpy(flow->protos.softether.hostname, val1.value.ptr.value_str, len);
+-        flow->protos.softether.hostname[len] = '\0';
+-      }
+-      got_hostname = 0;
+-    }
+-    if (got_fqdn == 1)
++  if (got_hostname == 1)
++  {
++    if (val1.type == VALUE_STR && val1.value_size > 0)
+@@ -239,7 +231,3 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
+-      if (val1.type == VALUE_STR && val1.value_size > 0)
+-      {
+-        size_t len = ndpi_min(val1.value_size, sizeof(flow->protos.softether.fqdn) - 1);
+-        strncpy(flow->protos.softether.fqdn, val1.value.ptr.value_str, len);
+-        flow->protos.softether.fqdn[len] = '\0';
+-      }
+-      got_fqdn = 0;
++      size_t len = ndpi_min(val1.value_size, sizeof(flow->protos.softether.hostname) - 1);
++      strncpy(flow->protos.softether.hostname, val1.value.ptr.value_str, len);
++      flow->protos.softether.hostname[len] = '\0';
+@@ -247,3 +235,5 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
+-
+-    if (val2.type == VALUE_DATA && val2.value_size > 0 &&
+-        strncmp(val2.value.ptr.value_str, "ddns_fqdn", val2.value_size) == 0)
++    got_hostname = 0;
++  }
++  if (got_fqdn == 1)
++  {
++    if (val1.type == VALUE_STR && val1.value_size > 0)
+@@ -251 +241,5 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
+-      got_fqdn = 1;
++      size_t avail = payload_len - (val1.value.ptr.value_str - (const char *)payload);
++      size_t len = ndpi_min(val1.value_size, avail);
++      len = ndpi_min(len, sizeof(flow->protos.softether.fqdn) - 1);
++      strncpy(flow->protos.softether.fqdn, val1.value.ptr.value_str, len);
++      flow->protos.softether.fqdn[len] = '\0';
+@@ -252,0 +247,2 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
++    got_fqdn = 0;
++  }
+@@ -254,2 +250,4 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
+-    payload += value_siz;
+-    payload_len -= value_siz;
++  if (val2.type == VALUE_DATA && val2.value_size > 0 &&
++      strncmp(val2.value.ptr.value_str, "ddns_fqdn", val2.value_size) == 0)
++  {
++    got_fqdn = 1;
+@@ -257,0 +256,4 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
++  payload += value_siz;
++  payload_len -= value_siz;
++}
++

@@ -1,0 +1,74 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index c3c18764d..3d3005b48 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1549,9 +1549,4 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-      else {
+-	/* New protocol detected or give up */
+-	flow->detection_completed = 1;
+-
+-#if 0
+-	/* Check if we should keep checking extra packets */
+-	if(ndpi_flow && ndpi_flow->check_extra_packets)
+-	  flow->check_extra_packets = 1;
+-#endif
++      char *ndpi_strdup(const char *s) {
++  if(s == NULL ){
++    return NULL;
++  }
+@@ -1559,2 +1554,2 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-	if(flow->detected_protocol.app_protocol == NDPI_PROTOCOL_UNKNOWN) {
+-	  u_int8_t proto_guessed;
++  int len = strlen(s);
++  char *m = ndpi_malloc(len + 1);
+@@ -1562,4 +1557,4 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-	  flow->detected_protocol = ndpi_detection_giveup(workflow->ndpi_struct, flow->ndpi_flow,
+-							  enable_protocol_guess, &proto_guessed);
+-	  if(enable_protocol_guess) workflow->stats.guessed_flow_protocols++;
+-	}
++  if(m) {
++    memcpy(m, s, len);
++    m[len] = '\0';
++  }
+@@ -1567,2 +1562,2 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-	process_ndpi_collected_info(workflow, flow);
+-      }
++  return(m);
++}
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..3411dba08 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -264,4 +264,9 @@ void *ndpi_realloc(void *ptr, size_t old_size, size_t new_size) {
+-char *ndpi_strdup(const char *s) {
+-  if(s == NULL ){
+-    return NULL;
+-  }
++  else {
++	/* New protocol detected or give up */
++	flow->detection_completed = 1;
++
++#if 0
++	/* Check if we should keep checking extra packets */
++	if(ndpi_flow && ndpi_flow->check_extra_packets)
++	  flow->check_extra_packets = 1;
++#endif
+@@ -269,2 +274,2 @@ char *ndpi_strdup(const char *s) {
+-  int len = strlen(s);
+-  char *m = ndpi_malloc(len + 1);
++	if(flow->detected_protocol.app_protocol == NDPI_PROTOCOL_UNKNOWN) {
++	  u_int8_t proto_guessed;
+@@ -272,4 +277,4 @@ char *ndpi_strdup(const char *s) {
+-  if(m) {
+-    memcpy(m, s, len);
+-    m[len] = '\0';
+-  }
++	  flow->detected_protocol = ndpi_detection_giveup(workflow->ndpi_struct, flow->ndpi_flow,
++					  enable_protocol_guess, &proto_guessed);
++	  if(enable_protocol_guess) workflow->stats.guessed_flow_protocols++;
++	}
+@@ -277,2 +282,2 @@ char *ndpi_strdup(const char *s) {
+-  return(m);
+-}
++	process_ndpi_collected_info(workflow, flow);
++      }

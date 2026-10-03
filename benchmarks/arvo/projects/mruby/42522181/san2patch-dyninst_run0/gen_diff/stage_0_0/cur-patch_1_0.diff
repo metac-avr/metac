@@ -1,0 +1,20 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..774a64675 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -190,2 +190,4 @@ iv_foreach(mrb_state *mrb, iv_tbl *t, mrb_iv_foreach_func *func, void *p)
+-      if ((*func)(mrb, keys[i], vals[i], p) != 0) {
+-        return;
++      if (mrb_gc_is_live(mrb, vals[i])) {
++        if ((*func)(mrb, keys[i], vals[i], p) != 0) {
++          return;
++        }
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..3799d92c9 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -700 +700 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (((struct RObject*)obj)->iv) mrb_gc_mark_iv(mrb, (struct RObject*)obj);
+@@ -711 +710,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-

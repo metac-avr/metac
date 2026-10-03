@@ -1,0 +1,18 @@
+diff --git a/parser.c b/parser.c
+index 9ca09455..05aef8f3 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4780 +4780,2 @@ xmlParseExternalID(xmlParserCtxt *ctxt, xmlChar **publicId, int strict) {
+-		    "Space required after 'PUBLIC'\n");
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		    "Space required after 'PUBLIC'\n");
+@@ -4783 +4784,6 @@ xmlParseExternalID(xmlParserCtxt *ctxt, xmlChar **publicId, int strict) {
+-	if (*publicId == NULL) {
++	/* Check for valid publicId and prevent buffer overflow */
++	if (*publicId == NULL || xmlStrlen(*publicId) >= ctxt->input->length) {
++	    if (*publicId != NULL) {
++	        xmlFree(*publicId);
++	        *publicId = NULL;
++	    }
+@@ -4784,0 +4791 @@ xmlParseExternalID(xmlParserCtxt *ctxt, xmlChar **publicId, int strict) {
++	    return(NULL);

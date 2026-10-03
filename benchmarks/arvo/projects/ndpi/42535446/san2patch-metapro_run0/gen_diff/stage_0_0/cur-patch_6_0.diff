@@ -1,0 +1,46 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..b1dc138d3 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1329,2 +1329,7 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    packet->http_url_name.ptr = &packet->payload[filename_start];
+-    packet->http_url_name.len = packet->line[0].len - (filename_start + 9);
++    if (filename_start + 9 <= packet->line[0].len) {  // Validate bounds before assignment
++      packet->http_url_name.ptr = &packet->payload[filename_start];
++      packet->http_url_name.len = packet->line[0].len - (filename_start + 9);
++    } else {
++      packet->http_url_name.ptr = NULL;
++      packet->http_url_name.len = 0;
++    }
+@@ -1332,2 +1337,7 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    packet->http_method.ptr = packet->line[0].ptr;
+-    packet->http_method.len = filename_start - 1;
++    if (filename_start > 0 && filename_start <= packet->line[0].len) {  // Validate bounds for method
++      packet->http_method.ptr = packet->line[0].ptr;
++      packet->http_method.len = filename_start - 1;
++    } else {
++      packet->http_method.ptr = NULL;
++      packet->http_method.len = 0;
++    }
+@@ -1336 +1346 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    if(memcmp(&packet->line[0].ptr[packet->line[0].len - 1], "1", 1) == 0)
++    if(packet->line[0].len > 0 && memcmp(&packet->line[0].ptr[packet->line[0].len - 1], "1", 1) == 0)
+@@ -1341,0 +1352 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++       packet->http_url_name.ptr != NULL &&  // Check pointer validity
+@@ -1349 +1360,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-  }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   }
+@@ -1467,3 +1479,9 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    NDPI_LOG_DBG2(ndpi_struct, "Request where expected\n");
+-
+-    process_request(ndpi_struct, flow, filename_start);
++    
++    if(packet->payload_packet_len > 0 && filename_start <= packet->payload_packet_len) {
++      NDPI_LOG_DBG2(ndpi_struct, "Request where expected\n");
++      process_request(ndpi_struct, flow, filename_start);
++    } else {
++      NDPI_LOG_DBG2(ndpi_struct, "Invalid filename_start or empty payload\n");
++      NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++      return;
++    }

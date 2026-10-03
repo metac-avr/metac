@@ -1,0 +1,24 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..cb5aa6c104 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -656 +656 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    }
++     }
+@@ -708,0 +709,6 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
++    /* Bounds checking to prevent out-of-bounds writes */
++    if ((int64_t)dst_x + w > (int64_t)frame->width ||
++        (int64_t)dst_y + h > (int64_t)frame->height ||
++        dst_offset * pixel_size > frame->linesize[0] * frame->height)
++        return AVERROR_INVALIDDATA;
++
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 846ed0b0f8..8f3a647e7c 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -88 +88 @@ void ff_put_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-    /* read the pixels */
++    /* read the pixels with safety checks */
+@@ -89,0 +90,2 @@ void ff_put_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
++        // Validate pointer arithmetic won't overflow
++        if (line_size > 0 && i > (INTPTR_MAX - (uintptr_t)pixels) / line_size) break;

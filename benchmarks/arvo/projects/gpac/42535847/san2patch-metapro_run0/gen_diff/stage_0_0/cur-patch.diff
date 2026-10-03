@@ -1,0 +1,36 @@
+diff --git a/src/filters/isoffin_read_ch.c b/src/filters/isoffin_read_ch.c
+index 225c8ef15..5f25a9e24 100644
+--- a/src/filters/isoffin_read_ch.c
++++ b/src/filters/isoffin_read_ch.c
+@@ -302 +302,14 @@ void isor_reader_get_sample_from_item(ISOMChannel *ch)
+-	gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &ch->sample->data, &ch->sample->dataLength, &ch->static_sample->alloc_size, NULL, GF_FALSE);
++	
++	// Reset pointers before extraction to prevent use of expired pointers
++	ch->sample->data = NULL;
++	ch->sample->dataLength = 0;
++	
++	GF_Err err = gf_isom_extract_meta_item_mem(ch->owner->mov, GF_TRUE, 0, ch->item_id, &ch->sample->data, &ch->sample->dataLength, &ch->static_sample->alloc_size, NULL, GF_FALSE);
++	
++	// Validate results and check for null pointers
++	if (err != GF_OK || ch->sample->data == NULL || ch->sample->dataLength == 0) {
++		ch->last_state = err != GF_OK ? err : GF_BAD_PARAM;
++		ch->sample->data = NULL;
++		ch->sample->dataLength = 0;
++		return;
++	}
+diff --git a/src/filters/isoffin_read.c b/src/filters/isoffin_read.c
+index 2f08cf8f9..51199c8e5 100644
+--- a/src/filters/isoffin_read.c
++++ b/src/filters/isoffin_read.c
+@@ -1474 +1474 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-		//eos not sent on this channel, we are active
++        //eos not sent on this channel, we are active
+@@ -1482 +1482,2 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1484 +1485,3 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-				isor_reader_get_sample_from_item(ch);
++				if (!ch->static_sample || !ch->static_sample->data) {
++					isor_reader_get_sample_from_item(ch);
++				}

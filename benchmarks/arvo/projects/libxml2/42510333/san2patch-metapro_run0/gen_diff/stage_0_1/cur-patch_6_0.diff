@@ -1,0 +1,26 @@
+diff --git a/tree.c b/tree.c
+index 8077348a..23ef9f66 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699,2 +3699,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
+-	return;
++    xmlFreeNsList((xmlNsPtr) cur);
++    return;
+@@ -3702 +3702,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-    if (cur->doc != NULL) dict = cur->doc->dict;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     if (cur->doc != NULL) dict = cur->doc->dict;
+@@ -3709 +3710,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-            cur = cur->children;
++            xmlNodePtr next = cur->children;
++            cur->children = NULL;  /* Prevent revisiting freed children */
++            cur = next;
+@@ -3750,0 +3754,7 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Clear pointers to avoid use-after-free */
++	    cur->properties = NULL;
++	    cur->nsDef = NULL;
++	    cur->content = NULL;
++	    cur->name = NULL;
++	    

@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..54d0fac033a 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1077 +1076,0 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-
+@@ -1084 +1083,10 @@ ZEND_API zend_result ZEND_FASTCALL add_function(zval *result, zval *op1, zval *o
+-	if (add_function_fast(result, op1, op2) == SUCCESS) {
++	zval op1_copy, op2_copy;
++
++	ZVAL_COPY_VALUE(&op1_copy, op1);
++	ZVAL_COPY_VALUE(&op2_copy, op2);
++	zval_add_ref(&op1_copy);
++	zval_add_ref(&op2_copy);
++
++	if (add_function_fast(result, &op1_copy, &op2_copy) == SUCCESS) {
++		zval_ptr_dtor(&op1_copy);
++		zval_ptr_dtor(&op2_copy);
+@@ -1087 +1095,4 @@ ZEND_API zend_result ZEND_FASTCALL add_function(zval *result, zval *op1, zval *o
+-		return add_function_slow(result, op1, op2);
++		zend_result res = add_function_slow(result, &op1_copy, &op2_copy);
++		zval_ptr_dtor(&op1_copy);
++		zval_ptr_dtor(&op2_copy);
++		return res;

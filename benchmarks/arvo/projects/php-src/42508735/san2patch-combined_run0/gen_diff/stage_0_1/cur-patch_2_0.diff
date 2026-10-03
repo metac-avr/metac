@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..91237799157 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1234 +1234,5 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	zend_refcounted_h *ref = Z_COUNTED_P(pz);
++	if (ref == NULL) {
++		return 0;
++	}
++	return GC_REFCOUNT(ref);
+@@ -1244,0 +1249 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..92cf9a33ec5 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -339 +339 @@ static zend_always_inline gc_root_buffer* gc_decompress(zend_refcounted *ref, ui
+-	if (EXPECTED(GC_GET_PTR(root->ref) == ref)) {
++	if (EXPECTED(GC_GET_PTR(root->ref) == ref && root != NULL)) {
+@@ -347 +347 @@ static zend_always_inline gc_root_buffer* gc_decompress(zend_refcounted *ref, ui
+-		if (GC_GET_PTR(root->ref) == ref) {
++		if (GC_GET_PTR(root->ref) == ref && root != NULL) {

@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_opcode.c b/Zend/zend_opcode.c
+index b215e5120af..1e0a7a79ff8 100644
+--- a/Zend/zend_opcode.c
++++ b/Zend/zend_opcode.c
+@@ -900 +900,2 @@ static void zend_calc_live_ranges(
+-			 * which case the last one starts the live range. As such, we can simply ignore
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 			 * which case the last one starts the live range. As such, we can simply ignore
+@@ -902 +903 @@ static void zend_calc_live_ranges(
+-			if (EXPECTED(last_use[var_num] != (uint32_t) -1)) {
++			if (var_num < op_array->T && EXPECTED(last_use[var_num] != (uint32_t) -1)) {
+@@ -1156 +1157 @@ ZEND_API void pass_two(zend_op_array *op_array)
+-	zend_calc_live_ranges(op_array, NULL);
++	zend_calc_live_ranges(op_array, (op_array && op_array->vars) ? NULL : NULL);
+@@ -1166,2 +1167 @@ ZEND_API unary_op_type get_unary_op(int opcode)
+-		case ZEND_BOOL_NOT:
+-			return (unary_op_type) boolean_not_function;
++		case ZEND_BOOL_NOT:			return (unary_op_type) boolean_not_function;

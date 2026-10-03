@@ -1,0 +1,44 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..d69f2492b 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -191,6 +190,0 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+-  if (size > MRB_STACK_MAX) {
+-    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+-  }
+-}
+-
+@@ -199 +193 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++ {
+@@ -200,0 +195 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    mrb_int old_off = (mrb->c->ci->stack != NULL) ? (mrb->c->ci->stack - mrb->c->stbase) : 0;
+@@ -201,0 +197,4 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    if (mrb->c->ci->stack != NULL) {
++      mrb->c->ci->stack = mrb->c->stbase + old_off;
++      mrb->c->ci->stackent = mrb->c->ci->stack;
++    }
+@@ -203,10 +202 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-}
+-
+-static inline struct REnv*
+-uvenv(mrb_state *mrb, mrb_int up)
+-{
+-  const struct RProc *proc = mrb->c->ci->proc;
+-  struct REnv *e;
+-
+-  while (up--) {
+-    proc = proc->upper;
++}    proc = proc->upper;
+@@ -566 +555,0 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
+@@ -574 +563 @@ MRB_API mrb_value
+-mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, const mrb_value *argv)
++ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, const mrb_value *argv)
+@@ -576 +565,4 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
+-  return mrb_funcall_with_block(mrb, self, mid, argc, argv, mrb_nil_value());
++  mrb_value ret;
++  mrb_stack_extend(mrb, argc + 1);
++  ret = mrb_funcall_with_block(mrb, self, mid, argc, argv, mrb_nil_value());
++  return ret;

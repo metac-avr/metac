@@ -1,0 +1,45 @@
+diff --git a/Zend/zend_opcode.c b/Zend/zend_opcode.c
+index b215e5120af..84be3853077 100644
+--- a/Zend/zend_opcode.c
++++ b/Zend/zend_opcode.c
+@@ -897,9 +897,12 @@ static void zend_calc_live_ranges(
+-			/* Defs without uses can occur for two reasons: Either because the result is
+-			 * genuinely unused (e.g. omitted FREE opcode for an unused boolean result), or
+-			 * because there are multiple defining opcodes (e.g. JMPZ_EX and QM_ASSIGN), in
+-			 * which case the last one starts the live range. As such, we can simply ignore
+-			 * missing uses here. */
+-			if (EXPECTED(last_use[var_num] != (uint32_t) -1)) {
+-				/* Skip trivial live-range */
+-				if (opnum + 1 != last_use[var_num]) {
+-					uint32_t num;
++			/* Bounds check to prevent out-of-bounds read */
++			if (var_num < op_array->last_var - var_offset) {
++				/* Defs without uses can occur for two reasons: Either because the result is
++				 * genuinely unused (e.g. omitted FREE opcode for an unused boolean result), or
++				 * because there are multiple defining opcodes (e.g. JMPZ_EX and QM_ASSIGN), in
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 				 * which case the last one starts the live range. As such, we can simply ignore
++				 * missing uses here. */
++				if (EXPECTED(last_use[var_num] != (uint32_t) -1)) {
++					/* Skip trivial live-range */
++					if (opnum + 1 != last_use[var_num]) {
++						uint32_t num;
+@@ -908,3 +911,3 @@ static void zend_calc_live_ranges(
+-					/* OP_DATA uses only op1 operand */
+-					ZEND_ASSERT(opline->opcode != ZEND_OP_DATA);
+-					num = opnum;
++						/* OP_DATA uses only op1 operand */
++						ZEND_ASSERT(opline->opcode != ZEND_OP_DATA);
++						num = opnum;
+@@ -912,2 +915,2 @@ static void zend_calc_live_ranges(
+-					/* OP_DATA is really part of the previous opcode. */
+-					num = opnum - (opline->opcode == ZEND_OP_DATA);
++						/* OP_DATA is really part of the previous opcode. */
++						num = opnum - (opline->opcode == ZEND_OP_DATA);
+@@ -915 +918,3 @@ static void zend_calc_live_ranges(
+-					emit_live_range(op_array, var_num, num, last_use[var_num], needs_live_range);
++						emit_live_range(op_array, var_num, num, last_use[var_num], needs_live_range);
++					}
++					last_use[var_num] = (uint32_t) -1;
+@@ -917 +921,0 @@ static void zend_calc_live_ranges(
+-				last_use[var_num] = (uint32_t) -1;

@@ -1,0 +1,38 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..e73fa2f0b02 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -9331,0 +9332,4 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
++static int zend_jit_trace_exit(zend_execute_data *execute_data, int trace_num, int exit_num, const zend_op *orig_opline)
++{
++	zend_jit_trace_rec *t = JIT_TRACE_NUM_TO_TRACE(trace_num);
++
+@@ -9347,7 +9351 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++}		case ZEND_FAST_CALL:
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..b7ea99b3a5e 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2488 +2488 @@ static zend_never_inline void ZEND_FASTCALL _zend_hash_iterators_remove(HashTabl
+-static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+@@ -2490,9 +2490,3 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	GC_REMOVE_FROM_BUFFER(ht);
+-	if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
+-		_zend_hash_iterators_remove(ht);
+-	}
+-	if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
+-		efree(HT_GET_DATA_ADDR(ht));
+-	}
+-	FREE_HASHTABLE(ht);
+-}
++	switch (opline->opcode) {
++		case ZEND_CATCH:
++			return 1;

@@ -1,0 +1,41 @@
+diff --git a/src/filter_core/filter.c b/src/filter_core/filter.c
+index 026c5f0d6..0cff9971e 100644
+--- a/src/filter_core/filter.c
++++ b/src/filter_core/filter.c
+@@ -2961,2 +2961,2 @@ static void gf_filter_process_task(GF_FSTask *task)
+-	GF_LOG(GF_LOG_DEBUG, GF_LOG_FILTER, ("Filter %s process\n", filter->name));
+-	gf_rmt_begin_hash(filter->name, GF_RMT_AGGREGATE, &filter->rmt_hash);
++GF_LOG(GF_LOG_DEBUG, GF_LOG_FILTER, ("Filter %s process\n", filter->name));
++gf_rmt_begin_hash(filter->name, GF_RMT_AGGREGATE, &filter->rmt_hash);
+@@ -2964 +2964 @@ static void gf_filter_process_task(GF_FSTask *task)
+-	filter->in_process_callback = GF_TRUE;
++filter->in_process_callback = GF_TRUE;
+@@ -2968,0 +2969 @@ static void gf_filter_process_task(GF_FSTask *task)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -2971 +2972,7 @@ static void gf_filter_process_task(GF_FSTask *task)
+-		e = filter->freg->process(filter);
++	{
++		if (filter && filter->freg && filter->freg->process) {
++			e = filter->freg->process(filter);
++		} else {
++			e = GF_BAD_PARAM;
++		}
++	}
+@@ -2973,3 +2980,3 @@ static void gf_filter_process_task(GF_FSTask *task)
+-	filter->in_process_callback = GF_FALSE;
+-	gf_rmt_end();
+-	GF_LOG(GF_LOG_DEBUG, GF_LOG_FILTER, ("Filter %s process done\n", filter->name));
++filter->in_process_callback = GF_FALSE;
++gf_rmt_end();
++GF_LOG(GF_LOG_DEBUG, GF_LOG_FILTER, ("Filter %s process done\n", filter->name));
+@@ -2977,5 +2984,5 @@ static void gf_filter_process_task(GF_FSTask *task)
+-	//flush all pending pid init requests following the call to init
+-	if (filter->has_pending_pids) {
+-		filter->has_pending_pids=GF_FALSE;
+-		while (gf_fq_count(filter->pending_pids)) {
+-			GF_FilterPid *pid=gf_fq_pop(filter->pending_pids);
++//flush all pending pid init requests following the call to init
++if (filter->has_pending_pids) {
++	filter->has_pending_pids=GF_FALSE;
++	while (gf_fq_count(filter->pending_pids)) {
++		GF_FilterPid *pid=gf_fq_pop(filter->pending_pids);

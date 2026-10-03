@@ -1,0 +1,48 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..18911d20 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5982,21 +5982,22 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
+-
+-    /* [ VC: Required Attribute ] */
+-    attr = elemDecl->attributes;
+-    while (attr != NULL) {
+-	if (attr->def == XML_ATTRIBUTE_REQUIRED) {
+-	    int qualified = -1;
+-
+-	    if ((attr->prefix == NULL) &&
+-		(xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
+-		xmlNsPtr ns;
+-
+-		ns = elem->nsDef;
+-		while (ns != NULL) {
+-		    if (ns->prefix == NULL)
+-			goto found;
++    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
++    if (tmp <= 0)
++	ret = 0;
++    break;
++}
++} /* not continuous */
++
++/* [ VC: Required Attribute ] */
++// FIXME: Crash CWE-416: Use After Free
++attr = (elemDecl != NULL) ? elemDecl->attributes : NULL;
++while (attr != NULL) {
++    if (attr->def == XML_ATTRIBUTE_REQUIRED) {
++	int qualified = -1;
++
++	if ((attr->prefix == NULL) &&
++	    (xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
++	    xmlNsPtr ns;
++
++	    ns = elem->nsDef;
++	    while (ns != NULL) {
++		if (ns->prefix == NULL)
++		    goto found;

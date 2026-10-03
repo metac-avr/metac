@@ -1,0 +1,37 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..f2f4cb0ab3 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -664 +664,2 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-                       ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                        ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
+@@ -665,0 +667,13 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
++        
++        /* Add comprehensive bounds checking */
++        if (start_offset < 0 || (unsigned)start_offset > av_fifo_size(fpc->fifo_buf)) {
++            av_log(avctx, AV_LOG_ERROR, "Buffer bounds violation prevented\n");
++            goto handle_error;
++        }
++        
++        /* Additional check for potential integer overflow */
++        if (start_offset < 0 || start_offset > INT_MAX - MAX_FRAME_HEADER_SIZE) {
++            av_log(avctx, AV_LOG_ERROR, "Integer overflow detected in offset calculation\n");
++            goto handle_error;
++        }
++        
+@@ -692,6 +706,8 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-            /* HACK: drain the tail of the fifo */
+-            fpc->fifo_buf->wptr -= MAX_FRAME_HEADER_SIZE;
+-            fpc->fifo_buf->wndx -= MAX_FRAME_HEADER_SIZE;
+-            if (warp) {
+-                fpc->fifo_buf->wptr += fpc->fifo_buf->end -
+-                    fpc->fifo_buf->buffer;
++            /* HACK: drain the tail of the fifo with bounds checking */
++            if (fpc->fifo_buf->wptr >= fpc->fifo_buf->buffer + MAX_FRAME_HEADER_SIZE) {
++                fpc->fifo_buf->wptr -= MAX_FRAME_HEADER_SIZE;
++                fpc->fifo_buf->wndx -= MAX_FRAME_HEADER_SIZE;
++                if (warp) {
++                    fpc->fifo_buf->wptr += fpc->fifo_buf->end -
++                        fpc->fifo_buf->buffer;
++                }

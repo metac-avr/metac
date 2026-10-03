@@ -1,0 +1,79 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..6aa2ee60f0d 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -26,2 +26,15 @@
+-#include "zend_constants.h"
+-#include "zend_list.h"
++ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
++{
++	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
++
++	/* GC might have released this object already. */
++	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
++		return;
++	}
++
++	/*	Make sure we hold a reference count during the destructor call
++		otherwise, when the destructor ends the storage might be freed
++		when the refcount reaches 0 a second time
++	 */
++	if (!(OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
++		GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
+@@ -29,7 +42,9 @@
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str);
+-#else
+-# define zend_string_destroy _efree
+-#endif
+-static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref);
+-static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref);
++		if (object->handlers->dtor_obj != zend_objects_destroy_object
++				|| object->ce->destructor) {
++			zend_fiber_switch_block();
++			GC_SET_REFCOUNT(object, 1);
++			object->handlers->dtor_obj(object);
++			GC_DELREF(object);
++			zend_fiber_switch_unblock();
++		}
++	}
+@@ -37 +52,3 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref);
+-typedef void (ZEND_FASTCALL *zend_rc_dtor_func_t)(zend_refcounted *p);
++	if (GC_REFCOUNT(object) == 0) {
++		uint32_t handle = object->handle;
++		void *ptr;
+@@ -39,9 +56,17 @@ typedef void (ZEND_FASTCALL *zend_rc_dtor_func_t)(zend_refcounted *p);
+-static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_UNDEF] =        (zend_rc_dtor_func_t)zend_empty_destroy,
+-	[IS_NULL] =         (zend_rc_dtor_func_t)zend_empty_destroy,
+-	[IS_FALSE] =        (zend_rc_dtor_func_t)zend_empty_destroy,
+-	[IS_TRUE] =         (zend_rc_dtor_func_t)zend_empty_destroy,
+-	[IS_LONG] =         (zend_rc_dtor_func_t)zend_empty_destroy,
+-	[IS_DOUBLE] =       (zend_rc_dtor_func_t)zend_empty_destroy,
+-	[IS_STRING] =       (zend_rc_dtor_func_t)zend_string_destroy,
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
++		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
++		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
++		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
++		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
++			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++			GC_SET_REFCOUNT(object, 1);
++			object->handlers->free_obj(object);
++		}
++		/* Mark the object inert before freeing so any external destructor
++		 * traversal that reaches its zval cannot perform refcount reads. */
++		GC_TYPE(object) = IS_NULL;
++		ptr = ((char*)object) - object->handlers->offset;
++		GC_REMOVE_FROM_BUFFER(object);
++		efree(ptr);
++		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++	}
++}	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..f4100bbf04b 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Mark the object inert before freeing so any external destructor
++		 * traversal that reaches its zval cannot perform refcount reads. */
++		GC_TYPE_INFO_PP(object) = IS_NULL;

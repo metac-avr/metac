@@ -1,0 +1,26 @@
+diff --git a/main/spprintf.c b/main/spprintf.c
+index 4c01347fcf4..6102775a395 100644
+--- a/main/spprintf.c
++++ b/main/spprintf.c
+@@ -778 +778,2 @@ PHPAPI void php_printf_to_smart_string(smart_string *buf, const char *format, va
+-PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list ap) /* {{{ */
++// FIXME: Crash CWE-416: Use After Free
++ PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list ap) /* {{{ */
+@@ -780 +781,3 @@ PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list
+-	xbuf_format_converter(buf, 0, format, ap);
++	zend_string *format_str = zend_string_init(format, strlen(format), 0);
++	xbuf_format_converter(buf, 0, ZSTR_VAL(format_str), ap);
++	zend_string_release(format_str);
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..864b448ed10 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1453 +1453 @@ static ZEND_COLD void zend_error_va_list(
+-		const char *format, va_list args)
++ 		const char *format, va_list args)
+@@ -1456 +1456,2 @@ static ZEND_COLD void zend_error_va_list(
+-	zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
++	zend_string *safe_message = zend_string_copy(message);
++	zend_error_zstr_at(orig_type, error_filename, error_lineno, safe_message);
+@@ -1457,0 +1459 @@ static ZEND_COLD void zend_error_va_list(
++	zend_string_release(safe_message);

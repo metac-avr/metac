@@ -1,0 +1,34 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..63937219f 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1785 +1785,2 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-		for (i=0; i<gf_list_count(pmt->program->streams); i++) {
++		u32 stream_count = gf_list_count(pmt->program->streams);
++		for (i=0; i<stream_count; i++) {
+@@ -1793,3 +1794,8 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-			an_es =  (GF_M2TS_PES *)gf_list_get(pmt->program->streams, es->depends_on_pid);
+-			if (an_es) {
+-				es->depends_on_pid = an_es->pid;
++			if (es->depends_on_pid < stream_count) {
++				an_es =  (GF_M2TS_PES *)gf_list_get(pmt->program->streams, es->depends_on_pid);
++				if (an_es) {
++					es->depends_on_pid = an_es->pid;
++				} else {
++					GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[M2TS] Wrong dependency index in hierarchy descriptor, assuming non-scalable stream\n"));
++					es->depends_on_pid = 0;
++				}
+@@ -1797 +1803 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-				GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[M2TS] Wrong dependency index in hierarchy descriptor, assuming non-scalable stream\n"));
++				GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[M2TS] Invalid dependency index %d exceeds stream count %d\n", es->depends_on_pid, stream_count));
+@@ -1801 +1807,2 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..e87f0e131 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -522 +522 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-		memcpy(szLang, stream->sub.language, 3);
++		memcpy(szLang, stream->sub.language ? stream->sub.language : "\0\0\0", 3);

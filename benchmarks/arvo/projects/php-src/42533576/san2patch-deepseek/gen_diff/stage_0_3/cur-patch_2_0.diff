@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..4a735c87702 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -300,5 +300,8 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-
+-		do {
+-			zval_ptr_dtor_nogc(p);
+-			p++;
+-		} while (--num_args);
++		if (call->func && !(call->func->op_array.fn_flags & ZEND_ACC_GENERATOR)) {
++			do {
++				if (Z_TYPE_P(p) != IS_UNDEF) {
++					zval_ptr_dtor_nogc(p);
++				}
++				p++;
++			} while (--num_args);
++		}
+@@ -307,0 +311 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
++
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 4714ab37101..3f9de1020bd 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3229 +3229,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-	cleanup_unfinished_calls(execute_data, throw_op_num);
++	if (EXPECTED(execute_data != NULL && EX(func) != NULL && EX(func)->op_array.refcount != NULL)) {
++		cleanup_unfinished_calls(execute_data, throw_op_num);
++	}

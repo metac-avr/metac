@@ -1,0 +1,14 @@
+diff --git a/src/media_tools/isom_tools.c b/src/media_tools/isom_tools.c
+index a41e51a0d..8f04656ab 100644
+--- a/src/media_tools/isom_tools.c
++++ b/src/media_tools/isom_tools.c
+@@ -1416 +1416,2 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
+@@ -1418 +1419,4 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-			gf_odf_avc_cfg_write(((GF_AVCConfigurationBox *)props.config)->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			GF_AVCConfigurationBox *avc_box = (GF_AVCConfigurationBox *)props.config;
++			if (avc_box && avc_box->config && avc_box->config->sequenceParameterSets) {
++				gf_odf_avc_cfg_write(avc_box->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			}

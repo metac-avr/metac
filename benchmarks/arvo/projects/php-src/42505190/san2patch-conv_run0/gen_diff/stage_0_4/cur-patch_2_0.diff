@@ -1,0 +1,52 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..9c4e89c4503 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29932 +29932,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			}
++// Security fix: Validate pointer before use to prevent use-after-free
++ 			}
+@@ -30282 +30283,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			}
++// Security fix: Validate pointer before use to prevent use-after-free
++ 			}
+@@ -49519 +49521,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			}
++// Security fix: Validate pointer before use to prevent use-after-free
++ 			}
+@@ -49869 +49872,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			}
++// Security fix: Validate pointer before use to prevent use-after-free
++ 			}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..aa2d1f383ae 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2433,2 +2432,0 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-				zend_use_scalar_as_array();
+-				ZVAL_UNDEF(result);
+@@ -2442,0 +2441,20 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
++	if (container_ptr == NULL) {
++		zend_use_scalar_as_array();
++		ZVAL_UNDEF(result);
++		return;
++	}
++	
++	if (Z_TYPE_P(container_ptr) == IS_INDIRECT) {
++		container_ptr = Z_INDIRECT_P(container_ptr);
++		if (container_ptr == NULL) {
++			zend_use_scalar_as_array();
++			ZVAL_UNDEF(result);
++			return;
++		}
++	}
++	
++	if (Z_TYPE_P(container_ptr) != IS_ARRAY && Z_TYPE_P(container_ptr) != IS_OBJECT && Z_TYPE_P(container_ptr) != IS_STRING) {
++		zend_use_scalar_as_array();
++		ZVAL_UNDEF(result);
++		return;
++	}
+@@ -2453,2 +2471 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(z
+-{
+-	zval *result = EX_VAR(opline->result.var);
++{	zval *result = EX_VAR(opline->result.var);

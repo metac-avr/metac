@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..a9450f2b1a7 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,2 +1172,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+@@ -1181 +1179,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1182,0 +1182 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (!p || (p->u.type_info & GC_DTOR_CHECK)) return 0; // Check for valid pointer and not marked for destruction
+@@ -1192,3 +1192 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..58ea5bff830 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3561,2 +3561,3 @@ static zend_always_inline void i_free_compiled_variables(zend_execute_data *exec
+-	int count = EX(func)->op_array.last_var;
+-	while (EXPECTED(count != 0)) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++  	int count = EX(func)->op_array.last_var;
++	while (EXPECTED(count != 0 && cv != NULL)) {

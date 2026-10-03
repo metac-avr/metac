@@ -1,0 +1,17 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..282395cfb7 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -299,3 +299,9 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++// Add comprehensive bounds checking before write operations
++            uint16_t *base_ptr = (i == 0) ? (uint16_t*)dest_y : (i == 1) ? (uint16_t*)dest_cb : (uint16_t*)dest_cr;
++            int max_elements = (i == 0) ? (524800 / sizeof(uint16_t)) : (524800 / sizeof(uint16_t) / 3);
++             for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
++                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step) {
++                    if (dest_pcm[i] >= base_ptr && dest_pcm[i] < base_ptr + max_elements && w >= 0) {
++                        dest_pcm[i][w] = src[idx];
++                    }
++                }

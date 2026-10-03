@@ -1,0 +1,25 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..d6a8497a14b 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -275 +275,6 @@ ZEND_API zend_string *zend_vstrpprintf(size_t max_len, const char *format, va_li
+-	smart_str_0(&buf);
++	/* Validate buffer state before finalizing to prevent use-after-free */
++	if (buf.s && ZSTR_LEN(buf.s) <= buf.a) {
++		smart_str_0(&buf);
++	} else if (buf.s) {
++		return ZSTR_EMPTY_ALLOC();
++	}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..46241074ef3 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -66,0 +67,3 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	
++	/* Set refcount to invalid value to catch use-after-free bugs */
++	GC_SET_REFCOUNT(str, 0xDEADBEAF);
+@@ -77 +79,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

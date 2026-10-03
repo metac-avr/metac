@@ -1,0 +1,30 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..74b3aa9d 100644
+--- a/tree.c
++++ b/tree.c
+@@ -819,2 +819,10 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++// FIXME: Crash CWE-416: Use After Free
++    /* Clear pointers before freeing to prevent use-after-free */
++    if (cur->href != NULL) {
++        xmlFree((char *) cur->href);
++        cur->href = NULL;
++    }
++    if (cur->prefix != NULL) {
++        xmlFree((char *) cur->prefix);
++        cur->prefix = NULL;
++    }
+@@ -831,2 +839 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;
+@@ -4367 +4374 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4375 +4382 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++     xmlNodePtr ret;
+@@ -4376,0 +4384,2 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (node == NULL)
++        return(NULL);

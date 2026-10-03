@@ -1,0 +1,86 @@
+diff --git a/mrbgems/mruby-sprintf/src/sprintf.c b/mrbgems/mruby-sprintf/src/sprintf.c
+index 7104a185a..d0b53262c 100644
+--- a/mrbgems/mruby-sprintf/src/sprintf.c
++++ b/mrbgems/mruby-sprintf/src/sprintf.c
+@@ -791,40 +791,35 @@ mrb_str_format(mrb_state *mrb, mrb_int argc, const mrb_value *argv, mrb_value fm
+-      {
+-        mrb_value arg = GETARG();
+-        mrb_int len;
+-        mrb_int slen;
+-
+-        if (*p == 'p') arg = mrb_inspect(mrb, arg);
+-        str = mrb_obj_as_string(mrb, arg);
+-        len = RSTRING_LEN(str);
+-        if (RSTRING(result)->flags & MRB_STR_EMBED) {
+-          mrb_int tmp_n = len;
+-          RSTRING(result)->flags &= ~MRB_STR_EMBED_LEN_MASK;
+-          RSTRING(result)->flags |= tmp_n << MRB_STR_EMBED_LEN_SHIFT;
+-        }
+-        else {
+-          RSTRING(result)->as.heap.len = blen;
+-        }
+-        if (flags&(FPREC|FWIDTH)) {
+-          slen = RSTRING_LEN(str);
+-          if (slen < 0) {
+-            mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid mbstring sequence");
+-          }
+-          if ((flags&FPREC) && (prec < slen)) {
+-            char *p = RSTRING_PTR(str) + prec;
+-            slen = prec;
+-            len = (mrb_int)(p - RSTRING_PTR(str));
+-          }
+-          /* need to adjust multi-byte string pos */
+-          if ((flags&FWIDTH) && (width > slen)) {
+-            width -= (int)slen;
+-            if (!(flags&FMINUS)) {
+-              FILL(' ', width);
+-            }
+-            PUSH(RSTRING_PTR(str), len);
+-            if (flags&FMINUS) {
+-              FILL(' ', width);
+-            }
+-            break;
+-          }
+-        }
+-        PUSH(RSTRING_PTR(str), len);
++{
++  mrb_value arg = GETARG();
++  mrb_int len;
++  mrb_int slen;
++
++  if (*p == 'p') arg = mrb_inspect(mrb, arg);
++  str = mrb_obj_as_string(mrb, arg);
++  len = RSTRING_LEN(str);
++  if (RSTRING(result)->flags & MRB_STR_EMBED) {
++    mrb_int tmp_n = len;
++    RSTRING(result)->flags &= ~MRB_STR_EMBED_LEN_MASK;
++    RSTRING(result)->flags |= tmp_n << MRB_STR_EMBED_LEN_SHIFT;
++  }
++  else {
++    RSTRING(result)->as.heap.len = blen;
++  }
++  if (flags&(FPREC|FWIDTH)) {
++    slen = RSTRING_LEN(str);
++    if (slen < 0) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid mbstring sequence");
++    }
++    if ((flags&FPREC) && (prec < slen)) {
++      char *p = RSTRING_PTR(str) + prec;
++      slen = prec;
++      len = (mrb_int)(p - RSTRING_PTR(str));
++    }
++    /* need to adjust multi-byte string pos */
++    if ((flags&FWIDTH) && (width > slen)) {
++      width -= (int)slen;
++      if (!(flags&FMINUS)) {
++        FILL(' ', width);
++      }
++      PUSH(RSTRING_PTR(str), len);
++      if (flags&FMINUS) {
++        FILL(' ', width);
+@@ -832,0 +828,5 @@ mrb_str_format(mrb_state *mrb, mrb_int argc, const mrb_value *argv, mrb_value fm
++    }
++  }
++  PUSH(RSTRING_PTR(str), len);
++}
++      break;

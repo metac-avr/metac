@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..c37693b0232 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1185 +1186,6 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	return --(p->refcount);
++	/* Add null check to prevent use-after-free vulnerability */
++	if (p != NULL) {
++		return --(p->refcount);
++	} else {
++		return 0;
++	}
+@@ -1193 +1198,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..c3619386d77 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1353,0 +1354,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
++		if (Z_TYPE_INFO(tmp) != 0) {
++			Z_TRY_ADDREF(tmp);
++		}

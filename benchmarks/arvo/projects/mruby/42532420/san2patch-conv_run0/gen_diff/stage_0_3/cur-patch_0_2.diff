@@ -1,0 +1,116 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..e1933fb1c 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1199,27 +1199,29 @@ str_convert_range(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen,
+-  else {
+-    switch (mrb_type(indx)) {
+-      default:
+-        indx = mrb_ensure_int_type(mrb, indx);
+-        /* fall through */
+-      case MRB_TT_INTEGER:
+-        *beg = mrb_integer(indx);
+-        *len = 1;
+-        return STR_CHAR_RANGE;
+-
+-      case MRB_TT_STRING:
+-        *beg = str_index_str(mrb, str, indx, 0);
+-        if (*beg < 0) { break; }
+-        *len = RSTRING_LEN(indx);
+-        return STR_BYTE_RANGE_CORRECTED;
+-
+-      case MRB_TT_RANGE:
+-        *len = RSTRING_CHAR_LEN(str);
+-        switch (mrb_range_beg_len(mrb, indx, beg, len, *len, TRUE)) {
+-          case MRB_RANGE_OK:
+-            return STR_CHAR_RANGE_CORRECTED;
+-          case MRB_RANGE_OUT:
+-            return STR_OUT_OF_RANGE;
+-          default:
+-            break;
+-        }
+-    }
++  static str_range_status
++str_index_range(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_int *beg, mrb_int *len)
++{
++  switch (mrb_type(indx)) {
++    default:
++      indx = mrb_ensure_int_type(mrb, indx);
++      /* fall through */
++    case MRB_TT_INTEGER:
++      *beg = mrb_integer(indx);
++      *len = 1;
++      return STR_CHAR_RANGE;
++
++    case MRB_TT_STRING:
++      *beg = str_index_str(mrb, str, indx, 0);
++      if (*beg < 0) { break; }
++      *len = RSTRING_LEN(indx);
++      if (*beg + *len > RSTRING_LEN(str)) { return STR_OUT_OF_RANGE; }
++      return STR_BYTE_RANGE_CORRECTED;
++
++    case MRB_TT_RANGE:
++      *len = RSTRING_CHAR_LEN(str);
++      switch (mrb_range_beg_len(mrb, indx, beg, len, *len, TRUE)) {
++        case MRB_RANGE_OK:
++          return STR_CHAR_RANGE_CORRECTED;
++        case MRB_RANGE_OUT:
++          return STR_OUT_OF_RANGE;
++        default:
++          break;
++      }
+@@ -1228,0 +1231,2 @@ str_convert_range(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen,
++  return STR_OUT_OF_RANGE;
++}
+@@ -2347,13 +2351,28 @@ mrb_str_split_m(mrb_state *mrb, mrb_value str)
+-  else {                        /* split_type == string */
+-    mrb_int str_len = RSTRING_LEN(str);
+-    mrb_int pat_len = RSTRING_LEN(spat);
+-    mrb_int idx = 0;
+-    int ai = mrb_gc_arena_save(mrb);
+-
+-    while (idx < str_len) {
+-      if (pat_len > 0) {
+-        end = mrb_memsearch(RSTRING_PTR(spat), pat_len, RSTRING_PTR(str)+idx, str_len - idx);
+-        if (end < 0) break;
+-      }
+-      else {
+-        end = chars2bytes(str, idx, 1);
++  static enum str_range_status
++str_index_range(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_int *beg, mrb_int *len)
++{
++  switch (mrb_type(indx)) {
++    default:
++      indx = mrb_ensure_int_type(mrb, indx);
++      /* fall through */
++    case MRB_TT_INTEGER:
++      *beg = mrb_integer(indx);
++      *len = 1;
++      return STR_CHAR_RANGE;
++
++    case MRB_TT_STRING:
++      *beg = str_index_str(mrb, str, indx, 0);
++      if (*beg < 0) { break; }
++      *len = RSTRING_LEN(indx);
++      if (*beg + *len > RSTRING_LEN(str)) { return STR_OUT_OF_RANGE; }
++      return STR_BYTE_RANGE_CORRECTED;
++
++    case MRB_TT_RANGE:
++      *len = RSTRING_CHAR_LEN(str);
++      switch (mrb_range_beg_len(mrb, indx, beg, len, *len, TRUE)) {
++        case MRB_RANGE_OK:
++          return STR_CHAR_RANGE_CORRECTED;
++        case MRB_RANGE_OUT:
++          return STR_OUT_OF_RANGE;
++        default:
++          break;
+@@ -2361,6 +2379,0 @@ mrb_str_split_m(mrb_state *mrb, mrb_value str)
+-      mrb_ary_push(mrb, result, mrb_str_byte_subseq(mrb, str, idx, end));
+-      mrb_gc_arena_restore(mrb, ai);
+-      idx += end + pat_len;
+-      if (lim_p && lim <= ++i) break;
+-    }
+-    beg = idx;
+@@ -2367,0 +2381,2 @@ mrb_str_split_m(mrb_state *mrb, mrb_value str)
++  return STR_OUT_OF_RANGE;
++}

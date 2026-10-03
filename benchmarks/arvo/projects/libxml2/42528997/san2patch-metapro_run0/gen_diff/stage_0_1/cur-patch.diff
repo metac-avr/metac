@@ -1,0 +1,37 @@
+diff --git a/parser.c b/parser.c
+index 14288713..ee96cafd 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4971,9 +4971,17 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-
+-	q = r;
+-	ql = rl;
+-	r = cur;
+-	rl = l;
+-
+-	NEXTL(l);
+-	cur = CUR_CHAR(l);
+-
++q = r;
++ql = rl;
++r = cur;
++rl = l;
++
++NEXTL(l);
++cur = CUR_CHAR(l);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
++    }
++    if (len < size) {
++        buf[len] = 0;
++    } else {
++        /* Prevent out-of-bounds write */
++        if (size > 0) {
++            buf[size - 1] = 0;
++        }
+@@ -4981 +4988,0 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-    buf[len] = 0;
+@@ -4991,2 +4998 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-                          "xmlParseComment: invalid xmlChar value %d\n",
+-	                  cur);
++                          "xmlParseComment: invalid xmlChar value %d\n",	                  cur);

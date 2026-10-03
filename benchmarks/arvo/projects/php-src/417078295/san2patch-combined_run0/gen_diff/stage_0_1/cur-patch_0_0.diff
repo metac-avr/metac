@@ -1,0 +1,17 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..18b4dac44ec 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40396 +40396,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			} else {
++// FIXME: Crash CWE-416: Use After Free
++ 			} else {
+@@ -40406,2 +40407,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
+-			ZVAL_REF(variable_ptr, Z_REF_P(value));
++			if (Z_REFCOUNTED_P(value) && Z_COUNTED_P(value)) {
++				Z_ADDREF_P(value);
++				ZVAL_REF(variable_ptr, Z_REF_P(value));
++			} else {
++				ZVAL_UNDEF(variable_ptr);
++			}

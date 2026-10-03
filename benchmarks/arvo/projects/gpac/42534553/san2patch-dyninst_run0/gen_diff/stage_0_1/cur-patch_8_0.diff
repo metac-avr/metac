@@ -1,0 +1,21 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..db762652d 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -831,0 +832 @@ void gf_net_close_capture()
++		/* Clear pointer to avoid dangling pointer access */
+@@ -1480,5 +1481,9 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
+-			gf_netcap_load_pck_pcap(nf);
+-
++		// Prevent use-after-free by checking if cap_bs is valid before use
++		if (nf->cap_bs) {
++			if (nf->cap_mode==NETCAP_GPAC)
++				gf_netcap_load_pck_gpac(nf);
++			else
++				gf_netcap_load_pck_pcap(nf);
++		}
++// FIXME: Crash CWE-416: Use After Free
++ 

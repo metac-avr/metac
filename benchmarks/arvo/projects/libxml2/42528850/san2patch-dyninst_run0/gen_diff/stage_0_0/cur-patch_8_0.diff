@@ -1,0 +1,49 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..ea2d58d5 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4367 +4367 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4375 +4375 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++     xmlNodePtr ret;
+@@ -4376,0 +4377,10 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (node == NULL)
++        return(NULL);
++    
++    /* Validate node before copying to prevent use-after-free */
++    if (node->type == XML_NAMESPACE_DECL) {
++        xmlNsPtr ns = (xmlNsPtr) node;
++        if (ns->context != NULL && ns->href == NULL) 
++            return(NULL);
++    }
++    
+@@ -4387,2 +4397 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
++ * * Returns: a new #xmlNodePtr, or NULL in case of error.
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..3b684ba7 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -420,0 +421 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
++// FIXME: Crash CWE-416: Use After Free - Fixed by delayed cleanup queue
+@@ -422,2 +423,15 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Move namespace definitions to delayed cleanup queue instead of immediate freeing */
++        if ((reader != NULL) && (reader->ctxt != NULL)) {
++            /* Add to cleanup queue for later processing */
++            xmlNsPtr ns = cur->nsDef;
++            while (ns != NULL) {
++                ns->next = (xmlNsPtr)reader->ctxt->queuedCleanup;
++                reader->ctxt->queuedCleanup = (void*)ns;
++                ns = ns->next;
++            }
++        } else {
++            /* Fallback to direct freeing when no context available */
++            xmlFreeNsList(cur->nsDef);
++        }
++    }

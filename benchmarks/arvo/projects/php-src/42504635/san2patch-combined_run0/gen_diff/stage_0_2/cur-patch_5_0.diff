@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..a618462bb87 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43,4 +43,6 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
+-			gc_check_possible_root(ref);
++		if (ref && !(GC_FLAGS(ref) & GC_MARKED)) {
++			if (!GC_DELREF(ref)) {
++				rc_dtor_func(ref);
++			} else {
++				gc_check_possible_root(ref);
++			}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..26e902c13e7 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1750 +1750,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1752 +1753,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				i_zval_ptr_dtor(zv);
++				if (EXPECTED(!Z_ISREF_P(zv)) || (Z_ISREF_P(zv) && Z_REF_P(zv)->gc.u.type >= 0)) {
++					i_zval_ptr_dtor(zv);
++				}
+@@ -1760 +1763,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(!Z_ISREF_P(&p->val)) || (Z_ISREF_P(&p->val) && Z_REF_P(&p->val)->gc.u.type >= 0)) {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1764 +1769,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(!Z_ISREF_P(&p->val)) || (Z_ISREF_P(&p->val) && Z_REF_P(&p->val)->gc.u.type >= 0)) {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1772 +1779,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						i_zval_ptr_dtor(&p->val);
++						if (EXPECTED(!Z_ISREF_P(&p->val)) || (Z_ISREF_P(&p->val) && Z_REF_P(&p->val)->gc.u.type >= 0)) {
++							i_zval_ptr_dtor(&p->val);
++						}

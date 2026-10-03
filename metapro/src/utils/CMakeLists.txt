@@ -1,0 +1,1 @@
+target_sources(metapro PUBLIC path.cpp project.cpp timer.cpp string.cpp)

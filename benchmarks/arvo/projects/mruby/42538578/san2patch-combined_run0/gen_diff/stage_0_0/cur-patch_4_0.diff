@@ -1,0 +1,34 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..a4c7d6487 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348,5 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
++    void *new_cibase = mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    if (new_cibase == NULL) {
++      mrb_raise(mrb, E_RUNTIME_ERROR, "cannot realloc callinfo stack");
+@@ -350 +354 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    c->cibase = (mrb_callinfo*)new_cibase;
+@@ -2711,7 +2715,10 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
+-      if (mrb_nil_p(regs[a])) {
+-        regs[a] = splat;
+-      }
+-      else {
+-        mrb_assert(mrb_array_p(regs[a]));
+-        mrb_ary_concat(mrb, regs[a], splat);
++      /* Validate call stack integrity before array operations */
++      if (mrb->c && mrb->c->ci) {
++        mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
++        if (mrb_nil_p(regs[a])) {
++          regs[a] = splat;
++        }
++        else {
++          mrb_assert(mrb_array_p(regs[a]));
++          mrb_ary_concat(mrb, regs[a], splat);
++        }
+@@ -2722 +2728,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

@@ -1,0 +1,55 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..d9a3b73554e 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,2 +1145,21 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
++#ifndef ZEND_TYPES_H
++#define ZEND_TYPES_H
++
++/*
++   +----------------------------------------------------------------------+
++   | Copyright (c) The PHP Group                                          |
++   +----------------------------------------------------------------------+
++   | This source file is subject to version 3.01 of the PHP license,      |
++   | that is bundled with this package in the file LICENSE, and is        |
++   | available through the world-wide-web at the following url:           |
++   | http://www.php.net/license/3_01.txt                                  |
++   | If you did not receive a copy of the PHP license and are unable to   |
++   | obtain it through the world-wide-web, please send a note to          |
++   | license@php.net so we can mail you a copy immediately.               |
++   +----------------------------------------------------------------------+
++   | Author: Nikita Popov <nikic@php.net>                                 |
++   +----------------------------------------------------------------------+
++*/
++
++#ifdef ZEND_ENABLE_STATIC_TSRMLS_CACHE
++#define ZEND_TLS static TSRM_TLS
+@@ -1148,4 +1167 @@ extern ZEND_API bool zend_rc_debug;
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
++#define ZEND_TLS TSRM_TLS
+@@ -1153,0 +1170,2 @@ extern ZEND_API bool zend_rc_debug;
++#include "zend_portability.h"
++
+@@ -1154,0 +1173 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (p == NULL) return 0;
+@@ -1166 +1185 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-}
++}}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..a7fc0ae88eb 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54420,0 +54421 @@ ZEND_API void execute_ex(zend_execute_data *ex)
++		zend_execute_data *original_execute_data = execute_data;
+@@ -54422 +54423 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		if (UNEXPECTED(!OPLINE)) {
++		if (UNEXPECTED(!OPLINE || execute_data != original_execute_data)) {
+@@ -54434,2 +54435 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-				ZEND_PRE_INC_STATIC_PROP_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-				HYBRID_BREAK();
++				ZEND_PRE_INC_STATIC_PROP_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);				HYBRID_BREAK();

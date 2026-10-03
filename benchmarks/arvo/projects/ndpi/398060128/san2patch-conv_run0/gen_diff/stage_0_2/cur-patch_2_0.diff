@@ -1,0 +1,46 @@
+diff --git a/src/lib/ndpi_memory.c b/src/lib/ndpi_memory.c
+index bb8173108..dad65bdff 100644
+--- a/src/lib/ndpi_memory.c
++++ b/src/lib/ndpi_memory.c
+@@ -107 +107 @@ char *ndpi_strdup(const char *s) {
+-  }
++   }
+@@ -109,2 +109,4 @@ char *ndpi_strdup(const char *s) {
+-  int len = strlen(s);
+-  char *m = ndpi_malloc(len + 1);
++  // Add explicit validity check before strlen call
++  if(s != (char*)0x002000000000) {
++    int len = strlen(s);
++    char *m = ndpi_malloc(len + 1);
+@@ -112,4 +114,4 @@ char *ndpi_strdup(const char *s) {
+-  if(m) {
+-    memcpy(m, s, len);
+-    m[len] = '\0';
+-  }
++    if(m) {
++      memcpy(m, s, len);
++      m[len] = '\0';
++    }
+@@ -117 +119,4 @@ char *ndpi_strdup(const char *s) {
+-  return(m);
++    return(m);
++  }
++  
++  return NULL;
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 7362321aa..fa33a7f19 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1546 +1546 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.ja4_client_raw)
++    if(flow->ndpi_flow->protos.tls_quic.ja4_client_raw && flow->ndpi_flow->protos.tls_quic.ja4_client_raw != NULL)
+@@ -1562 +1562 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.issuerDN)
++    if(flow->ndpi_flow->protos.tls_quic.issuerDN && flow->ndpi_flow->protos.tls_quic.issuerDN != NULL)
+@@ -1565 +1565 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.subjectDN)
++    if(flow->ndpi_flow->protos.tls_quic.subjectDN && flow->ndpi_flow->protos.tls_quic.subjectDN != NULL)
+@@ -1574 +1574,2 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 

@@ -1,0 +1,19 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..e20eb44d95 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -266 +266,3 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
+-    read_len   = search_end - search_start + 1;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     read_len   = search_end - search_start + 1;
++    if (read_len <= 0) return size;  // Prevent negative or zero read length
+@@ -268 +270,2 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
+-    size       = find_headers_search(fpc, buf, read_len, search_start);
++    if (read_len >= 4)  // Only proceed if sufficient data for get_bits
++        size       = find_headers_search(fpc, buf, read_len, search_start);
+@@ -277,0 +281 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
++        if (read_len <= 0) return size;  // Prevent negative or zero read length
+@@ -289 +293,2 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
+-        temp     = find_headers_search(fpc, buf, read_len, search_start);
++        if (read_len >= 4)  // Only proceed if sufficient data for get_bits
++            temp     = find_headers_search(fpc, buf, read_len, search_start);

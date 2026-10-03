@@ -1,0 +1,30 @@
+diff --git a/libavcodec/faanidct.c b/libavcodec/faanidct.c
+index 3921f82dae..01b9a8a6ea 100644
+--- a/libavcodec/faanidct.c
++++ b/libavcodec/faanidct.c
+@@ -58 +58 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-    for(i=0; i<y*8; i+=y){
++    for(i=0; i<y*8 && i<8; i+=y){  // Added bounds check: i<8 to prevent overflow
+@@ -114 +114 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-        }else{
++         }else{
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..20d1bdd7a8 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -1622 +1622,2 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-            int16_t (*block)[64] = &s->blocks[c][block_idx];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             int16_t (*block)[64] = &s->blocks[c][block_idx];
+@@ -1624,3 +1625,8 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-                s->idsp.idct_put(ptr, linesize, *block);
+-                if (s->bits & 7)
+-                    shift_output(s, ptr, linesize);
++                // Bounds check to prevent heap overflow - ensure ptr is within allocated memory
++                int max_offset = (s->height >> s->avctx->lowres) * linesize - (bytes_per_pixel * 8 >> s->avctx->lowres);
++                int current_offset = ptr - data;
++                if (current_offset >= 0 && current_offset <= max_offset) {
++                    s->idsp.idct_put(ptr, linesize, *block);
++                    if (s->bits & 7)
++                        shift_output(s, ptr, linesize);
++                }

@@ -1,0 +1,45 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..84a057237 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -2463,0 +2464 @@ static void gf_m2ts_get_adaptation_field(GF_M2TS_Demuxer *ts, GF_M2TS_Adaptation
++						u32 prefix_len = 0;
+@@ -2466,2 +2467,8 @@ static void gf_m2ts_get_adaptation_field(GF_M2TS_Demuxer *ts, GF_M2TS_Adaptation
+-							strcpy(URL, "http://");
+-							_url = URL+7;
++							prefix_len = 7;
++							if (url_len + prefix_len < sizeof(URL)) {
++								strcpy(URL, "http://");
++								_url = URL+7;
++							} else {
++								URL[0] = 0;
++								_url = NULL;
++							}
+@@ -2470,2 +2477,8 @@ static void gf_m2ts_get_adaptation_field(GF_M2TS_Demuxer *ts, GF_M2TS_Adaptation
+-							strcpy(URL, "https://");
+-							_url = URL+8;
++							prefix_len = 8;
++							if (url_len + prefix_len < sizeof(URL)) {
++								strcpy(URL, "https://");
++								_url = URL+8;
++							} else {
++								URL[0] = 0;
++								_url = NULL;
++							}
+@@ -2472,0 +2486,13 @@ static void gf_m2ts_get_adaptation_field(GF_M2TS_Demuxer *ts, GF_M2TS_Adaptation
++						default:
++							URL[0] = 0;
++							_url = NULL;
++							break;
++						}
++						if (_url && url_len > 0) {
++							u32 max_read_len = sizeof(URL) - prefix_len - 1;
++							if (url_len > max_read_len)
++								url_len = max_read_len;
++							gf_bs_read_data(bs, _url, url_len);
++							_url[url_len] = 0;
++						} else if (!_url) {
++							gf_bs_skip_bytes(bs, url_len);
+@@ -2474,2 +2499,0 @@ static void gf_m2ts_get_adaptation_field(GF_M2TS_Demuxer *ts, GF_M2TS_Adaptation
+-						gf_bs_read_data(bs, _url, url_len);
+-						_url[url_len >= GF_ARRAY_LENGTH(URL) ? GF_ARRAY_LENGTH(URL)-1 : url_len] = 0;

@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..8fad29a9023 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -286,2 +286,7 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-	for (uint32_t i = 0; i < argc; i++) {
+-		zval_ptr_dtor(&args[i]);
++	if (args) {
++		for (uint32_t i = 0; i < argc; i++) {
++			zval_ptr_dtor(&args[i]);
++		}
++		efree(args);
++	} else {
++		(void)argc; // Prevent unused variable warning
+@@ -289,3 +294 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-
+-	efree(args);
+-
++ 
+@@ -350,2 +353,6 @@ static void attr_free(zval *v)
+-	zend_string_release(attr->name);
+-	zend_string_release(attr->lcname);
++	if (attr->name && !ZSTR_IS_INTERNED(attr->name)) {
++		zend_string_release(attr->name);
++	}
++	if (attr->lcname && !ZSTR_IS_INTERNED(attr->lcname)) {
++		zend_string_release(attr->lcname);
++	}
+@@ -354 +361 @@ static void attr_free(zval *v)
+-		if (attr->args[i].name) {
++		if (attr->args[i].name && !ZSTR_IS_INTERNED(attr->args[i].name)) {

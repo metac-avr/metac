@@ -1,0 +1,83 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index c3c18764d..522b0225c 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1167,2 +1167,4 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.server_names_len > 0 && flow->ndpi_flow->protos.tls_quic.server_names)
+-      flow->ssh_tls.server_names = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.server_names);
++    if(flow->ndpi_flow->protos.tls_quic.server_names_len > 0 && flow->ndpi_flow->protos.tls_quic.server_names) {
++      if(flow->ndpi_flow->protos.tls_quic.server_names && strlen(flow->ndpi_flow->protos.tls_quic.server_names) > 0) 
++        flow->ssh_tls.server_names = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.server_names);
++    }
+@@ -1186 +1188,2 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1188,2 +1191,4 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      if((flow->ssh_tls.tls_alpn = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.alpn)) != NULL)
+-	correct_csv_data_field(flow->ssh_tls.tls_alpn);
++      if(flow->ndpi_flow->protos.tls_quic.alpn && strlen(flow->ndpi_flow->protos.tls_quic.alpn) > 0) {
++        if((flow->ssh_tls.tls_alpn = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.alpn)) != NULL)
++	  correct_csv_data_field(flow->ssh_tls.tls_alpn);
++      }
+@@ -1192,2 +1197,4 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.issuerDN)
+-      flow->ssh_tls.tls_issuerDN = strdup(flow->ndpi_flow->protos.tls_quic.issuerDN);
++    if(flow->ndpi_flow->protos.tls_quic.issuerDN) {
++      if(flow->ndpi_flow->protos.tls_quic.issuerDN && strlen(flow->ndpi_flow->protos.tls_quic.issuerDN) > 0)
++        flow->ssh_tls.tls_issuerDN = strdup(flow->ndpi_flow->protos.tls_quic.issuerDN);
++    }
+@@ -1195,2 +1202,4 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.subjectDN)
+-      flow->ssh_tls.tls_subjectDN = strdup(flow->ndpi_flow->protos.tls_quic.subjectDN);
++    if(flow->ndpi_flow->protos.tls_quic.subjectDN) {
++      if(flow->ndpi_flow->protos.tls_quic.subjectDN && strlen(flow->ndpi_flow->protos.tls_quic.subjectDN) > 0)
++        flow->ssh_tls.tls_subjectDN = strdup(flow->ndpi_flow->protos.tls_quic.subjectDN);
++    }
+@@ -1199,2 +1208,4 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      flow->ssh_tls.encrypted_sni.esni = strdup(flow->ndpi_flow->protos.tls_quic.encrypted_sni.esni);
+-      flow->ssh_tls.encrypted_sni.cipher_suite = flow->ndpi_flow->protos.tls_quic.encrypted_sni.cipher_suite;
++      if(flow->ndpi_flow->protos.tls_quic.encrypted_sni.esni && strlen(flow->ndpi_flow->protos.tls_quic.encrypted_sni.esni) > 0) {
++        flow->ssh_tls.encrypted_sni.esni = strdup(flow->ndpi_flow->protos.tls_quic.encrypted_sni.esni);
++        flow->ssh_tls.encrypted_sni.cipher_suite = flow->ndpi_flow->protos.tls_quic.encrypted_sni.cipher_suite;
++      }
+@@ -1204,2 +1215,4 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      if((flow->ssh_tls.tls_supported_versions = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.tls_supported_versions)) != NULL)
+-	correct_csv_data_field(flow->ssh_tls.tls_supported_versions);
++      if(flow->ndpi_flow->protos.tls_quic.tls_supported_versions && strlen(flow->ndpi_flow->protos.tls_quic.tls_supported_versions) > 0) {
++        if((flow->ssh_tls.tls_supported_versions = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.tls_supported_versions)) != NULL)
++	  correct_csv_data_field(flow->ssh_tls.tls_supported_versions);
++      }
+@@ -1210,9 +1223,11 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.alpn);
+-      correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.tls_supported_versions);
+-
+-      flow->info_type = INFO_TLS_QUIC_ALPN_VERSION;
+-      ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s",
+-                    flow->ndpi_flow->protos.tls_quic.alpn);
+-      ndpi_snprintf(flow->tls_quic.tls_supported_versions,
+-                    sizeof(flow->tls_quic.tls_supported_versions),
+-                    "%s", flow->ndpi_flow->protos.tls_quic.tls_supported_versions);
++      if(flow->ndpi_flow->protos.tls_quic.alpn && flow->ndpi_flow->protos.tls_quic.tls_supported_versions) {
++        correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.alpn);
++        correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.tls_supported_versions);
++
++        flow->info_type = INFO_TLS_QUIC_ALPN_VERSION;
++        ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s",
++                      flow->ndpi_flow->protos.tls_quic.alpn);
++        ndpi_snprintf(flow->tls_quic.tls_supported_versions,
++                      sizeof(flow->tls_quic.tls_supported_versions),
++                      "%s", flow->ndpi_flow->protos.tls_quic.tls_supported_versions);
++      }
+@@ -1220 +1235,2 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.alpn);
++      if(flow->ndpi_flow->protos.tls_quic.alpn) {
++        correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.alpn);
+@@ -1222,3 +1238,4 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      flow->info_type = INFO_TLS_QUIC_ALPN_ONLY;
+-      ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s",
+-                    flow->ndpi_flow->protos.tls_quic.alpn);
++        flow->info_type = INFO_TLS_QUIC_ALPN_ONLY;
++        ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s",
++                      flow->ndpi_flow->protos.tls_quic.alpn);
++      }

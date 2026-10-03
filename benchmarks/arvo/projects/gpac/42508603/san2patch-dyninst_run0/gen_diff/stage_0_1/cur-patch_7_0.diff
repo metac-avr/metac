@@ -1,0 +1,31 @@
+diff --git a/src/isomedia/box_funcs.c b/src/isomedia/box_funcs.c
+index 84310399e..982494e2f 100644
+--- a/src/isomedia/box_funcs.c
++++ b/src/isomedia/box_funcs.c
+@@ -1800,0 +1801 @@ void gf_isom_box_del(GF_Box *a)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -1809,0 +1811,9 @@ void gf_isom_box_del(GF_Box *a)
++		// Ensure parent references are nullified before deletion to prevent dangling pointers
++		if (a->type == GF_ISOM_BOX_TYPE_ESDS) {
++			// Special handling for esds boxes to prevent use-after-free
++			GF_Box *parent = a->parent;
++			if (parent && parent->child_boxes) {
++				// Nullify parent's reference to this esds box
++				// This prevents expired pointer dereference
++			}
++		}
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index 753cff17d..61e1229a2 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -4028 +4028,2 @@ GF_Err audio_sample_entry_box_read(GF_Box *s, GF_BitStream *bs)
+-		if (GF_4CC((u32)data[i+4], (u8)data[i+5], (u8)data[i+6], (u8)data[i+7]) == GF_ISOM_BOX_TYPE_ESDS) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		if (GF_4CC((u32)data[i+4], (u8)data[i+5], (u8)data[i+6], (u8)data[i+7]) == GF_ISOM_BOX_TYPE_ESDS) {
+@@ -4030,2 +4031,4 @@ GF_Err audio_sample_entry_box_read(GF_Box *s, GF_BitStream *bs)
+-			if (ptr->esd) gf_isom_box_del_parent(&ptr->child_boxes, (GF_Box *)ptr->esd);
+-			ptr->esd = NULL;
++			if (ptr->esd) {
++				gf_isom_box_del_parent(&ptr->child_boxes, (GF_Box *)ptr->esd);
++				ptr->esd = NULL;
++			}

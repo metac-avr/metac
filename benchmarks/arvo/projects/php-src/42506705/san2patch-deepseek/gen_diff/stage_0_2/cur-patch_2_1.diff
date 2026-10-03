@@ -1,0 +1,30 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..a375ff637c0 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -398,0 +399 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
++			GC_ADDREF(ht);
+@@ -400 +401,9 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-			goto num_index;
++			if (Z_TYPE_P(&EG(current_execute_data)->opline->op1.var) == IS_ARRAY && Z_ARR_P(&EG(current_execute_data)->opline->op1.var) == ht) {
++				if (GC_DELREF(ht) == 0) {
++					zend_array_destroy(ht);
++				}
++				goto num_index;
++			}
++			zend_array_destroy(ht);
++			undef_result_after_exception();
++			return;
+@@ -463,0 +473 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_is_helper(zend_array *ht, zval *dim
++			GC_ADDREF(ht);
+@@ -465 +475,9 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_is_helper(zend_array *ht, zval *dim
+-			goto num_index;
++			if (Z_TYPE_P(&EG(current_execute_data)->opline->op1.var) == IS_ARRAY && Z_ARR_P(&EG(current_execute_data)->opline->op1.var) == ht) {
++				if (GC_DELREF(ht) == 0) {
++					zend_array_destroy(ht);
++				}
++				goto num_index;
++			}
++			zend_array_destroy(ht);
++			undef_result_after_exception();
++			return;

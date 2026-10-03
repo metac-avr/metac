@@ -1,0 +1,34 @@
+diff --git a/src/isomedia/box_funcs.c b/src/isomedia/box_funcs.c
+index 26993b9aa..ba75f7665 100644
+--- a/src/isomedia/box_funcs.c
++++ b/src/isomedia/box_funcs.c
+@@ -1906,2 +1906,2 @@ GF_Err gf_isom_box_array_read(GF_Box *parent, GF_BitStream *bs)
+-		parent_type = ((GF_UnknownBox*)parent)->original_4cc;
+-	}
++        parent_type = ((GF_UnknownBox*)parent)->original_4cc;
++        }
+@@ -1909,9 +1909,15 @@ GF_Err gf_isom_box_array_read(GF_Box *parent, GF_BitStream *bs)
+-	//we may have terminators in some QT files (4 bytes set to 0 ...)
+-	while (parent->size>=8) {
+-		e = gf_isom_box_parse_ex(&a, bs, parent_type, GF_FALSE, skip_logs ? 0 : parent->size);
+-		if (e) {
+-			if (a) gf_isom_box_del(a);
+-			return (e==GF_SKIP_BOX) ? GF_OK : e;
+-		}
+-		//sub box parsing aborted with no error
+-		if (!a) return GF_OK;
++        // FIXME: Crash CWE-787: Out-of-bounds Write
++        //we may have terminators in some QT files (4 bytes set to 0 ...)
++        while (parent->size>=8) {
++                // Add bounds checking to prevent out-of-bounds writes
++                u64 remaining_size = parent->size;
++                u64 available_bytes = gf_bs_available(bs);
++                if (remaining_size > available_bytes) {
++                        return GF_ISOM_INVALID_FILE;
++                }
++                e = gf_isom_box_parse_ex(&a, bs, parent_type, GF_FALSE, skip_logs ? 0 : parent->size);
++                if (e) {
++                        if (a) gf_isom_box_del(a);
++                        return (e==GF_SKIP_BOX) ? GF_OK : e;
++                }
++                //sub box parsing aborted with no error		if (!a) return GF_OK;

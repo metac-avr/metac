@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..0802e79261a 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1308 +1308,2 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz) || Z_TYPE_P(pz) == IS_ARRAY);
++// FIXME: Crash CWE-416: Use After Free
++ 	ZEND_ASSERT(Z_REFCOUNTED_P(pz) || Z_TYPE_P(pz) == IS_ARRAY);
+@@ -1309,0 +1311,3 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
++	if (Z_TYPE_P(pz) == IS_OBJECT && !GC_REFCOUNT(Z_COUNTED_P(pz))) {
++		return 0;
++	}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 9efe205abe0..6cfa0b31cf8 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -213 +213,6 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		zv = Z_INDIRECT_P(zv);
++		zend_object *obj = Z_OBJ_P(Z_INDIRECT_P(zv));
++		if (obj && !IS_OBJ_FREED(obj)) {
++			zv = Z_INDIRECT_P(zv);
++		} else {
++			return ZEND_HASH_APPLY_KEEP;
++		}

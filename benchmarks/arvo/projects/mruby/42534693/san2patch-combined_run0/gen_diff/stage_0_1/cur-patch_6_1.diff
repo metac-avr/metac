@@ -1,0 +1,24 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..102f0e8cf 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -164,0 +165,14 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
++// Fixed CWE-825: Expired Pointer Dereference - Added null check before accessing ht
++#ifdef MRB_GC_STRESS
++#define DEFINE_HT_SIZE_CHECK(func_name, type, member) \
++  type func_name(hash_entry *hsh) { \
++    if (!hsh || !hsh->ht) return 0; \
++    return hsh->ht->member; \
++  }
++#else
++#define DEFINE_HT_SIZE_CHECK(func_name, type, member) \
++  type func_name(hash_entry *hsh) { \
++    return (hsh && hsh->ht) ? hsh->ht->member : 0; \
++  }
++#endif
++DEFINE_HT_SIZE_CHECK(ht_size_checked, uint32_t, size)
+@@ -176,3 +190 @@ DEFINE_SWITCHER(ht, HT)
+-} while (0)
+-
+-#define ea_each(ea, size, entry_var, code) do {                               \
++} while (0)#define ea_each(ea, size, entry_var, code) do {                               \

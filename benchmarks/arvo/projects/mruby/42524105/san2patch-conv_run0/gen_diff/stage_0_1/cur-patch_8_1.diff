@@ -1,0 +1,23 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..4939f6fbf 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1455,0 +1456,4 @@ mrb_str_chomp_bang(mrb_state *mrb, mrb_value str)
++  
++  /* Validate rs is not nil before accessing */
++  if (mrb_nil_p(rs)) return mrb_nil_value();
++  
+@@ -1458 +1462,2 @@ mrb_str_chomp_bang(mrb_state *mrb, mrb_value str)
+-    newline = RSTRING_PTR(rs)[rslen-1];
++// FIXME: Crash CWE-416: Use After Free
++     newline = RSTRING_PTR(rs)[rslen-1];
+@@ -1676 +1681 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-  while (s < send) {
++  while (s < send && len > 0) {
+@@ -1683,2 +1688,2 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-
+-    /* xor the bottom with the current octet */
++ 
++    /* xor the bottom with the current octet - bounds check prevents UAF */
+@@ -1685,0 +1691 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
++    len--;

@@ -1,0 +1,28 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..7c19100cc 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1024,0 +1025,5 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
++static void ndpi_check_http_payload(struct ndpi_detection_module_struct *ndpi_struct,
++                                             struct ndpi_flow_struct *flow) {
++  char buf[INET_ADDRSTRLEN];
++  char msg[256];
++  int hostname_just_set = 0;
+@@ -1025,0 +1031,7 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
++  if(flow->packet.detected_protocol_stack[0] == NDPI_PROTOCOL_HTTP) {
++    /* Check if the Host: header matches the initial IP address */
++    if((!ndpi_struct->disable_http_host_check) && (flow->host_server_name[0] != '\0')
++       && (flow->l4.tcp.http_stage == HTTP_CLIENT_REQUEST)
++       && (ndpi_struct->packet.iph != NULL)) {
++      if(strcmp(flow->host_server_name, ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf))) != 0) {
++	if(ndpi_struct->http_malformed_host_header_risk) {
+@@ -1032 +1043,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+@@ -1035 +1046,4 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
++  // Ensure host_server_name is valid and within bounds before parsing
++  if (flow->host_server_name != NULL && strnlen(flow->host_server_name, sizeof(flow->host_server_name)) < sizeof(flow->host_server_name)) {
++    ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
++  }
+@@ -1046 +1059,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-

@@ -1,0 +1,26 @@
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..11f7e67d9 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -148 +148,9 @@ GF_BitStream *gf_bs_new(const u8 *buffer, u64 BufferSize, u32 mode)
+-		break;
++		/* Initialize buffer boundaries for safe reading */
++		if (buffer && BufferSize == 0) {
++			tmp->size = 0;
++			tmp->position = 0;
++			tmp->end = 0;
++		} else {
++			tmp->end = BufferSize;
++		}
++ 		break;
+diff --git a/src/filters/reframe_av1.c b/src/filters/reframe_av1.c
+index 8309f74b1..a5a1e54f2 100644
+--- a/src/filters/reframe_av1.c
++++ b/src/filters/reframe_av1.c
+@@ -1003,0 +1004,6 @@ GF_Err av1dmx_parse_av1(GF_Filter *filter, GF_AV1DmxCtx *ctx)
++	
++	// Validate that we have a valid bitstream before processing
++	if (!ctx->bs) {
++		return GF_BAD_PARAM;
++	}
++	

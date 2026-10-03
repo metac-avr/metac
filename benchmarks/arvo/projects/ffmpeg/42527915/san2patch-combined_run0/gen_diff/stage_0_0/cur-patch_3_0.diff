@@ -1,0 +1,19 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..02d5eba477 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
++     } else {
+@@ -246,0 +247,3 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++    
++    // Clear the VLC structure to prevent use-after-free
++    memset(vlc, 0, sizeof(*vlc));
+@@ -427 +430,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-416: Use After Free
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
++
++    // Validate pointers before use to prevent use-after-free
++    if (!table || !single || !buf)
++        return AVERROR(EINVAL);

@@ -1,0 +1,48 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..ca274ff6 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+@@ -4283 +4283 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    if (ns != NULL) {
++	    if ((ns != NULL) && (ns->href != NULL)) {
+@@ -4288 +4288 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-            } else {
++            } else if (node->ns != NULL) {
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..7107a7be 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -402,3 +402,27 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	 (cur->type == XML_XINCLUDE_END)) &&
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	 (cur->type == XML_XINCLUDE_END)) &&
++	(cur->nsDef != NULL)) {
++        /* Add reference counting check to prevent premature freeing */
++        xmlNsPtr ns = cur->nsDef;
++        int can_free = 1;
++        
++        /* Check if any namespace is still referenced */
++        while (ns != NULL) {
++            if (ns->context != NULL) {
++                can_free = 0;
++                break;
++            }
++            ns = ns->next;
++        }
++        
++        if (can_free) {
++            xmlFreeNsList(cur->nsDef);
++        } else {
++            /* Mark for deferred cleanup instead of immediate free */
++            ns = cur->nsDef;
++            while (ns != NULL) {
++                ns->context = (void*)0x1; /* Mark as pending cleanup */
++                ns = ns->next;
++            }
++        }
++    }

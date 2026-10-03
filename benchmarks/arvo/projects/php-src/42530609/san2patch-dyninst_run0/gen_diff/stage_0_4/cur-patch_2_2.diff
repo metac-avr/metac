@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..0e0f3120465 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -44 +44 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && !GC_DELREF(ref) && ref) {
+@@ -47 +47,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-			gc_check_possible_root(ref);
++			if (ref && !GC_IS_FREE(ref)) {
++				gc_check_possible_root(ref);
++			}
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index dbdc08c5a87..a834d5b52e0 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -290 +290,3 @@ static zend_object *spl_fixedarray_object_new_ex(zend_class_entry *class_type, z
+-		spl_fixedarray_copy_ctor(&intern->array, &other->array);
++		if (other && ZEND_GC_TYPE(other->std.gc) != IS_GC_FREE) {
++			spl_fixedarray_copy_ctor(&intern->array, &other->array);
++		}
+@@ -307 +309 @@ static zend_object *spl_fixedarray_object_new_ex(zend_class_entry *class_type, z
+-		if (fptr_count->common.scope == parent) {
++		if (fptr_count && fptr_count->common.scope == parent) {

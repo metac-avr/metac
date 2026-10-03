@@ -1,0 +1,54 @@
+diff --git a/main/spprintf.c b/main/spprintf.c
+index 4c01347fcf4..163c9c0668e 100644
+--- a/main/spprintf.c
++++ b/main/spprintf.c
+@@ -778 +778,2 @@ PHPAPI void php_printf_to_smart_string(smart_string *buf, const char *format, va
+-PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list ap) /* {{{ */
++// FIXME: Crash CWE-416: Use After Free
++ PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list ap) /* {{{ */
+@@ -780 +781,3 @@ PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list
+-	xbuf_format_converter(buf, 0, format, ap);
++	if (buf != NULL && format != NULL) {
++		xbuf_format_converter(buf, 0, format, ap);
++	}
+@@ -782 +785 @@ PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list
+-/* }}} */
++/* }}} */
+\ No newline at end of file
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..b3793168f52 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1445,3 +1445,3 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			EG(exit_status) = 255;
+-		}
+-	}
++                        EG(exit_status) = 255;
++                }
++        }
+@@ -1452,2 +1452,3 @@ static ZEND_COLD void zend_error_va_list(
+-		int orig_type, zend_string *error_filename, uint32_t error_lineno,
+-		const char *format, va_list args)
++                int orig_type, zend_string *error_filename, uint32_t error_lineno,
++// FIXME: Crash CWE-416: Use After Free
++                const char *format, va_list args)
+@@ -1455,3 +1456,5 @@ static ZEND_COLD void zend_error_va_list(
+-	zend_string *message = zend_vstrpprintf(0, format, args);
+-	zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
+-	zend_string_release(message);
++        zend_string *message = zend_vstrpprintf(0, format, args);
++        if (message) {
++                zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
++                zend_string_release(message);
++        }
+@@ -1461,5 +1464,5 @@ static ZEND_COLD void get_filename_lineno(int type, zend_string **filename, uint
+-	/* Obtain relevant filename and lineno */
+-	switch (type) {
+-		case E_CORE_ERROR:
+-		case E_CORE_WARNING:
+-			*filename = NULL;
++        /* Obtain relevant filename and lineno */
++        switch (type) {
++                case E_CORE_ERROR:
++                case E_CORE_WARNING:
++                        *filename = NULL;

@@ -1,0 +1,63 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..74315a8d50c 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1680,0 +1681,16 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
++{
++	Bucket *p, *end;
++
++	IS_CONSISTENT(ht);
++
++	if (!(HT_FLAGS(ht) & HASH_FLAG_PACKED)) {
++		HT_HASH_RESET(ht);
++	}
++	end = ht->arData + ht->nNumUsed;
++	for (p = ht->arData; p != end; p++) {
++		if (Z_TYPE(p->val) == IS_UNDEF) continue;
++		_ht_val_ptr_dtor_wrapper(&p->val ZEND_FILE_LINE_CC);
++	}
++	if (ht->nNumUsed) {
++		PEFREE(ht->arData);
+@@ -1683,0 +1700,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Fixed CWE-416: Use After Free - Reset GC flags to prevent reuse */
++	GC_TYPE_INFO(&(ht->gc)) = 0;
+@@ -1688,5 +1705,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..e1f796efcc2 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,7 +46,0 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+-	/* IS_OBJECT       */ (zend_rc_dtor_func_t)zend_objects_store_del,
+-	/* IS_RESOURCE     */ (zend_rc_dtor_func_t)zend_list_free,
+-	/* IS_REFERENCE    */ (zend_rc_dtor_func_t)zend_reference_destroy,
+-	/* IS_CONSTANT_AST */ (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+-
+@@ -56,13 +49,7 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-{
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++	if (p != NULL) {
++		zend_uintptr_t gc_type = GC_TYPE(p);
++		if (gc_type <= IS_CONSTANT_AST) {
++			zend_rc_dtor_func[gc_type](p);
++		}
++	}
++}}

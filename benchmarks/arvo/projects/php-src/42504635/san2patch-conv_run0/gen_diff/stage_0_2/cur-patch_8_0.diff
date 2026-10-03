@@ -1,0 +1,47 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..a015de55ac5 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1751,3 +1751,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-			do {
+-				i_zval_ptr_dtor(zv);
+-			} while (++zv != end);
++			if (zv && end) {
++				do {
++					if (zv < end && Z_TYPE_P(zv) != IS_UNDEF) {
++						i_zval_ptr_dtor(zv);
++					}
++				} while (++zv != end);
++			}
+@@ -1760 +1764,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (p && p < end && Z_TYPE(p->val) != IS_UNDEF) {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1764,2 +1770,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
+-					if (EXPECTED(p->key)) {
++					if (p && p < end && Z_TYPE(p->val) != IS_UNDEF) {
++						i_zval_ptr_dtor(&p->val);
++					}
++					if (EXPECTED(p && p->key)) {
+@@ -1771 +1779 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
++					if (p && p < end && EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
+@@ -1773,3 +1781,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						if (EXPECTED(p->key)) {
+-							zend_string_release_ex(p->key, 0);
+-						}
++					}
++					if (EXPECTED(p && p->key)) {
++						zend_string_release_ex(p->key, 0);
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..c906353b137 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref != NULL && !GC_DELREF(ref)) {
+@@ -45 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref != NULL) {

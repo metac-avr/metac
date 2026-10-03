@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..ad8b58eb759 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30087 +30087 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	SAVE_OPLINE();
++SAVE_OPLINE();
+@@ -30090,0 +30091,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++		/* Ensure array is not being garbage collected before separation */
++		zend_array *arr = Z_ARR_P(object_ptr);
++		uint32_t gc_flags = GC_FLAGS(arr);
++		if (UNEXPECTED(gc_flags & GC_IMMUTABLE)) {
++			/* Immutable array, skip separation */
++			goto try_assign_dim_array_immutable;
++		}
++		if (UNEXPECTED(GC_REFCOUNT(arr) == 0)) {
++			/* Array already freed, avoid use-after-free */
++			goto try_assign_dim_array_end;
++		}
+@@ -30092,0 +30104 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++try_assign_dim_array_immutable:
+@@ -30098 +30110 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			value = zend_hash_next_index_insert(Z_ARRVAL_P(object_ptr), value);
++try_assign_dim_array_end:;			value = zend_hash_next_index_insert(Z_ARRVAL_P(object_ptr), value);
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..e21628ab60d 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683,6 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	void *data_addr = HT_GET_DATA_ADDR(ht);
++	if (data_addr) {
++		efree(data_addr);
++	}
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:

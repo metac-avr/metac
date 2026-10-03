@@ -1,0 +1,60 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..ee962f26b0 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,8 +2017,33 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
++#define WRITE_FRAME(bits, PIXEL)                                                         \
++    static void write_frame_##bits##_##PIXEL(Jpeg2000DecoderContext *s, AVFrame *picture,   \
++                                             int tile_index, int compno,                   \
++                                             PIXEL *i_datap, int stepx, int stepy,         \
++                                             int pixelsize, uint8_t *qp_buffer)            \
++    {                                                                                         \
++        Jpeg2000Tile *tile = s->tile + tile_index;                                           \
++        PIXEL *line, *dst;                                                                   \
++        int x, y, *src;                                                                       \
++        int cw, ch, tasksize;                                                                 \
++        uint8_t *end_of_buffer = qp_buffer + (FFABS(picture->linesize[compno]) *           \
++                                              picture->height) - 1;                          \
++        tasksize = av_rescale(stepy, picture->height, tile->ch[compno].ch_off +            \
++                              tile->ch[compno].ih);                                          \
++        for (y = 0; y < tile->ch[compno].ih; y += stepy) {                                    \
++            line = (PIXEL *)(picture->data[compno] +                                         \
++                            (tile->ch[compno].y_offset + y) * picture->linesize[compno]);    \
++            src = tile->comp[compno].data + y * tile->ch[compno].cw;                         \
++            for (cw = 0; cw < tile->ch[compno].cw; cw++) {                                   \
++                dst = line + tile->ch[compno].x_offset + cw * stepx;                         \
++                for (ch = 0; ch < tasksize; ch++) {                                          \
++                    if ((uint8_t*)dst >= end_of_buffer)                                     \
++                        break;                                                               \
++                    for (x = 0; x < stepx; x++) {                                            \
++                        if ((uint8_t*)(dst + x) >= end_of_buffer)                           \
++                            break;                                                           \
++                        dst[x] = *i_datap;                                                   \
++                        i_datap++;                                                           \
++                    }                                                                        \
++                    dst += picture->linesize[compno] / sizeof(PIXEL);                        \
++                }                                                                            \
++            }                                                                                \
++        }                                                                                    \
+@@ -2026,13 +2050,0 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-

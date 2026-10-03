@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..097288cb6 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1121 +1121 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-
++ 
+@@ -1126,0 +1127,3 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
++  
++  // Save current context info before stack extension
++  struct mrb_callinfo *current_ci = c->ci;
+@@ -1128 +1131,13 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-  stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++  
++  // Validate that CI stack is still valid after extension
++  if (current_ci->stack != c->ci->stack) {
++    // Use the updated stack pointer
++    current_ci = c->ci;
++  }
++  
++  if (current_ci->stack == NULL) {
++    stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++  } else {
++    stack_clear(current_ci->stack + stack_keep, nregs - stack_keep);
++  }
++  

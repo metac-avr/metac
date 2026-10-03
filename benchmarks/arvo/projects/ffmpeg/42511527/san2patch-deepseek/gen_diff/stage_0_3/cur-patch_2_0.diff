@@ -1,0 +1,21 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..3eb9cafbd6 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -194 +194 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
++     }
+@@ -196,3 +196,10 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-        ret = flashsv2_prime(s,
+-                             s->blocks[blk_idx].pos,
+-                             s->blocks[blk_idx].size);
++        uint8_t *prime_ptr;
++        if (s->blocks[blk_idx].pos < 0 ||
++            s->blocks[blk_idx].size < 0 ||
++            s->blocks[blk_idx].pos > s->blockbuffer_size ||
++            s->blocks[blk_idx].size > s->blockbuffer_size - s->blocks[blk_idx].pos) {
++            av_log(avctx, AV_LOG_ERROR, "Invalid block offset/size\n");
++            return AVERROR_INVALIDDATA;
++        }
++        prime_ptr = s->blockbuffer + s->blocks[blk_idx].pos;
++        ret = flashsv2_prime(s, prime_ptr, s->blocks[blk_idx].size);

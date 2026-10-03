@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..9046dbd4aba 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,5 +1894,11 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
++		if (UNEXPECTED(op1 == NULL)) {
++			if (orig_op1 != result) {
++				ZVAL_UNDEF(result);
++			}
++			return FAILURE;
++		}
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..f7683e45226 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45992,0 +45993,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++			// Validate var_ptr before proceeding to prevent use-after-free
++			if (UNEXPECTED(Z_TYPE_P(var_ptr) == IS_UNDEF)) {
++				goto assign_dim_op_ret_null;
++			}

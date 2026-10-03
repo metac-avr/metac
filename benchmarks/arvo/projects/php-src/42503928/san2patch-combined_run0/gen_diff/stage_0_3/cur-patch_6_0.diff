@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..46842e6b1ae 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -390,0 +391,3 @@ void shutdown_executor(void) /* {{{ */
++	/* Ensure garbage collection runs before object destruction to prevent use-after-free */
++	zend_gc_collect_cycles();
++
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..f9cf144f3ea 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74,4 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
++	if (ref->val.type_info & IS_OBJ_FREE_CALLED) {
++		return;
++	}
+@@ -82 +85,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// Fixed CWE-825: Expired Pointer Dereference - Check if object is already freed before accessing
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +88,3 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr && !(Z_TYPE_P(zval_ptr) == IS_NULL)) {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -94,2 +100 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

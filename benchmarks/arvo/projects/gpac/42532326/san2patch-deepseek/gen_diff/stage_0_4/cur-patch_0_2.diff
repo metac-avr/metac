@@ -1,0 +1,106 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..6254e88d2 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -409,14 +409,5 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-		char buf[10000];
+-		while (ogg_sync_pageout(&oy, &oggpage) != 1 ) {
+-			char *buffer;
+-			u32 bytes;
+-
+-			if (gf_feof(stream))
+-				break;
+-
+-			bytes = (u32) gf_fread(buf, 10000, stream);
+-			if (!bytes) break;
+-			buffer = ogg_sync_buffer(&oy, bytes);
+-			memcpy(buffer, buf, bytes);
+-			ogg_sync_wrote(&oy, bytes);
+-		}
++	char buf[10000];
++	while (ogg_sync_pageout(&oy, &oggpage) != 1 ) {
++		char *buffer;
++		u32 bytes;
++
+@@ -426,13 +417,23 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-		if (ogg_page_bos(&oggpage)) {
+-			ogg_stream_init(&os, ogg_page_serialno(&oggpage));
+-			if (ogg_stream_pagein(&os, &oggpage) >= 0 ) {
+-				ogg_stream_packetpeek(&os, &oggpacket);
+-				if (ogg_stream_pagein(&os, &oggpage) >= 0 ) {
+-					ogg_stream_packetpeek(&os, &oggpacket);
+-					oggdmx_get_stream_info(&oggpacket, &info);
+-				}
+-				if (!has_stream) {
+-					has_stream = GF_TRUE;
+-					ogg_stream_init(&the_os, ogg_page_serialno(&oggpage));
+-					the_info = info;
+-				}
++		bytes = (u32) gf_fread(buf, 10000, stream);
++		if (!bytes) break;
++		buffer = ogg_sync_buffer(&oy, bytes);
++		memcpy(buffer, buf, bytes);
++		ogg_sync_wrote(&oy, bytes);
++	}
++	if (gf_feof(stream))
++		break;
++
++	if (ogg_page_bos(&ogg_page)) {
++		ogg_stream_state os;
++		memset(&os, 0, sizeof(os));
++		ogg_stream_init(&os, ogg_page_serialno(&ogg_page));
++		if (ogg_stream_pagein(&os, &ogg_page) >= 0 ) {
++			ogg_stream_packetpeek(&os, &ogg_packet);
++			if (ogg_stream_pagein(&os, &ogg_page) >= 0 ) {
++				ogg_stream_packetpeek(&os, &ogg_packet);
++				oggdmx_get_stream_info(&ogg_packet, &info);
++			}
++			if (!has_stream) {
++				has_stream = GF_TRUE;
++				ogg_stream_init(&the_os, ogg_page_serialno(&ogg_page));
++				the_info = info;
+@@ -440 +440,0 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-			ogg_stream_clear(&os);
+@@ -442,19 +442,10 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-		if (has_stream && (ogg_stream_pagein(&the_os, &oggpage) >= 0) ) {
+-			while (ogg_stream_packetout(&the_os, &oggpacket ) > 0 ) {
+-				if (the_info.type==GF_CODECID_VORBIS) {
+-					if (the_info.num_init_headers) {
+-						the_info.num_init_headers--;
+-						gf_vorbis_parse_header(&vp, oggpacket.packet, oggpacket.bytes);
+-					} else {
+-						recompute_ts += gf_vorbis_check_frame(&vp, (char *) oggpacket.packet, oggpacket.bytes);
+-					}
+-				} else if (the_info.type==GF_CODECID_OPUS) {
+-					if (the_info.num_init_headers) {
+-						the_info.num_init_headers--;
+-						gf_opus_parse_header(&op, oggpacket.packet, oggpacket.bytes);
+-					} else {
+-						recompute_ts += gf_opus_check_frame(&op, (char *) oggpacket.packet, oggpacket.bytes);
+-					}
+-
+-				} else if ((oggpacket.granulepos>=0) && ((u64) oggpacket.granulepos>max_gran) ) {
+-					max_gran = oggpacket.granulepos;
++		ogg_stream_clear(&os);
++	}
++	if (has_stream && (ogg_stream_pagein(&the_os, &ogg_page) >= 0) ) {
++		while (ogg_stream_packetout(&the_os, &ogg_packet ) > 0 ) {
++			if (the_info.type==GF_CODECID_VORBIS) {
++				if (the_info.num_init_headers) {
++					the_info.num_init_headers--;
++					gf_vorbis_parse_header(&vp, ogg_packet.packet, ogg_packet.bytes);
++				} else {
++					recompute_ts += gf_vorbis_check_frame(&vp, (char *) ogg_packet.packet, ogg_packet.bytes);
+@@ -461,0 +453,10 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
++			} else if (the_info.type==GF_CODECID_OPUS) {
++				if (the_info.num_init_headers) {
++					the_info.num_init_headers--;
++					gf_opus_parse_header(&op, ogg_packet.packet, ogg_packet.bytes);
++				} else {
++					recompute_ts += gf_opus_check_frame(&op, (char *) ogg_packet.packet, ogg_packet.bytes);
++				}
++
++			} else if ((ogg_packet.granulepos>=0) && ((u64) ogg_packet.granulepos>max_gran) ) {
++				max_gran = ogg_packet.granulepos;
+@@ -464,0 +466 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
++}

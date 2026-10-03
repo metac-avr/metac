@@ -1,0 +1,79 @@
+diff --git a/Zend/zend_opcode.c b/Zend/zend_opcode.c
+index 38ba89db2ba..39897145443 100644
+--- a/Zend/zend_opcode.c
++++ b/Zend/zend_opcode.c
+@@ -961,3 +960,0 @@ static void zend_calc_live_ranges(
+-	free_alloca(last_use, use_heap);
+-}
+-
+@@ -971,9 +968,2 @@ ZEND_API void zend_recalc_live_ranges(
+-	zend_calc_live_ranges(op_array, needs_live_range);
+-}
+-
+-ZEND_API void pass_two(zend_op_array *op_array)
+-{
+-	zend_op *opline, *end;
+-
+-	if (!ZEND_USER_CODE(op_array->type)) {
+-		return;
++	if (op_array->opcodes != NULL) {
++		zend_calc_live_ranges(op_array, needs_live_range);
+@@ -981,2 +971 @@ ZEND_API void pass_two(zend_op_array *op_array)
+-	if (CG(compiler_options) & ZEND_COMPILE_EXTENDED_STMT) {
+-		zend_update_extended_stmts(op_array);
++}		zend_update_extended_stmts(op_array);
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index c9d23d11b7d..2e3b7550ef1 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -1521,14 +1521,36 @@ ZEND_API void zend_optimize_script(zend_script *script, zend_long optimization_l
+-		for (i = 0; i < call_graph.op_arrays_count; i++) {
+-			op_array = call_graph.op_arrays[i];
+-			func_info = ZEND_FUNC_INFO(op_array);
+-			if (func_info && func_info->ssa.var_info) {
+-				zend_redo_pass_two_ex(op_array, &func_info->ssa);
+-				if (op_array->live_range) {
+-					zend_recalc_live_ranges(op_array, needs_live_range);
+-				}
+-			} else {
+-				zend_redo_pass_two(op_array);
+-				if (op_array->live_range) {
+-					zend_recalc_live_ranges(op_array, NULL);
+-				}
+-			}
++		ZEND_API void pass_two(zend_op_array *op_array)
++{
++	zend_op *opline, *end;
++
++	if (!ZEND_USER_CODE(op_array->type)) {
++		return;
++	}
++	if (CG(compiler_options) & ZEND_COMPILE_EXTENDED_STMT) {
++		zend_update_extended_stmts(op_array);
++	}
++	if (CG(compiler_options) & ZEND_COMPILE_HANDLE_OP_ARRAY) {
++		if (CG(context).vars_size != op_array->last_var) {
++			op_array->vars = (zend_string **) erealloc(op_array->vars,
++				CG(context).vars_size * sizeof(zend_string *));
++			op_array->last_var = CG(context).vars_size;
++		}
++		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
++			CG(context).opcodes_size * sizeof(zend_op));
++		op_array->last = CG(context).opcodes_size;
++		if (op_array->literals) {
++			op_array->literals = (zend_literal *) erealloc(op_array->literals,
++				CG(context).literals_size * sizeof(zend_literal));
++			op_array->last_literal = CG(context).literals_size;
++		} else {
++			op_array->literals = (zend_literal *) emalloc(
++				CG(context).literals_size * sizeof(zend_literal));
++			op_array->last_literal = CG(context).literals_size;
++		}
++	}
++	op_array->fn_flags |= ZEND_ACC_DONE_PASS_TWO;
++
++	opline = op_array->opcodes;
++	end = opline + op_array->last;
++	while (opline < end) {
++		if (opline->op1_type == IS_CONST) {
++			ZEND_SET_OP_CONST(opline, op1, &op_array->literals[opline->op1.constant]);

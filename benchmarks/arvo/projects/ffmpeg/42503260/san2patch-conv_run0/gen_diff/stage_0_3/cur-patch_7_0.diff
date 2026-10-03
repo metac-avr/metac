@@ -1,0 +1,21 @@
+diff --git a/libavcodec/speexdec.c b/libavcodec/speexdec.c
+index 35270e6723..168590e3ef 100644
+--- a/libavcodec/speexdec.c
++++ b/libavcodec/speexdec.c
+@@ -1554,0 +1555 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
++// FIXME: Crash CWE-787: Out-of-bounds Write
+@@ -1556,6 +1557,8 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
+-    for (int i = 0; i < s->frames_per_packet; i++) {
+-        ret = speex_modes[s->mode].decode(avctx, &s->st[s->mode], &s->gb, dst + i * s->frame_size);
+-        if (ret < 0)
+-            return ret;
+-        if (avctx->channels == 2)
+-            speex_decode_stereo(dst + i * s->frame_size, s->frame_size, &s->stereo);
++    if (frame->nb_samples > 0) {
++        for (int i = 0; i < s->frames_per_packet; i++) {
++            ret = speex_modes[s->mode].decode(avctx, &s->st[s->mode], &s->gb, dst + i * s->frame_size);
++            if (ret < 0)
++                return ret;
++            if (avctx->channels == 2)
++                speex_decode_stereo(dst + i * s->frame_size, s->frame_size, &s->stereo);
++        }

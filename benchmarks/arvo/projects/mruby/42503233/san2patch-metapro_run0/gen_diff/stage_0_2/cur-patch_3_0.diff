@@ -1,0 +1,27 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..d57631f75 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -178 +178,5 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-#endif
++  /* Prevent excessive stack growth that could lead to buffer overflow */
++  if (size > MRB_STACK_MAX) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
++ #endif
+@@ -479 +483,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     c = mrb_class(mrb, self);
+@@ -480,0 +486,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    // Add recursion depth check before stack extension
++    if (mrb->c->ci - mrb->c->cibase > MRB_CALL_LEVEL_MAX - 10) {
++      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
++    
+@@ -506,0 +518,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++        // Additional safety check for deep recursion
++        if (mrb->c->ci - mrb->c->cibase > MRB_CALL_LEVEL_MAX - 5) {
++          mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++        }

@@ -1,0 +1,67 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..c3f1b5f15c5 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -251,0 +252,3 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		if (filename) {
++			zend_string_addref(filename);
++		}
+@@ -290,2 +293,4 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-	efree(args);
+-
++	if (args) {
++		efree(args);
++	}
++ 
+@@ -296 +301 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-	if (filename) {
++	if (filename && call) {
+@@ -298,0 +304,3 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		if (filename) {
++			zend_string_release_ex(filename, 0);
++		}
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..9b2853e3a84 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,5 +6770,28 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
++ZEND_METHOD(ReflectionAttribute, newInstance)
++{
++	HashTable *ht_props = Z_OBJPROP_P(getThis());
++	zval *ce_zv = zend_hash_find(ht_props, ZSTR_KNOWN(ZEND_STR_NAME));
++	zend_class_entry *ce = zend_lookup_class(Z_STR_P(ce_zv));
++
++	zval *data_zv = zend_hash_find(ht_props, ZSTR_KNOWN(ZEND_STR_ATTRIBUTE_DATA));
++	if (!data_zv || Z_TYPE_P(data_zv) != IS_PTR) {
++		zend_throw_error(NULL, "Internal reflection data missing");
++		RETURN_THROWS();
++	}
++
++	zend_attribute *attr_data = Z_PTR_P(data_zv);
++
++	zval *scope_zv = zend_hash_find(ht_props, ZSTR_KNOWN(ZEND_STR_SCOPE));
++	zend_class_entry *scope = scope_zv && Z_TYPE_P(scope_zv) == IS_STRING
++		? zend_lookup_class(Z_STR_P(scope_zv)) : NULL;
++
++	zval *filename_zv = zend_hash_find(ht_props, ZSTR_KNOWN(ZEND_STR_FILENAME));
++	zend_string *filename = filename_zv && Z_TYPE_P(filename_zv) == IS_STRING ? Z_STR_P(filename_zv) : NULL;
++
++	zval *flags_zv = zend_hash_find(ht_props, ZSTR_KNOWN(ZEND_STR_FLAGS));
++	uint32_t flags = flags_zv ? zval_get_long(flags_zv) : 0;
++
++	if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
++		if (zend_is_attribute_repeated(attr_data->attributes, attr_data)) {
++			zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr_data->name));
++			RETURN_THROWS();
+@@ -6780 +6803 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
++	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr_data, scope, filename)) {
+@@ -6790,2 +6813 @@ ZEND_METHOD(ReflectionEnum, __construct)
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++	if (EG(exception)) {		RETURN_THROWS();

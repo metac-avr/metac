@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..e27d669b8c7 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++                /* Clear object pointer to prevent further access */
++                object->handlers = NULL;
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..c1e8e07b36c 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -1196,2 +1196,2 @@ static int gc_collect_white(zend_refcounted *ref, uint32_t *flags, gc_stack *sta
+-			 && (obj->handlers->dtor_obj != zend_objects_destroy_object
+-			  || obj->ce->destructor != NULL)) {
++				&& (obj->handlers->dtor_obj != zend_objects_destroy_object
++				 || obj->ce->destructor != NULL)) {
+@@ -1200,3 +1200,9 @@ static int gc_collect_white(zend_refcounted *ref, uint32_t *flags, gc_stack *sta
+-			ht = obj->handlers->get_gc(obj, &table, &len);
+-			n = len;
+-			zv = table;
++			if (obj->handlers->get_gc) {
++				ht = obj->handlers->get_gc(obj, &table, &len);
++				n = len;
++				zv = table;
++			} else {
++				ht = NULL;
++				n = 0;
++				zv = NULL;
++			}

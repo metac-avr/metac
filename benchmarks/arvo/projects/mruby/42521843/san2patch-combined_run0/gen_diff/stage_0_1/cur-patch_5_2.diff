@@ -1,0 +1,20 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..49ce084ad 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -148,0 +150,6 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  // Validate method table integrity before accessing
++  if (t->ptr == NULL) return 0;
++  
++  // Bounds check for the method table
++  if (t->alloc > t->size) return 0;
++
+@@ -155 +162 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-  if (pos < t->alloc) {
++  if (pos < t->alloc && pos >= 0) {
+@@ -166,0 +174 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (pos >= t->alloc) return 0;  // Prevent out-of-bounds access

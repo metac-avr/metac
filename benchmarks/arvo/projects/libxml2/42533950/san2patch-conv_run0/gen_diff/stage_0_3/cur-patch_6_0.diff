@@ -1,0 +1,18 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..fa433c06 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4247 +4247,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }
++// FIXME: Crash CWE-416: Use After Free
++     }
+@@ -4249,3 +4250,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        ret->properties = xmlCopyPropList(ret, node->properties);
+-        if (ret->properties == NULL)
+-            goto error;
++        /* Check if namespace is still valid before copying properties */
++        if ((ret->ns != NULL) && (ret->ns->href != NULL || ret->ns->prefix != NULL)) {
++            ret->properties = xmlCopyPropList(ret, node->properties);
++            if (ret->properties == NULL)
++                goto error;
++        }

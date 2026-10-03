@@ -1,0 +1,83 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..f2c66171 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5982,4 +5982,4 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
++        tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
++	if (tmp <= 0)
++	    ret = 0;
++	break;
+@@ -5991,13 +5991,56 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    while (attr != NULL) {
+-	if (attr->def == XML_ATTRIBUTE_REQUIRED) {
+-	    int qualified = -1;
+-
+-	    if ((attr->prefix == NULL) &&
+-		(xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
+-		xmlNsPtr ns;
+-
+-		ns = elem->nsDef;
+-		while (ns != NULL) {
+-		    if (ns->prefix == NULL)
+-			goto found;
+-		    ns = ns->next;
++    if (attr != NULL) {
++	while (attr != NULL) {
++	    if (attr->def == XML_ATTRIBUTE_REQUIRED) {
++		int qualified = -1;
++
++		if ((attr->prefix == NULL) &&
++		    (xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
++		    xmlNsPtr ns;
++
++		    ns = elem->nsDef;
++		    while (ns != NULL) {
++			if (ns->prefix == NULL)
++			    goto found;
++			ns = ns->next;
++		    }
++		} else if (attr->prefix == NULL) {
++		    xmlAttrPtr prop;
++
++		    prop = elem->properties;
++		    while (prop != NULL) {
++			if ((prop->name != NULL) &&
++			    (xmlStrEqual(attr->name, prop->name)) &&
++			    (prop->ns == NULL))
++			    goto found;
++			prop = prop->next;
++		    }
++		} else {
++		    xmlAttrPtr prop;
++
++		    prop = elem->properties;
++		    while (prop != NULL) {
++			if ((prop->name != NULL) &&
++			    (xmlStrEqual(attr->name, prop->name)) &&
++			    (prop->ns != NULL) &&
++			    (prop->ns->prefix != NULL) &&
++			    (xmlStrEqual(attr->prefix, prop->ns->prefix)))
++			    goto found;
++			prop = prop->next;
++		    }
++		}
++		if (qualified == -1) {
++		    if (ctxt != NULL) {
++			if (attr->prefix != NULL) {
++			    xmlErrValidNode(ctxt, elem, XML_DTD_MISSING_ATTRIBUTE,
++					    "Element '%s' requires attribute '%s:%s'\n",
++					    elem->name, attr->prefix, attr->name);
++			} else {
++			    xmlErrValidNode(ctxt, elem, XML_DTD_MISSING_ATTRIBUTE,
++					    "Element '%s' requires attribute '%s'\n",
++					    elem->name, attr->name);
++			}
++		    }
++		    ret = 0;
++		}
++	      found:
++		attr = attr->nex		    ns = ns->next;

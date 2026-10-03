@@ -1,0 +1,92 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..f99dcc504e6 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1376,0 +1377,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
++	Bucket *current;
++
++	current = HT_HASH_TO_BUCKET(ht, idx);
+@@ -1378 +1381 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		Z_NEXT(prev->val) = Z_NEXT(p->val);
++		Z_NEXT(prev->val) = Z_NEXT(current->val);
+@@ -1380 +1383 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		HT_HASH(ht, p->h | ht->nTableMask) = Z_NEXT(p->val);
++		HT_HASH(ht, current->h | ht->nTableMask) = Z_NEXT(current->val);
+@@ -1397 +1400 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-			ht->nInternalPointer = new_idx;
++			h->nInternalPointer = new_idx;
+@@ -1403 +1406 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-			ht->nNumUsed--;
++			h->nNumUsed--;
+@@ -1405 +1408 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ht->nInternalPointer = MIN(ht->nInternalPointer, ht->nNumUsed);
++		h->nInternalPointer = MIN(ht->nInternalPointer, ht->nNumUsed);
+@@ -1409,3 +1412,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
+-		ZVAL_UNDEF(&p->val);
+-		ht->pDestructor(&tmp);
++		ZVAL_COPY_VALUE(&tmp, &current->val);
++		ZVAL_UNDEF(&current->val);
++		h->pDestructor(&tmp);
+@@ -1413 +1416 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_UNDEF(&p->val);
++		ZVAL_UNDEF(&current->val);
+@@ -1417 +1420 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bucket *p)
++static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx, Bucket *p, Bucket *prev)
+@@ -1419,3 +1422 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	Bucket *prev = NULL;
+-	uint32_t nIndex;
+-	uint32_t i;
++	Bucket *current;
+@@ -1423,2 +1424,10 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	nIndex = p->h | ht->nTableMask;
+-	i = HT_HASH(ht, nIndex);
++	current = HT_HASH_TO_BUCKET(ht, idx);
++	if (prev) {
++		Z_NEXT(prev->val) = Z_NEXT(current->val);
++	} else {
++		HT_HASH(ht, current->h | ht->nTableMask) = Z_NEXT(current->val);
++	}
++	idx = HT_HASH_TO_IDX(idx);
++	ht->nNumOfElements--;
++	if (ht->nInternalPointer == idx || UNEXPECTED(HT_HAS_ITERATORS(ht))) {
++		uint32_t new_idx;
+@@ -1426,5 +1435,11 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	if (i != idx) {
+-		prev = HT_HASH_TO_BUCKET(ht, i);
+-		while (Z_NEXT(prev->val) != idx) {
+-			i = Z_NEXT(prev->val);
+-			prev = HT_HASH_TO_BUCKET(ht, i);
++		new_idx = idx;
++		while (1) {
++			new_idx++;
++			if (new_idx >= ht->nNumUsed) {
++				break;
++			} else if (Z_TYPE(ht->arData[new_idx].val) != IS_UNDEF) {
++				break;
++			}
++		}
++		if (ht->nInternalPointer == idx) {
++			ht->nInternalPointer = new_idx;
+@@ -1431,0 +1447 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++		zend_hash_iterators_update(ht, idx, new_idx);
+@@ -1433,5 +1449,13 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-
+-	_zend_hash_del_el_ex(ht, idx, p, prev);
+-	if (p->key) {
+-		zend_string_release(p->key);
+-		p->key = NULL;
++	if (ht->nNumUsed - 1 == idx) {
++		do {
++			ht->nNumUsed--;
++		} while (ht->nNumUsed > 0 && (UNEXPECTED(Z_TYPE(ht->arData[ht->nNumUsed-1].val) == IS_UNDEF)));
++		ht->nInternalPointer = MIN(ht->nInternalPointer, ht->nNumUsed);
++	}
++	if (ht->pDestructor) {
++		zval tmp;
++		ZVAL_COPY_VALUE(&tmp, &current->val);
++		ZVAL_UNDEF(&current->val);
++		ht->pDestructor(&tmp);
++	} else {
++		ZVAL_UNDEF(&current->val);

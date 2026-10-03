@@ -1,0 +1,42 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..e0d878c26 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -37 +37,2 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
+@@ -38,0 +40 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
++    mp_limb* old_p = x->p; // Store old pointer
+@@ -40,2 +42,9 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-    for (size_t i=x->sz; i<size; i++)
+-      (x->p)[i] = 0;
++    if (x->p != old_p) { // Check if reallocation moved memory
++      // Zero initialize only the new portion
++      for (size_t i=x->sz; i<size; i++)
++        (x->p)[i] = 0;
++    } else {
++      // If same address, just zero new limbs
++      for (size_t i=x->sz; i<size; i++)
++        (x->p)[i] = 0;
++    }
+@@ -106 +115,2 @@ static void
+-mpz_clear(mrb_state *mrb, mpz_t *s)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ mpz_clear(mrb_state *mrb, mpz_t *s)
+@@ -108,4 +118,9 @@ mpz_clear(mrb_state *mrb, mpz_t *s)
+-  if (s->p) mrb_free(mrb, s->p);
+-  s->p=NULL;
+-  s->sn=0;
+-  s->sz=0;
++  if (s != NULL && s->p != NULL) {
++    mrb_free(mrb, s->p);
++    s->p = NULL;
++    s->sn = 0;
++    s->sz = 0;
++  } else if (s != NULL) {
++    s->sn = 0;
++    s->sz = 0;
++  }
+@@ -118 +132,0 @@ digits(mpz_t *x)
+-

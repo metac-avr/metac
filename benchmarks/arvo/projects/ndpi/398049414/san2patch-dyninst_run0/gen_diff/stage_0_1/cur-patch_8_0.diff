@@ -1,0 +1,69 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 8d2f4dd7f..dee291a5f 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -1689,3 +1689,14 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-          packet->payload = &block[13];
+-          packet->payload_packet_len = block_len;
+-          processTLSBlock(ndpi_struct, flow);
++// FIXME: Crash CWE-476: NULL Pointer Dereference
++           if(block_len >= 13) {
++             packet->payload = &block[13];
++             packet->payload_packet_len = block_len;
++             if(packet->payload != NULL) {
++               processTLSBlock(ndpi_struct, flow);
++             } else {
++               no_dtls = 1;
++               break;
++             }
++           } else {
++             no_dtls = 1;
++             break;
++           }
+@@ -1707 +1718,2 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-            rc = ndpi_search_tls_memory(&block[13],
++            if(block_len >= 13 + handshake_frag_len + 12) {
++              rc = ndpi_search_tls_memory(&block[13],
+@@ -1709,0 +1722,4 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
++            } else {
++              no_dtls = 1;
++              break;
++            }
+@@ -1711 +1727,2 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-            rc = ndpi_search_tls_memory(&block[13 + 12],
++            if(block_len >= 13 + 12 + handshake_frag_len) {
++              rc = ndpi_search_tls_memory(&block[13 + 12],
+@@ -1713,0 +1731,4 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
++            } else {
++              no_dtls = 1;
++              break;
++            }
+@@ -1725,7 +1746,12 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-            packet->payload = message->buffer;
+-            packet->payload_packet_len = message->buffer_used;
+-            processTLSBlock(ndpi_struct, flow);
+-
+-            ndpi_free(message->buffer);
+-            memset(message, '\0', sizeof(*message));
+-            message = NULL;
++            if(message != NULL && message->buffer != NULL && message->buffer_used > 0) {
++              packet->payload = message->buffer;
++              packet->payload_packet_len = message->buffer_used;
++              processTLSBlock(ndpi_struct, flow);
++
++              ndpi_free(message->buffer);
++              memset(message, '\0', sizeof(*message));
++              message = NULL;
++            } else {
++              no_dtls = 1;
++              break;
++            }
+@@ -3274 +3300,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		char buf[256], *tmp, *item;
++// FIXME: Crash CWE-476: NULL Pointer Dereference
++ 		char buf[256], *tmp, *item;
+@@ -3275,0 +3303,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
++		size_t alpn_len = strlen(flow->protos.tls_quic.advertised_alpns);
++		if(alpn_len > 0 && alpn_len < sizeof(buf)) {
+@@ -3287,0 +3317 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
++		}

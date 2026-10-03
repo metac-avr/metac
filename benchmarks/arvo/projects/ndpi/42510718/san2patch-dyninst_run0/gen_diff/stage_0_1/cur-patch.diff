@@ -1,0 +1,34 @@
+diff --git a/src/lib/protocols/kerberos.c b/src/lib/protocols/kerberos.c
+index 2694b072f..bdb6e72a9 100644
+--- a/src/lib/protocols/kerberos.c
++++ b/src/lib/protocols/kerberos.c
+@@ -206 +206,3 @@ static void strncpy_lower(char * const dst, size_t dst_siz,
+-   int dst_len = ndpi_min(src_siz, dst_siz - 1);
++    if (!dst || !src) return;
++    
++    int dst_len = ndpi_min(src_siz, dst_siz - 1);
+@@ -208,2 +210,2 @@ static void strncpy_lower(char * const dst, size_t dst_siz,
+-   strncpy(dst, src, dst_len);
+-   dst[dst_len] = '\0';
++    strncpy(dst, src, dst_len);
++    dst[dst_len] = '\0';
+@@ -211,4 +213,4 @@ static void strncpy_lower(char * const dst, size_t dst_siz,
+-   for(int i = 0; i < dst_len; ++i)
+-   {
+-     dst[i] = tolower(dst[i]);
+-   }
++    for(int i = 0; i < dst_len; ++i)
++    {
++        dst[i] = tolower(dst[i]);
++    }
+@@ -313 +315,2 @@ static int krb_parse(struct ndpi_detection_module_struct * const ndpi_struct,
+-  if (flow->protos.kerberos.hostname[0] == '\0' && text[length - 1] != '$')
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   if (flow->protos.kerberos.hostname[0] == '\0' && length > 0 && text[length - 1] != '$')
+@@ -317 +320 @@ static int krb_parse(struct ndpi_detection_module_struct * const ndpi_struct,
+-  } else if (flow->protos.kerberos.username[0] == '\0') {
++  } else if (flow->protos.kerberos.username[0] == '\0' && length > 0) {
+@@ -325,2 +328 @@ static int krb_parse(struct ndpi_detection_module_struct * const ndpi_struct,
+-static void ndpi_int_kerberos_add_connection(struct ndpi_detection_module_struct *ndpi_struct,
+-					     struct ndpi_flow_struct *flow) {
++static void ndpi_int_kerberos_add_connection(struct ndpi_detection_module_struct *ndpi_struct,					     struct ndpi_flow_struct *flow) {

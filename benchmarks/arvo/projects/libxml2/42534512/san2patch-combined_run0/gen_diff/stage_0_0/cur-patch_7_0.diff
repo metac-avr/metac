@@ -1,0 +1,30 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 10b4b0cd..ea807359 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -650 +650,2 @@ dropNode(xmlNodePtr node) {
+-         * Return if tree is referenced from another node
++// FIXME: Crash CWE-416: Use After Free
++          * Return if tree is referenced from another node
+@@ -652 +653,4 @@ dropNode(xmlNodePtr node) {
+-        if (nodeGetTree(other) == tree)
++        xmlNodePtr other_tree = nodeGetTree(other);
++        if (other_tree == NULL)
++            continue;
++        if (other_tree == tree)
+diff --git a/tree.c b/tree.c
+index a8869fd9..66109e56 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6904 +6904 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6906,2 +6906,6 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	prop->children = NULL;
+-	prop->last = NULL;
++	    prop->children = NULL;
++	    prop->last = NULL;  /* Also set last to NULL to prevent dangling pointers */
++	} else {
++	    prop->children = NULL;  /* Ensure children is always initialized to NULL */
++	    prop->last = NULL;
++	}

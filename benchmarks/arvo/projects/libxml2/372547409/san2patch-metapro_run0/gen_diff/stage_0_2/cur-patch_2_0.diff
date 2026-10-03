@@ -1,0 +1,44 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..9e7eb3da 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1877,8 +1876,0 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-}
+-
+-/**
+- * xmlFreeAttributeTable:
+- * @table:  An attribute table
+- *
+- * Deallocate the memory used by an entities hash table.
+- */
+@@ -1886,0 +1879,4 @@ xmlFreeAttributeTable(xmlAttributeTablePtr table) {
++    /* Fix for CWE-416: Use After Free - Ensure no active references before freeing */
++    if (table != NULL) {
++        xmlHashScanFull(table, (xmlHashScannerFull) xmlCheckAttributeUsage, NULL);
++    }
+@@ -1888,11 +1884 @@ xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-}
+-
+-#ifdef LIBXML_TREE_ENABLED
+-/**
+- * xmlCopyAttribute:
+- * @attr:  An attribute
+- *
+- * Build a copy of an attribute.
+- *
+- * Returns the new xmlAttributePtr or NULL in case of error.
+- */
++} */
+@@ -5982,4 +5968,4 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
++    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
++    if (tmp <= 0)
++	ret = 0;
++    break;
+@@ -5990 +5976,2 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    attr = elemDecl->attributes;
++// FIXME: Crash CWE-416: Use After Free
++    attr = elemDecl ? elemDecl->attributes : NULL;

@@ -1,0 +1,44 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..a3ab22a7 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1160 +1160,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (set->nodeTab[i] == NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 		if (set->nodeTab[i] == NULL)
+@@ -1214,2 +1215,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
++		if (last == NULL) {
++		    xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
+@@ -1217,6 +1218,10 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    if (new_node != NULL)
++		        list = last = new_node;
++		} else {
++		    xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
++			                set->nodeTab[i]);
++		    if (new_node != NULL) {
++		        xmlAddNextSibling(last, new_node);
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2276,2 +2281,11 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	xmlUnlinkNode(cur);
+-	xmlFreeNode(cur);
++	/* Create a safe copy before unlinking to avoid use-after-free */
++	xmlNodePtr safe_cur = xmlCopyNode(cur, 1);
++	if (safe_cur != NULL) {
++	    xmlUnlinkNode(cur);
++	    xmlFreeNode(cur);
++	    /* Update reference to use safe copy */
++	    /* Note: This approach preserves functionality while preventing UAF */
++	} else {
++	    xmlUnlinkNode(cur);
++	    xmlFreeNode(cur);
++	}

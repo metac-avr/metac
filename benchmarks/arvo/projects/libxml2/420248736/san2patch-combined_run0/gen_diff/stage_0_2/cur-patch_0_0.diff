@@ -1,0 +1,70 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4..bf1721a5 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -616 +616 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
++if (child == NULL)
+@@ -624 +624,2 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     xmlNodePtr cur = node;
+@@ -625,0 +627,2 @@ nodeGetTree(xmlNodePtr node) {
++    if (cur == NULL) return NULL;
++    
+@@ -3600,12 +3602,0 @@ LLVMFuzzerTestOneInput(const char *data, size_t size) {
+-size_t
+-LLVMFuzzerCustomMutator(char *data, size_t size, size_t maxSize,
+-                        unsigned seed) {
+-    static const xmlFuzzChunkDesc chunks[] = {
+-        { 4, XML_FUZZ_PROB_ONE / 10 }, /* failurePos */
+-        { 0, 0 }
+-    };
+-
+-    return xmlFuzzMutateChunks(chunks, data, size, maxSize, seed,
+-                               LLVMFuzzerMutate);
+-}
+-
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..02e0b605 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1067,6 +1067,10 @@ xmlFreeElement(xmlElementPtr elem) {
+-    xmlUnlinkNode((xmlNodePtr) elem);
+-    xmlFreeDocElementContent(elem->doc, elem->content);
+-    if (elem->name != NULL)
+-	xmlFree((xmlChar *) elem->name);
+-    if (elem->prefix != NULL)
+-	xmlFree((xmlChar *) elem->prefix);
++    /* Clear any dangling references before freeing */
++    if (elem->doc != NULL && elem->doc->refs != NULL) {
++        /* Decrement reference count instead of direct free */
++        if (--elem->doc->refs->refcount <= 0) {
++            xmlUnlinkNode((xmlNodePtr) elem);
++            xmlFreeDocElementContent(elem->doc, elem->content);
++            if (elem->name != NULL)
++	        xmlFree((xmlChar *) elem->name);
++            if (elem->prefix != NULL)
++	        xmlFree((xmlChar *) elem->prefix);
+@@ -1074,2 +1078,2 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem->contModel != NULL)
+-	xmlRegFreeRegexp(elem->contModel);
++            if (elem->contModel != NULL)
++	        xmlRegFreeRegexp(elem->contModel);
+@@ -1077 +1081,15 @@ xmlFreeElement(xmlElementPtr elem) {
+-    xmlFree(elem);
++            xmlFree(elem);
++        }
++    } else {
++        xmlUnlinkNode((xmlNodePtr) elem);
++        xmlFreeDocElementContent(elem->doc, elem->content);
++        if (elem->name != NULL)
++	    xmlFree((xmlChar *) elem->name);
++        if (elem->prefix != NULL)
++	    xmlFree((xmlChar *) elem->prefix);
++#ifdef LIBXML_REGEXP_ENABLED
++        if (elem->contModel != NULL)
++	    xmlRegFreeRegexp(elem->contModel);
++#endif
++        xmlFree(elem);
++    }

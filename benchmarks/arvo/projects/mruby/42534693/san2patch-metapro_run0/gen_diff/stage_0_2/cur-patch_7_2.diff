@@ -1,0 +1,23 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..7e9ea13aa 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -164,0 +165,16 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++// Patched version - add null check before accessing size field
++static inline uint32_t safe_ht_size(hash_table* ht) {
++  if (!ht) return 0;
++  return ht->size;
++}
++#undef DEFINE_INCREMENTER
++#undef DEFINE_DECREMENTER
++#define DEFINE_INCREMENTER(type, name) \
++  static inline void type##_##name##_increment(type *t) { \
++    if (t && t->hsh.ht) t->hsh.ht->name++; \
++  }
++#define DEFINE_DECREMENTER(type, name) \
++  static inline void type##_##name##_decrement(type *t) { \
++    if (t && t->hsh.ht && t->hsh.ht->name > 0) t->hsh.ht->name--; \
++  }
+@@ -177 +192,0 @@ DEFINE_SWITCHER(ht, HT)
+-

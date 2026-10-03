@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..e705620e1d6 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1829 +1829,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		p--;
++// FIXME: Crash CWE-416: Use After Free
++ 		p--;
+@@ -1831 +1832,10 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		if (Z_TYPE(p->val) == IS_STRING) {
++			zend_string *str = Z_STR(p->val);
++			if (GC_DELREF(str) == 0) {
++				GC_REMOVE_FROM_BUFFER(str);
++				zend_string_free(str);
++			}
++			ZVAL_UNDEF(&p->val);
++		} else {
++			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		}

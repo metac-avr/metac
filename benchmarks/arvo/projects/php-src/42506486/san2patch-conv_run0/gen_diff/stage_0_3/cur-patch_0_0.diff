@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..3c5af7b6923 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1829 +1829,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		p--;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		p--;
+@@ -1831,0 +1833,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++		// Fix: Ensure zval pointer is invalidated after destruction to prevent use-after-free
++		ZVAL_UNDEF(&p->val);
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..e1ba25132c4 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -41 +41 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {

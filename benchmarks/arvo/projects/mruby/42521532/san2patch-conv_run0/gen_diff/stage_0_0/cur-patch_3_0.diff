@@ -1,0 +1,19 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..2fedf7615 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1096,3 +1096,8 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc->gray_list = obj->gcnext;
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj->tt != MRB_TT_FREE) {  // Check if object is still valid
++      gc->gray_list = obj->gcnext;
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    } else {
++      // Skip freed objects to prevent use-after-free
++      gc->gray_list = obj->gcnext;
++    }
+@@ -1202,0 +1208,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Mark page as invalid before freeing to prevent use-after-free */
++      page->freelist = (struct RBasic*)0x1; /* Special marker for freed pages */

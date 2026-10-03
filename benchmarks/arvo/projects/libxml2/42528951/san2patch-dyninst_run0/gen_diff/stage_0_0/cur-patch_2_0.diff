@@ -1,0 +1,23 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index 9667ccb4..c026cd18 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -1085,3 +1085,7 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	if (val <   0x800) { *out++= (val >>  6) | 0xC0;  bits=  0; }
+-	else if (val < 0x10000) { *out++= (val >> 12) | 0xE0;  bits=  6;}
+-	else if (val < 0x110000)  { *out++= (val >> 18) | 0xF0;  bits=  12; }
++	int temp_bytes[4]; // Temporary storage to avoid buffer overflow
++	int byte_count = 0;
++	
++	// Calculate all bytes first without writing to output buffer
++	if (val <   0x800) { temp_bytes[byte_count++] = (val >>  6) | 0xC0;  bits=  0; }
++	else if (val < 0x10000) { temp_bytes[byte_count++] = (val >> 12) | 0xE0;  bits=  6;}
++	else if (val < 0x110000)  { temp_bytes[byte_count++] = (val >> 18) | 0xF0;  bits=  12; }
+@@ -1095 +1099,6 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	    *out++= ((val >> bits) & 0x3F) | 0x80 ;
++	    temp_bytes[byte_count++] = ((val >> bits) & 0x3F) | 0x80 ;
++	
++	// Now write all bytes to output buffer after validation
++	for (int i = 0; i < byte_count; i++) {
++	    *out++ = temp_bytes[i];
++	}

@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..c7639665b4b 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -1486 +1485,0 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
+@@ -1493,0 +1493,6 @@ ZEND_API int zend_gc_collect_cycles(void)
++ 
++		/* Add bounds validation before accessing gc structures */
++		if (GC_G(current_index) >= GC_G(max_index) || GC_G(current_index) < 0) {
++			GC_G(gc_active) = 0;
++			return 0;
++		}
+@@ -1506,2 +1511 @@ ZEND_API int zend_gc_collect_cycles(void)
+-			gc_stack_free(&stack);
+-			GC_G(gc_active) = 0;
++			gc_stack_free(&stack);			GC_G(gc_active) = 0;
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..b6b0c94e07a 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -216,2 +216,4 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		}
+-		for (zend_long i = 0; i < intern->array.size; i++) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		}
++		zend_long min_size = intern->array.size < j ? intern->array.size : j;
++		for (zend_long i = 0; i < min_size; i++) {

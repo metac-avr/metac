@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..668c2001390 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1364,0 +1365 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++		if (p == NULL) return; /* Prevent UAF by checking null pointer */
+@@ -1374 +1375 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..158e9617737 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -198 +198,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++// FIXME: Crash CWE-416: Use After Free
++ 			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+@@ -200 +201,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			object->handlers->free_obj(object);
++			if (object->handlers && object->handlers->free_obj) {
++				object->handlers->free_obj(object);
++			}

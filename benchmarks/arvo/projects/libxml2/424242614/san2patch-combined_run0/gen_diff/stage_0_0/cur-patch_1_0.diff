@@ -1,0 +1,34 @@
+diff --git a/parser.c b/parser.c
+index 9ca09455..5736dbb3 100644
+--- a/parser.c
++++ b/parser.c
+@@ -3490 +3490 @@ xmlExpandPEsInEntityValue(xmlParserCtxtPtr ctxt, xmlSBuf *buf,
+-        return;
++return;
+@@ -3498 +3498,2 @@ xmlExpandPEsInEntityValue(xmlParserCtxtPtr ctxt, xmlSBuf *buf,
+-
++// Fixed CWE-787: Out-of-bounds Write by ensuring proper bounds checking
++ 
+@@ -5526,3 +5527,8 @@ xmlParseEntityDecl(xmlParserCtxt *ctxt) {
+-
+-		    xmlSAX2EntityDecl(ctxt, name, XML_INTERNAL_GENERAL_ENTITY,
+-			              NULL, NULL, value);
++            xmlSAX2EntityDecl(ctxt, name, XML_INTERNAL_GENERAL_ENTITY,
++                          NULL, NULL, value);
++		if (literal != NULL) {
++		    if (xmlStrlen(literal) >= 100) {
++		        xmlFatalErr(ctxt, XML_ERR_INVALID_PUBLIC_ID, NULL);
++		        xmlFree(literal);
++		        return;
++		    }
+@@ -5530,2 +5536,4 @@ xmlParseEntityDecl(xmlParserCtxt *ctxt) {
+-	    } else {
+-	        URI = xmlParseExternalID(ctxt, &literal, 1);
++ 		return;
++	    }
++	} else {
++	    URI = xmlParseExternalID(ctxt, &literal, 1);
+@@ -5536,2 +5544 @@ xmlParseEntityDecl(xmlParserCtxt *ctxt) {
+-                    if (xmlStrchr(URI, '#')) {
+-                        xmlFatalErr(ctxt, XML_ERR_URI_FRAGMENT, NULL);
++                    if (xmlStrchr(URI, '#')) {                        xmlFatalErr(ctxt, XML_ERR_URI_FRAGMENT, NULL);

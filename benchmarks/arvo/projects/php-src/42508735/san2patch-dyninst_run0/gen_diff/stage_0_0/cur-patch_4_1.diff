@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..7a2712f99a4 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -252 +252 @@ void shutdown_destructors(void) /* {{{ */
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			zend_hash_reverse_apply_with_argument(&EG(symbol_table), (apply_func_arg_t) zval_call_destructor_safe, NULL);
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..fded6ada934 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// FIXME: Crash CWE-416: Use After Free
++                volatile zend_object_handlers *safe_handlers = object->handlers;  // Create local copy to prevent race conditions
++                if (safe_handlers) {
++                        ptr = ((char*)object) - safe_handlers->offset;
++                        GC_REMOVE_FROM_BUFFER(object);
++                        efree(ptr);
++                        ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++                }

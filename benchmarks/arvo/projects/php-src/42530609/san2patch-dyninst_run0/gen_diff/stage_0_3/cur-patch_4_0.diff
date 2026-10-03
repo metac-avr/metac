@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..654ebabc6d2 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,0 +57,10 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	/* Clear references from compiled variables before destruction to prevent use-after-free */
++	if (EG(current_execute_data) && GC_TYPE(p) == IS_OBJECT) {
++		zval **cv = EG(current_execute_data)->CVs;
++		int i;
++		for (i = 0; i < EG(current_execute_data)->op_array->last_var; i++) {
++			if (cv[i] && Z_TYPE_P(cv[i]) == IS_OBJECT && Z_OBJ_P(cv[i]) == (zend_object*)p) {
++				cv[i] = NULL;
++			}
++		}
++	}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..5b7b97d9e8b 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -195,0 +196,13 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		
++		/* Clear any references to this object in compiled variables */
++		zend_execute_data *ex = EG(current_execute_data);
++		if (ex && ex->CVs) {
++			int i;
++			for (i = 0; i < ex->op_array->last_var; i++) {
++				zval **cv = ex->CVs[i];
++				if (cv && *cv && Z_TYPE_PP(cv) == IS_OBJECT && Z_OBJ_PP(cv) == object) {
++					*cv = NULL;
++				}
++			}
++		}
++		

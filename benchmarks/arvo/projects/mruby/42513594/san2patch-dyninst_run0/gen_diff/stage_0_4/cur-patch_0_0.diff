@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..45320b5aa 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -117,0 +118,3 @@ stack_init(mrb_state *mrb)
++  
++  // Add boundary tracking to prevent out-of-bounds writes
++  c->stack_limit = c->stend - 1; // Reserve one slot for safety
+@@ -1707 +1710,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1710,0 +1715,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      /* Boundary check to prevent out-of-bounds write */
++      if (a >= mrb->c->stend - mrb->c->stack) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow");
++      }
++
+@@ -1755,0 +1765,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Additional boundary check before writing to stack */
++        if (ci->stack >= mrb->c->stend) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow during write");
++        }

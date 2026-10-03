@@ -1,0 +1,16 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..ce39c1c1f 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -569 +569 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
+-				if (status&GF_M2TS_TABLE_END) {
++				if ((status&GF_M2TS_TABLE_END) && t->sections) {
+@@ -3113 +3113,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++  	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3116 +3117,3 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-			gf_m2ts_es_del(ts->ess[i], ts);
++			GF_M2TS_ES *es = ts->ess[i];
++			ts->ess[i] = NULL; // Clear reference before deletion
++			gf_m2ts_es_del(es, ts);

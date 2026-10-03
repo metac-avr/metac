@@ -1,0 +1,39 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..6cbb5a17 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2230,5 +2230,12 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	ctxt->incTab[nr]->inc =
+-	    xmlXIncludeCopyXPointer(ctxt, ctxt->doc, ctxt->doc,
+-		                    ctxt->incTab[nr]->xptr);
+-	xmlXPathFreeObject(ctxt->incTab[nr]->xptr);
+-	ctxt->incTab[nr]->xptr = NULL;
++        /* Validate xptr before use to prevent expired pointer dereference */
++        if (ctxt->incTab[nr]->xptr->type != XPATH_UNDEFINED) {
++	    ctxt->incTab[nr]->inc =
++	        xmlXIncludeCopyXPointer(ctxt, ctxt->doc, ctxt->doc,
++	                        ctxt->incTab[nr]->xptr);
++	    xmlXPathFreeObject(ctxt->incTab[nr]->xptr);
++	    ctxt->incTab[nr]->xptr = NULL;
++        } else {
++            /* Handle expired/invalid xptr gracefully */
++            ctxt->incTab[nr]->xptr = NULL;
++            return(-1);
++        }
+diff --git a/tree.c b/tree.c
+index 6a42f118..a818ece5 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4519 +4519 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4527 +4527 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++     xmlNodePtr ret;
+@@ -4528,0 +4529,2 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (node == NULL)
++        return(NULL);
+@@ -4539,2 +4541 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
++ * * Returns: a new #xmlNodePtr, or NULL in case of error.

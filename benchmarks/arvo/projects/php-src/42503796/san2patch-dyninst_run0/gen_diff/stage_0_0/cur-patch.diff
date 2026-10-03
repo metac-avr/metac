@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..8030befbf61 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54421 +54421 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++		/* Fix for CWE-416: Add memory safety checks around opcode handler execution */
+@@ -54422,0 +54423,7 @@ ZEND_API void execute_ex(zend_execute_data *ex)
++			return;
++		}
++		/* Store handler result to check for memory issues */
++		void *handler_ptr = (void*)OPLINE->handler;
++		((opcode_handler_t)handler_ptr)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++		/* Validate memory integrity after handler execution */
++		if (UNEXPECTED(!OPLINE || !handler_ptr)) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..1441dbcc744 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1682,0 +1683,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Defensive cleanup to prevent use-after-free */
++	if (ht->u.flags & HASH_FLAG_HAS_ITERATORS) {
++		zend_hash_iterators_remove(ht);
++	}
++	/* Nullify critical pointers before freeing */
++	ht->arData = NULL;
++	ht->nInternalPointer = HT_INVALID_IDX;
+@@ -1684 +1691,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++	/* Mark structure as freed */
++	ht->u.flags = 0xDEADBEAF;
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1688,5 +1697,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-

@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 6a6476b2ce5..1f0928c18fe 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -20636,0 +20637 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
++// FIXME: Crash CWE-416: Use After Free
+@@ -20639,4 +20640,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
+-		ZVAL_ARR(array, zend_new_array(size));
+-		/* Explicitly initialize array as not-packed if flag is set */
+-		if (opline->extended_value & ZEND_ARRAY_NOT_PACKED) {
+-			zend_hash_real_init_mixed(Z_ARRVAL_P(array));
++		zend_array *arr = zend_new_array(size);
++		if (arr != NULL) {
++			ZVAL_ARR(array, arr);
++			/* Explicitly initialize array as not-packed if flag is set */
++			if (opline->extended_value & ZEND_ARRAY_NOT_PACKED) {
++				zend_hash_real_init_mixed(Z_ARRVAL_P(array));
++			}
++			ZEND_VM_TAIL_CALL(ZEND_ADD_ARRAY_ELEMENT_SPEC_TMP_UNUSED_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));
++		} else {
++			ZVAL_NULL(array);
++			ZEND_VM_NEXT_OPCODE();
+@@ -20644 +20651,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
+-		ZEND_VM_TAIL_CALL(ZEND_ADD_ARRAY_ELEMENT_SPEC_TMP_UNUSED_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));
+@@ -20646 +20653,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
+-		ZVAL_ARR(array, zend_new_array(0));
++		zend_array *arr = zend_new_array(0);
++		if (arr != NULL) {
++			ZVAL_ARR(array, arr);
++		} else {
++			ZVAL_NULL(array);
++		}
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index d13087a5b02..2749ef5ff8a 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -155,0 +156,4 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++// Check if garbage is valid before proceeding to prevent use-after-free
++			if (UNEXPECTED(!garbage)) {
++				return variable_ptr;
++			}

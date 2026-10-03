@@ -1,0 +1,22 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..19f500cf9 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -339,0 +340 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  mrb_callinfo *prev_ci = &(c->ci[0]); /* Save reference to previous ci state */
+@@ -348 +349 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -349,0 +351 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    prev_ci = &(c->ci[0]); /* Re-save reference before realloc */
+@@ -357 +359 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-  ci->stack = ci[-1].stack + push_stacks;
++  ci->stack = prev_ci->stack + push_stacks; /* Use safe reference */
+@@ -2710 +2712,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
++      /* Store current ci pointer to avoid use-after-free after realloc */
++      volatile struct mrb_callinfo *current_ci = mrb->c->ci;
+@@ -2722 +2726,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

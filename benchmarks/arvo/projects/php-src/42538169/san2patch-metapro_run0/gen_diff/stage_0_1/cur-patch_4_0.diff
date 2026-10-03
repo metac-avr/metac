@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..e9d3480b4fc 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -44 +44 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref != NULL && !GC_DELREF(ref)) {
+@@ -46 +46 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref != NULL) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 6738674667e..491ee4aafdc 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -41128 +41128,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FE_RESET_R_SPEC_CV_HANDLER(ZEN
+-						GC_DELREF(properties);
++						if (properties != NULL) {  // Add null check before GC_DELREF
++							GC_DELREF(properties);
++						}
+@@ -41150 +41152,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FE_RESET_R_SPEC_CV_HANDLER(ZEN
+-			ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();

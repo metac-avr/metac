@@ -1,0 +1,62 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..1259decd 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2226,13 +2226,14 @@ xmlSAX2StartElementNs(void *ctx,
+-        pref = namespaces[i++];
+-	uri = namespaces[i++];
+-	ns = xmlNewNs(NULL, uri, pref);
+-	if (ns != NULL) {
+-	    if (last == NULL) {
+-	        ret->nsDef = last = ns;
+-	    } else {
+-	        last->next = ns;
+-		last = ns;
+-	    }
+-	    if ((URI != NULL) && (prefix == pref))
+-		ret->ns = ns;
+-	} else {
++	// Fixed CWE-416: Use After Free - Ensure namespace pointers are properly handled
++	         pref = namespaces[i++];
++		uri = namespaces[i++];
++		ns = xmlNewNs(NULL, uri, pref);
++		if (ns != NULL) {
++		    if (last == NULL) {
++		        ret->nsDef = last = ns;
++		    } else {
++		        last->next = ns;
++			last = ns;
++		    }
++		    if ((URI != NULL) && (prefix == pref))
++			ret->ns = ns;
++		} else {
+@@ -2240,2 +2241,2 @@ xmlSAX2StartElementNs(void *ctx,
+-	    continue;
+-	}
++		    continue;
++		}
+@@ -2246,5 +2247,5 @@ xmlSAX2StartElementNs(void *ctx,
+-	if ((!ctxt->html) && ctxt->validate && ctxt->wellFormed &&
+-	    ctxt->myDoc && ctxt->myDoc->intSubset) {
+-	    ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
+-	                                           ret, prefix, ns, uri);
+-	}
++		if ((!ctxt->html) && ctxt->validate && ctxt->wellFormed &&
++		    ctxt->myDoc && ctxt->myDoc->intSubset) {
++		    ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
++		                                           ret, prefix, ns, uri);
++		}
+diff --git a/valid.c b/valid.c
+index e11d2c95..98b62576 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2358 +2358 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            ((doc->intSubset == NULL) && (doc->extSubset == NULL)))
++            ((doc->intSubse t== NULL) && (doc->extSubset == NULL)))
+@@ -2364 +2364,2 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++// FIXME: Crash CWE-416: Use After Free
++             return(0);
+@@ -2379 +2380 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-					      attr->name, aprefix);
++			                      attr->name, aprefix);

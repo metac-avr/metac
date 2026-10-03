@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..a333ad1e849 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -350 +350,2 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-		/* Also release error and exception handlers, which may hold objects. */
++// FIXME: Crash CWE-416: Use After Free
++ 		/* Also release error and exception handlers, which may hold objects. */
+@@ -352 +353,3 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-			zval_ptr_dtor(&EG(user_error_handler));
++			if (Z_REFCOUNTED(EG(user_error_handler)) && Z_COUNTED(EG(user_error_handler))) {
++				zval_ptr_dtor(&EG(user_error_handler));
++			}
+@@ -357 +360,3 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-			zval_ptr_dtor(&EG(user_exception_handler));
++			if (Z_REFCOUNTED(EG(user_exception_handler)) && Z_COUNTED(EG(user_exception_handler))) {
++				zval_ptr_dtor(&EG(user_exception_handler));
++			}

@@ -1,0 +1,31 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..4c4c4e89 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3936 +3936 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      int res;
++       int res;
+@@ -3937,0 +3938 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
++      if (cur->ns == NULL) goto error;
+@@ -3946,0 +3948 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
++        if (cur->ns == NULL || cur->parent == NULL) goto error;
+@@ -3972 +3974 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-        if (xmlStrEqual(ns->href, cur->ns->href)) {
++        if ((cur->ns != NULL) && xmlStrEqual(ns->href, cur->ns->href)) {
+@@ -4247 +4249,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     }
+@@ -4249,3 +4252,9 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        ret->properties = xmlCopyPropList(ret, node->properties);
+-        if (ret->properties == NULL)
+-            goto error;
++        /* Validate that namespace pointers are not expired before use */
++        if (node->properties != NULL) {
++            xmlNsPtr ns_check = node->properties->ns;
++            if (ns_check == NULL || (ns_check->href != NULL && ns_check->prefix != NULL)) {
++                ret->properties = xmlCopyPropList(ret, node->properties);
++                if (ret->properties == NULL)
++                    goto error;
++            }
++        }

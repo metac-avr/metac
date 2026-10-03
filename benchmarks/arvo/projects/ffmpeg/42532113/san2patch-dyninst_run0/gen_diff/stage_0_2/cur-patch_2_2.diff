@@ -1,0 +1,37 @@
+diff --git a/libavcodec/vvc/vvcdec.c b/libavcodec/vvc/vvcdec.c
+index 608d497cb7..cd5cfc88fd 100644
+--- a/libavcodec/vvc/vvcdec.c
++++ b/libavcodec/vvc/vvcdec.c
+@@ -813,15 +813,17 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-    for (int i = 0; i < frame->nb_units; i++) {
+-        const H2645NAL *nal            = h266->common.read_packet.nals + i;
+-        const CodedBitstreamUnit *unit = frame->units + i;
+-
+-        if (unit->type == VVC_EOB_NUT || unit->type == VVC_EOS_NUT) {
+-            if (eos_at_start)
+-                s->last_eos = 1;
+-            else
+-                s->eos = 1;
+-        } else {
+-            ret = decode_nal_unit(s, fc, nal, unit);
+-            if (ret < 0) {
+-                av_log(s->avctx, AV_LOG_WARNING,
+-                        "Error parsing NAL unit #%d.\n", i);
+-                goto fail;
++    if (frame->nb_units > 0 && frame->units) {
++        for (int i = 0; i < frame->nb_units; i++) {
++            const H2645NAL *nal            = h266->common.read_packet.nals + i;
++            const CodedBitstreamUnit *unit = frame->units + i;
++
++            if (unit->type == VVC_EOB_NUT || unit->type == VVC_EOS_NUT) {
++                if (eos_at_start)
++                    s->last_eos = 1;
++                else
++                     s->eos = 1;
++            } else {
++                ret = decode_nal_unit(s, fc, nal, unit);
++                if (ret < 0) {
++                    av_log(s->avctx, AV_LOG_WARNING,
++                            "Error parsing NAL unit #%d.\n", i);
++                    goto fail;
++                }

@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..51dd87c58 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -339,0 +340,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  mrb_callinfo **ci_ref_ptrs[] = {&c->ci, NULL}; // Array to hold pointers to ci references
++  int i;
+@@ -345,0 +348,6 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    ptrdiff_t offsets[sizeof(ci_ref_ptrs)/sizeof(ci_ref_ptrs[0])-1];
++    
++    // Store offsets before realloc
++    for (i = 0; ci_ref_ptrs[i] != NULL; i++) {
++      offsets[i] = *(ci_ref_ptrs[i]) - c->cibase;
++    }
+@@ -348 +356,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -352,0 +362,5 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    
++    // Restore pointers after realloc
++    for (i = 0; ci_ref_ptrs[i] != NULL; i++) {
++      *(ci_ref_ptrs[i]) = c->cibase + offsets[i];
++    }
+@@ -2722 +2735,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

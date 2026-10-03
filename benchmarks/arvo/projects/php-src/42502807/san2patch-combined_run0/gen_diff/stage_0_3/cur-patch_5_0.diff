@@ -1,0 +1,48 @@
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index c9d23d11b7d..5feaf2235cb 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -1077,7 +1077,14 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-			sizeof(zval) * op_array->last_literal);
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
+-		efree(op_array->literals);
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		/* Validate literals array bounds before access */
++		if (op_array->literals && op_array->last_literal > 0) {
++			op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
++				ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
++				sizeof(zval) * op_array->last_literal);
++			if (((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) != NULL) {
++				memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
++					op_array->literals, sizeof(zval) * op_array->last_literal);
++			}
++			efree(op_array->literals);
++			op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		} else {
++			op_array->literals = NULL;
++		}
+@@ -1188,7 +1195,14 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-			sizeof(zval) * op_array->last_literal);
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
+-		efree(op_array->literals);
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		/* Validate literals array bounds before access */
++		if (op_array->literals && op_array->last_literal > 0) {
++			op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
++				ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
++				sizeof(zval) * op_array->last_literal);
++			if (((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) != NULL) {
++				memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
++					op_array->literals, sizeof(zval) * op_array->last_literal);
++			}
++			efree(op_array->literals);
++			op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		} else {
++			op_array->literals = NULL;
++		}

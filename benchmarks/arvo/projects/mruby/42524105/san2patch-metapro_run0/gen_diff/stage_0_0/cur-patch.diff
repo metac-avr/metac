@@ -1,0 +1,57 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..1092c967a 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -51 +51,2 @@ str_init_normal_capa(mrb_state *mrb, struct RString *s,
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+diff --git a/src/gc.c b/src/gc.c
+index 823297612..a9a43e5e4 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -816,21 +816,23 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-    else if (!ARY_EMBED_P(obj))
+-      mrb_free(mrb, ((struct RArray*)obj)->as.heap.ptr);
+-    break;
+-
+-  case MRB_TT_HASH:
+-    mrb_gc_free_iv(mrb, (struct RObject*)obj);
+-    mrb_gc_free_hash(mrb, (struct RHash*)obj);
+-    break;
+-
+-  case MRB_TT_STRING:
+-    mrb_gc_free_str(mrb, (struct RString*)obj);
+-    break;
+-
+-  case MRB_TT_PROC:
+-    {
+-      struct RProc *p = (struct RProc*)obj;
+-
+-      if (!MRB_PROC_CFUNC_P(p) && p->body.irep) {
+-        mrb_irep *irep = (mrb_irep*)p->body.irep;
+-        if (end) {
+-          mrb_irep_cutref(mrb, irep);
++  else if (!ARY_EMBED_P(obj))
++    mrb_free(mrb, ((struct RArray*)obj)->as.heap.ptr);
++  break;
++
++case MRB_TT_HASH:
++  mrb_gc_free_iv(mrb, (struct RObject*)obj);
++  mrb_gc_free_hash(mrb, (struct RHash*)obj);
++  break;
++
++case MRB_TT_STRING:
++  mrb_gc_free_str(mrb, (struct RString*)obj);
++  ((struct RString*)obj)->as.heap.len = 0; /* Clear length to prevent access */
++  ((struct RString*)obj)->as.heap.ptr = NULL; /* Nullify pointer to prevent UAF */
++  break;
++
++case MRB_TT_PROC:
++  {
++    struct RProc *p = (struct RProc*)obj;
++
++    if (!MRB_PROC_CFUNC_P(p) && p->body.irep) {
++      mrb_irep *irep = (mrb_irep*)p->body.irep;
++      if (end) {
++        mrb_irep_cutref(mrb, irep);

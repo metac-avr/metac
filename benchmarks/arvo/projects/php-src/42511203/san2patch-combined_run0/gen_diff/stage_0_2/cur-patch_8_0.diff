@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..94cd8d6fb3f 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p && !((zend_uintptr_t)p & (sizeof(void*) - 1))) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..814d425f73f 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -571,0 +572,7 @@ static zend_never_inline ZEND_COLD zval *zend_wrong_assign_to_variable_reference
++	/* Ensure both pointers are valid and not referencing freed memory before proceeding */
++	if (UNEXPECTED(!variable_ptr || !value_ptr)) {
++		return &EG(uninitialized_zval);
++	}
++	if (UNEXPECTED(Z_TYPE_P(value_ptr) == IS_REFERENCE && !Z_REF_P(value_ptr))) {
++		return &EG(uninitialized_zval);
++	}

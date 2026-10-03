@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..8545c578c63 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// FIXME: Crash CWE-416: Use After Free
++		if (EG(objects_store).object_buckets[handle] != SET_OBJ_INVALID(object)) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..d613b24473f 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -46,0 +47,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++			if (UNEXPECTED(GC_HAS_DTOR_CALLED(ref))) {
++				return;
++			}

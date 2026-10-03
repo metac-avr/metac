@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 9efe205abe0..c7a0729b437 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -215,4 +215,9 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
+-		return ZEND_HASH_APPLY_REMOVE;
+-	} else {
+-		return ZEND_HASH_APPLY_KEEP;
++
++	if (Z_TYPE_P(zv) == IS_OBJECT) {
++		zend_object *obj = Z_OBJ_P(zv);
++		if (!obj || obj->ce == NULL || obj->handlers == NULL) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
++		if (Z_REFCOUNT_P(zv) == 1) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
+@@ -219,0 +225,2 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++
++	return ZEND_HASH_APPLY_KEEP;

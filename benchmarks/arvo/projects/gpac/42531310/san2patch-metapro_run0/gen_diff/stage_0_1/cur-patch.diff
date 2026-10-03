@@ -1,0 +1,22 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..294c2ac2e 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -3238 +3238 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			obu_size = gf_inspect_dump_obu_internal(dump, pctx->av1_state, (char *) data, obu_size, obu_type, obu_size, hdr_size, ctx->crc, pctx, ctx->analyze);
++			obu_size = gf_inspect_dump_obu_internal(dump, pctx->av1_state, (char *) data, size, obu_type, obu_size, hdr_size, ctx->crc, pctx, ctx->analyze);
+@@ -3240 +3240 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			if (obu_size > size) {
++			if (obu_size > size || obu_size == 0) {
+diff --git a/src/filters/reframe_av1.c b/src/filters/reframe_av1.c
+index 8309f74b1..fc8d29592 100644
+--- a/src/filters/reframe_av1.c
++++ b/src/filters/reframe_av1.c
+@@ -947,0 +948,7 @@ static GF_Err av1dmx_parse_flush_sample(GF_Filter *filter, GF_AV1DmxCtx *ctx)
++	// Prevent out-of-bounds read by validating buffer boundaries
++	if (ctx->state.frame_obus == NULL || pck_size > ctx->state.frame_obus_alloc) {
++		GF_LOG(GF_LOG_ERROR, GF_LOG_MEDIA, ("[AV1Dmx] Buffer boundary validation failed\n"));
++		gf_av1_reset_state(&ctx->state, GF_FALSE);
++		return GF_NON_COMPLIANT_BITSTREAM;
++	}
++

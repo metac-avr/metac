@@ -1,0 +1,49 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..da58b1e88 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -438 +438,2 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-				}
++// FIXME: Crash CWE-416: Use After Free
++ 				}
+@@ -440 +440,0 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-			ogg_stream_clear(&os);
+@@ -463,0 +464,3 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
++		if (ogg_page_bos(&oggpage)) {
++			ogg_stream_clear(&os);
++		}
+@@ -490,22 +493,12 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-			GF_OGGStream *st;
+-			ctx->duration = dur;
+-			while ( (st = gf_list_enum(ctx->streams, &i)) ) {
+-				if (st->opid)
+-					gf_filter_pid_set_property(st->opid, GF_PROP_PID_DURATION, & PROP_FRAC64(ctx->duration));
+-			}
+-		}
+-	}
+-	gf_fclose(stream);
+-}
+-
+-static Bool oggdmx_process_event(GF_Filter *filter, const GF_FilterEvent *evt)
+-{
+-	u32 i;
+-	GF_OGGStream *st;
+-	GF_FilterEvent fevt;
+-	GF_OGGDmxCtx *ctx = gf_filter_get_udta(filter);
+-
+-	switch (evt->base.type) {
+-	case GF_FEVT_PLAY:
+-		if (ctx->nb_playing && (ctx->start_range == evt->play.start_range)) {
+-			ctx->nb_playing++;
++                        GF_OGGStream *st;
++                        ctx->duration = dur;
++                        while ( (st = gf_list_enum(ctx->streams, &i)) ) {
++                                if (st->opid)
++                                        gf_filter_pid_set_property(st->opid, GF_PROP_PID_DURATION, & PROP_FRAC64(ctx->duration));
++                        }
++                }
++        }
++        // Fixed CWE-416: Use After Free by ensuring ogg_stream_clear is called after all stream operations
++        // Move ogg_stream_clear outside the conditional block to prevent premature memory deallocation
++        gf_fclose(stream);
++}			ctx->nb_playing++;

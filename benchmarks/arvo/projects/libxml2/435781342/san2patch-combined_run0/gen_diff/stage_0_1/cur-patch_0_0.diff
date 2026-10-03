@@ -1,0 +1,34 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..22245033 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2226 +2226,3 @@ xmlSAX2StartElementNs(void *ctx,
+-        pref = namespaces[i++];
++	// FIXME: Crash CWE-416: Use After Free
++	/* Fix: Add reference counting to prevent premature freeing */
++	pref = namespaces[i++];
+@@ -2237,0 +2240,3 @@ xmlSAX2StartElementNs(void *ctx,
++	    
++	    /* Increment reference count to prevent early deallocation */
++	    ns->reference_count++;
+@@ -2249,0 +2255,2 @@ xmlSAX2StartElementNs(void *ctx,
++	    /* Decrement reference count after validation */
++	    if (ns && ns->reference_count > 0) ns->reference_count--;
+diff --git a/valid.c b/valid.c
+index e11d2c95..acc95562 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364,6 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
++
++	if ((elem->ns != NULL) && (elem->ns->refcnt > 0)) {
++	    xmlNsPtr ns = elem->ns;
++	    ns->refcnt++;
++	}
+@@ -2384,0 +2390,5 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
++	if ((elem->ns != NULL) && (elem->ns->refcnt > 0)) {
++	    xmlNsPtr ns = elem->ns;
++	    ns->refcnt--;
++	}
++

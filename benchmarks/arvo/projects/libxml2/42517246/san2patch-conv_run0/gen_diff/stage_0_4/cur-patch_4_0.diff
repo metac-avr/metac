@@ -1,0 +1,27 @@
+diff --git a/dict.c b/dict.c
+index 5c9ca719..3a9ae3b1 100644
+--- a/dict.c
++++ b/dict.c
+@@ -878,0 +879,4 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
++    /* Add pointer validation to prevent expired pointer dereference - Fix for CWE-125/CWE-825 */
++    if ((uintptr_t)name < 4096 || name == NULL)
++        return(NULL);
++
+@@ -890,2 +894 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);
+diff --git a/tree.c b/tree.c
+index 6a42f118..2dc74f68 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4310,2 +4310,3 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    else if (node->name != NULL) {
+-        if ((doc != NULL) && (doc->dict != NULL))
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     else if (node->name != NULL) {
++        if ((doc != NULL) && (doc->dict != NULL) && xmlValidateNameValue(node->name))
+@@ -4322,2 +4323 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }else{
+-      if (node->type == XML_ELEMENT_NODE)
++    }else{      if (node->type == XML_ELEMENT_NODE)

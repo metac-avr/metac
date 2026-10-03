@@ -1,0 +1,33 @@
+diff --git a/tree.c b/tree.c
+index a93f2e31..9d2d53ae 100644
+--- a/tree.c
++++ b/tree.c
+@@ -599,3 +599,8 @@ xmlFreeNs(xmlNs *cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
+-    xmlFree(cur);
++// FIXME: Crash CWE-416: Use After Free
++    /* Implement safe freeing with validation context check */
++    if (cur->next != (xmlNsPtr)(-1)) {  /* Check if already freed marker */
++        if (cur->href != NULL) xmlFree((char *) cur->href);
++        if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++        cur->next = (xmlNsPtr)(-1);  /* Mark as freed */
++        xmlFree(cur);
++    }
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..59afcff5 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2226 +2226,2 @@ xmlSAX2StartElementNs(void *ctx,
+-        pref = namespaces[i++];
++// FIXME: Crash CWE-416: Use After Free
++         pref = namespaces[i++];
+@@ -2248,2 +2249,6 @@ xmlSAX2StartElementNs(void *ctx,
+-	    ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
+-	                                           ret, prefix, ns, uri);
++	    xmlNsPtr ns_copy = xmlCopyNamespace(ns);
++	    if (ns_copy) {
++	        ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
++	                                               ret, prefix, ns_copy, uri);
++	        xmlFreeNs(ns_copy);
++	    }

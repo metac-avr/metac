@@ -1,0 +1,18 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..732ebaef8dc 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -647,3 +647,4 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			if (Z_TYPE_P(zv) == IS_OBJECT) {
+-				ce1 = Z_OBJCE_P(zv);
+-			} else if (Z_TYPE_P(zv) == IS_ARRAY) {
++			if (zv != NULL && Z_TYPE_P(zv) == IS_OBJECT) {
++// FIXME: Crash CWE-416: Use After Free
++ 				ce1 = Z_OBJCE_P(zv);
++			} else if (zv != NULL && Z_TYPE_P(zv) == IS_ARRAY) {
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..2fa43695b84 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2497,0 +2498 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++	/* Clear pointer to prevent dangling reference access */

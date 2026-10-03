@@ -1,0 +1,29 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..0010e778b 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1095,0 +1096 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++    // Remove from gray list first to prevent reentrancy issues
+@@ -1097,2 +1098,5 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    // Add safety check to ensure object hasn't been swept
++    if (((struct RBasic*)obj)->tt != MRB_TT_FREE) {
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    }
+@@ -1203,4 +1207,10 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++      /* Add synchronization check to prevent expired pointer dereference */
++      if (gc->state != GC_STATE_SWEEP) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      } else {
++        /* Defer freeing if in wrong GC state */
++        page = page->next;
++      }

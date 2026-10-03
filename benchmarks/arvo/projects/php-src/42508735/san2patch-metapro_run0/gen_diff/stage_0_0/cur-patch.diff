@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..76c7155ecc3 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1183 +1183,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1184,0 +1186 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (!p) return 0;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..47c031dcbd8 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		
++		/* Validate object before accessing its memory */
++		if (GC_TYPE(object) != IS_NULL) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}

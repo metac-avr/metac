@@ -1,0 +1,34 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..08af9b27af 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -44,6 +43,0 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
+-        ff_refstruct_unref(&frame->rpl_tab);
+-        frame->refPicList = NULL;
+-
+-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+-    }
+-}
+@@ -58 +52,6 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-    return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
++    if (ref == NULL || ref->rpl_tab == NULL || ctb_addr_ts < 0 || ctb_addr_ts >= (int)(ref->rpl_tab[0] ? ref->rpl_tab[0]->size : 0))
++        return NULL;
++    RefPicListTab *rpl_tab_entry = ref->rpl_tab[ctb_addr_ts];
++    if (rpl_tab_entry == NULL)
++        return NULL;
++    return &rpl_tab_entry->refPicList[0];
+@@ -64 +63,5 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
++    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
++        ff_hevc_unref_frame(&s->DPB[i],
++                            s->DPB[i].flags & HEVC_FRAME_FLAG_OUTPUT ? 0 : ~0);
++    }
++}
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..ea9c6eb1a7 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -2346,0 +2347 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
++        
+@@ -2368,0 +2370 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
++

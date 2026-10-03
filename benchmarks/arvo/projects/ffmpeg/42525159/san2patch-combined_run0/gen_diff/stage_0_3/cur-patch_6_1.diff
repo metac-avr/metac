@@ -1,0 +1,61 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..1cac4d3748 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,8 +2017,34 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
++#define WRITE_FRAME(DIRECT, PIXEL)                                                     \
++    static void write_frame_##DIRECT##_##PIXEL(AVFrame *frame,                            \
++                                               const Jpeg2000DecoderContext *s,           \
++                                               const Jpeg2000Tile *tile,                   \
++                                               int compno,                                \
++                                               int pixelsize,                             \
++                                               int plane,                                 \
++                                               PIXEL *i_datap,                            \
++                                               const PIXEL *end_of_buffer)               \
++    {                                                                                         \
++        int x, y;                                                                             \
++        PIXEL *line;                                                                          \
++        PIXEL *dst;                                                                           \
++        const int cw = tile->comp[compno].coord.w;                                            \
++        const int ch = tile->comp[compno].coord.h;                                            \
++        const int csx = s->cdx[compno];                                                       \
++        const int csy = s->cdy[compno];                                                        \
++        const int stride = frame->linesize[plane] / sizeof(PIXEL);                            \
++                                                                                              \
++        line = (PIXEL*)frame->data[plane] + (tile->coord.y * csy - s->image_offset_y) *      \
++               stride + (tile->coord.x * csx - s->image_offset_x) * pixelsize;                 \
++                                                                                              \
++        for (y = 0; y < ch; y++) {                                                            \
++            dst = line;                                                                       \
++            for (x = 0; x < cw; x++) {                                                        \
++                /* Fixed CWE-787: Out-of-bounds Write by adding boundary check */             \
++                if (dst < end_of_buffer) {                                                    \
++                    *dst = *i_datap;                                                          \
++                }                                                                             \
++                i_datap++;                                                                    \
++                dst += pixelsize;                                                             \
++            }                                                                                 \
++            line += stride;                                                                   \
++        }                                                                                     \
+@@ -2026,13 +2051,0 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-

@@ -1,0 +1,29 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..5719f4f1b 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -790,0 +790 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (mrb->gc.sweeping) return;
+@@ -799,2 +799 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1203,4 +1202,12 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++      /* Safely unlink and free page to avoid use-after-free */
++      if (page != NULL && next != NULL) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      } else if (page != NULL) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      }

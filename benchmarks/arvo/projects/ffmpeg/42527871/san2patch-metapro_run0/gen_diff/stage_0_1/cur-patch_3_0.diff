@@ -1,0 +1,25 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..cc9cfbbc76 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -1435 +1435 @@ static int jpegxl_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-
++ 
+@@ -1437,4 +1437,11 @@ static int jpegxl_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        ret = skip_boxes(ctx, ctx->pc.buffer, ctx->pc.index);
+-        if (ret < 0) {
+-            if (ret == AVERROR_INVALIDDATA)
+-                ctx->next = -1;
++        if (ctx->pc.index >= 2) {  // Ensure at least 2 bytes available for 16-bit read
++            ret = skip_boxes(ctx, ctx->pc.buffer, ctx->pc.index);
++            if (ret < 0) {
++                if (ret == AVERROR_INVALIDDATA)
++                    ctx->next = -1;
++                goto flush;
++            }
++            ctx->next = ret + ctx->skip;
++        } else {
++            // Not enough data for safe parsing, treat as invalid
++            ctx->next = -1;
+@@ -1443 +1449,0 @@ static int jpegxl_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        ctx->next = ret + ctx->skip;

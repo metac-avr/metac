@@ -1,0 +1,24 @@
+diff --git a/mrbgems/mruby-complex/src/complex.c b/mrbgems/mruby-complex/src/complex.c
+index 66176c3c1..a24a9b1ac 100644
+--- a/mrbgems/mruby-complex/src/complex.c
++++ b/mrbgems/mruby-complex/src/complex.c
+@@ -159,0 +160,5 @@ mrb_complex_eq(mrb_state *mrb, mrb_value x, mrb_value y)
++    /* Limit recursion depth to prevent buffer overflow */
++    if (++mrb-> recursions > 1000) {
++      mrb-> recursions = 0;
++      return FALSE;
++    }
+diff --git a/mrbgems/mruby-rational/src/rational.c b/mrbgems/mruby-rational/src/rational.c
+index dacce53eb..ab2ad158c 100644
+--- a/mrbgems/mruby-rational/src/rational.c
++++ b/mrbgems/mruby-rational/src/rational.c
+@@ -395 +395,6 @@ rational_eq(mrb_state *mrb, mrb_value x)
+-   {
++    {
++      static __thread int eq_recursion_count = 0;
++      if (++eq_recursion_count > 1000) {
++        eq_recursion_count = 0;
++        return mrb_false_value();
++      }
+@@ -397,0 +403 @@ rational_eq(mrb_state *mrb, mrb_value x)
++      eq_recursion_count--;

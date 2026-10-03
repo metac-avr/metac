@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..bf55763d348 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1184,0 +1186,4 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	/* Prevent use-after-free by checking for NULL pointer */
++	if (p == NULL) {
++		return 0;
++	}
+@@ -1193 +1197,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..d8b4ca031c3 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29938,0 +29939,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++				/* Properly handle the object pointer before UNDEF_RESULT */
++				if (Z_REFCOUNTED_P(object_ptr)) {
++					GC_DELREF(Z_COUNTED_P(object_ptr));
++				}
++				ZVAL_UNDEF(object_ptr);
+@@ -30288,0 +30294,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++				/* Properly handle the object pointer before UNDEF_RESULT */
++				if (Z_REFCOUNTED_P(object_ptr)) {
++					GC_DELREF(Z_COUNTED_P(object_ptr));
++				}
++				ZVAL_UNDEF(object_ptr);
+@@ -49525,0 +49536,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
++				/* Properly handle the object pointer before UNDEF_RESULT */
++				if (Z_REFCOUNTED_P(object_ptr)) {
++					GC_DELREF(Z_COUNTED_P(object_ptr));
++				}
++				ZVAL_UNDEF(object_ptr);
+@@ -49875,0 +49891,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
++				/* Properly handle the object pointer before UNDEF_RESULT */
++				if (Z_REFCOUNTED_P(object_ptr)) {
++					GC_DELREF(Z_COUNTED_P(object_ptr));
++				}
++				ZVAL_UNDEF(object_ptr);

@@ -1,0 +1,26 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..7747435aa 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1219,3 +1219,8 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			if (cfg->num_constraint_info) {
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++			if (cfg->num_constraint_info > 0) {
++				u32 constraint_bytes_to_write = (cfg->num_constraint_info > 1) ? (cfg->num_constraint_info - 1) : 0;
++				if (constraint_bytes_to_write > 0 && cfg->general_constraint_info) {
++					gf_bs_write_data(bs, cfg->general_constraint_info, constraint_bytes_to_write);
++				}
++				if (cfg->general_constraint_info) {
++					gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				}
+@@ -1234 +1239 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				if (cfg->ptl_sublayer_present_mask & (1<<idx))
++				if (cfg->ptl_sublayer_present_mask & (1<<idx) && cfg->sublayer_level_idc)
+@@ -1239 +1244 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			for (idx=0; idx<cfg->num_sub_profiles; idx++) {
++			for (idx=0; idx<cfg->num_sub_profiles && cfg->sub_profiles_idc; idx++) {
+@@ -1274 +1279,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			gf_bs_write_data(bs, sl->data, sl->size);
++			if (sl->data && sl->size > 0)
++				gf_bs_write_data(bs, sl->data, sl->size);

@@ -1,0 +1,28 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..ac13b714fc 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -664 +664,2 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-                       ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                        ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
+@@ -666 +667,14 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        nb_headers   = find_new_headers(fpc, start_offset);
++        
++        /* Validate that we have enough data in FIFO buffer before parsing */
++        if (av_fifo_size(fpc->fifo_buf) >= start_offset + MAX_FRAME_HEADER_SIZE) {
++            nb_headers   = find_new_headers(fpc, start_offset);
++        } else {
++            /* Not enough data, continue reading unless at EOF */
++            nb_headers = 0;
++            if (read_end < buf + buf_size) {
++                read_start = read_end;
++                continue;
++            } else {
++                goto handle_error;
++            }
++        }
+@@ -745 +759,2 @@ static av_cold int flac_parse_init(AVCodecParserContext *c)
+-    /* There will generally be FLAC_MIN_HEADERS buffered in the fifo before
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     /* There will generally be FLAC_MIN_HEADERS buffered in the fifo before

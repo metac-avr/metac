@@ -1,0 +1,42 @@
+diff --git a/mrbgems/mruby-sprintf/src/sprintf.c b/mrbgems/mruby-sprintf/src/sprintf.c
+index 7104a185a..74d144e03 100644
+--- a/mrbgems/mruby-sprintf/src/sprintf.c
++++ b/mrbgems/mruby-sprintf/src/sprintf.c
+@@ -555 +555,6 @@ mrb_f_sprintf(mrb_state *mrb, mrb_value obj)
+-    return mrb_str_format(mrb, argc - 1, argv + 1, argv[0]);
++    mrb_int format_argc = argc - 1;
++    if (format_argc < 0 || format_argc >= argc) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "argument count overflow");
++      return mrb_nil_value();
++    }
++    return mrb_str_format(mrb, format_argc, argv + 1, argv[0]);
+@@ -798,0 +804,4 @@ mrb_str_format(mrb_state *mrb, mrb_int argc, const mrb_value *argv, mrb_value fm
++        
++        /* Bounds check for length */
++        if (len < 0) goto format_error;
++        
+@@ -800,0 +810,4 @@ mrb_str_format(mrb_state *mrb, mrb_int argc, const mrb_value *argv, mrb_value fm
++          
++          /* Bounds check for embedded string */
++          if (tmp_n < 0) goto format_error;
++          
+@@ -804,0 +818,2 @@ mrb_str_format(mrb_state *mrb, mrb_int argc, const mrb_value *argv, mrb_value fm
++          /* Bounds check for buffer length */
++          if (blen < 0) goto format_error;
+@@ -810 +825 @@ mrb_str_format(mrb_state *mrb, mrb_int argc, const mrb_value *argv, mrb_value fm
+-            mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid mbstring sequence");
++            goto format_error;
+@@ -815,0 +831,3 @@ mrb_str_format(mrb_state *mrb, mrb_int argc, const mrb_value *argv, mrb_value fm
++            
++            /* Bounds check for calculated length */
++            if (len < 0) goto format_error;
+@@ -819,0 +838,4 @@ mrb_str_format(mrb_state *mrb, mrb_int argc, const mrb_value *argv, mrb_value fm
++            
++            /* Bounds check for width */
++            if (width < 0) goto format_error;
++            
+@@ -830,0 +853,4 @@ mrb_str_format(mrb_state *mrb, mrb_int argc, const mrb_value *argv, mrb_value fm
++        break;
++        
++format_error:
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "format string length error");

@@ -1,0 +1,79 @@
+diff --git a/src/lib/protocols/ppstream.c b/src/lib/protocols/ppstream.c
+index 6625a4bc5..d01bd1151 100644
+--- a/src/lib/protocols/ppstream.c
++++ b/src/lib/protocols/ppstream.c
+@@ -171,22 +171,52 @@ void ndpi_search_ppstream(struct ndpi_detection_module_struct
+-	    ndpi_int_ppstream_add_connection(ndpi_struct, flow);
+-	    return;
+-	  }
+-	  /** check 55 (2) **/
+-	  else if(packet->payload[2] == 0x55 && packet->payload[1] == 0x00 &&
+-		  (packet->payload[5] == 0x00 &&
+-		   packet->payload[6] == 0x00 &&
+-		   packet->payload[7] == 0x00 &&
+-		   packet->payload[8] == 0x00 &&
+-		   packet->payload[14] == 0x00 &&
+-		   packet->payload[15] == 0x00 &&
+-		   packet->payload[16] == 0x00 &&
+-		   packet->payload[17] == 0x00 &&
+-		   packet->payload[18] == 0x00 &&
+-		   packet->payload[19] == 0x00 &&
+-		   packet->payload[20] == 0x00 )) {
+-
+-	    /* increase count pkt ppstream over udp */
+-	    flow->l4.udp.ppstream_stage++;
+-	  
+-	    ndpi_int_ppstream_add_connection(ndpi_struct, flow);
+-	    return;
++static void ndpi_search_ppstream(struct ndpi_detection_module_struct *ndpi_struct,
++				  struct ndpi_flow_struct *flow)
++{
++  struct ndpi_packet_struct *packet = &flow->packet;
++
++  if(packet->payload_packet_len >= 20) {
++    if(packet->payload[0] == 0x00 &&
++       packet->payload[1] == 0x00 &&
++       packet->payload[2] == 0x01 &&
++       packet->payload[3] == 0x00 &&
++       packet->payload[4] == 0x00 &&
++       packet->payload[5] == 0x00 &&
++       packet->payload[6] == 0x00 &&
++       packet->payload[7] == 0x00 &&
++       packet->payload[8] == 0x00 &&
++       packet->payload[9] == 0x00 &&
++       packet->payload[10] == 0x00 &&
++       packet->payload[11] == 0x00 &&
++       packet->payload[12] == 0x00 &&
++       packet->payload[13] == 0x00 &&
++       packet->payload[14] == 0x00 &&
++       packet->payload[15] == 0x00 &&
++       packet->payload[16] == 0x00 &&
++       packet->payload[17] == 0x00 &&
++       packet->payload[18] == 0x00 &&
++       packet->payload[19] == 0x00) {
++      
++      ndpi_int_ppstream_add_connection(ndpi_struct, flow);
++      return;
++    }
++    /** check 55 (2) **/
++    else if(packet->payload_packet_len >= 21 && packet->payload[2] == 0x55 && packet->payload[1] == 0x00 &&
++            (packet->payload[5] == 0x00 &&
++             packet->payload[6] == 0x00 &&
++             packet->payload[7] == 0x00 &&
++             packet->payload[8] == 0x00 &&
++             packet->payload[14] == 0x00 &&
++             packet->payload[15] == 0x00 &&
++             packet->payload[16] == 0x00 &&
++             packet->payload[17] == 0x00 &&
++             packet->payload[18] == 0x00 &&
++             packet->payload[19] == 0x00 &&
++             packet->payload[20] == 0x00)) {
++
++      /* increase count pkt ppstream over udp */
++      flow->l4.udp.ppstream_stage++;
++      
++      ndpi_int_ppstream_add_connection(ndpi_struct, flow);
++      return;
++    }
++  }
++}	    return;

@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..30f5bc0e79e 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1654 +1654,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_deprecated_function(const zend_functi
+-ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
+@@ -1656,0 +1658,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++	/* Defensive fix: Add explicit return to prevent any subsequent memory access */
++	return;
+@@ -1666,2 +1669 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
+-	/* Illegal offset assignment */
+-	if (UNEXPECTED(EG(exception) != NULL)) {
++	/* Illegal offset assignment */	if (UNEXPECTED(EG(exception) != NULL)) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..1f7479e38b0 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -39838,0 +39839,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_W_SPEC_CV_CONST_HAND
++	
++	/* Defensive check to prevent use-after-free */
++	if (container == NULL || (Z_TYPE_P(container) <= IS_NULL && Z_TYPE_P(container) != IS_INDIRECT)) {
++		ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++	}
++	

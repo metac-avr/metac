@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..059a10f6d9e 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1251 +1251 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
++#		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+@@ -1259 +1259,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1260,0 +1262 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (!p) return 0;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..8f624bfa1d2 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// Fixed: Ensure object is removed from GC buffer before freeing to prevent use-after-free
+@@ -203,0 +204 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		ptr = ((char*)object) - object->handlers->offset;

@@ -1,0 +1,19 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..ea16cd4b7 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -463 +463 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    mrb_callinfo *ci = mrb->c->ci;
++    mrb_callinfo *ci = mrb->c->c->ci;
+@@ -515 +515,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       if (argc > 0 && ci->stack + 1 + argc <= mrb->c->stend)
+@@ -1381,0 +1383,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      if (mrb->c->ci->stack + 1 >= mrb->c->stend) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow");
++      }
+@@ -1392,2 +1396 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-    CASE(OP_GETMCNST, BB) {
+-      mrb_value val;
++    CASE(OP_GETMCNST, BB) {      mrb_value val;

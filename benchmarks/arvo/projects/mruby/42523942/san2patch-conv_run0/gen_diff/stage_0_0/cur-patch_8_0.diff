@@ -1,0 +1,24 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..71838af2c 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -792,0 +793,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  /* Clear pointer from GC queue after marking to prevent reuse */
++  obj = NULL;
+@@ -799,2 +801 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1237 +1238,5 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      return incremental_marking_phase(mrb, gc, limit);
++      size_t result = incremental_marking_phase(mrb, gc, limit);
++      if (gc->state == MRB_GC_STATE_SWEEP) {
++        gc->gray_list = NULL;  /* Clear gray list when transitioning to sweep */
++      }
++      return result;

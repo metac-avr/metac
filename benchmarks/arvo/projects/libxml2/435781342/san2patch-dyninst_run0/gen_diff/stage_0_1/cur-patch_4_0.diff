@@ -1,0 +1,29 @@
+diff --git a/valid.c b/valid.c
+index e11d2c95..a0473cc8 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364,5 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
++
++	if ((elem->ns != NULL) && (elem->ns->prefix == NULL)) {
++	    return(0);
++	}
+@@ -2376 +2380 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..5f7a389d 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2089 +2089,2 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-	    xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);
++// FIXME: Crash CWE-416: Use After Free
++ 	    xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);
+@@ -2091 +2092,5 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-            int res = xmlIsID(ctxt->myDoc, ctxt->node, ret);
++            int res = 0;
++            /* Check for null pointer before accessing ret->ns */
++            if (ret != NULL && ret->ns != NULL) {
++                res = xmlIsID(ctxt->myDoc, ctxt->node, ret);
++            }

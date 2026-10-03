@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..90fdb1f02a6 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,2 +1172,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+@@ -1181 +1179,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1182,0 +1182,4 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (!p) {
++		zend_error_noreturn(E_ERROR, "zend_gc_delref called with NULL pointer");
++		return 0;
++	}
+@@ -1192,3 +1195 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index f2eb205d53c..e91e570b8be 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3110 +3110,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				/* smart branch opcodes may not initialize result */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 				/* smart branch opcodes may not initialize result */
+@@ -3112 +3113,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *var_ptr = EX_VAR(throw_op->result.var);
++					if (var_ptr != NULL) {
++						zval_ptr_dtor_nogc(var_ptr);
++					}

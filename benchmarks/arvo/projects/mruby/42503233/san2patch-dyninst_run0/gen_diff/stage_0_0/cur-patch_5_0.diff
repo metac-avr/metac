@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..fe5e6b2c4 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -387,0 +388,5 @@ mrb_funcall_id(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, ...)
++  /* Validate input parameters to prevent stack extension issues */
++  if (argc < 0 || argc > MRB_FUNCALL_ARGC_MAX) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "Invalid argument count");
++  }
++
+@@ -479 +484,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     c = mrb_class(mrb, self);
+@@ -480,0 +487,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    if (argc < 0 || argc > 1000000) {  // Reasonable upper limit check
++      mrb_raisef(mrb, E_ARGUMENT_ERROR, "invalid argc for funcall (%i)", argc);
++    }
+@@ -496,0 +506,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      if (n < 0 || n > 1000000) {  // Reasonable upper limit check
++        mrb_raisef(mrb, E_ARGUMENT_ERROR, "invalid stack regs for funcall (%i)", n);
++      }
+@@ -506,0 +519,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++        if (p->body.irep->nregs < 0 || p->body.irep->nregs > 1000000 || argc < 0 || argc > 1000000) {
++          mrb_raisef(mrb, E_ARGUMENT_ERROR, "invalid stack extension parameters");
++        }

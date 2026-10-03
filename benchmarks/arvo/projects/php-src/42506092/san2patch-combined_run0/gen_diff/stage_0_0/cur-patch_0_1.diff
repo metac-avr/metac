@@ -1,0 +1,68 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..e33df8d3da7 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756 +756,48 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
++static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
++{
++	zend_long offset;
++	zend_string *offset_key;
++	zend_ulong hval;
++	HashTable *ht;
++	zval *retval;
++
++	dim = zend_fetch_dimension_address_inner_helper(NULL, dim/*, type*/);
++
++	switch(Z_TYPE_P(dim)) {
++		case IS_LONG:
++			return Z_LVAL_P(dim);
++		case IS_STRING:
++			if (ZEND_HANDLE_NUMERIC_EX(Z_STR_P(dim), hval, offset_key)) {
++				if (offset_key) {
++					ht = Z_ARRVAL_P(dim);
++					goto num_index;
++				}
++				return hval;
++			}
++			/* break missing intentionally */
++		default:
++			return zval_get_long_func(dim, /* is_strict */ false);
++	}
++
++	return offset;
++
++try_again:
++	dim = zend_fetch_dimension_address_inner_helper(NULL, dim/*, type*/);
++
++	switch(Z_TYPE_P(dim)) {
++		case IS_LONG:
++			return Z_LVAL_P(dim);
++		case IS_STRING:
++			if (ZEND_HANDLE_NUMERIC_EX(Z_STR_P(dim), hval, offset_key)) {
++				if (offset_key) {
++					ht = Z_ARRVAL_P(dim);
++					if (ht != NULL) {
++						goto num_index;
++					}
++					return 0; /* Return 0 instead of NULL for zend_long return type */
++				}
++				return hval;
++			}
++			/* break missing intentionally */
++		default:
++			return zval_get_long_func(dim, /* is_strict */ false);
+@@ -758 +804,0 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	return zend_hash_lookup(ht, offset_key);
+@@ -762,6 +808,5 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	return retval;
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
+-{
+-	zend_long offset;
++	if (retval) {
++		return zval_get_long_func(retval, /* is_strict */ false);
++	}
++	return 0; /* Return 0 for NULL retval */
++}	zend_long offset;

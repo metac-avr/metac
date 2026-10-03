@@ -1,0 +1,17 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..27d32118417 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6778 +6778,7 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	zval obj;
++// FIXME: Crash CWE-416: Use After Free
++ 	zval obj;
++
++	if (attr->data->name) {
++		zend_string *name_copy = zend_string_dup(attr->data->name, 0);
++		attr->data->name = name_copy;
++	}
+@@ -6790,2 +6796 @@ ZEND_METHOD(ReflectionEnum, __construct)
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++	if (EG(exception)) {		RETURN_THROWS();

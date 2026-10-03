@@ -1,0 +1,28 @@
+diff --git a/src/filters/reframe_img.c b/src/filters/reframe_img.c
+index 9eb787203..89cfab1b3 100644
+--- a/src/filters/reframe_img.c
++++ b/src/filters/reframe_img.c
+@@ -344,10 +344,13 @@ GF_Err img_process(GF_Filter *filter)
+-	} else {
+-		for (i=0; i<h; i++) {
+-			irow = (h-1-i)*out_stride;
+-			pix = data + fh.bfOffBits + i*in_stride;
+-			for (j=0; j<out_stride; j+=4) {
+-				output[j + irow] = pix[2];
+-				output[j+1 + irow] = pix[1];
+-				output[j+2 + irow] = pix[0];
+-				output[j+3 + irow] = pix[3];
+-				pix += 4;
++	} 		else {
++			const u8 *data_end = data + data_size;
++			for (i=0; i<h; i++) {
++				irow = (h-1-i)*out_stride;
++				pix = data + fh.bfOffBits + i*in_stride;
++				if (pix + out_stride > data_end) break;
++				for (j=0; j<out_stride; j+=4) {
++					output[j + irow] = pix[2];
++					output[j+1 + irow] = pix[1];
++					output[j+2 + irow] = pix[0];
++					output[j+3 + irow] = pix[3];
++					pix += 4;
++				}

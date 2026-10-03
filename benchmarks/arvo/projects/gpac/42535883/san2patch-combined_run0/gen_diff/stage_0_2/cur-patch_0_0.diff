@@ -1,0 +1,48 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..be0f6e6ac 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1186,0 +1187 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++  	// Fixed: Add bounds checking to prevent out-of-bounds read
+@@ -1220,2 +1221,7 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				// Fixed: Add bounds check before accessing constraint info array
++				if (cfg->num_constraint_info > 1) {
++					gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
++				}
++				if (cfg->num_constraint_info > 0) {
++					gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				}
+@@ -1234,2 +1240,6 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				if (cfg->ptl_sublayer_present_mask & (1<<idx))
+-					gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++				if (cfg->ptl_sublayer_present_mask & (1<<idx)) {
++					// Fixed: Add bounds check for sublayer_level_idc array access
++					if (idx < 8) { // Assuming max 8 temporal layers
++						gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++					}
++				}
+@@ -1240 +1250,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				// Fixed: Add bounds check for sub_profiles_idc array access
++				if (idx < cfg->num_sub_profiles) {
++					gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				}
+@@ -1252,0 +1266,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++		// Fixed: Add bounds check before accessing param_array
++		if (i >= gf_list_count(cfg->param_array)) break;
+@@ -1254,0 +1270 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++		if (!ar) continue; // Fixed: Add null check
+@@ -1267,0 +1284,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			// Fixed: Add bounds check before accessing nalus array
++			if (j >= gf_list_count(ar->nalus)) break;
+@@ -1268,0 +1287,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			
++			if (!sl) continue; // Fixed: Add null check
+@@ -1274 +1294,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			gf_bs_write_data(bs, sl->data, sl->size);
++			// Fixed: Add bounds/null check before writing data
++			if (sl->data && sl->size > 0) {
++				gf_bs_write_data(bs, sl->data, sl->size);
++			}

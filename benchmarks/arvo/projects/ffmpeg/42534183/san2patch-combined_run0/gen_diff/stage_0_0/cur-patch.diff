@@ -1,0 +1,21 @@
+diff --git a/libavformat/iamfdec.c b/libavformat/iamfdec.c
+index 28d69b8b3f..bce0aeb44b 100644
+--- a/libavformat/iamfdec.c
++++ b/libavformat/iamfdec.c
+@@ -394 +394,2 @@ static int iamf_read_header(AVFormatContext *s)
+-    int ret;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     int ret;
+@@ -454 +455,11 @@ static int iamf_read_header(AVFormatContext *s)
+-                av_assert0(audio_element);
++                
++                // Validate that audio_element was found and has valid streams
++                if (audio_element == NULL) {
++                    av_log(s, AV_LOG_ERROR, "Audio element not found for ID %d\n", submix_element->audio_element_id);
++                    continue;
++                }
++                
++                if (audio_element->nb_streams <= 0) {
++                    av_log(s, AV_LOG_WARNING, "Audio element has no streams\n");
++                    continue;
++                }

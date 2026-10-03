@@ -1,0 +1,38 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..60d56886dde 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -399 +399,15 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-			hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++			{
++				zval *op1;
++				if (OP1_TYPE == IS_CONST) {
++					op1 = RT_CONSTANT(EG(current_execute_data)->opline, EG(current_execute_data)->opline->op1);
++				} else {
++					op1 = EX_VAR(EG(current_execute_data)->opline->op1.var);
++				}
++				if (Z_TYPE_P(op1) == IS_ARRAY && Z_ARR_P(op1) == ht) {
++					GC_ADDREF(ht);
++					hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++					GC_DELREF(ht);
++				} else {
++					hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++				}
++			}
+@@ -464 +478,15 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_is_helper(zend_array *ht, zval *dim
+-			hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++			{
++				zval *op1;
++				if (OP1_TYPE == IS_CONST) {
++					op1 = RT_CONSTANT(EG(current_execute_data)->opline, EG(current_execute_data)->opline->op1);
++				} else {
++					op1 = EX_VAR(EG(current_execute_data)->opline->op1.var);
++				}
++				if (Z_TYPE_P(op1) == IS_ARRAY && Z_ARR_P(op1) == ht) {
++					GC_ADDREF(ht);
++					hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++					GC_DELREF(ht);
++				} else {
++					hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++				}
++			}

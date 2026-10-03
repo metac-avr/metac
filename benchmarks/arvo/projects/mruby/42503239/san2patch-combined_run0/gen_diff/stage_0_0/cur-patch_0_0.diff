@@ -1,0 +1,30 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..bff9d2d4d 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -108 +108 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Initialize stack with proper bounds checking */
+@@ -111,2 +111,2 @@ stack_init(mrb_state *mrb)
+-
+-  /* mrb_assert(ci == NULL); */
++  
++  /* Initialize callinfo with proper bounds */
+@@ -117,0 +118,6 @@ stack_init(mrb_state *mrb)
++  
++  /* Add guard to prevent stack overflow */
++  if (c->stbase == NULL || c->cibase == NULL) {
++    /* Handle allocation failure */
++    return;
++  }
+@@ -515,2 +521,8 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++      if (argc > 0) {
++        mrb_int stack_avail = (mrb->c->stend - ci->stack);
++        if (argc + 1 <= stack_avail) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow");
++        }
++      }

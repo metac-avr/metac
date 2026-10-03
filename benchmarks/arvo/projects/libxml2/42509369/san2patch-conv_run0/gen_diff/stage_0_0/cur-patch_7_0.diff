@@ -1,0 +1,29 @@
+diff --git a/parser.c b/parser.c
+index c3068cad..a024bc59 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7195,0 +7196,7 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++	/* Validate node list before proceeding to prevent invalid memory access */
++	if (list != NULL && xmlValidateNodeList(list) != 1) {
++	    xmlFreeNodeList(list);
++	    list = NULL;
++	    ret = XML_ERR_INVALID_TREE;
++	}
++
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 7b44bf60..b714b167 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -10636,0 +10637,2 @@ xmlSchemaAddSchemaDoc(xmlSchemaParserCtxtPtr pctxt,
++	/* Fix: Validate memory ownership before parsing operations */
++	parserCtxt->loadsubset = XML_DETECT_IDS | XML_COMPLETE_ATTRS;
+@@ -10646,2 +10648,7 @@ xmlSchemaAddSchemaDoc(xmlSchemaParserCtxtPtr pctxt,
+-	    if (doc != NULL)
+-		doc->URL = xmlStrdup(schemaLocation);
++	    if (doc != NULL) {
++	        xmlChar *oldURL = (xmlChar *)doc->URL;
++	        doc->URL = xmlStrdup(schemaLocation);
++	        if (oldURL != NULL) {
++	            xmlFree(oldURL);
++	        }
++	    }

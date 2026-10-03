@@ -1,0 +1,79 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index d1ca0ee62ae..97b6bab9db2 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4335,9 +4335,3 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-							if (level == 0) {
+-								do_exit = 1;
+-							}
+-							level--;
+-							break;
+-					}
+-					opline--;
+-				} while (!do_exit);
+-			}
++static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
++{
++	uint32_t num_args = ZEND_CALL_NUM_ARGS(call);
+@@ -4345 +4339,4 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-			zend_vm_stack_free_args(EX(call));
++	if (EXPECTED(num_args > 0)) {
++		zval *p = ZEND_CALL_ARG(call, 1);
++		
++		if (UNEXPECTED(p == NULL)) return;
+@@ -4347,10 +4344,6 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-			if (ZEND_CALL_INFO(call) & ZEND_CALL_RELEASE_THIS) {
+-				OBJ_RELEASE(Z_OBJ(call->This));
+-			}
+-			if (ZEND_CALL_INFO(call) & ZEND_CALL_HAS_EXTRA_NAMED_PARAMS) {
+-				zend_free_extra_named_params(call->extra_named_params);
+-			}
+-			if (call->func->common.fn_flags & ZEND_ACC_CLOSURE) {
+-				zend_object_release(ZEND_CLOSURE_OBJECT(call->func));
+-			} else if (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
+-				zend_string_release_ex(call->func->common.function_name, 0);
++		do {
++			zval_ptr_dtor_nogc(p);
++			p++;
++		} while (--num_args);
++	}
++}				zend_string_release_ex(call->func->common.function_name, 0);
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..7e232041366 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -294,3 +294,10 @@ static zend_always_inline void zend_vm_stack_free_extra_args(zend_execute_data *
+-static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-{
+-	uint32_t num_args = ZEND_CALL_NUM_ARGS(call);
++							if (level == 0) {
++							do_exit = 1;
++						}
++						level--;
++						break;
++				}
++				opline--;
++			} while (!do_exit);
++			// FIXME: Crash CWE-825: Expired Pointer Dereference
++		}
+@@ -298,2 +305,2 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-	if (EXPECTED(num_args > 0)) {
+-		zval *p = ZEND_CALL_ARG(call, 1);
++		if (EX(call)) {
++			zend_vm_stack_free_args(EX(call));
+@@ -301,6 +308,9 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-		do {
+-			zval_ptr_dtor_nogc(p);
+-			p++;
+-		} while (--num_args);
+-	}
+-}
++			if (ZEND_CALL_INFO(call) & ZEND_CALL_RELEASE_THIS) {
++				OBJ_RELEASE(Z_OBJ(call->This));
++			}
++			if (ZEND_CALL_INFO(call) & ZEND_CALL_HAS_EXTRA_NAMED_PARAMS) {
++				zend_free_extra_named_params(call->extra_named_params);
++			}
++			if (call->func->common.fn_flags & ZEND_ACC_CLOSURE) {
++				zend_object_release(ZEND_CLOSURE_OBJECT(call->func));
++			} else if (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {

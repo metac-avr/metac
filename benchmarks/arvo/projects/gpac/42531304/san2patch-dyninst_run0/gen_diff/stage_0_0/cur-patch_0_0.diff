@@ -1,0 +1,28 @@
+diff --git a/src/filters/dmx_ghi.c b/src/filters/dmx_ghi.c
+index b6c6d245b..35f66cbe4 100644
+--- a/src/filters/dmx_ghi.c
++++ b/src/filters/dmx_ghi.c
+@@ -858 +858 @@ GF_Err ghi_dmx_init_bin(GF_Filter *filter, GHIDmxCtx *ctx, GF_BitStream *bs)
+-		gf_bs_skip_bytes(bs, skip);
++	gf_bs_skip_bytes(bs, skip);
+@@ -868 +868,13 @@ GF_Err ghi_dmx_init_xml(GF_Filter *filter, GHIDmxCtx *ctx, const u8 *data)
+-	GF_Err e = gf_xml_dom_parse_string(mpd_parser, (char*) data);
++	// Create a null-terminated copy of data to prevent out-of-bounds reads
++	char *safe_data = NULL;
++	if (data) {
++		size_t data_len = strlen((char*)data);
++		safe_data = gf_malloc(data_len + 1);
++		if (!safe_data) {
++			gf_xml_dom_del(mpd_parser);
++			return GF_OUT_OF_MEM;
++		}
++		memcpy(safe_data, data, data_len);
++		safe_data[data_len] = '\0';
++	}
++	GF_Err e = gf_xml_dom_parse_string(mpd_parser, safe_data);
+@@ -869,0 +882 @@ GF_Err ghi_dmx_init_xml(GF_Filter *filter, GHIDmxCtx *ctx, const u8 *data)
++	if (safe_data) gf_free(safe_data);
+@@ -878,2 +891 @@ GF_Err ghi_dmx_init_xml(GF_Filter *filter, GHIDmxCtx *ctx, const u8 *data)
+-	if (e) {
+-		GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[GHIX] Error in MPD creation %s\n", gf_error_to_string(e)));
++	if (e) {		GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[GHIX] Error in MPD creation %s\n", gf_error_to_string(e)));

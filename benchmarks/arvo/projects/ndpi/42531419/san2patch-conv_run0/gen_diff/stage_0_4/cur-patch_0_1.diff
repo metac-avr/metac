@@ -1,0 +1,39 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 0b8674f38..054513ef9 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -1390,2 +1390,2 @@ void process_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-     Negotiated version is only present in the ServerHello message too, but
+-     fortunately, QUIC always uses TLS version 1.3 */
++     Negotiated version is only present in the ServerHello message too,
++     but fortunately, QUIC always uses TLS version 1.3 */
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..bd74f21f9 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,4 +2380,0 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
+-
+@@ -2389,3 +2385,5 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++				 sizeof(ja.client.signature_algorithms_str)-i*2,
++				 "%02X", packet->payload[s_offset+i]);
++		  if (s_offset + i*2 + 1 < total_len) {  // Bounds check before 2-byte read
++		    ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++		  }
+@@ -2397 +2395,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++		  if (s_offset + i + 1 < packet->payload_packet_len) {  // Bounds check before 2-byte read
++		    u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+@@ -2399,4 +2398,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++		    if(last_signature == signature_algo) {
++		      /* Consecutive duplication */
++		      duplicate_found = 1;		    continue;

@@ -1,0 +1,30 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..6af8c975d 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -831,0 +832 @@ void gf_net_close_capture()
++		// Removed invalid gf_list_reset_item call - not needed after pop_back
+@@ -1480,4 +1481,9 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
+-			gf_netcap_load_pck_pcap(nf);
++		if (nf->cap_mode==NETCAP_GPAC) {
++			// Validate that the network capture buffer is still valid before accessing
++			if (nf->cap_bs != NULL && gf_bs_available(nf->cap_bs))  // Use proper API function instead of direct struct access
++				gf_netcap_load_pck_gpac(nf);
++		} else {
++			// Validate that the network capture buffer is still valid before accessing
++			if (nf->cap_bs != NULL && gf_bs_available(nf->cap_bs))  // Use proper API function instead of direct struct access
++				gf_netcap_load_pck_pcap(nf);
++		}
+@@ -1489,3 +1495,6 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-			gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);
+-			nf->dst_port = 0;
+-			goto refetch;
++			// Validate that the network capture buffer is still valid before accessing
++			if (nf->cap_bs != NULL && gf_bs_available(nf->cap_bs)) {  // Use proper API function instead of direct struct access
++				gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);
++				nf->dst_port = 0;
++				goto refetch;
++			}

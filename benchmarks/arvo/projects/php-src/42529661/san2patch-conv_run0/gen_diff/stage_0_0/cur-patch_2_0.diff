@@ -1,0 +1,53 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..b6846adc31d 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -634,10 +634 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			op1_type = Z_TYPE_P(zv);
+-			uint8_t flags = 0;
+-
+-			if (op1_type == IS_INDIRECT) {
+-				zv = Z_INDIRECT_P(zv);
+-				op1_type = Z_TYPE_P(zv);
+-				flags |= IS_TRACE_INDIRECT;
+-			}
+-			if (op1_type == IS_REFERENCE) {
+-				zv = Z_REFVAL_P(zv);
++			if (zv != NULL) {
+@@ -645,7 +636,19 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				flags |= IS_TRACE_REFERENCE;
+-			}
+-			if (Z_TYPE_P(zv) == IS_OBJECT) {
+-				ce1 = Z_OBJCE_P(zv);
+-			} else if (Z_TYPE_P(zv) == IS_ARRAY) {
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
++				uint8_t flags = 0;
++
++				if (op1_type == IS_INDIRECT && zv != NULL) {
++					zv = Z_INDIRECT_P(zv);
++					op1_type = Z_TYPE_P(zv);
++					flags |= IS_TRACE_INDIRECT;
++				}
++				if (op1_type == IS_REFERENCE && zv != NULL) {
++					zv = Z_REFVAL_P(zv);
++					op1_type = Z_TYPE_P(zv);
++					flags |= IS_TRACE_REFERENCE;
++				}
++				if (zv != NULL && Z_TYPE_P(zv) == IS_OBJECT) {
++// FIXME: Crash CWE-416: Use After Free
++ 					ce1 = Z_OBJCE_P(zv);
++				} else if (zv != NULL && Z_TYPE_P(zv) == IS_ARRAY) {
++					if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
++						flags |= IS_TRACE_PACKED;
++					}
+@@ -652,0 +656 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++				op1_type |= flags;
+@@ -654 +657,0 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			op1_type |= flags;
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..da90ca187a2 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2495,0 +2496 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		HT_SET_DATA_ADDR(ht, NULL); // Ensure data pointer is cleared after free

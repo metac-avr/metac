@@ -1,0 +1,36 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index 4c31ee0eae6..8ae4f83420b 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2177 +2177 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								bptr++;
++								if (bptr < (buf + buf_len)) bptr++;
+@@ -2180,0 +2181 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
++								if (bptr >= (buf + buf_len)) goto quit_loop_2; 
+@@ -2188,3 +2189,5 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-								tptr += (bptr - hunk_begin);
+-								bptr++;
++								if ((bptr + 1) <= (buf + buf_len)) {
++									memcpy(tptr, hunk_begin, bptr - hunk_begin);
++									tptr += (bptr - hunk_begin);
++									bptr++;
++								}
+@@ -2193 +2196,2 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								break;
++// Patched: Added boundary checks to prevent out-of-bounds reads
++ 								break;
+@@ -2195,4 +2199,7 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								if (*bptr == enclosure) {
+-									state = 2;
+-								} else if (escape_char != PHP_CSV_NO_ESCAPE && *bptr == escape_char) {
+-									state = 1;
++								if (bptr < (buf + buf_len)) {
++									if (*bptr == enclosure) {
++										state = 2;
++									} else if (escape_char != PHP_CSV_NO_ESCAPE && *bptr == escape_char) {
++										state = 1;
++									}
++									bptr++;
+@@ -2200 +2206,0 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								bptr++;

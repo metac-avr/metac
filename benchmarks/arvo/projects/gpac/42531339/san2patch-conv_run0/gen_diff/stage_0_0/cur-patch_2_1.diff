@@ -1,0 +1,131 @@
+diff --git a/src/media_tools/webvtt.c b/src/media_tools/webvtt.c
+index f7e3a88ec..517d5c6b9 100644
+--- a/src/media_tools/webvtt.c
++++ b/src/media_tools/webvtt.c
+@@ -1016 +1016,114 @@ GF_Err gf_webvtt_parser_parse_internal(GF_WebVTTParser *parser, GF_WebVTTCue *cu
+-				} else {
++				} static GF_Err gf_webvtt_parser_parse_internal(GF_WebVTTParser *parser, char *buffer, u32 size)
++{
++	char szLine[2048];
++	u32 len;
++	char *prevLine = NULL;
++	Bool had_marks = GF_FALSE;
++	while (size) {
++		len = 0;
++		szLine[0] = 0;
++		while (size && (buffer[0]!='
+') && (buffer[0]!='
++')) {
++			if (len<2047) {
++				szLine[len] = buffer[0];
++				len++;
++			}
++			buffer++;
++			size--;
++		}
++		if (len==2047) {
++			while (size && (buffer[0]!='
+') && (buffer[0]!='
++')) {
++				buffer++;
++				size--;
++			}
++		}
++		szLine[len] = 0;
++		if (size && (buffer[0]=='
+')) {
++			buffer++;
++			size--;
++		}
++		if (size && (buffer[0]=='
++')) {
++			buffer++;
++			size--;
++		}
++		if ((len>=3) && (szLine[0]==0xEF) && (szLine[1]==0xBB) && (szLine[2]==0xBF)) {
++			memmove(szLine, szLine+3, len-3);
++			len-=3;
++			szLine[len] = 0;
++		}
++		if (!len) {
++			parser->prev_line_empty = GF_TRUE;
++			continue;
++		} else {
++			parser->prev_line_empty = GF_FALSE;
++		}
++		if (!strncmp(szLine, "WEBVTT", 6)) {
++			parser->state = GF_WEBVTT_STATE_HEADER;
++			continue;
++		}
++		switch (parser->state) {
++		case GF_WEBVTT_STATE_INITIAL:
++			break;
++		case GF_WEBVTT_STATE_HEADER:
++			if (!len) {
++				parser->state = GF_WEBVTT_STATE_BODY;
++				continue;
++			}
++			if (prevLine) gf_free(prevLine);
++			prevLine = gf_strdup(szLine);
++			break;
++		case GF_WEBVTT_STATE_BODY:
++			if (len>=6 && !strncmp(szLine, "NOTE", 5) && (szLine[5] == ' ' || szLine[5] == '\t' || szLine[5] == '\n' || szLine[5] == '\r' || szLine[5] == 0)) {
++				parser->state = GF_WEBVTT_STATE_NOTE;
++				continue;
++			}
++			if (len>=5 && !strncmp(szLine, "STYLE", 5) && (szLine[5] == ' ' || szLine[5] == '\t' || szLine[5] == '\n' || szLine[5] == '\r' || szLine[5] == 0)) {
++				parser->state = GF_WEBVTT_STATE_STYLE;
++				continue;
++			}
++			if (len>=8 && !strncmp(szLine, "REGION", 6) && (szLine[6] == ' ' || szLine[6] == '\t' || szLine[6] == '\n' || szLine[6] == '\r' || szLine[6] == 0)) {
++				parser->state = GF_WEBVTT_STATE_REGION;
++				continue;
++			}
++			if (strchr(szLine, '--') && strchr(szLine, '>')) {
++				parser->state = GF_WEBVTT_STATE_CUE_TIMINGS;
++				continue;
++			}
++			break;
++		case GF_WEBVTT_STATE_NOTE:
++			if (!len) {
++				parser->state = GF_WEBVTT_STATE_BODY;
++				continue;
++			}
++			break;
++		case GF_WEBVTT_STATE_STYLE:
++			if (!len) {
++				parser->state = GF_WEBVTT_STATE_BODY;
++				continue;
++			}
++			break;
++		case GF_WEBVTT_STATE_REGION:
++			if (!len) {
++				parser->state = GF_WEBVTT_STATE_BODY;
++				continue;
++			}
++			break;
++		case GF_WEBVTT_STATE_CUE_TIMINGS:
++			{
++				char *sep = strstr(szLine, "--> ");
++				if (!sep) sep = strstr(szLine, " -->");
++				if (sep) {
++					*sep = 0;
++					sep += 4;
++					if (prevLine) gf_free(prevLine);
++					prevLine = gf_strdup(szLine);
++					parser->state = GF_WEBVTT_STATE_CUE_CONTENT;
++					continue;
++				}
++				else if (!len) {
++					parser->state = GF_WEBVTT_STATE_BODY;
++					continue;
++				}
++				else {
+@@ -1029 +1142 @@ GF_Err gf_webvtt_parser_parse_internal(GF_WebVTTParser *parser, GF_WebVTTCue *cu
+-						gf_dynstrcat(&prevLine, szLine, NULL);
++						gf_dynstrcat(&prevLine, szLine, &len);
+@@ -1036,0 +1150,4 @@ GF_Err gf_webvtt_parser_parse_internal(GF_WebVTTParser *parser, GF_WebVTTCue *cu
++			}
++		}
++	}
++}

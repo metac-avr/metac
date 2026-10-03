@@ -1,0 +1,39 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..ce937dc386a 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756,4 +756,9 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
+-	}
+-	return zend_hash_lookup(ht, offset_key);
+-
++        goto num_index;
++    }
++    // Add null check and garbage collection validation
++    if (!ht || (GC_FLAGS(&ht->gc) & GC_FREE_MASK)) {
++        return NULL;
++    }
++    return zend_hash_lookup(ht, offset_key);
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -761,2 +766,6 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
++    // Validate array handle before index operation
++    if (!ht || (GC_FLAGS(&ht->gc) & GC_FREE_MASK)) {
++        return NULL;
++    }
++    ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
++    return retval;
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..f01015d06fb 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1781,0 +1782,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Invalidate JIT cache references before deallocation */
++	if (ht->u.flags & HASH_FLAG_PACKED) {
++		zend_jit_invalidate_array_refs((zend_array*)ht);
++	}
+@@ -1783 +1787 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++ free_ht:

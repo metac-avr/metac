@@ -1,0 +1,23 @@
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index 83afa6f5f..5859dbe30 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -7084,2 +7084,3 @@ static Bool hevc_parse_short_term_ref_pic_set(GF_BitStream *bs, HEVC_SPS *sps, u
+-				s32 deltaPOC = deltaRPS;
+-				if (i < nb_ref_pics)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 				s32 deltaPOC = deltaRPS;
++				if (i < nb_ref_pics && i < 16) // Bounds check for ref_ps->delta_poc array
+@@ -7088 +7089,2 @@ static Bool hevc_parse_short_term_ref_pic_set(GF_BitStream *bs, HEVC_SPS *sps, u
+-				rps->delta_poc[k] = deltaPOC;
++				if (k < 16) { // Bounds check for rps->delta_poc array
++					rps->delta_poc[k] = deltaPOC;
+@@ -7090,2 +7092,2 @@ static Bool hevc_parse_short_term_ref_pic_set(GF_BitStream *bs, HEVC_SPS *sps, u
+-				if (deltaPOC < 0)  k0++;
+-				else k1++;
++					if (deltaPOC < 0)  k0++;
++					else k1++;
+@@ -7093 +7095,2 @@ static Bool hevc_parse_short_term_ref_pic_set(GF_BitStream *bs, HEVC_SPS *sps, u
+-				k++;
++					k++;
++				}

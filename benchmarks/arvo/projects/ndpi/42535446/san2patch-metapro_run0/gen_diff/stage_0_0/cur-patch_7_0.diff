@@ -1,0 +1,49 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..5d38ebd2d 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1322,0 +1323 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++       packet->payload_len >= 8 &&  // Validate payload length before access
+@@ -1329,2 +1330,6 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    packet->http_url_name.ptr = &packet->payload[filename_start];
+-    packet->http_url_name.len = packet->line[0].len - (filename_start + 9);
++    // Add bounds checking for safe pointer arithmetic
++    if (packet->payload_len >= filename_start && 
++        packet->line[0].len >= (filename_start + 9)) {
++      packet->http_url_name.ptr = &packet->payload[filename_start];
++      packet->http_url_name.len = packet->line[0].len - (filename_start + 9);
++    }
+@@ -1332,2 +1337,4 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    packet->http_method.ptr = packet->line[0].ptr;
+-    packet->http_method.len = filename_start - 1;
++    if (packet->line[0].len >= filename_start) {
++      packet->http_method.ptr = packet->line[0].ptr;
++      packet->http_method.len = filename_start - 1;
++    }
+@@ -1336 +1343,3 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    if(memcmp(&packet->line[0].ptr[packet->line[0].len - 1], "1", 1) == 0)
++    if(packet->line[0].len > 0 && 
++       packet->line[0].len <= packet->line[0].len &&  // Validate index before access
++       memcmp(&packet->line[0].ptr[packet->line[0].len - 1], "1", 1) == 0)
+@@ -1341,0 +1351,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++       packet->http_url_name.ptr != NULL && 
++       packet->http_url_name.len <= packet->payload_len &&  // Validate length against payload
+@@ -1345,0 +1357 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++       packet->payload_len >= 8 &&  // Validate payload length
+@@ -1349 +1361,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-  }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   }
+@@ -1467,3 +1480,9 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    NDPI_LOG_DBG2(ndpi_struct, "Request where expected\n");
+-
+-    process_request(ndpi_struct, flow, filename_start);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++    if(filename_start > 0 && filename_start <= packet->payload_packet_len) {
++      NDPI_LOG_DBG2(ndpi_struct, "Request where expected\n");
++      process_request(ndpi_struct, flow, filename_start);
++    } else {
++      NDPI_LOG_DBG2(ndpi_struct, "Invalid filename_start or out of bounds\n");
++      NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++      return;
++    }

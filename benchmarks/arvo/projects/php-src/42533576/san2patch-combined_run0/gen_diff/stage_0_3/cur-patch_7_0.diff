@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..661265125e1 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -300 +300,2 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -302 +303,3 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-			zval_ptr_dtor_nogc(p);
++			if (p && Z_TYPE_P(p) != IS_UNDEF) {
++				zval_ptr_dtor_nogc(p);
++			}
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index c07fdfe7acf..e644287d15f 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35 +36 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++	if (zval_ptr != NULL && Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {

@@ -1,0 +1,98 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..95a8da81 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3936 +3936,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      int res;
++// FIXME: Crash CWE-416: Use After Free
++       int res;
+@@ -3938,10 +3939,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      res = xmlSearchNsSafe(target, cur->ns->prefix, &ns);
+-      if (res < 0)
+-          goto error;
+-      if (ns == NULL) {
+-        /*
+-         * Humm, we are copying an element whose namespace is defined
+-         * out of the new tree scope. Search it in the original tree
+-         * and add it at the top of the new tree
+-         */
+-        res = xmlSearchNsSafe(cur->parent, cur->ns->prefix, &ns);
++      if (cur->ns != NULL) {
++        res = xmlSearchNsSafe(target, cur->ns->prefix, &ns);
+@@ -3949,12 +3942,25 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          goto error;
+-        if (ns != NULL) {
+-          xmlNodePtr root = target;
+-          xmlNodePtr pred = NULL;
+-
+-          while (root->parent != NULL) {
+-            pred = root;
+-            root = root->parent;
+-          }
+-          if (root == (xmlNodePtr) target->doc) {
+-            /* correct possibly cycling above the document elt */
+-            root = pred;
++            goto error;
++        if (ns == NULL) {
++          /*
++           * Humm, we are copying an element whose namespace is defined
++           * out of the new tree scope. Search it in the original tree
++           * and add it at the top of the new tree
++           */
++          res = xmlSearchNsSafe(cur->parent, cur->ns->prefix, &ns);
++          if (res < 0)
++            goto error;
++          if (ns != NULL) {
++            xmlNodePtr root = target;
++            xmlNodePtr pred = NULL;
++
++            while (root->parent != NULL) {
++              pred = root;
++              root = root->parent;
++            }
++            if (root == (xmlNodePtr) target->doc) {
++              /* correct possibly cycling above the document elt */
++              root = pred;
++            }
++            ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++            if (ret->ns == NULL)
++                goto error;
+@@ -3962,13 +3967,0 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-          if (ret->ns == NULL)
+-              goto error;
+-        }
+-      } else {
+-        /*
+-         * we have to find something appropriate here since
+-         * we can't be sure, that the namespace we found is identified
+-         * by the prefix
+-         */
+-        if (xmlStrEqual(ns->href, cur->ns->href)) {
+-          /* this is the nice case */
+-          ret->ns = ns;
+@@ -3977,2 +3970,3 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-           * we are in trouble: we need a new reconciled namespace.
+-           * This is expensive
++           * we have to find something appropriate here since
++           * we can't be sure, that the namespace we found is identified
++           * by the prefix
+@@ -3980,3 +3974,12 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          ret->ns = xmlNewReconciledNs(target, cur->ns);
+-          if (ret->ns == NULL)
+-              goto error;
++          if (xmlStrEqual(ns->href, cur->ns->href)) {
++            /* this is the nice case */
++            ret->ns = ns;
++          } else {
++            /*
++             * we are in trouble: we need a new reconciled namespace.
++             * This is expensive
++             */
++            ret->ns = xmlNewReconciledNs(target, cur->ns);
++            if (ret->ns == NULL)
++                goto error;
++          }
+@@ -3983,0 +3987,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
++      } else {
++        ret->ns = NULL;

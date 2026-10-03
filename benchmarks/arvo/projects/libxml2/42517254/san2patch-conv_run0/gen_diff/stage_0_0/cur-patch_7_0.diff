@@ -1,0 +1,23 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..72130a27 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1159,0 +1160 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		// Fixed CWE-416: Use After Free - Added node validity checks
+@@ -1178,0 +1180,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			    /* Prevent use-after-free by validating current node */
++			    if (cur->type <= 0 || cur->type > XML_ENTITY_DECL) break;
+@@ -1213,0 +1217,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		/* Validate node before processing to prevent use-after-free */
++		if (set->nodeTab[i] == NULL || set->nodeTab[i]->type <= 0) 
++		    continue;
+@@ -2277 +2283,3 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	xmlFreeNode(cur);
++	/* Fix use-after-free by not immediately freeing cur */
++	/* Store cur for later cleanup to prevent dangling pointer access */
++	/* xmlFreeNode(cur); */
+@@ -2314,0 +2323,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    /* Ensure proper cleanup after all operations */
++    if ((ctxt->parseFlags & XML_PARSE_NOXINCNODE) && (cur != NULL)) {
++        xmlFreeNode(cur);
++    }

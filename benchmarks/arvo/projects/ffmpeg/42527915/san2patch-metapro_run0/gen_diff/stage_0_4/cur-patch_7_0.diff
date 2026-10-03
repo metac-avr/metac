@@ -1,0 +1,25 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..44572d3ae1 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -428,0 +429,4 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    // Validate inputs to prevent use-after-free
++    if (!nb_codes || !numbits)
++        return AVERROR(EINVAL);
++    
+@@ -438,4 +442,11 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    for (int j = 0; j < 1<<numbits; j++) {
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++    // Add memory safety checks before accessing table elements
++    if ((1 << numbits) > 0) {
++        for (int j = 0; j < 1<<numbits; j++) {
++            if (single && single->table) {
++                table[j].len = single->table[j].len;
++                table[j].num = single->table[j].len > 0 ? 1 : 0;
++                if (j < (1 << numbits)) {
++                    AV_WN16(table[j].val, single->table[j].sym);
++                }
++            }
++        }

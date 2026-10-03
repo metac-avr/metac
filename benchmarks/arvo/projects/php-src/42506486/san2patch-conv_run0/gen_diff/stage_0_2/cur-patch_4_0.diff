@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..2989ea99797 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -388,0 +389 @@ void shutdown_executor(void) /* {{{ */
++// FIXME: Crash CWE-416: Use After Free
+@@ -391 +392,6 @@ void shutdown_executor(void) /* {{{ */
+-	zend_shutdown_executor_values(fast_shutdown);
++	/* Add safety check to prevent operations on expired pointers during shutdown */
++	if (EXPECTED(EG regular_shutdown_flag) == 0) {
++		zend_shutdown_executor_values(fast_shutdown);
++	} else {
++		zend_shutdown_executor_values(0);
++	}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..6f3689cf87a 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1370 +1370 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-			while (Z_NEXT(prev->val) != idx) {
++			while (prev != NULL && Z_NEXT(prev->val) != idx) {
+@@ -1374 +1374 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}

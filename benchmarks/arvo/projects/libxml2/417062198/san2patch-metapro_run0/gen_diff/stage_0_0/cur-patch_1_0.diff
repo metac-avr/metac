@@ -1,0 +1,32 @@
+diff --git a/xmlIO.c b/xmlIO.c
+index 4b3d2964..88d48580 100644
+--- a/xmlIO.c
++++ b/xmlIO.c
+@@ -438 +438 @@ xmlSerializeText(xmlOutputBufferPtr buf, const xmlChar *string,
+-            char tempBuf[12];
++            char *tempBuf = xmlMalloc(12);
+@@ -441,0 +442,4 @@ xmlSerializeText(xmlOutputBufferPtr buf, const xmlChar *string,
++            if (tempBuf == NULL) {
++                return;
++            }
++
+@@ -448 +452 @@ xmlSerializeText(xmlOutputBufferPtr buf, const xmlChar *string,
+-                    val = 0xFFFD;
++                     val = 0xFFFD;
+@@ -453,0 +458 @@ xmlSerializeText(xmlOutputBufferPtr buf, const xmlChar *string,
++            xmlFree(tempBuf);
+diff --git a/entities.c b/entities.c
+index 503072cc..5e913f96 100644
+--- a/entities.c
++++ b/entities.c
+@@ -522,0 +523,2 @@ xmlEncodeEntitiesReentrant(xmlDocPtr doc, const xmlChar *input) {
++    xmlChar *result;
++    size_t buf_size;
+@@ -532 +534,6 @@ xmlEncodeEntitiesReentrant(xmlDocPtr doc, const xmlChar *input) {
+-    return(xmlEscapeText(input, flags));
++    buf_size = strlen((char*)input) * 6 + 1;
++    result = xmlMalloc(buf_size);
++    if (result == NULL)
++        return(NULL);
++    
++    return(xmlEscapeText(input, flags, result, buf_size));

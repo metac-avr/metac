@@ -1,0 +1,42 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4ece5dafec1af4ae4ca8d6caf2890755c..9e47f5ebb3d0aaec3b596f79f16cdcafbba928b5 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -38,6 +38,9 @@
+ #ifndef XML_DEPRECATED
+   #define XML_DEPRECATED
+ #endif
++#ifndef XML_DEPRECATED_MEMBER
++  #define XML_DEPRECATED_MEMBER
++#endif
+ 
+ #include <libxml/catalog.h>
+ #include <libxml/HTMLtree.h>
+@@ -2649,7 +2652,7 @@ LLVMFuzzerTestOneInput(const char *data, size_t size) {
+                     oomReport = 0;
+                 /*
+                  * Don't reference XML_ELEMENT_TYPE_UNDEFINED dummy
+-                 * declarations.
++                 * declarations which can be freed by xmlAddElementDecl.
+                  */
+                 if (elem != NULL && elem->parent == NULL)
+                     elem = NULL;
+diff --git a/valid.c b/valid.c
+index 3ea9f87c6013652795187b77b323277924520cbd..97a424f57daec95fc6f7566919ab0c027e254d27 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1101,12 +1101,9 @@ xmlAddElementDecl(xmlValidCtxt *ctxt,
+     const xmlChar *localName;
+     xmlChar *prefix = NULL;
+ 
+-    if (dtd == NULL) {
++    if ((dtd == NULL) || (name == NULL) ||
++        (type < XML_ELEMENT_TYPE_EMPTY) || (type > XML_ELEMENT_TYPE_ELEMENT))
+ 	return(NULL);
+-    }
+-    if (name == NULL) {
+-	return(NULL);
+-    }
+ 
+     /*
+      * check if name is a QName

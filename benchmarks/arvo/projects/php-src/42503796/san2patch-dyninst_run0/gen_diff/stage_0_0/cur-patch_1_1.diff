@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..d2340ba687b 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	if (ht != NULL) {
++		efree(HT_GET_DATA_ADDR(ht));
++	}
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1688,5 +1690,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..967809994d9 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16731 +16731,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-			value = zend_fetch_dimension_address_inner(Z_ARRVAL_P(container), dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);
++			/* Validate array reference count before proceeding */
++			zend_array *arr = Z_ARRVAL_P(container);
++			if (UNEXPECTED(arr == NULL || GC_REFCOUNT(arr) == 0)) {
++				ZVAL_NULL(EX_VAR(opline->result.var));
++				ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++			}
++			value = zend_fetch_dimension_address_inner(arr, dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);

@@ -1,0 +1,16 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..f40f64eae 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515 +515,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       if (argc > 0 && ci->stack + 1 + argc <= mrb->c->stend)
+@@ -517 +518,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[argc+1] = blk;
++      else if (argc > 0)
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++      if (ci->stack + argc + 1 <= mrb->c->stend)
++        ci->stack[argc+1] = blk;
++      else
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));

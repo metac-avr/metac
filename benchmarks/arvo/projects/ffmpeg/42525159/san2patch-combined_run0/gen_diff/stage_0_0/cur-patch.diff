@@ -1,0 +1,83 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..c22ac62a1c 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,22 +2017,56 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++#define WRITE_FRAME(PixelSize, PIXEL) \
++static void write_frame_##PixelSize##_##PIXEL(Jpeg2000DecoderContext *s, AVFrame *picture, \
++                                int tile_index, int compno, \
++                                PIXEL *i_datap, int step, int pixelsize, \
++                                int *coord, int *i_coord, PIXEL *i_end) { \
++    Jpeg2000Tile *tile = s->tile + tile_index; \
++    PIXEL *line; \
++    PIXEL *dst; \
++    int x, y, pixel; \
++    int *pos; \
++    int *upos; \
++    int *vpos; \
++    int hstep, vstep, cps; \
++    int plane = 0; \
++    int w = coord[0]; \
++    int h = coord[1]; \
++    int xstart = coord[2]; \
++    int ystart = coord[3]; \
++    int xend = coord[4]; \
++    int yend = coord[5]; \
++    int xstep = i_coord[0]; \
++    int ystep = i_coord[1]; \
++    int xystart = i_coord[2]; \
++    int xyend = i_coord[3]; \
++    \
++    if (s->cdef && compno < s->cdef->nb_components) \
++        plane = s->cdef->component_mapping[compno].cn; \
++    \
++    hstep = (step > 0) ? step : 1; \
++    vstep = (step > 0) ? 1 : -step; \
++    cps = (step > 0) ? 1 : -step; \
++    \
++    pos = tile->comp[compno].coord; \
++    upos = pos; \
++    vpos = pos + 2; \
++    \
++    for (y = ystart; y < yend; y += ystep) { \
++        line = (PIXEL*)picture->data[plane] + \
++               (y + vpos[0]) * (picture->linesize[plane] / sizeof(PIXEL)) + \
++               (xystart + upos[0]); \
++        dst = line; \
++        \
++        for (x = xstart; x < xend; x += xstep) { \
++            if (i_datap >= i_end) break; \
++            pixel = *i_datap; \
++            if (pixel & (1 << (PixelSize - 1))) \
++                pixel -= 1 << PixelSize; \
++            *dst = pixel; \
++            if (i_datap + 1 <= i_end) { \
++                i_datap++; \
++                dst += pixelsize; \
++            } \
++        } \
++        line += picture->linesize[plane] / sizeof(PIXEL); \
++    } \
++}

@@ -1,0 +1,49 @@
+diff --git a/libavcodec/hevcdec.c b/libavcodec/hevcdec.c
+index 1a0beac901..ab4d0e9ec7 100644
+--- a/libavcodec/hevcdec.c
++++ b/libavcodec/hevcdec.c
+@@ -1958,6 +1958,9 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        int nPbH_c = nPbH >> s->ps.sps->vshift[1];
+-
+-        luma_mc_uni(lc, dst0, s->frame->linesize[0], ref0->frame,
+-                    &current_mv.mv[0], x0, y0, nPbW, nPbH,
+-                    s->sh.luma_weight_l0[current_mv.ref_idx[0]],
+-                    s->sh.luma_offset_l0[current_mv.ref_idx[0]]);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         int nPbH_c = nPbH >> s->ps.sps->vshift[1];
++
++        if (ref0 && ref0->frame) {
++            luma_mc_uni(lc, dst0, s->frame->linesize[0], ref0->frame,
++                        &current_mv.mv[0], x0, y0, nPbW, nPbH,
++                        s->sh.luma_weight_l0[current_mv.ref_idx[0]],
++                        s->sh.luma_offset_l0[current_mv.ref_idx[0]]);
++        }
+@@ -1965 +1968 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        if (s->ps.sps->chroma_format_idc) {
++        if (s->ps.sps->chroma_format_idc && ref0 && ref0->frame) {
+@@ -1979,4 +1982,6 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        luma_mc_uni(lc, dst0, s->frame->linesize[0], ref1->frame,
+-                    &current_mv.mv[1], x0, y0, nPbW, nPbH,
+-                    s->sh.luma_weight_l1[current_mv.ref_idx[1]],
+-                    s->sh.luma_offset_l1[current_mv.ref_idx[1]]);
++        if (ref1 && ref1->frame) {
++            luma_mc_uni(lc, dst0, s->frame->linesize[0], ref1->frame,
++                        &current_mv.mv[1], x0, y0, nPbW, nPbH,
++                        s->sh.luma_weight_l1[current_mv.ref_idx[1]],
++                        s->sh.luma_offset_l1[current_mv.ref_idx[1]]);
++        }
+@@ -1984 +1989 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        if (s->ps.sps->chroma_format_idc) {
++        if (s->ps.sps->chroma_format_idc && ref1 && ref1->frame) {
+@@ -1999,3 +2004,5 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        luma_mc_bi(lc, dst0, s->frame->linesize[0], ref0->frame,
+-                   &current_mv.mv[0], x0, y0, nPbW, nPbH,
+-                   ref1->frame, &current_mv.mv[1], &current_mv);
++        if (ref0 && ref0->frame && ref1 && ref1->frame) {
++            luma_mc_bi(lc, dst0, s->frame->linesize[0], ref0->frame,
++                       &current_mv.mv[0], x0, y0, nPbW, nPbH,
++                       ref1->frame, &current_mv.mv[1], &current_mv);
++        }
+@@ -2003 +2010 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        if (s->ps.sps->chroma_format_idc) {
++        if (s->ps.sps->chroma_format_idc && ref0 && ref0->frame && ref1 && ref1->frame) {

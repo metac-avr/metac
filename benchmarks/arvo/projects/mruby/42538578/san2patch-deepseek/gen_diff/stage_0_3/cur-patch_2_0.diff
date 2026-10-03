@@ -1,0 +1,38 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..850b38c69 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -339,0 +340 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  mrb_int idx = ci - c->cibase;
+@@ -345 +346 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    ptrdiff_t size = ci - c->cibase;
++    ptrdiff_t size = idx;
+@@ -348 +349 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -351 +352,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    ci = c->cibase + idx;
++    c->ci = ci;
+@@ -353,0 +356 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++
+@@ -2702,10 +2705,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      NEXT;
+-    }
+-    CASE(OP_ARRAY2, BBB) {
+-      regs[a] = ary_new_from_regs(mrb, c, b);
+-      mrb_gc_arena_restore(mrb, ai);
+-      NEXT;
+-    }
+-
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
++     CASE(OP_ARYCAT, B) {
++      mrb_int ai = mrb_gc_arena_save(mrb);
++      mrb_value splat = mrb_ary_splat(mrb, mrb->c->stack[a+1]);
++      regs = mrb->c->stack;
+@@ -2721,3 +2718 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    }
+-
+-    CASE(OP_ARYPUSH, BB) {
++    }    CASE(OP_ARYPUSH, BB) {

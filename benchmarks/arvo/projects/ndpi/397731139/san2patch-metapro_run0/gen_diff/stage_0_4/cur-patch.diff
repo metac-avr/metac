@@ -1,0 +1,42 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index c29ec6ebf..a2c97a1e8 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -244 +243,0 @@ ndpi_custom_dga_predict_fctn ndpi_dga_function = NULL;
+-
+@@ -252 +251,2 @@ static inline u_int8_t flow_is_proto(struct ndpi_flow_struct *flow, u_int16_t p)
+-
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
+@@ -253,0 +254,4 @@ void *ndpi_flow_malloc(size_t size) {
++  const size_t MAX_FLOW_SIZE = 8192;  // Reasonable limit for flow structures
++  if (size > MAX_FLOW_SIZE) {
++    return NULL;
++  }
+@@ -265 +268,0 @@ void ndpi_flow_free(void *ptr) {
+-
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 63effab29..e89f76dd6 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -179 +179,3 @@ static void ndpi_trecurse(ndpi_node *root, void (*action)(const void *, ndpi_VIS
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
++  volatile int safe_level = level; // Prevent potential integer overflow in recursion
+@@ -181 +183 @@ static void ndpi_trecurse(ndpi_node *root, void (*action)(const void *, ndpi_VIS
+-    (*action)(root, ndpi_leaf, level, user_data);
++    (*action)(root, ndpi_leaf, safe_level, user_data);
+@@ -183 +185 @@ static void ndpi_trecurse(ndpi_node *root, void (*action)(const void *, ndpi_VIS
+-    (*action)(root, ndpi_preorder, level, user_data);
++    (*action)(root, ndpi_preorder, safe_level, user_data);
+@@ -185,2 +187,2 @@ static void ndpi_trecurse(ndpi_node *root, void (*action)(const void *, ndpi_VIS
+-      ndpi_trecurse(root->left, action, level + 1, user_data);
+-    (*action)(root, ndpi_postorder, level, user_data);
++      ndpi_trecurse(root->left, action, safe_level + 1, user_data);
++    (*action)(root, ndpi_postorder, safe_level, user_data);
+@@ -188,2 +190,2 @@ static void ndpi_trecurse(ndpi_node *root, void (*action)(const void *, ndpi_VIS
+-      ndpi_trecurse(root->right, action, level + 1, user_data);
+-    (*action)(root, ndpi_endorder, level, user_data);
++      ndpi_trecurse(root->right, action, safe_level + 1, user_data);
++    (*action)(root, ndpi_endorder, safe_level, user_data);

@@ -1,0 +1,29 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..d5362d217 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -690 +690 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -698 +698,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-416: Use After Free
++   case MRB_TT_OBJECT:
+@@ -700 +701,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (obj && ((struct RObject*)obj)->iv) {
++      mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    }
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..c3b79b596 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -264 +264,2 @@ void
+-mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
++// FIXME: Crash CWE-416: Use After Free
++ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+@@ -266 +267,3 @@ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+-  mark_tbl(mrb, obj->iv);
++  if (obj->iv != NULL) {
++    mark_tbl(mrb, obj->iv);
++  }

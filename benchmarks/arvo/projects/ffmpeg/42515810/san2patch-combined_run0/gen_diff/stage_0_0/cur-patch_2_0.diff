@@ -1,0 +1,20 @@
+diff --git a/libavutil/aes.c b/libavutil/aes.c
+index 029d738f87..040b07ee68 100644
+--- a/libavutil/aes.c
++++ b/libavutil/aes.c
+@@ -241,2 +241,9 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
+-        for (i = 0; i < 4; i++)
+-            tk[0][i] ^= sbox[tk[KC - 1][(i + 1) & 3]];
++        for (i = 0; i < 4; i++) {
++            // Ensure KC is valid and within bounds before accessing tk array
++            if (KC >= 1 && KC <= 8) {
++                int sub_idx = (i + 1) & 3;
++                if (sub_idx < 4) {
++                    tk[0][i] ^= sbox[tk[KC - 1][sub_idx]];
++                }
++            }
++        }
+@@ -252 +259,2 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
+-        }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         }

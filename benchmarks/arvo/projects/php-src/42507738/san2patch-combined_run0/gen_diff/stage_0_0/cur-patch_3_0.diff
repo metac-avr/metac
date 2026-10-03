@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index dab57807796..c3341e60eba 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -113 +112,0 @@ ZEND_API HashTable *zend_std_build_object_properties_array(zend_object *zobj) /*
+-
+@@ -121 +120,2 @@ ZEND_API HashTable *zend_std_build_object_properties_array(zend_object *zobj) /*
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -124 +124,2 @@ ZEND_API HashTable *zend_std_get_properties(zend_object *zobj) /* {{{ */
+-	if (!zobj->properties) {
++	if (!zobj || !zobj->properties) {
++		if (!zobj) return NULL;
+@@ -133,2 +134 @@ ZEND_API HashTable *zend_std_get_gc(zend_object *zobj, zval **table, int *n) /*
+-	if (zobj->handlers->get_properties != zend_std_get_properties) {
+-		*table = NULL;
++	if (zobj->handlers->get_properties != zend_std_get_properties) {		*table = NULL;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 797ac66c96d..164e00f3738 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40110 +40110,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_OBJ_W_SPEC_CV_CONST_HAND
+-	property = RT_CONSTANT(opline, opline->op2);
++// FIXME: Crash CWE-416: Use After Free
++  	property = RT_CONSTANT(opline, opline->op2);
+@@ -40116,0 +40118,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_OBJ_W_SPEC_CV_CONST_HAND
++	/* Check if container is still valid after property access */
++	if (UNEXPECTED(Z_TYPE_P(container) == IS_UNDEF)) {
++		ZEND_VM_NEXT_OPCODE();
++	}
++

@@ -1,0 +1,15 @@
+diff --git a/parser.c b/parser.c
+index 14288713..2de6bca1 100644
+--- a/parser.c
++++ b/parser.c
+@@ -10261 +10261,9 @@ xmlParseContentInternal(xmlParserCtxtPtr ctxt) {
+-	    xmlParseComment(ctxt);
++	    /* Add bounds checking before parsing comment to prevent buffer overflow */
++	    if ((ctxt->input->cur + 4) <= ctxt->input->end) {
++	        xmlParseComment(ctxt);
++	    } else {
++	        ctxt->errNo = XML_ERR_NO_MEMORY;
++	        ctxt->wellFormed = 0;
++	        PERROR_INT("xmlParseContentInternal", "buffer overflow prevented");
++	        return;
++	    }

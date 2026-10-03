@@ -1,0 +1,49 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index af5f3821723..627b8bb0d45 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1260,8 +1259,0 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc) {
+-	p->refcount = rc;
+-	return p->refcount;
+-}
+-
+@@ -1269,6 +1261 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	ZEND_RC_MOD_CHECK(p);
+-	return ++(p->refcount);
+-}
+-
+-static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
++	if (p) {
+@@ -1276 +1263 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-		++p->refcount;
++		return ++(p->refcount);
+@@ -1278,4 +1265,2 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
++	return 0;
++}	if (!(p->u.type_info & GC_IMMUTABLE)) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..0ea8b5c020b 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -1832 +1832,2 @@ static ZEND_VM_HOT ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_DO_FCALL_SPEC_RETV
+-			LOAD_OPLINE();
++// FIXME: Crash CWE-416: Use After Free
++ 			LOAD_OPLINE();
+@@ -1834 +1835,3 @@ static ZEND_VM_HOT ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_DO_FCALL_SPEC_RETV
+-			zend_execute_ex(call);
++			if (ZEND_CALL_VALID(call)) {  // Validate call using ZEND macro
++				zend_execute_ex(call);
++			}
+@@ -1867 +1870,3 @@ static ZEND_VM_HOT ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_DO_FCALL_SPEC_RETV
+-			fbc->internal_function.handler(call, ret);
++			if (ZEND_CALL_VALID(call)) {  // Validate call using ZEND macro
++				fbc->internal_function.handler(call, ret);
++			}

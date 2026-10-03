@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..ca5ba250894 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54422 +54422,2 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		if (UNEXPECTED(!OPLINE)) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (UNEXPECTED(!OPLINE)) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..07939f751ac 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	/* Clear hash table iterators before freeing data to prevent use-after-free */
+@@ -1685,0 +1685,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	efree(HT_GET_DATA_ADDR(ht));
++	/* Ensure hash table is fully cleaned up before final free */
++	goto free_ht;
++ free_ht:

@@ -1,0 +1,112 @@
+diff --git a/main/main.c b/main/main.c
+index d918e0b73ae..ac58cb8441e 100644
+--- a/main/main.c
++++ b/main/main.c
+@@ -1799 +1799 @@ zend_result php_request_startup(void)
+-void php_request_shutdown(void *dummy)
++ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+@@ -1801 +1801 @@ void php_request_shutdown(void *dummy)
+-	bool report_memleaks;
++	const zend_op *throw_op = EG(opline_before_exception);
+@@ -1803,3 +1803,4 @@ void php_request_shutdown(void *dummy)
+-	EG(flags) |= EG_FLAGS_IN_SHUTDOWN;
+-
+-	report_memleaks = PG(report_memleaks);
++	/* Exception was thrown before executing any op */
++	if (UNEXPECTED(!throw_op)) {
++		ZEND_VM_TAIL_CALL(zend_dispatch_try_catch_finally_helper_SPEC(-1, 0 ZEND_OPCODE_HANDLER_ARGS_PASSTHRU_CC));
++	}
+@@ -1807,4 +1808,2 @@ void php_request_shutdown(void *dummy)
+-	/* EG(current_execute_data) points into nirvana and therefore cannot be safely accessed
+-	 * inside zend_executor callback functions.
+-	 */
+-	EG(current_execute_data) = NULL;
++	uint32_t throw_op_num = throw_op - EX(func)->op_array.opcodes;
++	int i, current_try_catch_offset = -1;
+@@ -1812 +1811,23 @@ void php_request_shutdown(void *dummy)
+-	php_deactivate_ticks();
++	if ((throw_op->opcode == ZEND_FREE || throw_op->opcode == ZEND_FE_FREE)
++		&& throw_op->extended_value & ZEND_FREE_ON_RETURN) {
++		/* exceptions thrown because of loop var destruction on return/break/...
++		 * are logically thrown at the end of the foreach loop, so adjust the
++		 * throw_op_num.
++		 */
++		const zend_live_range *range = find_live_range(
++			&EX(func)->op_array, throw_op_num, throw_op->op1.var);
++		/* free op1 of the corresponding RETURN */
++		for (i = throw_op_num; i < range->end; i++) {
++			if (EX(func)->op_array.opcodes[i].opcode == ZEND_FREE
++			 || EX(func)->op_array.opcodes[i].opcode == ZEND_FE_FREE) {
++				/* pass */
++			} else {
++				if (EX(func)->op_array.opcodes[i].opcode == ZEND_RETURN
++				 && (EX(func)->op_array.opcodes[i].op1_type & (IS_VAR|IS_TMP_VAR))) {
++					zval_ptr_dtor(EX_VAR(EX(func)->op_array.opcodes[i].op1.var));
++				}
++				break;
++			}
++		}
++		throw_op_num = range->end;
++	}
+@@ -1814,3 +1835,10 @@ void php_request_shutdown(void *dummy)
+-	/* 0. Call any open observer end handlers that are still open after a zend_bailout */
+-	if (ZEND_OBSERVER_ENABLED) {
+-		zend_observer_fcall_end_all();
++	/* Find the innermost try/catch/finally the exception was thrown in */
++	for (i = 0; i < EX(func)->op_array.last_try_catch; i++) {
++		zend_try_catch_element *try_catch = &EX(func)->op_array.try_catch_array[i];
++		if (try_catch->try_op > throw_op_num) {
++			/* further blocks will not be relevant... */
++			break;
++		}
++		if (throw_op_num < try_catch->catch_op || throw_op_num < try_catch->finally_end) {
++			current_try_catch_offset = i;
++		}
+@@ -1819,3 +1847,20 @@ void php_request_shutdown(void *dummy)
+-	/* 1. Call all possible shutdown functions registered with register_shutdown_function() */
+-	if (PG(modules_activated)) {
+-		php_call_shutdown_functions();
++	cleanup_unfinished_calls(execute_data, throw_op_num);
++
++	if (throw_op->result_type & (IS_VAR | IS_TMP_VAR)) {
++		switch (throw_op->opcode) {
++			case ZEND_ADD_ARRAY_ELEMENT:
++			case ZEND_ADD_ARRAY_UNPACK:
++			case ZEND_ROPE_INIT:
++			case ZEND_ROPE_ADD:
++				break; /* exception while building structures, live range handling will free those */
++
++			case ZEND_FETCH_CLASS:
++			case ZEND_DECLARE_ANON_CLASS:
++				break; /* return value is zend_class_entry pointer */
++
++			default:
++				/* smart branch opcodes may not initialize result */
++				if (!zend_is_smart_branch(throw_op)) {
++					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++				}
++		}
+@@ -1824,4 +1869,2 @@ void php_request_shutdown(void *dummy)
+-	/* 2. Call all possible __destruct() functions */
+-	zend_try {
+-		zend_call_destructors();
+-	} zend_end_try();
++	ZEND_VM_TAIL_CALL(zend_dispatch_try_catch_finally_helper_SPEC(current_try_catch_offset, throw_op_num ZEND_OPCODE_HANDLER_ARGS_PASSTHRU_CC));
++} zend_end_try();
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index eb7ef1624b9..7aadf0fbf50 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3270 +3270,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				/* smart branch opcodes may not initialize result */
++// FIXME: Crash CWE-416: Use After Free
++ 				/* smart branch opcodes may not initialize result */
+@@ -3272,0 +3274,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
++					zval *result = EX_VAR(throw_op->result.var);
++					if (Z_TYPE_P(result) == IS_OBJECT) {
++						zend_object *obj = Z_OBJ_P(result);
++						if (obj && GC_TYPE_INFO(obj) & GC_FREE) {
++							zend_hash_index_del(EG(zend_shutdown_destructors), (zend_ulong)(uintptr_t)result);
++							ZVAL_UNDEF(result);
++						}
++					}

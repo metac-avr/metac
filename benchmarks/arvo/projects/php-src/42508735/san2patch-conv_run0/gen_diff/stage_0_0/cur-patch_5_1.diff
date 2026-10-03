@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..deb832f2686 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -207,0 +208,6 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++		if (!(Z_OBJ_P(zv)->gc.u.type_info & IS_OBJ_DESTRUCTOR_CALLED)) {
++			GC_ADD_FLAGS(Z_OBJ_P(zv), IS_OBJ_DESTRUCTOR_CALLED);
++			if (Z_OBJ_P(zv)->handlers && Z_OBJ_P(zv)->handlers->dtor_obj) {
++				Z_OBJ_P(zv)->handlers->dtor_obj(Z_OBJ_P(zv));
++			}
++		}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..468850bcb9a 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		// Set object type to NULL to prevent UAF in GC operations
++		GC_TYPE(object) = IS_NULL;

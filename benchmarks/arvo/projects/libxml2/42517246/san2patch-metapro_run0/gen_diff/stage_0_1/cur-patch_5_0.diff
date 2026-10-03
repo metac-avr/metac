@@ -1,0 +1,50 @@
+diff --git a/tree.c b/tree.c
+index 6a42f118..4859a5f5 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4310,3 +4310,10 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    else if (node->name != NULL) {
+-        if ((doc != NULL) && (doc->dict != NULL))
+-	    ret->name = xmlDictLookup(doc->dict, node->name, -1);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     else if (node->name != NULL) {
++        if ((doc != NULL) && (doc->dict != NULL)) {
++            /* Add safety check for node->name before dictionary lookup */
++            if (node->name[0] != '\0') { /* Basic validation that string is not empty */
++                ret->name = xmlDictLookup(doc->dict, node->name, -1);
++            } else {
++                ret->name = xmlStrdup(node->name);
++            }
++        }
+@@ -4322,2 +4329 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }else{
+-      if (node->type == XML_ELEMENT_NODE)
++    }else{      if (node->type == XML_ELEMENT_NODE)
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..8b4c3cfa 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1214,5 +1214,10 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
++		if (last == NULL) {
++		    xmlNodePtr node_to_copy = set->nodeTab[i];
++		    if (node_to_copy != NULL && (node_to_copy->name != NULL || node_to_copy->type == XML_TEXT_NODE)) {
++		        list = last = xmlXIncludeCopyNode(ctxt, target, source,
++			                          node_to_copy);
++		    }
++		} else {
++		    xmlNodePtr node_to_copy = set->nodeTab[i];
++		    if (node_to_copy != NULL && (node_to_copy->name != NULL || node_to_copy->type == XML_TEXT_NODE)) {
++		        xmlAddNextSibling(last,
+@@ -1220,3 +1225,4 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++				                node_to_copy));
++		        if (last->next != NULL)
++			    last = last->next;
++		    }

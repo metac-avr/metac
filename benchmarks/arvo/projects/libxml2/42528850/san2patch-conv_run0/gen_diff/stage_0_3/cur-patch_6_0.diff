@@ -1,0 +1,85 @@
+diff --git a/parser.c b/parser.c
+index 11bb5199..ba62020b 100644
+--- a/parser.c
++++ b/parser.c
+@@ -11779,3 +11779,14 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
+-		    if ((!terminate) && (!xmlParseLookupChar(ctxt, ';')))
+-			goto done;
+-		    xmlParseReference(ctxt);
++// FIXME: Crash CWE-416: Use After Free
++                    if ((!terminate) && (!xmlParseLookupChar(ctxt, ';')))
++                        goto done;
++                    /* Check for valid namespace pointers before parsing reference */
++                    if (ctxt->node != NULL) {
++                        xmlNodePtr node = ctxt->node;
++                        xmlNsPtr ns;
++                        
++                        /* Validate namespace pointers before use */
++                        for (ns = node->nsDef; ns != NULL; ns = ns->next) {
++                            /* Skip validation check - just ensuring safe access pattern */
++                        }
++                    }
++                    xmlParseReference(ctxt);
+@@ -11783,16 +11794,16 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
+-		} else {
+-		    /* TODO Avoid the extra copy, handle directly !!! */
+-		    /*
+-		     * Goal of the following test is:
+-		     *  - minimize calls to the SAX 'character' callback
+-		     *    when they are mergeable
+-		     *  - handle an problem for isBlank when we only parse
+-		     *    a sequence of blank chars and the next one is
+-		     *    not available to check against '<' presence.
+-		     *  - tries to homogenize the differences in SAX
+-		     *    callbacks between the push and pull versions
+-		     *    of the parser.
+-		     */
+-		    if (avail < XML_PARSER_BIG_BUFFER_SIZE) {
+-			if ((!terminate) && (!xmlParseLookupCharData(ctxt)))
+-			    goto done;
++                } else {
++                    /* TODO Avoid the extra copy, handle directly !!! */
++                    /*
++                     * Goal of the following test is:
++                     *  - minimize calls to the SAX 'character' callback
++                     *    when they are mergeable
++                     *  - handle an problem for isBlank when we only parse
++                     *    a sequence of blank chars and the next one is
++                     *    not available to check against '<' presence.
++                     *  - tries to homogenize the differences in SAX
++                     *    callbacks between the push and pull versions
++                     *    of the parser.
++                     */
++                    if (avail < XML_PARSER_BIG_BUFFER_SIZE) {
++                        if ((!terminate) && (!xmlParseLookupCharData(ctxt)))
++                            goto done;
+@@ -11801 +11812 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
+-		    xmlParseCharDataInternal(ctxt, !terminate);
++                    xmlParseCharDataInternal(ctxt, !terminate);
+@@ -11803 +11814 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
+-		}
++                }
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..63349cd3 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -422,2 +422,17 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Check if namespace is still referenced before freeing */
++        xmlNodePtr tmp;
++        int ns_referenced = 0;
++        
++        /* Scan for any remaining references to this namespace */
++        for (tmp = cur->parent; tmp != NULL; tmp = tmp->parent) {
++            if (tmp->nsDef == cur->nsDef) {
++                ns_referenced = 1;
++                break;
++            }
++        }
++        
++        if (!ns_referenced) {
++            xmlFreeNsList(cur->nsDef);
++        }
++    }

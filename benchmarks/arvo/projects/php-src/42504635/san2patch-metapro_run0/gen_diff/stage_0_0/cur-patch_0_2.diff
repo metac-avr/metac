@@ -1,0 +1,44 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..d37ed601339 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && !GC_DELREF(ref)) {
+@@ -45 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..7d9f4b9ca70 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1760 +1760,8 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (Z_TYPE(p->val) != IS_UNDEF && Z_COUNTED(p->val)) {
++						zend_refcounted *ref = Z_COUNTED(p->val);
++						if (ref && !(GC_FLAGS(ref) & GC_IMMUTABLE)) {
++							i_zval_ptr_dtor(&p->val);
++						}
++					} else {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1764 +1771,8 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (Z_TYPE(p->val) != IS_UNDEF && Z_COUNTED(p->val)) {
++						zend_refcounted *ref = Z_COUNTED(p->val);
++						if (ref && !(GC_FLAGS(ref) & GC_IMMUTABLE)) {
++							i_zval_ptr_dtor(&p->val);
++						}
++					} else {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1772 +1786,8 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						i_zval_ptr_dtor(&p->val);
++						if (Z_COUNTED(p->val)) {
++							zend_refcounted *ref = Z_COUNTED(p->val);
++							if (ref && !(GC_FLAGS(ref) & GC_IMMUTABLE)) {
++								i_zval_ptr_dtor(&p->val);
++							}
++						} else {
++							i_zval_ptr_dtor(&p->val);
++						}

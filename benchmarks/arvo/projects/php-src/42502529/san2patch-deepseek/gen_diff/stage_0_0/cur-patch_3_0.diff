@@ -1,0 +1,21 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 585364a5739..a5da1f2f1d8 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1747 +1747,2 @@ static zend_always_inline void zend_jit_assign_to_typed_ref_helper(zend_referenc
+-static void ZEND_FASTCALL zend_jit_assign_const_to_typed_ref(zend_reference *ref, zval *value)
++// FIXME: Crash CWE-416: Use After Free
++ static void ZEND_FASTCALL zend_jit_assign_const_to_typed_ref(zend_reference *ref, zval *value)
+@@ -1749 +1750,8 @@ static void ZEND_FASTCALL zend_jit_assign_const_to_typed_ref(zend_reference *ref
+-	zend_jit_assign_to_typed_ref_helper(ref, value, IS_CONST);
++	zval variable;
++	zend_result result;
++
++	ZVAL_REF(&variable, ref);
++	result = zend_assign_to_variable(&variable, value, IS_CONST, ZEND_CALL_USES_STRICT_TYPES(EG(current_execute_data)));
++	if (UNEXPECTED(result != SUCCESS)) {
++		zval_ptr_dtor(value);
++	}
+@@ -1760 +1768 @@ static void ZEND_FASTCALL zend_jit_assign_var_to_typed_ref(zend_reference *ref,
+-}
++}}

@@ -1,0 +1,17 @@
+diff --git a/libavcodec/speedhq.c b/libavcodec/speedhq.c
+index 4cfd4ce73d..7dcc3f109d 100644
+--- a/libavcodec/speedhq.c
++++ b/libavcodec/speedhq.c
+@@ -479,2 +479,8 @@ static int decode_speedhq_field(const SHQContext *s, const uint8_t *buf, int buf
+-
+-    if (s->subsampling != SHQ_SUBSAMPLING_444 && (frame->width & 15))
++ 
++    if (s->subsampling != SHQ_SUBSAMPLING_444 && (frame->width & 15)) {
++        // Bounds check to prevent heap buffer overflow in IDCT processing
++        ptrdiff_t buffer_end = (uintptr_t)(frame->data[0] + frame->linesize[0] * frame->height);
++        ptrdiff_t current_pos = (uintptr_t)dest_a;
++        if (current_pos >= buffer_end || current_pos + 16 > buffer_end) {
++            return AVERROR_INVALIDDATA;
++        }
+@@ -481,0 +488 @@ static int decode_speedhq_field(const SHQContext *s, const uint8_t *buf, int buf
++    }

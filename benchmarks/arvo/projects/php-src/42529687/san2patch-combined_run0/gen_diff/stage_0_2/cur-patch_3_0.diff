@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..5922a0a0c8d 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272 +3272,9 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *result_var = EX_VAR(throw_op->result.var);
++					if (result_var && Z_REFCOUNTED_P(result_var)) {
++						zend_refcounted *ref = Z_COUNTED_P(result_var);
++						if (ref && GC_TYPE(ref) != 0 && !(GC_FLAGS(ref) & GC_IMMEDIATE)) {
++							zval_ptr_dtor_nogc(result_var);
++						}
++					} else {
++						zval_ptr_dtor_nogc(result_var);
++					}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..8ca4f60acca 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -93 +93 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-		if (GC_DELREF(ref) == 0) {
++		if (ref && GC_DELREF(ref) == 0) {

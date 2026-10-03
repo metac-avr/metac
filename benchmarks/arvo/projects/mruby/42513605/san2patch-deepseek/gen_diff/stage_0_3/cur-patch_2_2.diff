@@ -1,0 +1,32 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..bcf9e840f 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -83,6 +82,0 @@ mpz_clear(mrb_state *mrb, mpz_t *s)
+-    mrb_free(mrb, s->p);
+-  s->p=NULL;
+-  s->sn=0;
+-  s->sz=0;
+-}
+-
+@@ -93,3 +87,4 @@ digits(mpz_t *x)
+-  for (i = (x->sz) - 1; (x->p)[i] == 0 ; i--)
+-    if (i == 0) break;
+-  return i+1;
++  if (x->sz == 0) return 0;
++  for (i = (x->sz) - 1; i != (size_t)-1 && (x->p)[i] == 0; i--)
++    ;
++  return i + 1;
+@@ -102 +97 @@ mpz_set(mrb_state *mrb, mpz_t *y, mpz_t *x)
+-  size_t i,k = x->sz;
++  size_t i, k = x->sz;
+@@ -104 +99,8 @@ mpz_set(mrb_state *mrb, mpz_t *y, mpz_t *x)
+-  mpz_realloc(mrb, y, (size_t)k);
++  for (i = 0; i < k; i++) {
++    (y->p)[i] = (x->p)[i];
++  }
++  for (; i < y->sz; i++) {
++    (y->p)[i] = 0;
++  }
++  y->sn = x->sn;
++}  mpz_realloc(mrb, y, (size_t)k);

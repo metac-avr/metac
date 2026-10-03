@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..19bf02ebcf0 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -65 +65,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++/* Fixed CWE-416: Use After Free - Check if string is still valid before asserting refcount */
++	if (str && GC_REFCOUNT(str) != 0) {
++		ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++	}
+@@ -77 +79,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index a473c84d2d4..473c70edb4a 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -322 +322,4 @@ static void gc_stack_free(gc_stack *stack)
+-		efree(p);
++		/* Add null check to prevent accessing freed memory */
++		if (p) {
++			efree(p);
++		}

@@ -1,0 +1,25 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..1714a4d10 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -115,2 +115,2 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
+-  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE, sizeof(mrb_value));
++  /* Allocate stack with safety margin to prevent overflow */
++  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE + 1, sizeof(mrb_value));
+@@ -119,2 +119,2 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
+-  c->cibase = (mrb_callinfo *)mrb_calloc(mrb, CALLINFO_INIT_SIZE, sizeof(mrb_callinfo));
++  /* Allocate callinfo with safety margin */
++  c->cibase = (mrb_callinfo *)mrb_calloc(mrb, CALLINFO_INIT_SIZE + 1, sizeof(mrb_callinfo));
+@@ -1707 +1707,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1711 +1712,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      recv = regs[a];
++      if (a < 0 || a >= (mrb->c->stend - mrb->c->stack)) {
++        recv = mrb_nil_value();
++      } else {
++        recv = regs[a];
++      }

@@ -1,0 +1,28 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 7e1a08ac1..5b17d60e3 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -1393,2 +1392,0 @@ void process_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-  packet->payload = crypto_data;
+-  packet->payload_packet_len = crypto_data_len;
+@@ -1396,2 +1394,4 @@ void process_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-  processClientServerHello(ndpi_struct, flow, flow->protos.tls_quic.quic_version);
+-  flow->protos.tls_quic.client_hello_processed = 1; /* Allow matching of custom categories */
++  /* Ensure QUIC variable-length integer can be read safely */
++  if(crypto_data_len >= 2) {
++    packet->payload = crypto_data;
++    packet->payload_packet_len = crypto_data_len;
+@@ -1399,3 +1399,10 @@ void process_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-  /* Restore */
+-  packet->payload = p;
+-  packet->payload_packet_len = p_len;
++    processClientServerHello(ndpi_struct, flow, flow->protos.tls_quic.quic_version);
++    flow->protos.tls_quic.client_hello_processed = 1; /* Allow matching of custom categories */
++
++    /* Restore */
++    packet->payload = p;
++    packet->payload_packet_len = p_len;
++  } else {
++    packet->payload = p;
++    packet->payload_packet_len = p_len;
++  }

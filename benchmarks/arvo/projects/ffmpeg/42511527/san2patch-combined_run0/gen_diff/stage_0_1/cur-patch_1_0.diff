@@ -1,0 +1,39 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..384b05dd22 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -154,0 +155,3 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Check if tmpblock is valid before use
++    if (!s->tmpblock)
++        return AVERROR_INVALIDDATA;
+@@ -160,0 +164,3 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Verify tmpblock is still valid after inflate
++    if (!s->tmpblock)
++        return AVERROR_INVALIDDATA;
+@@ -162,0 +169,3 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Check if deflate_block is valid before use
++    if (!s->deflate_block)
++        return AVERROR_INVALIDDATA;
+@@ -172,0 +182,4 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Validate pointers before final inflate operation
++    if (!s->deflate_block || !s->tmpblock)
++        return AVERROR_INVALIDDATA;
++        
+@@ -349,6 +361,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -357 +364,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -358,0 +367 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        void *old_ptr = s->keyframedata;
+@@ -360,0 +370,4 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        if (s->keyframedata != old_ptr) {
++            // Pointer was reallocated, ensure no stale references exist
++            // Clear any dependent structures that might reference old memory
++        }

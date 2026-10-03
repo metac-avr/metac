@@ -1,0 +1,49 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..3c08f3efee5 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74,3 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
++	// Clear the reference to prevent use-after-free
++	memset(&ref->val, 0, sizeof(zval));
+@@ -82 +84,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +87,6 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	// Check if the pointer is valid and not already freed
++	if (zval_ptr && !((uintptr_t)zval_ptr & 0x1)) {  // Basic validity check
++		i_zval_ptr_dtor(zval_ptr);
++	} else if (zval_ptr) {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -90,6 +98 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++	if (Z_REFCOUNTED_P(zval_ptr)) {				zend_string *str = (zend_string*)ref;
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..b47ac1e34df 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352,3 +1352,12 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
+-		ZVAL_UNDEF(&p->val);
+-		ht->pDestructor(&tmp);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		if (EXPECTED(Z_TYPE(p->val) == IS_PTR || Z_TYPE(p->val) == IS_RESOURCE || Z_TYPE(p->val) == IS_OBJECT)) {
++			ZVAL_COPY_VALUE(&tmp, &p->val);
++			ZVAL_UNDEF(&p->val);
++			ht->pDestructor(&tmp);
++		} else if (Z_TYPE(p->val) != IS_UNDEF) {
++			ZVAL_COPY_VALUE(&tmp, &p->val);
++			ZVAL_UNDEF(&p->val);
++			ht->pDestructor(&tmp);
++		} else {
++			ZVAL_UNDEF(&tmp);
++		}

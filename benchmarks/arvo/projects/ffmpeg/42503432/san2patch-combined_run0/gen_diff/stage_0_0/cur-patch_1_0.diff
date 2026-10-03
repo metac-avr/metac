@@ -1,0 +1,25 @@
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index d4e9276da1..701bcf9a74 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -403,0 +404,5 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++    // Check buffer bounds before updating cache to prevent out-of-bounds read
++    if (re.index >= s->buffer_end) {
++        av_log(NULL, AV_LOG_ERROR, "get_bits: buffer overflow\n");
++        return 0;
++    }
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..bb03c63468 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -107 +107 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
+-    if (get_bits1(&gb) != 0) {
++    if (get_bits_count(&gb) + 1 > MAX_FRAME_HEADER_SIZE * 8 + 8 || get_bits1(&gb) != 0) {
+@@ -116 +116,2 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
+-    // 01xxxx : reserved
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     // 01xxxx : reserved
+@@ -117,0 +119,3 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
++    if (get_bits_count(&gb) + 6 > MAX_FRAME_HEADER_SIZE * 8 + 8) {
++        return 0;
++    }

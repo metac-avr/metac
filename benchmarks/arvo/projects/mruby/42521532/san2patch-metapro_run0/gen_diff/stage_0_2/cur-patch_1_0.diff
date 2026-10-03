@@ -1,0 +1,38 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..86fd1074e 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -690 +690 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -694 +694 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super && !is_dead(gc, (struct RBasic*)c->super)) mrb_gc_mark(mrb, (struct RBasic*)c->super);
+@@ -698 +698,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   case MRB_TT_OBJECT:
+@@ -707,2 +708,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper && !is_dead(gc, (struct RBasic*)p->upper)) mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++      if (p->e.env && !is_dead(gc, (struct RBasic*)p->e.env)) mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
+@@ -711 +711,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -1203,4 +1203,12 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++      /* Validate object liveness before freeing */
++      if (page->freelist) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      } else {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      }

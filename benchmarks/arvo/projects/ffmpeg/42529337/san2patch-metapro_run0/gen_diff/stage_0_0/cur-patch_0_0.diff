@@ -1,0 +1,17 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..0c60e5c89b 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -875 +875,2 @@ static int read_distribution_bundle(GetBitContext *gb, JXLEntropyDecoder *dec,
+-        }
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         }
+@@ -877,3 +878,5 @@ static int read_distribution_bundle(GetBitContext *gb, JXLEntropyDecoder *dec,
+-            ret = gen_alias_map(dec, &bundle->dists[i], bundle->log_alphabet_size);
+-            if (ret < 0)
+-                return ret;
++            if (bundle->log_alphabet_size <= 10) { // Add bounds check before calling gen_alias_map
++                ret = gen_alias_map(dec, &bundle->dists[i], bundle->log_alphabet_size);
++                if (ret < 0)
++                    return ret;
++            }

@@ -1,0 +1,66 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..d2eaebcfd0f 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,9 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+-#endif
+-
+@@ -1155 +1146 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	return p ? p->refcount : 0;
+@@ -1158,0 +1150 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
++	if (!p) return 0;
+@@ -1164,0 +1157 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (!p) return 0;
+@@ -1167,0 +1161,6 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	ZEND_RC_MOD_CHECK(p);
++	if (!p) return 0;
++	return --(p->refcount);
++}}
++
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..35d272a7909 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1680,0 +1681,22 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
++{
++	Bucket *p, *end;
++
++	if (EXPECTED(ht->nNumOfElements == 0)) {
++		goto free_ht;
++	}
++
++	IS_CONSISTENT(ht);
++	HT_ASSERT_RC1(ht);
++
++	end = HT_GET_DATA_ADDR(ht) + ht->nNumUsed;
++	for (p = HT_GET_DATA_ADDR(ht); p != end; p++) {
++		if (Z_TYPE(p->val) == IS_UNDEF) continue;
++		_zval_ptr_dtor(&p->val ZEND_FILE_LINE_CC);
++		if (UNEXPECTED(ZEND_HASH_GET_APPLY_COUNT(ht) > 0)) {
++			/* If hash is not destroyed, we can't destroy key. */
++			break;
++		}
++		if (p->key) {
++			pefree((char*)p->key, HT_IS_PERSISTENT(ht));
++		}
+@@ -1681,0 +1704,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++
++free_ht:
+@@ -1684 +1707,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
+@@ -1688,5 +1710,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-

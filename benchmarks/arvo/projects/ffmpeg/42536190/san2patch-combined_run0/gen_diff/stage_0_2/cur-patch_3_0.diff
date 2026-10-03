@@ -1,0 +1,30 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..00ba7802d7 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -52 +52,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-416: Use After Free
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -57 +58,16 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
++    
++    if (!ref || !ref->rpl_tab)
++        return NULL;
++        
++    int idx = y_cb * pic_width_cb + x_cb;
++    if (idx >= s->pps->ctb_addr_rs_to_ts_size || idx < 0)
++        return NULL;
++        
++    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[idx];
++    
++    if (ctb_addr_ts < 0 || ctb_addr_ts >= s->pps->ctb_addr_rs_to_ts_size)
++        return NULL;
++        
++    if (!ref->rpl_tab[ctb_addr_ts])
++        return NULL;
++        
+@@ -64,2 +80 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)        ff_hevc_unref_frame(&s->DPB[i],

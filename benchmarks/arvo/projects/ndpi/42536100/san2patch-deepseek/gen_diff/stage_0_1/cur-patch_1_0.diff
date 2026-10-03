@@ -1,0 +1,17 @@
+diff --git a/src/lib/protocols/zoom.c b/src/lib/protocols/zoom.c
+index 4ffad391a..3e169704a 100644
+--- a/src/lib/protocols/zoom.c
++++ b/src/lib/protocols/zoom.c
+@@ -205 +205,2 @@ static void ndpi_search_zoom(struct ndpi_detection_module_struct *ndpi_struct,
+-    ip_len = ntohl(*(u_int32_t *)&packet->payload[24]);
++    memcpy(&ip_len, &packet->payload[24], sizeof(ip_len));
++    ip_len = ntohl(ip_len);
+@@ -207,2 +208,6 @@ static void ndpi_search_zoom(struct ndpi_detection_module_struct *ndpi_struct,
+-    if(24 + 4 + ip_len + 4 < packet->payload_packet_len) {
+-      uuid_len = ntohl(*(u_int32_t *)&packet->payload[24 + 4 + ip_len]);
++    if(packet->payload_packet_len >= sizeof(u_int32_t) &&
++       24 + 4 + (u_int64_t)ip_len + sizeof(u_int32_t) <= packet->payload_packet_len) {
++      u_int32_t uuid_len_raw;
++
++      memcpy(&uuid_len_raw, &packet->payload[24 + 4 + ip_len], sizeof(uuid_len_raw));
++      uuid_len = ntohl(uuid_len_raw);

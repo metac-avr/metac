@@ -1,0 +1,33 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..f1edd16c 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1985,6 +1985,14 @@ xmlXIncludeLoadFallback(xmlXIncludeCtxtPtr ctxt, xmlNodePtr fallback, int nr) {
+-	xmlXIncludeFreeContext(newctxt);
+-
+-	ctxt->incTab[nr]->inc = xmlDocCopyNodeList(ctxt->doc,
+-	                                           fallback->children);
+-        if (ctxt->incTab[nr]->inc == NULL)
+-            ctxt->incTab[nr]->emptyFb = 1;
++// FIXME: Crash CWE-416: Use After Free
++ 	xmlXIncludeFreeContext(newctxt);
++
++	xmlNodePtr fallback_children = fallback->children;
++	/* Check if fallback children still valid after context free */
++	if (fallback_children != NULL) {
++	    ctxt->incTab[nr]->inc = xmlDocCopyNodeList(ctxt->doc,
++	                                               fallback_children);
++            if (ctxt->incTab[nr]->inc == NULL)
++                ctxt->incTab[nr]->emptyFb = 1;
++	} else {
++	    ctxt->incTab[nr]->inc = NULL;
++	    ctxt->incTab[nr]->emptyFb = 1;
++	}
+diff --git a/tree.c b/tree.c
+index 8077348a..cbc64762 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4416,0 +4417,3 @@ xmlStaticCopyNodeList(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent) {
++/* Prevent dangling pointer reference by clearing node links after copy */
++	    node = node->next;
++	    continue;

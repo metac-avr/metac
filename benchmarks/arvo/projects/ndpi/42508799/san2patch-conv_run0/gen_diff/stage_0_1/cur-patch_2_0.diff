@@ -1,0 +1,39 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index d5a169eac..943162578 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -4149 +4149,2 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-    }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     }
+@@ -4151,3 +4152,4 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-    ehdr_len = (*l4ptr)[1];
+-    ehdr_len *= 8;
+-    ehdr_len += 8;
++    if(*l4len >= 2) {
++      ehdr_len = (*l4ptr)[1];
++      ehdr_len *= 8;
++      ehdr_len += 8;
+@@ -4155,3 +4157,3 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-    if(*l4len < ehdr_len) {
+-      return(1);
+-    }
++      if(*l4len < ehdr_len) {
++        return(1);
++      }
+@@ -4159 +4161 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-    *nxt_hdr = (*l4ptr)[0];
++      *nxt_hdr = (*l4ptr)[0];
+@@ -4161,2 +4163,2 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-    if(*l4len < ehdr_len)
+-      return(1);
++      if(*l4len < ehdr_len)
++        return(1);
+@@ -4164,2 +4166,5 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
+-    *l4len -= ehdr_len;
+-    (*l4ptr) += ehdr_len;
++      *l4len -= ehdr_len;
++      (*l4ptr) += ehdr_len;
++    } else {
++      return(1);
++    }

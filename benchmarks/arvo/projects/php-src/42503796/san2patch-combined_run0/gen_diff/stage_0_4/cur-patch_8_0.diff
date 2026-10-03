@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..60112a56cc2 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54422 +54422,2 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		if (UNEXPECTED(!OPLINE)) {
++// Fixed: Enhanced safety check to prevent use-after-free by checking execution context
++		if (UNEXPECTED(!OPLINE || (EG(exception) && Z_TYPE_P(EX_VAR(0)) == IS_UNDEF))) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..0a7fc5c222f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1682,0 +1683,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Defensive nullification of hash table fields to prevent UAF */
++	ht->arData = (Bucket*)((uintptr_t)ht->arData & ~(uintptr_t)ht->arData);
+@@ -1684 +1686 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++ free_ht:
+@@ -1688,5 +1689,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-

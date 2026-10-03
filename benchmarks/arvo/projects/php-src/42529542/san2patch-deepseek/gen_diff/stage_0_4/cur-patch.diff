@@ -1,0 +1,45 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..6a5fa4dbcd4 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -333,14 +332,0 @@ static zval* ZEND_FASTCALL zend_jit_symtable_lookup_w(HashTable *ht, zend_string
+-	} while (0);
+-
+-	return zend_hash_lookup(ht, str);
+-}
+-
+-static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-{
+-	const zend_execute_data *execute_data = EG(current_execute_data);
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+-
+-	zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
+-	return EG(exception) == NULL;
+-}
+-
+@@ -350 +336,7 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint3
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++	zend_string *cv;
++
++	if (EXPECTED(execute_data && EX(func) && EX_VAR_TO_NUM(var) < EX(func)->op_array.last_var)) {
++		cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++	} else {
++		cv = NULL;
++	}
+@@ -354 +346,15 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint3
+-	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
++	if (cv) {
++		GC_ADDREF(ht);
++		zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++		if (GC_DELREF(ht) == 0) {
++			return 1;
++		}
++		if (zend_hash_add(ht, cv, &EG(uninitialized_zval))) {
++			return 1;
++		}
++	} else {
++		zend_error(E_WARNING, "Undefined variable in JIT-generated code");
++	}
++
++	return EG(exception) == NULL;
++}	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {

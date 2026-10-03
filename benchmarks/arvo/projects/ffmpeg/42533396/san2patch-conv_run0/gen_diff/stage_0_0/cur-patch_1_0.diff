@@ -1,0 +1,32 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..33da3ac2c3 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -674,4 +674,8 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
+-        if (!dst->u.map)
+-            return AVERROR(ENOMEM);
+-        memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        if (src->nb_channels > 0 && src->nb_channels <= 64) { // Ensure reasonable channel count
++            dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
++             if (!dst->u.map)
++                return AVERROR(ENOMEM);
++            memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        } else {
++            return AVERROR(EINVAL); // Invalid channel count
++        }
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..18bbb824d3 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -524,0 +525,10 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
++        // Limit nb_channels to prevent buffer overflow
++        if (nb_channels > 64) {
++            av_log(s, AV_LOG_ERROR, "number of channels exceeds maximum allowed: %d\n", nb_channels);
++            nb_channels = 64;
++        }
++        if (nb_channels <= 0) {
++            av_log(s, AV_LOG_ERROR, "invalid number of channels: %d\n", nb_channels);
++            return AVERROR_INVALIDDATA;
++        }
++ 

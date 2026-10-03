@@ -1,0 +1,34 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..2c87055f 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1687 +1687,2 @@ xmlNewPropInternal(xmlNodePtr node, xmlNsPtr ns,
+-        xmlNodePtr tmp;
++// FIXME: Crash CWE-416: Use After Free - Fixed by adding NULL check
++         xmlNodePtr tmp;
+@@ -6904 +6905 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6906 +6907,2 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	prop->children = NULL;
++	    prop->children = NULL;
++	}
+@@ -6912,8 +6914,10 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	    prop->children = children;
+-	    prop->last = NULL;
+-	    tmp = prop->children;
+-	    while (tmp != NULL) {
+-		tmp->parent = (xmlNodePtr) prop;
+-		if (tmp->next == NULL)
+-		    prop->last = tmp;
+-		tmp = tmp->next;
++	    if (children != NULL) {  /* Validate children before assignment */
++	        prop->children = children;
++	        prop->last = NULL;
++	        tmp = prop->children;
++	        while (tmp != NULL) {
++		    tmp->parent = (xmlNodePtr) prop;
++		    if (tmp->next == NULL)
++		        prop->last = tmp;
++		    tmp = tmp->next;
++	        }

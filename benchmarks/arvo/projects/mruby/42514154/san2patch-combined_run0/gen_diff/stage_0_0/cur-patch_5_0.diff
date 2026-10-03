@@ -1,0 +1,20 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..2e9cb93ef 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -37 +37,2 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
+@@ -38,0 +40,2 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
++    // Add size validation to prevent integer overflow in multiplication
++    if (size > (SIZE_MAX / sizeof(mp_limb))) return;
+@@ -740,3 +743,5 @@ mpz_mul_2exp(mrb_state *mrb, mpz_t *z, mpz_t *x, mrb_int e)
+-    mpz_realloc(mrb,&y,x->sz+digs);
+-    for (size_t i=0;i<x->sz;i++)
+-      y.p[i+digs] = x->p[i];
++    // Calculate required size with safety margin
++    size_t required_size = x->sz + digs + (bs > 0 ? 1 : 0);
++    mpz_realloc(mrb,&y,required_size);
++    for (size_t i=0;i<x->sz && i+digs < y.alloc;i++) // Safe bounds checking
++       y.p[i+digs] = x->p[i];

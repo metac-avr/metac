@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..78ac71930a6 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55 +55,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -56,0 +58,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (UNEXPECTED(GC_FLAGS(p) & GC_IMMUTABLE)) {
++		return;
++	}
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index 4d40b76854d..72290333c8c 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -185 +185,2 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++// Fixed CWE-416: Use After Free by adding proper reference counting
++ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+@@ -189,0 +191 @@ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++	GC_SET_REFCOUNT(object, 1); // Initialize reference count to prevent premature freeing
+@@ -197,2 +199 @@ ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object,
+-	if (old_object->ce->default_properties_count) {
+-		zval *src = old_object->properties_table;
++	if (old_object->ce->default_properties_count) {		zval *src = old_object->properties_table;

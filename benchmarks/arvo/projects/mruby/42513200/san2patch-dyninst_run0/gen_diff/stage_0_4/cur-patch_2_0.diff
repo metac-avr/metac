@@ -1,0 +1,18 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..246d8815e 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1190 +1190,2 @@ int_mod(mrb_state *mrb, mrb_value x)
+-#ifdef MRB_USE_BIGINT
++// FIXME: Crash CWE-190: Integer Overflow or Wraparound
++ #ifdef MRB_USE_BIGINT
+@@ -1191,0 +1193,9 @@ int_mod(mrb_state *mrb, mrb_value x)
++    /* Validate divisor before calling mrb_bint_mod to prevent integer overflow */
++    if (mrb_bigint_p(y)) {
++      mrb_value zero = mrb_bint_new_int(mrb, 0);
++      if (mrb_bint_cmp(mrb, y, zero) == 0) {
++        mrb_int_zerodiv(mrb);
++      }
++    } else if (mrb_integer_p(y) && mrb_integer(y) == 0) {
++      mrb_int_zerodiv(mrb);
++    }

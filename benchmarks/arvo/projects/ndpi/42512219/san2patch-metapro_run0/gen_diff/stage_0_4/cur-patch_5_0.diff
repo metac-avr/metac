@@ -1,0 +1,148 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index c3c18764d..52dc48f9e 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1167,2 +1167,8 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.server_names_len > 0 && flow->ndpi_flow->protos.tls_quic.server_names)
+-      flow->ssh_tls.server_names = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.server_names);
++    if(flow->ndpi_flow->protos.tls_quic.server_names_len > 0 && flow->ndpi_flow->protos.tls_quic.server_names) {
++      void *check_ptr = flow->ndpi_flow->protos.tls_quic.server_names;
++      if(check_ptr != NULL) {
++        size_t dummy;
++        if(memcpy(&dummy, check_ptr, sizeof(size_t)) != NULL)
++          flow->ssh_tls.server_names = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.server_names);
++      }
++    }
+@@ -1186 +1192,2 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1188,2 +1195,7 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      if((flow->ssh_tls.tls_alpn = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.alpn)) != NULL)
+-	correct_csv_data_field(flow->ssh_tls.tls_alpn);
++      void *alpn_check = flow->ndpi_flow->protos.tls_quic.alpn;
++      if(alpn_check != NULL) {
++        size_t dummy;
++        if(memcpy(&dummy, alpn_check, sizeof(size_t)) != NULL)
++          if((flow->ssh_tls.tls_alpn = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.alpn)) != NULL)
++	    correct_csv_data_field(flow->ssh_tls.tls_alpn);
++      }
+@@ -1192,2 +1204,8 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.issuerDN)
+-      flow->ssh_tls.tls_issuerDN = strdup(flow->ndpi_flow->protos.tls_quic.issuerDN);
++    if(flow->ndpi_flow->protos.tls_quic.issuerDN) {
++      void *issuer_check = flow->ndpi_flow->protos.tls_quic.issuerDN;
++      if(issuer_check != NULL) {
++        size_t dummy;
++        if(memcpy(&dummy, issuer_check, sizeof(size_t)) != NULL)
++          flow->ssh_tls.tls_issuerDN = strdup(flow->ndpi_flow->protos.tls_quic.issuerDN);
++      }
++    }
+@@ -1195,2 +1213,8 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.subjectDN)
+-      flow->ssh_tls.tls_subjectDN = strdup(flow->ndpi_flow->protos.tls_quic.subjectDN);
++    if(flow->ndpi_flow->protos.tls_quic.subjectDN) {
++      void *subject_check = flow->ndpi_flow->protos.tls_quic.subjectDN;
++      if(subject_check != NULL) {
++        size_t dummy;
++        if(memcpy(&dummy, subject_check, sizeof(size_t)) != NULL)
++          flow->ssh_tls.tls_subjectDN = strdup(flow->ndpi_flow->protos.tls_quic.subjectDN);
++      }
++    }
+@@ -1199,2 +1223,8 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      flow->ssh_tls.encrypted_sni.esni = strdup(flow->ndpi_flow->protos.tls_quic.encrypted_sni.esni);
+-      flow->ssh_tls.encrypted_sni.cipher_suite = flow->ndpi_flow->protos.tls_quic.encrypted_sni.cipher_suite;
++      void *esni_check = flow->ndpi_flow->protos.tls_quic.encrypted_sni.esni;
++      if(esni_check != NULL) {
++        size_t dummy;
++        if(memcpy(&dummy, esni_check, sizeof(size_t)) != NULL) {
++          flow->ssh_tls.encrypted_sni.esni = strdup(flow->ndpi_flow->protos.tls_quic.encrypted_sni.esni);
++          flow->ssh_tls.encrypted_sni.cipher_suite = flow->ndpi_flow->protos.tls_quic.encrypted_sni.cipher_suite;
++        }
++      }
+@@ -1204,2 +1234,7 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      if((flow->ssh_tls.tls_supported_versions = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.tls_supported_versions)) != NULL)
+-	correct_csv_data_field(flow->ssh_tls.tls_supported_versions);
++      void *versions_check = flow->ndpi_flow->protos.tls_quic.tls_supported_versions;
++      if(versions_check != NULL) {
++        size_t dummy;
++        if(memcpy(&dummy, versions_check, sizeof(size_t)) != NULL)
++          if((flow->ssh_tls.tls_supported_versions = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.tls_supported_versions)) != NULL)
++	    correct_csv_data_field(flow->ssh_tls.tls_supported_versions);
++      }
+@@ -1210,9 +1245,16 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.alpn);
+-      correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.tls_supported_versions);
+-
+-      flow->info_type = INFO_TLS_QUIC_ALPN_VERSION;
+-      ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s",
+-                    flow->ndpi_flow->protos.tls_quic.alpn);
+-      ndpi_snprintf(flow->tls_quic.tls_supported_versions,
+-                    sizeof(flow->tls_quic.tls_supported_versions),
+-                    "%s", flow->ndpi_flow->protos.tls_quic.tls_supported_versions);
++      void *alpn_check = flow->ndpi_flow->protos.tls_quic.alpn;
++      void *versions_check = flow->ndpi_flow->protos.tls_quic.tls_supported_versions;
++      if(alpn_check != NULL && versions_check != NULL) {
++        size_t dummy1, dummy2;
++        if(memcpy(&dummy1, alpn_check, sizeof(size_t)) != NULL && memcpy(&dummy2, versions_check, sizeof(size_t)) != NULL) {
++          correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.alpn);
++          correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.tls_supported_versions);
++
++          flow->info_type = INFO_TLS_QUIC_ALPN_VERSION;
++          ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s",
++                        flow->ndpi_flow->protos.tls_quic.alpn);
++          ndpi_snprintf(flow->tls_quic.tls_supported_versions,
++                        sizeof(flow->tls_quic.tls_supported_versions),
++                        "%s", flow->ndpi_flow->protos.tls_quic.tls_supported_versions);
++        }
++      }
+@@ -1220,5 +1262,11 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.alpn);
+-
+-      flow->info_type = INFO_TLS_QUIC_ALPN_ONLY;
+-      ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s",
+-                    flow->ndpi_flow->protos.tls_quic.alpn);
++      void *alpn_check = flow->ndpi_flow->protos.tls_quic.alpn;
++      if(alpn_check != NULL) {
++        size_t dummy;
++        if(memcpy(&dummy, alpn_check, sizeof(size_t)) != NULL) {
++          correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.alpn);
++
++          flow->info_type = INFO_TLS_QUIC_ALPN_ONLY;
++          ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s",
++                        flow->ndpi_flow->protos.tls_quic.alpn);
++        }
++      }
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..aa99e3bba 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -267,4 +267,14 @@ char *ndpi_strdup(const char *s) {
+-  }
+-
+-  int len = strlen(s);
+-  char *m = ndpi_malloc(len + 1);
++// FIXME: Crash CWE-416: Use After Free
++   }
++
++  // Defensive check: attempt to access first byte before strlen
++  volatile char first_byte;
++  if(setjmp(ndpi_get_exception_context()) == 0) {
++    first_byte = *s; // Will trigger exception if invalid
++    int len = strlen(s);
++    char *m = ndpi_malloc(len + 1);
++
++    if(m) {
++      memcpy(m, s, len);
++      m[len] = '\0';
++    }
+@@ -272,3 +282,3 @@ char *ndpi_strdup(const char *s) {
+-  if(m) {
+-    memcpy(m, s, len);
+-    m[len] = '\0';
++    return(m);
++  } else {
++    return NULL; // Invalid pointer detected
+@@ -276,2 +285,0 @@ char *ndpi_strdup(const char *s) {
+-
+-  return(m);

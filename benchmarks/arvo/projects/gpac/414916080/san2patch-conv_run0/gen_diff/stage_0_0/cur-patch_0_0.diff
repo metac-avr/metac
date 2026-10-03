@@ -1,0 +1,30 @@
+diff --git a/src/filter_core/filter_pid.c b/src/filter_core/filter_pid.c
+index c9289e2bb..c26272fc1 100644
+--- a/src/filter_core/filter_pid.c
++++ b/src/filter_core/filter_pid.c
+@@ -5697,6 +5697,8 @@ static GF_Err gf_filter_pid_set_property_full(GF_FilterPid *pid, u32 prop_4cc, c
+-	if (value && (prop_4cc == GF_PROP_PID_ID) && !pid->name) {
+-		char szName[100];
+-		sprintf(szName, "PID%d", value->value.uint);
+-		gf_filter_pid_set_name(pid, szName);
+-	}
+-	return gf_props_set_property(map, prop_4cc, prop_name, dyn_name, value);
++    if (value && (prop_4cc == GF_PROP_PID_ID) && !pid->name) {
++        char szName[100];
++        if (value->value.uint < 1000000000) {  // Prevent buffer overflow in sprintf
++            sprintf(szName, "PID%d", value->value.uint);
++            gf_filter_pid_set_name(pid, szName);
++        }
++    }
++    return gf_props_set_property(map, prop_4cc, prop_name, dyn_name, value);
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..4416b84ac 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1801,0 +1802,6 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
++		// Validate nb_es against maximum allowed value to prevent buffer overflow
++		if (nb_es > MAX_ALLOWED_ES_COUNT) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[M2TS] Invalid ES count detected, capping to prevent overflow\n"));
++			nb_es = MAX_ALLOWED_ES_COUNT;
++		}
++

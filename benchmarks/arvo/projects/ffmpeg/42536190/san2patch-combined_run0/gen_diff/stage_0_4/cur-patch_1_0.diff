@@ -1,0 +1,69 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..ff0546f99f 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -52 +52,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -58 +59,6 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-    return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
++    
++    if (ref && ref->rpl_tab && ctb_addr_ts >= 0) {
++        if (ctb_addr_ts < ref->rpl_tab_size && ref->rpl_tab[ctb_addr_ts])
++            return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
++    }
++    return NULL;
+@@ -64,2 +70 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)        ff_hevc_unref_frame(&s->DPB[i],
+diff --git a/libavcodec/hevc/filter.c b/libavcodec/hevc/filter.c
+index 56e354b486..359a52b13b 100644
+--- a/libavcodec/hevc/filter.c
++++ b/libavcodec/hevc/filter.c
+@@ -768,21 +768,23 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *
+-        int yp_pu = (y0 - 1) >> log2_min_pu_size;
+-        int yq_pu =  y0      >> log2_min_pu_size;
+-        int yp_tu = (y0 - 1) >> log2_min_tu_size;
+-        int yq_tu =  y0      >> log2_min_tu_size;
+-
+-            for (i = 0; i < (1 << log2_trafo_size); i += 4) {
+-                int x_pu = (x0 + i) >> log2_min_pu_size;
+-                int x_tu = (x0 + i) >> log2_min_tu_size;
+-                const MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
+-                const MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
+-                uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * min_tu_width + x_tu];
+-                uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * min_tu_width + x_tu];
+-
+-                if (curr->pred_flag == PF_INTRA || top->pred_flag == PF_INTRA)
+-                    bs = 2;
+-                else if (curr_cbf_luma || top_cbf_luma)
+-                    bs = 1;
+-                else
+-                    bs = boundary_strength(s, curr, top, rpl_top);
+-                s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
+-            }
++        if (rpl_top) {
++            int yp_pu = (y0 - 1) >> log2_min_pu_size;
++            int yq_pu =  y0      >> log2_min_pu_size;
++            int yp_tu = (y0 - 1) >> log2_min_tu_size;
++            int yq_tu =  y0      >> log2_min_tu_size;
++
++                for (i = 0; i < (1 << log2_trafo_size); i += 4) {
++                    int x_pu = (x0 + i) >> log2_min_pu_size;
++                    int x_tu = (x0 + i) >> log2_min_tu_size;
++                    const MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
++                    const MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
++                    uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * min_tu_width + x_tu];
++                    uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * min_tu_width + x_tu];
++
++                    if (curr->pred_flag == PF_INTRA || top->pred_flag == PF_INTRA)
++                        bs = 2;
++                    else if (curr_cbf_luma || top_cbf_luma)
++                        bs = 1;
++                    else
++                        bs = boundary_strength(s, curr, top, rpl_top);
++                    s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
++                }
++        }

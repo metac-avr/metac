@@ -1,0 +1,59 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..ec52bc289a0 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,11 +1894,21 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
+-			ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_CONCAT);
+-			ZVAL_STR(&op1_copy, zval_get_string_func(op1));
+-			if (UNEXPECTED(EG(exception))) {
+-				zval_ptr_dtor_str(&op1_copy);
+-				if (orig_op1 != result) {
+-					ZVAL_UNDEF(result);
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}
++			/* Prevent use-after-free by checking zval validity before access */
++			ZVAL_DEREF(op1);
++			if (Z_REFCOUNTED_P(op1) && GC_DELREF(GC_HDR_P(op1)) < 0) {
++				/* Restore reference count and create copy */
++				GC_ADDREF(GC_HDR_P(op1));
++				ZVAL_COPY(&op1_copy, op1);
++				op1 = &op1_copy;
++			} else {
++				ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_CONCAT);
++				ZVAL_STR(&op1_copy, zval_get_string_func(op1));
++				if (UNEXPECTED(EG(exception))) {
++					zval_ptr_dtor_str(&op1_copy);
++					if (orig_op1 != result) {
++						ZVAL_UNDEF(result);
++					}
++					return FAILURE;
+@@ -1906 +1915,0 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-				return FAILURE;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..7b49b66485f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45977 +45977 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-		dim = NULL;
++ 		dim = NULL;
+@@ -46006 +46006,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-			zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			
++			if (Z_REFCOUNTED_P(var_ptr) && GC_DELREF(Z_COUNTED_P(var_ptr)) == 0) {
++				GC_ADDREF(Z_COUNTED_P(var_ptr));
++				zval temp_val;
++				ZVAL_COPY(&temp_val, var_ptr);
++				zend_binary_op(&temp_val, &temp_val, value OPLINE_CC);
++				zval_ptr_dtor(var_ptr);
++				ZVAL_COPY_VALUE(var_ptr, &temp_val);
++			} else {
++				zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			}

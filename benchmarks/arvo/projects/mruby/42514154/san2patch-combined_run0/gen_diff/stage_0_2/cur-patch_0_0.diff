@@ -1,0 +1,36 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..89065c4e3 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -37 +37,2 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -39,2 +40,4 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-    x->p=(mp_limb*)mrb_realloc(mrb,x->p,size*sizeof(mp_limb));
+-    for (size_t i=x->sz; i<size; i++)
++    mp_limb* new_p = (mp_limb*)mrb_realloc(mrb, x->p, size * sizeof(mp_limb));
++    if (new_p == NULL) return;  // Prevent use-after-free if realloc fails
++    x->p = new_p;
++    for (size_t i = x->sz; i < size; i++)
+@@ -389,5 +392,11 @@ ulshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-    mpz_init(mrb,&c); mpz_realloc(mrb,&c,(size_t)(a->sz + 1));
+-    size_t i;
+-    for (i=0; i<a->sz; i++) {
+-      c.p[i] = ((a->p[i] << n) | cc) & DIG_MASK;
+-      cc = (a->p[i] & rm) >> (DIG_SIZE-n);
++    mpz_init(mrb,&c); 
++    if (a->sz > 0) {
++      mpz_realloc(mrb,&c,(size_t)(a->sz + 1));
++      size_t i;
++      for (i=0; i<a->sz; i++) {
++        c.p[i] = ((a->p[i] << n) | cc) & DIG_MASK;
++        cc = (a->p[i] & rm) >> (DIG_SIZE-n);
++      }
++      c.p[i] = cc;
++      trim(&c);
++      mpz_set(mrb,c1,&c);
+@@ -395,3 +403,0 @@ ulshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-    c.p[i] = cc;
+-    trim(&c);
+-    mpz_set(mrb,c1,&c);

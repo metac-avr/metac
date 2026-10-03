@@ -1,0 +1,28 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..c6e70a05c82 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1201,5 +1201,4 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-{
+-	zend_string *op1_str = Z_STR_P(op1);
+-	size_t op1_len = ZSTR_LEN(op1_str);
+-	size_t op2_len = Z_STRLEN_P(op2);
+-	size_t result_len = op1_len + op2_len;
++// FIXME: Crash CWE-416: Use After Free
++ {
++	zend_string *op1_str;
++	size_t op1_len, op2_len, result_len;
+@@ -1207,0 +1207,13 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
++	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING || Z_TYPE_P(op2) != IS_STRING)) {
++		return;
++	}
++
++	op1_str = Z_STR_P(op1);
++	if (UNEXPECTED(op1_str == NULL)) {
++		return;
++	}
++
++	op1_len = ZSTR_LEN(op1_str);
++	op2_len = Z_STRLEN_P(op2);
++	result_len = op1_len + op2_len;
++

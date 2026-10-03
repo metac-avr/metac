@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index f2f538a2c2c..98a85a814b4 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1340 +1340,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1341,0 +1343 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	ZEND_ASSERT(p != NULL && "Expired pointer dereference detected"); // Validate pointer before use
+@@ -1352 +1353,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..e36ee36c061 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
++[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p != NULL && GC_REFCOUNT(p) > 0) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

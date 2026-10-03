@@ -1,0 +1,44 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..120693aaddc 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29939 +29939,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-				UNDEF_RESULT();
++				/* Add safety check for orig_object_ptr before UNDEF_RESULT */
++				if (orig_object_ptr != NULL) {
++					UNDEF_RESULT();
++				}
+@@ -30289 +30292,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-				UNDEF_RESULT();
++				/* Add safety check for orig_object_ptr before UNDEF_RESULT */
++				if (orig_object_ptr != NULL) {
++					UNDEF_RESULT();
++				}
+@@ -49526 +49532,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-				UNDEF_RESULT();
++				/* Add safety check for orig_object_ptr before UNDEF_RESULT */
++				if (orig_object_ptr != NULL) {
++					UNDEF_RESULT();
++				}
+@@ -49876 +49885,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-				UNDEF_RESULT();
++				/* Add safety check for orig_object_ptr before UNDEF_RESULT */
++				if (orig_object_ptr != NULL) {
++					UNDEF_RESULT();
++				}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..ee137759318 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2441 +2441,2 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -2442,0 +2444,3 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
++	if (container_ptr && Z_REFCOUNTED_P(container_ptr) && GC_DELREF(Z_COUNTED_P(container_ptr)) == 0) {
++		GC_ADDREF(Z_COUNTED_P(container_ptr));
++	}
+@@ -2453,2 +2457 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(z
+-{
+-	zval *result = EX_VAR(opline->result.var);
++{	zval *result = EX_VAR(opline->result.var);

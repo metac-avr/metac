@@ -1,0 +1,27 @@
+diff --git a/libavcodec/hevc/filter.c b/libavcodec/hevc/filter.c
+index 56e354b486..ea6c7bf34f 100644
+--- a/libavcodec/hevc/filter.c
++++ b/libavcodec/hevc/filter.c
+@@ -767,0 +768,3 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *
++        // Validate rpl_top before proceeding
++        if (rpl_top == NULL)
++            goto skip_upper_processing;
+@@ -789,0 +793 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *
++    skip_upper_processing:
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..237c43d722 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -52 +52,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-416: Use After Free
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -57,0 +59,4 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++    if (ref == NULL)
++        return NULL;
++    if (ctb_addr_ts >= (ref->rpl_tab_size / sizeof(*ref->rpl_tab)))
++        return NULL;
+@@ -64,2 +69 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)        ff_hevc_unref_frame(&s->DPB[i],

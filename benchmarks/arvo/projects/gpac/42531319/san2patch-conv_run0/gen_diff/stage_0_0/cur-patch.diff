@@ -1,0 +1,74 @@
+diff --git a/src/filters/reframe_nalu.c b/src/filters/reframe_nalu.c
+index 3468b026b..5581a084a 100644
+--- a/src/filters/reframe_nalu.c
++++ b/src/filters/reframe_nalu.c
+@@ -1815,0 +1816,39 @@ static void naludmx_check_pid(GF_Filter *filter, GF_NALUDmxCtx *ctx, Bool force_
++static GF_Err naludmx_configure_pid(GF_Filter *filter, GF_FilterPid *pid, Bool is_remove)
++{
++	GF_NALUDmxCtx *ctx = (GF_NALUDmxCtx *)gf_filter_get_udta(filter);
++	u32 w=0, h=0, crc_cfg=0, crc_cfg_enh=0;
++	GF_Fraction sar;
++	Bool has_hevc_alpha = GF_FALSE;
++	char *dsi=NULL, *dsi_enh=NULL;
++	u32 dsi_size=0, dsi_enh_size=0;
++	Bool force_au_flush = GF_FALSE;
++	Bool has_colr_info = GF_FALSE;
++	Bool dsi_is_superset = (!ctx->crc_cfg || ctx->ps_changed) ? GF_FALSE : GF_TRUE;
++	sar.num = sar.den = 0;
++
++	if (is_remove) {
++		if (ctx->opid && (ctx->opid == pid)) {
++			ctx->opid = NULL;
++			return GF_OK;
++		}
++		return GF_OK;
++	}
++
++	if (!ctx->ipid) {
++		ctx->ipid = pid;
++		return GF_OK;
++	}
++
++	if (! gf_filter_pid_check_caps(pid))
++		return GF_NOT_SUPPORTED;
++
++	if (ctx->width && ctx->height) {
++		w = ctx->width;
++		h = ctx->height;
++	} else {
++		GF_PropertyValue p = gf_filter_pid_get_property(pid, GF_PROP_PID_WIDTH);
++		if (p.value.uint) w = p.value.uint;
++		p = gf_filter_pid_get_property(pid, GF_PROP_PID_HEIGHT);
++		if (p.value.uint) h = p.value.uint;
++	}
++
+@@ -1819 +1858 @@ static void naludmx_check_pid(GF_Filter *filter, GF_NALUDmxCtx *ctx, Bool force_
+-		return;
++		return GF_OK;
+@@ -1836 +1875,8 @@ static void naludmx_check_pid(GF_Filter *filter, GF_NALUDmxCtx *ctx, Bool force_
+-		return;
++		return GF_OK;
++	}
++
++	if (force_au_flush) {
++		naludmx_enqueue_or_dispatch(ctx, NULL, GF_TRUE);
++		if (!ctx->analyze && (gf_list_count(ctx->pck_queue)>1))  {
++			gf_filter_pid_copy_properties(ctx->opid, ctx->ipid);
++		}
+@@ -1838,0 +1885,16 @@ static void naludmx_check_pid(GF_Filter *filter, GF_NALUDmxCtx *ctx, Bool force_
++	if (!ctx->timescale)
++		ctx->timescale = 90000;
++
++	gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_UNFRAMED, NULL);
++	if (!gf_filter_pid_get_property(ctx->ipid, GF_PROP_PID_ID))
++		gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_ID, & PROP_UINT32(1));
++
++	ctx->width = w;
++	ctx->height = h;
++	ctx->sar = sar;
++	ctx->crc_cfg = crc_cfg;
++	ctx->crc_cfg_enh = crc_cfg_enh;
++
++	return GF_OK;
++}	}
++

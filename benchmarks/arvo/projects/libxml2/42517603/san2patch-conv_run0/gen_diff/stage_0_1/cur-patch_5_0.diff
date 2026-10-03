@@ -1,0 +1,27 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..8fac47fe 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2467 +2467 @@ xmlXIncludeProcessNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
+-        (node->doc == NULL) || (ctxt == NULL))
++         (node->doc == NULL) || (ctxt == NULL))
+@@ -2468,0 +2469,5 @@ xmlXIncludeProcessNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
++    
++    /* Verify node hasn't been freed by checking doc reference */
++    if (xmlDocIsWellFormed(node->doc) == 0)
++        return(-1);
++        
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..80dcfbee 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1364,3 +1364,6 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Check if node is still valid before freeing */
++		if (tmp && reader->doc) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		}

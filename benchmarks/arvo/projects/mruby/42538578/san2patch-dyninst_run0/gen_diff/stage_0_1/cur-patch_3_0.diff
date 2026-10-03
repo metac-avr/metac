@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..5d91b4fca 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -349,0 +351 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *old_cibase = c->cibase;
+@@ -351 +353,5 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    if (old_cibase != c->cibase) {
++      ptrdiff_t stack_diff = c->ci - old_cibase;
++      c->ci = c->cibase + stack_diff;
++      ci = c->ci;
++    }
+@@ -2710 +2716,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
++      if (mrb_nil_p(regs[a+1])) {
++        NEXT;
++      }
+@@ -2722 +2731,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

@@ -1,0 +1,25 @@
+diff --git a/src/lib/protocols/irc.c b/src/lib/protocols/irc.c
+index 367ec86bd..af76b190d 100644
+--- a/src/lib/protocols/irc.c
++++ b/src/lib/protocols/irc.c
+@@ -408,0 +409 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -411,3 +412,9 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-	  snprintf(buf, sizeof(buf), "%s", &user[5]);
+-	  if((sp = strchr(buf, ' ')) != NULL)
+-	    sp[0] = '\0';
++	  /* Ensure we don't read beyond packet boundaries */
++	  size_t remaining_len = packet->payload_packet_len - (&user[5] - (char*)packet->payload);
++	  if(remaining_len > 0) {
++	    size_t copy_len = (remaining_len < sizeof(buf) - 1) ? remaining_len : sizeof(buf) - 1;
++	    memcpy(buf, &user[5], copy_len);
++	    buf[copy_len] = '\0';
++	    
++	    if((sp = strchr(buf, ' ')) != NULL)
++	      sp[0] = '\0';
+@@ -415,2 +422,3 @@ void ndpi_search_irc_tcp(struct ndpi_detection_module_struct *ndpi_struct, struc
+-	  snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
+-	  ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
++	    snprintf(msg, sizeof(msg), "Found IRC username (%s)", buf);
++	    ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS, msg);
++	  }

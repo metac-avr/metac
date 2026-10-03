@@ -1,0 +1,41 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..244210faf01 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -9332,17 +9331,0 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+-		if (zend_jit_trace_exit_is_bad(trace_num, exit_num)) {
+-			zend_jit_blacklist_trace_exit(trace_num, exit_num);
+-			if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_BLACKLIST) {
+-				fprintf(stderr, "---- EXIT %d/%d blacklisted\n",
+-					trace_num, exit_num);
+-			}
+-			return 0;
+-		}
+-	} else if (JIT_G(hot_side_exit) && zend_jit_trace_exit_is_hot(trace_num, exit_num)) {
+-		return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
+-	}
+-
+-	/* Return 1 to call original handler instead of the same JIT-ed trace */
+-	return (orig_opline == t->opline && EX(opline) == orig_opline);
+-}
+-
+@@ -9352,0 +9336 @@ static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline
++			return 1;
+@@ -9353,0 +9338,5 @@ static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline
++			return 1;
++		default:
++			return 0;
++	}
++}		case ZEND_FAST_CALL:
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..2bb492d6569 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2489,0 +2490 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++	if (!ht) return;
+@@ -2494,0 +2496,4 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		if (GC_REFCOUNT(ht) > 0) {
++			GC_DELREF(ht);
++			return;
++		}

@@ -1,0 +1,20 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..2590a46532f 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -705 +705 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	switch (Z_TYPE_P(dim)) {
++	        switch (Z_TYPE_P(dim)) {
+@@ -728 +728,2 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-			goto str_index;
++// FIXME: Crash CWE-416: Use After Free
++ 			goto str_index;
+@@ -730 +731,7 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-			hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++			{
++				zval tmp_zval;
++				ZVAL_ARR(&tmp_zval, ht);
++				Z_TRY_ADDREF(tmp_zval);
++				hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++				zval_ptr_dtor(&tmp_zval);
++			}

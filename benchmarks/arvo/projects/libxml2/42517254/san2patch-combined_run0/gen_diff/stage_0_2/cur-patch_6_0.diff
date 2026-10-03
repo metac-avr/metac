@@ -1,0 +1,55 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..f0f5197d 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1182 +1182 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				case XML_ELEMENT_NODE:
++t			case XML_ELEMENT_NODE:
+@@ -1189,4 +1189,6 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
++				    if (tmp != NULL) {
++				        if (last == NULL) {
++					    list = last = tmp;
++				        } else {
++					    last = xmlAddNextSibling(last, tmp);
++				        }
+@@ -1214,9 +1216,12 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		{
++		    xmlNodePtr tmp = xmlXIncludeCopyNode(ctxt, target, source,
++							set->nodeTab[i]);
++		    if (tmp != NULL) {
++		        if (last == NULL)
++			    list = last = tmp;
++		        else {
++			    xmlAddNextSibling(last, tmp);
++			    if (last->next != NULL)
++			        last = last->next;
++		        }
++		    }
+@@ -2601 +2606,2 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
+-int
++// FIXME: Crash CWE-416: Use After Free
++ int
+@@ -2603 +2609,5 @@ xmlXIncludeProcessFlags(xmlDocPtr doc, int flags) {
+-    return xmlXIncludeProcessFlagsData(doc, flags, NULL);
++    /* Track node references during XInclude processing to prevent use-after-free */
++    xmlXIncludeSetRefTracking(1);
++    int result = xmlXIncludeProcessFlagsData(doc, flags, NULL);
++    xmlXIncludeSetRefTracking(0);
++    return result;
+@@ -2613,2 +2623 @@ xmlXIncludeProcessFlags(xmlDocPtr doc, int flags) {
+- *    or the number of substitutions done.
+- */
++ *    or the number of substitutions done. */

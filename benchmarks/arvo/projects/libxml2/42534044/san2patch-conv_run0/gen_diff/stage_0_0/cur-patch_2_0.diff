@@ -1,0 +1,23 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..4e53a255 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3635,0 +3636,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Zero out the entire node structure to prevent use-after-free */
++	    memset(cur, 0, sizeof(xmlNode));
+@@ -6827 +6830,2 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    if (localname == NULL)
++    if (localname == NULL) {
++        if (prefix) xmlFree(prefix);  /* Fix: Safe free of prefix on error path */
+@@ -6828,0 +6833 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
++    }
+@@ -6832,0 +6838 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
++        prefix = NULL;  /* Fix: Clear dangling pointer reference */
+@@ -6835 +6841,3 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
++        if (ns != NULL) {
++            /* Check if node is still valid after potential recursive operations */
++            if (node == NULL) return(NULL);  /* Fix: Validate node before use */
+@@ -6836,0 +6845 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
++        }

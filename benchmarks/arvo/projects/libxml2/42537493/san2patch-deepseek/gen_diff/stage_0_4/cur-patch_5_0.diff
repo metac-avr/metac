@@ -1,0 +1,40 @@
+diff --git a/encoding.c b/encoding.c
+index 3d336fb1..25858ffc 100644
+--- a/encoding.c
++++ b/encoding.c
+@@ -1917,2 +1917,9 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
+-    if (handler == NULL)
+-        return(0);
++    xmlCharEncodingHandler *saved_handler = handler;
++    xmlChar *saved_name;
++    xmlCharEncodingHandlerDtor saved_ctxtDtor;
++    void *saved_inputCtxt;
++    void *saved_outputCtxt;
++    xmlCharEncodingHandlerCloseFunc saved_close_out;
++
++    if (saved_handler == NULL)
++         return(0);
+@@ -1920 +1927 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
+-    if (handler->flags & XML_HANDLER_STATIC)
++    if (saved_handler->flags & XML_HANDLER_STATIC)
+@@ -1923,4 +1930,13 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
+-    xmlFree(handler->name);
+-    if (handler->ctxtDtor != NULL) {
+-        handler->ctxtDtor(handler->inputCtxt);
+-        handler->ctxtDtor(handler->outputCtxt);
++    saved_name = saved_handler->name;
++    saved_ctxtDtor = saved_handler->ctxtDtor;
++    saved_inputCtxt = saved_handler->inputCtxt;
++    saved_outputCtxt = saved_handler->outputCtxt;
++    saved_close_out = saved_handler->close_out;
++
++    if (saved_close_out != NULL)
++        saved_close_out(saved_handler);
++
++    xmlFree(saved_name);
++    if (saved_ctxtDtor != NULL) {
++        saved_ctxtDtor(saved_inputCtxt);
++        saved_ctxtDtor(saved_outputCtxt);
+@@ -1928 +1944 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
+-    xmlFree(handler);
++    xmlFree(saved_handler);

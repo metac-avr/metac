@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..d879707b323 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3201 +3201,8 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-			ZVAL_UNDEF(EX(return_value));
++			zend_object *obj = Z_OBJ_P(EX(return_value));
++			if (obj && !(GC_FLAGS(obj) & GC_IMMUTABLE)) {
++				GC_DELREF(obj);
++				ZVAL_UNDEF(EX(return_value));
++				GC_ADDREF(obj);
++			} else {
++				ZVAL_UNDEF(EX(return_value));
++			}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..0443290d27d 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -64,4 +64,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
++ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
++ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
++efree(str);
+@@ -71,0 +72 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
++// FIXME: Crash CWE-416: Use After Free
+@@ -74,0 +76 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
++	memset(ref, 0, sizeof(zend_reference));  // Clear memory before freeing

@@ -1,0 +1,20 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..9daec17d4 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -162 +162,2 @@ int_div(mrb_state *mrb, mrb_value x)
+-#ifdef MRB_USE_BIGINT
++// FIXME: Crash CWE-190: Integer Overflow or Wraparound
++ #ifdef MRB_USE_BIGINT
+@@ -164 +165,10 @@ int_div(mrb_state *mrb, mrb_value x)
+-    return mrb_bint_div(mrb, mrb_bint_new_int(mrb, a), y);
++    {
++      /* Use safe integer conversion to prevent overflow */
++      if (a > 0 && a < MRB_INT_MAX) {
++        return mrb_bint_div(mrb, mrb_bint_new_int(mrb, a), y);
++      } else {
++        /* Handle large integers with explicit bounds checking */
++        mrb_value big_a = mrb_bint_new_int(mrb, a);
++        return mrb_bint_div(mrb, big_a, y);
++      }
++    }

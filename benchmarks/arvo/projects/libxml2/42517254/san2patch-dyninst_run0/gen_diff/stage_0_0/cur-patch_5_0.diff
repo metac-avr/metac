@@ -1,0 +1,46 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..61ab25f6 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1189,4 +1189,6 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
++				    if (tmp != NULL) {  /* Check if copy succeeded */
++					if (last == NULL) {
++					    list = last = tmp;
++					} else {
++					    last = xmlAddNextSibling(last, tmp);
++					}
+@@ -1218,5 +1220,7 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
++								set->nodeTab[i]);
++		    if (new_node != NULL) {
++		        xmlAddNextSibling(last, new_node);
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2275 +2279,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-416: Use After Free
++          */
++	/* Increment reference count to keep node alive during processing */
++	cur->reference_count++;
+@@ -2277,0 +2285,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	/* Decrement reference count to balance the increment */
++	cur->reference_count--;
+@@ -2314,0 +2324,8 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    
++    /* Ensure node is properly cleaned up after xmlXIncludeCopyXPointer */
++    if ((ctxt->parseFlags & XML_PARSE_NOXINCNODE) && cur && cur->reference_count > 0) {
++        cur->reference_count--;
++        if (cur->reference_count == 0) {
++            xmlFreeNode(cur);
++        }
++    }

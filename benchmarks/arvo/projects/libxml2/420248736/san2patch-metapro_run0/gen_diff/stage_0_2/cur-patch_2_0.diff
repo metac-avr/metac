@@ -1,0 +1,23 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4..973e1215 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -616 +616 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
++if (child == NULL)
+@@ -624 +624,2 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++// Fixed CWE-416: Use After Free - Prevent dereferencing freed memory
++     xmlNodePtr cur = node;
+@@ -626 +627,4 @@ nodeGetTree(xmlNodePtr node) {
+-    while (cur->parent)
++    if (node == NULL)
++        return NULL;
++    
++    while (cur != NULL && cur->parent)
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..1e17ebd6 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1077,0 +1078 @@ xmlFreeElement(xmlElementPtr elem) {
++    *(void**)&elem = NULL;

@@ -1,0 +1,67 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..9dfc9f21 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2636 +2636,9 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
++// FIXME: Crash CWE-416: Use After Free
++ static void
++xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    
++    if (idPtr != NULL) {
++        /* Remove from document ID table before freeing to prevent dangling references */
++        if (idPtr->doc != NULL) {
++            xmlXPathReleaseObject(idPtr->doc->_private, (xmlXPathObjectPtr)idPtr);
+@@ -2637,0 +2646 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
++        xmlFreeID(idPtr);
+@@ -2639,19 +2648 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+-static void
+-xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++}    xmlHashFree(table, xmlFreeIDTableEntry);
+diff --git a/tree.c b/tree.c
+index 8e0b346a..a1c7cf87 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3757 +3757,23 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->children != NULL) &&
++
++    /* 
++     * Security fix: Ensure ID table consistency before freeing node
++     * Call xmlRemoveID to properly clean up ID references before deallocation
++     */
++    if (cur->doc != NULL) {
++        if ((cur->type == XML_ELEMENT_NODE) || 
++            (cur->type == XML_ATTRIBUTE_NODE)) {
++            if (cur->properties != NULL) {
++                xmlAttrPtr prop = cur->properties;
++                while (prop != NULL) {
++                    if ((prop->name != NULL) && 
++                        (xmlStrEqual(prop->name, (const xmlChar *)"id"))) {
++                        xmlRemoveID(cur->doc, cur);
++                        break;
++                    }
++                    prop = prop->next;
++                }
++            }
++        }
++    }
++
++     if ((cur->children != NULL) &&

@@ -1,0 +1,80 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..d2d9923f 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -416,0 +417,17 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++static int
++htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++    const unsigned char *cur;
++    unsigned char c;
++    unsigned int val;
++
++    if ((ctxt == NULL) || (len == NULL) ||
++        (ctxt->input == NULL) || (ctxt->input->cur == NULL))
++        return(-1);
++
++    if (ctxt->instate == XML_PARSER_EOF)
++        return(0);
++
++    if (ctxt->input->end - ctxt->input->cur < 1)
++        return(0);
++
++    /*
+@@ -438,0 +456,57 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++            unsigned int val2;
++
++            if ((avail < 3) || ((cur[2] & 0xc0) != 0x80))
++                goto encoding_error;
++            if ((c & 0xf0) == 0xf0) {
++                if (((c & 0xf8) != 0xf0) ||
++                    (avail < 4) || ((cur[3] & 0xc0) != 0x80))
++                    goto encoding_error;
++                /* 4-byte code */
++                *len = 4;
++                val = (cur[0] & 0x7) << 18;
++                val |= (cur[1] & 0x3f) << 12;
++                val |= (cur[2] & 0x3f) << 6;
++                val |= cur[3] & 0x3f;
++            } else {
++                /* 3-byte code */
++                *len = 3;
++                val = (cur[0] & 0xf) << 12;
++                val |= (cur[1] & 0x3f) << 6;
++                val |= cur[2] & 0x3f;
++            }
++            val2 = val;
++            if ((val2 & 0xfffff800) == 0xd800) {
++                ctxt->input->cur += *len;
++                return(0xFFFD);
++            }
++        } else {
++            /* 2-byte code */
++            *len = 2;
++            val = (cur[0] & 0x1f) << 6;
++            val |= cur[1] & 0x3f;
++        }
++        if (!IS_CHAR(val)) {
++            ctxt->input->cur += *len;
++            return(0xFFFD);
++        }
++        ctxt->input->cur += *len;
++        return(val);
++    } else {
++        /* 1-byte code */
++        *len = 1;
++        return((int) *ctxt->input->cur++);
++    }
++
++encoding_error:
++    /*
++     * If we detect an encoding error, we probably have an
++     * input stream corrupted. We should report the error and
++     * try to resynchronize. For now, skip the current byte
++     * and return the replacement character.
++     */
++    if ((ctxt->input->flags & XML_INPUT_HAS_ENCODING) == 0)
++        ctxt->input->flags |= XML_INPUT_HAS_ENCODING;
++    *len = 1;
++    ctxt->input->cur++;
++    return(0xFFFD);
++}        if ((c & 0xe0) == 0xe0) {

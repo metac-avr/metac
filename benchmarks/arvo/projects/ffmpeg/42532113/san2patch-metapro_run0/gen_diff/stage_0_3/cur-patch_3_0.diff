@@ -1,0 +1,28 @@
+diff --git a/libavcodec/vvc/vvcdec.c b/libavcodec/vvc/vvcdec.c
+index 608d497cb7..c60ce46491 100644
+--- a/libavcodec/vvc/vvcdec.c
++++ b/libavcodec/vvc/vvcdec.c
+@@ -786 +786,2 @@ static int decode_nal_unit(VVCContext *s, VVCFrameContext *fc, const H2645NAL *n
+-    case VVC_PREFIX_APS_NUT:
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     case VVC_PREFIX_APS_NUT:
+@@ -788,3 +789,5 @@ static int decode_nal_unit(VVCContext *s, VVCFrameContext *fc, const H2645NAL *n
+-        ret = ff_vvc_decode_aps(&s->ps, unit);
+-        if (ret < 0)
+-            return ret;
++        if (unit && unit->data && unit->data_size >= 8) {
++            ret = ff_vvc_decode_aps(&s->ps, unit);
++            if (ret < 0)
++                return ret;
++        }
+diff --git a/libavcodec/vvc/vvc_ps.c b/libavcodec/vvc/vvc_ps.c
+index ac96ed9f43..826c22a1bd 100644
+--- a/libavcodec/vvc/vvc_ps.c
++++ b/libavcodec/vvc/vvc_ps.c
+@@ -976,0 +977,6 @@ static int aps_decode_scaling(const VVCScalingList **scaling, const H266RawAPS *
++    // Add bounds checking before processing scaling data
++    if (!aps || !aps->scaling_list_data) {
++        ff_refstruct_unref(&sl);
++        return AVERROR(EINVAL);
++    }
++    

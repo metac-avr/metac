@@ -1,0 +1,21 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..8290f3819 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515 +515 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++      if (argc > 0 && (size_t)(argc + 1) <= (mrb->c->stend - ci->stack)) {
+@@ -517 +517,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[argc+1] = blk;
++      }
++      if ((size_t)(argc + 2) <= (mrb->c->stend - ci->stack)) {
++        ci->stack[argc+1] = blk;
++      } else {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack boundary exceeded");
++      }
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..7a899eaf2 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -790,0 +791 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  if (sym == 0) return mrb_nil_value();

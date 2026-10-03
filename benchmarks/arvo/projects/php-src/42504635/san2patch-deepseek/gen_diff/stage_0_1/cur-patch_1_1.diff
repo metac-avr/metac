@@ -1,0 +1,100 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..3fefc15ba7a 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1950,15 +1950 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	} else {
+-		size_t op1_len = Z_STRLEN_P(op1);
+-		size_t op2_len = Z_STRLEN_P(op2);
+-		size_t result_len = op1_len + op2_len;
+-		zend_string *result_str;
+-
+-		if (UNEXPECTED(op1_len > ZSTR_MAX_LEN - op2_len)) {
+-			zend_throw_error(NULL, "String size overflow");
+-			zval_ptr_dtor_str(&op1_copy);
+-			zval_ptr_dtor_str(&op2_copy);
+-			if (orig_op1 != result) {
+-				ZVAL_UNDEF(result);
+-			}
+-			return FAILURE;
+-		}
++	}         }
+@@ -1966,15 +1952,6 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-		if (result == op1 && Z_REFCOUNTED_P(result)) {
+-			/* special case, perform operations on result */
+-			result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
+-		} else {
+-			result_str = zend_string_alloc(result_len, 0);
+-			memcpy(ZSTR_VAL(result_str), Z_STRVAL_P(op1), op1_len);
+-			if (result == orig_op1) {
+-				i_zval_ptr_dtor(result);
+-			}
+-		}
+-
+-		/* This has to happen first to account for the cases where result == op1 == op2 and
+-		 * the realloc is done. In this case this line will also update Z_STRVAL_P(op2) to
+-		 * point to the new string. The first op2_len bytes of result will still be the same. */
+-		ZVAL_NEW_STR(result, result_str);
++static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
++	if (!(p->u.type_info & GC_IMMUTABLE)) {
++		ZEND_RC_MOD_CHECK(p);
++		--p->refcount;
++	}
++}
+@@ -1982,2 +1959,6 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-		memcpy(ZSTR_VAL(result_str) + op1_len, Z_STRVAL_P(op2), op2_len);
+-		ZSTR_VAL(result_str)[result_len] = '\0';
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	ZEND_ASSERT(p != NULL);
++	ZEND_ASSERT(p->refcount > 0);
++	ZEND_RC_MOD_CHECK(p);
++	if (UNEXPECTED(p->refcount == 0)) {
++		return 0;
+@@ -1984,0 +1966,16 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
++	return --(p->refcount);
++}
++
++static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++	ZEND_ASSERT(p != NULL);
++	ZEND_ASSERT(p->refcount >= rc);
++	ZEND_RC_MOD_CHECK(p);
++	p->refcount -= rc;
++	return p->refcount;
++}
++
++static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
++	ZEND_RC_MOD_CHECK(p);
++	p->refcount += rc;
++	return p->refcount;
++}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c0efe2a6dcf..129c5f04ec8 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1185,9 +1184,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
+-	}
+-}
+-
+@@ -1194,0 +1186 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	ZEND_ASSERT(p != NULL);
+@@ -1196,0 +1189,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (UNEXPECTED(p->refcount == 0)) {
++		return 0;
++	}
+@@ -1198,9 +1193 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {

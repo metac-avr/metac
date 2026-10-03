@@ -1,0 +1,35 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index 4c31ee0eae6..a5ca7ce1c19 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2177 +2177,3 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								bptr++;
++								if (bptr < end) {
++									bptr++;
++								}
+@@ -2181 +2183 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								if (*bptr != enclosure) {
++								if (bptr < end && *bptr != enclosure) {
+@@ -2190 +2192,3 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								bptr++;
++								if (bptr < end) {
++									bptr++;
++								}
+@@ -2193 +2197,2 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 								break;
+@@ -2195,4 +2200,7 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								if (*bptr == enclosure) {
+-									state = 2;
+-								} else if (escape_char != PHP_CSV_NO_ESCAPE && *bptr == escape_char) {
+-									state = 1;
++								if (bptr < end) {
++									if (*bptr == enclosure) {
++										state = 2;
++									} else if (escape_char != PHP_CSV_NO_ESCAPE && *bptr == escape_char) {
++										state = 1;
++									}
++									bptr++;
+@@ -2200 +2207,0 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								bptr++;

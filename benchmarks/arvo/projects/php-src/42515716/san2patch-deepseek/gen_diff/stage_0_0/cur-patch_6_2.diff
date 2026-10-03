@@ -1,0 +1,78 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..7b3596ca7e6 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2266 +2266 @@ PHPAPI zval *php_date_instantiate(zend_class_entry *pce, zval *object) /* {{{ */
+-static void update_errors_warnings(timelib_error_container **last_errors) /* {{{ */
++static void php_date_instantiate(timelib_time *now, timelib_tzinfo *tzi, int type, int new_dst, char *new_abbr, timelib_sll new_offset, time_t sec, suseconds_t usec, int options) /* {{{ */
+@@ -2268,3 +2268,6 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-	if (DATEG(last_errors)) {
+-		timelib_error_container_dtor(DATEG(last_errors));
+-		DATEG(last_errors) = NULL;
++	if (timezone_object) {
++		/* ... */
++	} else if (dateobj->time->tz_info) {
++		/* ... */
++	} else {
++		/* ... */
+@@ -2273,2 +2276,4 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-	if (last_errors == NULL || (*last_errors) == NULL) {
+-		return;
++	now = timelib_time_ctor();
++	now->zone_type = type;
++	switch (type) {
++		/* ... */
+@@ -2275,0 +2281,3 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++	php_date_get_current_time_with_fraction(&sec, &usec);
++	timelib_unixtime2local(now, (timelib_sll) sec);
++	php_date_set_time_fraction(now, usec);
+@@ -2277,2 +2285,2 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-	if ((*last_errors)->warning_count || (*last_errors)->error_count) {
+-		DATEG(last_errors) = *last_errors;
++	if (!format) {
++		/* ... */
+@@ -2280,3 +2288,5 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-
+-	timelib_error_container_dtor(*last_errors);
+-	*last_errors = NULL;
++	options = TIMELIB_NO_CLONE;
++	if (flags & PHP_DATE_INIT_FORMAT) {
++		timelib_fill_holes(dateobj->time, now, options);
++	}
++	timelib_update_ts(dateobj->time, tzi);
+@@ -2323,7 +2333,5 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = timelib_parse_from_format(format, time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
+-	} else {
+-		if (time_str_len == 0) {
+-			time_str = "now";
+-			time_str_len = sizeof("now") - 1;
+-		}
+-		dateobj->time = timelib_strtotime(time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
++static inline void update_errors_warnings(timelib_error_container **last_errors) /* {{{ */
++{
++	if (DATEG(last_errors)) {
++		timelib_error_container_dtor(DATEG(last_errors));
++		DATEG(last_errors) = NULL;
+@@ -2332,2 +2340,3 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	/* update last errors and warnings */
+-	update_errors_warnings(&err);
++	if (last_errors == NULL || (*last_errors) == NULL) {
++		return;
++	}
+@@ -2335,5 +2344,2 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	/* If called from a constructor throw an exception */
+-	if ((flags & PHP_DATE_INIT_CTOR) && err && err->error_count) {
+-		/* spit out the first library error message, at least */
+-		zend_throw_exception_ex(NULL, 0, "Failed to parse time string (%s) at position %d (%c): %s", time_str,
+-			err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
++	if ((*last_errors)->warning_count || (*last_errors)->error_count) {
++		DATEG(last_errors) = *last_errors;
+@@ -2341,4 +2347,4 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	if (err && err->error_count) {
+-		timelib_time_dtor(dateobj->time);
+-		dateobj->time = 0;
+-		return 0;
++
++	timelib_error_container_dtor(*last_errors);
++	*last_errors = NULL;
++}		return 0;

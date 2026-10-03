@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..c2240ff07a9 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -64,3 +64,3 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
++ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
++ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+@@ -72,0 +73,2 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
++	ZEND_ASSERT(ref != NULL);
++	if (ref == NULL) return;
+@@ -75 +77 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	efree_size(ref, sizeof(zend_reference));
++	if (ref != NULL) efree_size(ref, sizeof(zend_reference));
+@@ -84,2 +86 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
+-}
++	i_zval_ptr_dtor(zval_ptr);}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..8de85f53b61 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++// FIXME: Crash CWE-416: Use After Free
++		/* Mark object as freed to prevent future access */
++		GC_SET_ADDRESS(object, NULL);

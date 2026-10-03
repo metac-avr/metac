@@ -1,0 +1,76 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..9e9b0e96 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2220,0 +2221,22 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++static int
++xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree, xmlNodePtr target)
++{
++    xmlNodePtr cur, list;
++    int ret = 0;
++    int nr = ctxt->incNr - 1;
++    int i;
++
++    /*
++     * Check against the risk of generating a multi-rooted document
++     */
++
++    if (ctxt->incTab[nr]->ref == NULL) {
++        /*
++         * Shrink the inclusion table to avoid dangling references
++         */
++        xmlXIncludeErr(ctxt, NULL, XML_XINCLUDE_NO_HREF,
++                       "xmlXIncludeDoProcess: href or xpointer not found\n",
++                       NULL);
++        return(-1);
++    }
++
+@@ -2230 +2252,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	ctxt->incTab[nr]->inc =
++        xmlXPathObjectPtr xptr_copy = ctxt->incTab[nr]->xptr; 
++        ctxt->incTab[nr]->inc =
+@@ -2232,2 +2255,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		                    ctxt->incTab[nr]->xptr);
+-	xmlXPathFreeObject(ctxt->incTab[nr]->xptr);
++	                    xptr_copy);
++        if (xptr_copy == ctxt->incTab[nr]->xptr) {
++            xmlXPathFreeObject(ctxt->incTab[nr]->xptr);
++        }
+@@ -2242,0 +2268,6 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++
++    if (list == NULL)
++        return(-1);
++    
++    return(0);
++}     */
+@@ -2495,0 +2527,14 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++static int
++xmlXIncludeDoProcessRoot(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc)
++{
++    xmlNodePtr tmp;
++    int i, ret = 0;
++
++    if (doc == NULL)
++	return(-1);
++    if (ctxt == NULL)
++	return(-1);
++
++    /*
++     * An element can be either an XInclude extension node, or a
++     * real element.  
+@@ -2503,3 +2548,4 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-	if ((ctxt->incTab[i]->inc != NULL) ||
+-            (ctxt->incTab[i]->xptr != NULL) ||
+-	    (ctxt->incTab[i]->emptyFb != 0))	/* (empty fallback) */
++	if (ctxt->incTab[i] != NULL && 
++	    ((ctxt->incTab[i]->inc != NULL) ||
++             (ctxt->incTab[i]->xptr != NULL) ||
++	    (ctxt->incTab[i]->emptyFb != 0)))	/* (empty fallback) */
+@@ -2512,6 +2558 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-}
+-
+-/**
+- * xmlXIncludeSetFlags:
+- * @ctxt:  an XInclude processing context
+- * @flags: a set of xmlParserOption used for parsing XML includes
++} * @flags: a set of xmlParserOption used for parsing XML includes

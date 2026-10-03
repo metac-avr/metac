@@ -1,0 +1,26 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..5a7959ba05c 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -397 +397,2 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-			goto str_index;
++// FIXME: Crash CWE-416: Use After Free
++ 			goto str_index;
+@@ -399 +400,5 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-			hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++			if (Z_TYPE_P(EG(current_execute_data)->opline->op1.var) == IS_ARRAY && Z_ARR_P(EG(current_execute_data)->opline->op1.var) == ht) {
++				GC_REFCOUNT(ht)++;
++				hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++				GC_REFCOUNT(ht)--;
++			}
+@@ -462 +467,2 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_is_helper(zend_array *ht, zval *dim
+-			goto str_index;
++// FIXME: Crash CWE-416: Use After Free
++ 			goto str_index;
+@@ -464 +470,5 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_is_helper(zend_array *ht, zval *dim
+-			hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++			if (Z_TYPE_P(EG(current_execute_data)->opline->op1.var) == IS_ARRAY && Z_ARR_P(EG(current_execute_data)->opline->op1.var) == ht) {
++				GC_REFCOUNT(ht)++;
++				hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++				GC_REFCOUNT(ht)--;
++			}

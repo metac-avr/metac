@@ -1,0 +1,61 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..b7c7f8f4e 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -926,4 +926,4 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-				       struct ndpi_flow_struct *flow,
+-				       const uint8_t *dest_conn_id, uint8_t dest_conn_id_len,
+-				       uint8_t source_conn_id_len, uint32_t version,
+-				       uint32_t *clear_payload_len)
++			       struct ndpi_flow_struct *flow,
++			       const uint8_t *dest_conn_id, uint8_t dest_conn_id_len,
++			       uint8_t source_conn_id_len, uint32_t version,
++			       uint32_t *clear_payload_len)
+@@ -956,0 +957,14 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Safe bounds checking for quic_len operations */
++  if(packet->payload_packet_len <= pn_offset) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
++  uint32_t temp_pn_offset = pn_offset;
++  /* Check if we have enough bytes for quic_len to operate safely */
++  if(temp_pn_offset + 8 > packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
+@@ -957,0 +972,7 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Validate token length doesn't exceed remaining buffer */
++  if(token_length > packet->payload_packet_len || pn_offset > packet->payload_packet_len ||
++     token_length > packet->payload_packet_len - pn_offset) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
+@@ -963,0 +985,13 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Second quic_len bounds check */
++  if(pn_offset >= packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
++  /* Ensure we have enough bytes for the second quic_len call */
++  if(pn_offset + 8 > packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
+@@ -1263,0 +1298,4 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
++    if(5 >= packet->payload_len) {
++      NDPI_LOG_DBG(ndpi_struct, "Packet too short for dest_conn_id_len\n");
++      return NULL;
++    }
+@@ -1270,0 +1309,5 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
++    // Bounds checking to prevent out-of-bounds read
++    if(6 >= packet->payload_len || 6 + dest_conn_id_len >= packet->payload_len) {
++      NDPI_LOG_DBG(ndpi_struct, "Invalid packet length for source_conn_id_len access\n");
++      return NULL;
++    }

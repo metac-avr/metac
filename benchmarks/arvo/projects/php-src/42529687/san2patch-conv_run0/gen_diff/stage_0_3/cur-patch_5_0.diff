@@ -1,0 +1,44 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..d362ccf4070 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1368 +1368 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
++return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+@@ -1376 +1376,2 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+@@ -1378 +1379,5 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	return GC_DELREF(Z_COUNTED_P(pz));
++	zend_refcounted *counted = Z_COUNTED_P(pz);
++	if (counted && counted != (zend_refcounted*)0xdeadbeef) {
++		return GC_DELREF(counted);
++	}
++	return 0;
+@@ -1383 +1388 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	do {												\
++	do {								\
+@@ -1385,3 +1390,3 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
++		Z_COUNTED_P(z) = gc;						\
++		z->value.ww.w2 = _w2;						\
++		Z_TYPE_INFO_P(z) = t;						\
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..0c06a800703 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35,2 +36,5 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && !((zend_uintptr_t)ref & 0x3) && ref != (zend_refcounted*)0x1) {
++			rc_dtor_func(ref);
++		}

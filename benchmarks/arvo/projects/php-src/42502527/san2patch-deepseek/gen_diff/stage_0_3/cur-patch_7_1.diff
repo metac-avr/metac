@@ -1,0 +1,34 @@
+diff --git a/Zend/zend_opcode.c b/Zend/zend_opcode.c
+index 38ba89db2ba..64162f7c2bd 100644
+--- a/Zend/zend_opcode.c
++++ b/Zend/zend_opcode.c
+@@ -1005,8 +1005,16 @@ ZEND_API void pass_two(zend_op_array *op_array)
+-	op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
+-		ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-		sizeof(zval) * op_array->last_literal);
+-	if (op_array->literals) {
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
+-		efree(op_array->literals);
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++	{
++		uint32_t required_size = op_array->last;
++		if (required_size < CG(context).opcodes_size) {
++			required_size = CG(context).opcodes_size;
++		}
++		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
++			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * required_size, 16) +
++			sizeof(zval) * op_array->last_literal);
++		if (op_array->literals) {
++			memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * required_size, 16),
++				op_array->literals, sizeof(zval) * op_array->last_literal);
++			efree(op_array->literals);
++			op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * required_size, 16));
++		}
++		CG(context).opcodes_size = required_size;
++		CG(context).literals_size = op_array->last_literal;
+@@ -1014,3 +1022 @@ ZEND_API void pass_two(zend_op_array *op_array)
+-	CG(context).opcodes_size = op_array->last;
+-	CG(context).literals_size = op_array->last_literal;
+-#endif
++#endif#endif

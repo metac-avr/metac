@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..de71575b8dc 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -41,0 +42 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++	if (zval_ptr == NULL) return;
+@@ -43,0 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++		if (ref == NULL) return;
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 733ce54dc24..3cf630f7867 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -5165 +5165 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-		if (iter) {
++		if (iter && iter->std.gc.refcount > 0) {  /* Check refcount before release */
+@@ -5179 +5179,3 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			if (iter && iter->std.gc.refcount > 0) {  /* Check refcount before release */
++				OBJ_RELEASE(&iter->std);
++			}
+@@ -5188 +5190,3 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-		OBJ_RELEASE(&iter->std);
++		if (iter && iter->std.gc.refcount > 0) {  /* Check refcount before release */
++			OBJ_RELEASE(&iter->std);
++		}

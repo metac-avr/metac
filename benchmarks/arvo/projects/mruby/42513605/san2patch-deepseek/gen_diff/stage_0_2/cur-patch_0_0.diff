@@ -1,0 +1,33 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..2e8d67c5b 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -83,6 +82,0 @@ mpz_clear(mrb_state *mrb, mpz_t *s)
+-    mrb_free(mrb, s->p);
+-  s->p=NULL;
+-  s->sn=0;
+-  s->sz=0;
+-}
+-
+@@ -91 +85,2 @@ digits(mpz_t *x)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
+@@ -93,12 +88,5 @@ digits(mpz_t *x)
+-  for (i = (x->sz) - 1; (x->p)[i] == 0 ; i--)
+-    if (i == 0) break;
+-  return i+1;
+-}
+-
+-/* y = x */
+-static void
+-mpz_set(mrb_state *mrb, mpz_t *y, mpz_t *x)
+-{
+-  size_t i,k = x->sz;
+-
+-  mpz_realloc(mrb, y, (size_t)k);
++  if (x->sz <= 0) return 0;
++  for (i = (size_t)x->sz - 1; (x->p)[i] == 0 && i > 0; i--)
++    ;
++  return (x->p)[i] == 0 ? 0 : i+1;
++}  mpz_realloc(mrb, y, (size_t)k);

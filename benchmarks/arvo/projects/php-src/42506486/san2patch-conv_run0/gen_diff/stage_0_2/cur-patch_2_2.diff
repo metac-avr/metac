@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..fe1025dca7d 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272,12 +272,8 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+-	/* No PHP callback functions should be called after this point. */
+-	EG(active) = 0;
+-
+-	if (!fast_shutdown) {
+-		zend_hash_graceful_reverse_destroy(&EG(symbol_table));
+-
+-		/* Constants may contain objects, destroy them before the object store. */
+-		if (EG(full_tables_cleanup)) {
+-			zend_hash_reverse_apply(EG(zend_constants), clean_non_persistent_constant_full);
+-		} else {
+-			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
++void zend_clean_module_constants(int module_number, int full_cleanup)
++{
++	if (full_cleanup) {
++		zend_hash_reverse_apply(EG(zend_constants), clean_non_persistent_constant_full);
++	} else {
++		zend_hash_reverse_apply(EG(zend_constants), clean_non_persistent_constant);
++	}
++}			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..e1ba25132c4 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -41 +41 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {

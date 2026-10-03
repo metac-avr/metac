@@ -1,0 +1,33 @@
+diff --git a/parser.c b/parser.c
+index 14288713..83048621 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4971,9 +4971,14 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-
+-	q = r;
+-	ql = rl;
+-	r = cur;
+-	rl = l;
+-
+-	NEXTL(l);
+-	cur = CUR_CHAR(l);
+-
++    q = r;
++    ql = rl;
++    r = cur;
++    rl = l;
++
++    NEXTL(l);
++    if (len < size - 1) {
++        cur = CUR_CHAR(l);
++    } else {
++        cur = 0;
++        goto error_return;
++    }
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
+@@ -4987,2 +4992,2 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-	xmlFatalErrMsgStr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
+-	                     "Comment not terminated \n<!--%.50s\n", buf);
++    xmlFatalErrMsgStr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
++                         "Comment not terminated \n<!--%.50s\n", buf);

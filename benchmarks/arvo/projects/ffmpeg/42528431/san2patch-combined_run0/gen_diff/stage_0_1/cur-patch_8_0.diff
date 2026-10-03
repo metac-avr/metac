@@ -1,0 +1,27 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..8ac51031f4 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1222 +1222 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        uint8_t temp;
++        uint8_t temp = 0;
+@@ -1232,7 +1232,12 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        temp = rest ? *pos : *pos & MAX_UINT_BITS(8 - data_bit_start % 8);
+-
+-        av_assert0(temp);
+-        i = ff_ctz(*pos);
+-        temp = temp >> i;
+-        i = rest ? (8 - i) : (8 - i - data_bit_start % 8);
+-        put_bits(pbc, i, temp);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         if (pos && rest >= 0) {
++             temp = rest ? *pos : *pos & MAX_UINT_BITS(8 - data_bit_start % 8);
++         }
++
++        if (temp) {
++            av_assert0(temp);
++            i = ff_ctz(*pos ? *pos : 1);
++            temp = temp >> i;
++            i = rest ? (8 - i) : (8 - i - data_bit_start % 8);
++            put_bits(pbc, i, temp);
++        }

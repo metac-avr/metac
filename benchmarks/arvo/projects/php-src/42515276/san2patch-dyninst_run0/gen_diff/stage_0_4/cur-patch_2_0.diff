@@ -1,0 +1,50 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index 229d9890251..10b96d94933 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267,0 +2268,2 @@ static void update_errors_warnings(timelib_error_container *last_errors) /* {{{
++	timelib_error_container *temp_errors = last_errors;
++	
+@@ -2272,4 +2274,6 @@ static void update_errors_warnings(timelib_error_container *last_errors) /* {{{
+-	if (last_errors->warning_count || last_errors->error_count) {
+-		DATEG(last_errors) = last_errors;
+-	} else {
+-		timelib_error_container_dtor(last_errors);
++	if (temp_errors && (temp_errors->warning_count || temp_errors->error_count)) {
++		DATEG(last_errors) = temp_errors;
++	} else if (temp_errors) {
++		timelib_error_container_dtor(temp_errors);
++		temp_errors = NULL; /* Clear temporary pointer */
++		last_errors = NULL; /* Also clear original pointer to prevent UAF */
+@@ -2320,2 +2324,2 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-			time_str = "now";
+-			time_str_len = sizeof("now") - 1;
++		time_str = "now";
++		time_str_len = sizeof("now") - 1;
+@@ -2328,8 +2332,13 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-
+-	/* If called from a constructor throw an exception */
+-	if ((flags & PHP_DATE_INIT_CTOR) && err && err->error_count) {
+-		/* spit out the first library error message, at least */
+-		zend_throw_exception_ex(NULL, 0, "Failed to parse time string (%s) at position %d (%c): %s", time_str,
+-			err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
+-	}
+-	if (err && err->error_count) {
++	/* Prevent use-after-free by checking err validity */
++	if (err && (flags & PHP_DATE_INIT_CTOR)) {
++		if (err->error_count) {
++			/* spit out the first library error message, at least */
++			zend_throw_exception_ex(NULL, 0, "Failed to parse time string (%s) at position %d (%c): %s", time_str,
++				err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
++		}
++		if (err->error_count) {
++			timelib_time_dtor(dateobj->time);
++			dateobj->time = 0;
++			return 0;
++		}
++	} else if (err && err->error_count) {
+@@ -2339,3 +2348 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	}
+-
+-	if (timezone_object) {
++	}	if (timezone_object) {

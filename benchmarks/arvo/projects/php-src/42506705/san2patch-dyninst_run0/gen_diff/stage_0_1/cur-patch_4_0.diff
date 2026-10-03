@@ -1,0 +1,30 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..9a1e12a62c7 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -427 +427,9 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-	ZVAL_COPY_DEREF(result, retval);
++	if (GC_DELREF(ht) == 0) {
++		GC_ADDREF(ht);
++		ZVAL_COPY_DEREF(result, retval);
++		GC_DELREF(ht);
++	} else {
++		GC_ADDREF(ht);
++		ZVAL_COPY_DEREF(result, retval);
++		GC_DELREF(ht);
++	}
+@@ -429 +437,2 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -432 +441,9 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-	ZVAL_COPY_DEREF(result, retval);
++	if (GC_DELREF(ht) == 0) {
++		GC_ADDREF(ht);
++		ZVAL_COPY_DEREF(result, retval);
++		GC_DELREF(ht);
++	} else {
++		GC_ADDREF(ht);
++		ZVAL_COPY_DEREF(result, retval);
++		GC_DELREF(ht);
++	}

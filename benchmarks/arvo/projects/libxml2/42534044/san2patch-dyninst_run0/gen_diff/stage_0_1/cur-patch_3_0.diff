@@ -1,0 +1,29 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..72526fbc 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1687 +1687,2 @@ xmlNewPropInternal(xmlNodePtr node, xmlNsPtr ns,
+-        xmlNodePtr tmp;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++         xmlNodePtr tmp;
+@@ -1695,3 +1696,5 @@ xmlNewPropInternal(xmlNodePtr node, xmlNsPtr ns,
+-            tmp->parent = (xmlNodePtr) cur;
+-            if (tmp->next == NULL)
+-                cur->last = tmp;
++            if (tmp->type == XML_TEXT_NODE || tmp->type == XML_CDATA_SECTION_NODE) {
++                tmp->parent = (xmlNodePtr) cur;
++                if (tmp->next == NULL)
++                    cur->last = tmp;
++            }
+@@ -6882 +6885 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6884,2 +6887,6 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	prop->children = NULL;
+-	prop->last = NULL;
++	    prop->children = NULL;
++	    prop->last = NULL;
++	} else {
++	    prop->children = NULL;
++	    prop->last = NULL;
++	}

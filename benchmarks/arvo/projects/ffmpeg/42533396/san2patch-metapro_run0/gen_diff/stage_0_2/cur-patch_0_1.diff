@@ -1,0 +1,26 @@
+diff --git a/libavcodec/codec_par.c b/libavcodec/codec_par.c
+index abaac63841..144606c90c 100644
+--- a/libavcodec/codec_par.c
++++ b/libavcodec/codec_par.c
+@@ -271 +271 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        } else {
++         } else {
+@@ -273 +273,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++        // Validate channel layout before copying to prevent buffer overflow
++        if (par->ch_layout.nb_channels > 64 || par->ch_layout.order > AV_CHANNEL_ORDER_CUSTOM) {
++            av_log(codec, AV_LOG_WARNING, "Invalid channel layout parameters detected\n");
++            codec->ch_layout = (AVChannelLayout){0};
++            ret = 0;
++        } else {
++            ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++        }
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..3249632403 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -405,2 +405,2 @@ int av_channel_layout_custom_init(AVChannelLayout *channel_layout, int nb_channe
+-    if (nb_channels <= 0)
+-        return AVERROR(EINVAL);
++    if (nb_channels <= 0 || nb_channels > 64)  // Added upper bound check to prevent excessive allocation
++         return AVERROR(EINVAL);

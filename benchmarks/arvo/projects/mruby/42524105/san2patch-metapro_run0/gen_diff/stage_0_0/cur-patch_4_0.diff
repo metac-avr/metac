@@ -1,0 +1,38 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..3dcad030f 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -139,0 +140,2 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
++  struct RString *str_obj;
++  
+@@ -141 +143,3 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-    return str_init_embed(mrb_obj_alloc_string(mrb), p, len);
++    str_obj = mrb_obj_alloc_string(mrb);
++    if (str_obj == NULL) return NULL;
++    return str_init_embed(str_obj, p, len);
+@@ -144 +148,3 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-    return str_init_nofree(mrb_obj_alloc_string(mrb), p, len);
++    str_obj = mrb_obj_alloc_string(mrb);
++    if (str_obj == NULL) return NULL;
++    return str_init_nofree(str_obj, p, len);
+@@ -146 +152,3 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-  return str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++  str_obj = mrb_obj_alloc_string(mrb);
++  if (str_obj == NULL) return NULL;
++  return str_init_normal(mrb, str_obj, p, len);
+@@ -211,0 +220,6 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
++  // Validate pointer before use
++  if (!shared) return;
++  
++  // Check if already freed to prevent double free
++  if (shared->refcnt <= 0) return;
++  
+@@ -214 +228,5 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-    mrb_free(mrb, shared->ptr);
++    // Additional null check before freeing
++    if (shared->ptr) {
++      mrb_free(mrb, shared->ptr);
++      shared->ptr = NULL; // Clear pointer after freeing
++    }
+@@ -224 +241,0 @@ str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
+-

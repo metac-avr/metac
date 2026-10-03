@@ -1,0 +1,34 @@
+diff --git a/libavformat/jpegxl_probe.c b/libavformat/jpegxl_probe.c
+index a3845b037d..5167904940 100644
+--- a/libavformat/jpegxl_probe.c
++++ b/libavformat/jpegxl_probe.c
+@@ -376,2 +376,5 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-        if (xyb_encoded && !jxl_bits(1))
+-            jxl_bits_skip(16 * 16);
++        if (xyb_encoded && !jxl_bits(1)) {
++            int bits_needed = 16 * 16;
++            if (get_bits_count(&gb) + bits_needed > buflen * 8) return -1;
++            jxl_bits_skip(bits_needed);
++        }
+@@ -379,6 +382,15 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-        if (jxl_bits(1))
+-            jxl_bits_skip(16 * 15);
+-        if (jxl_bits(1))
+-            jxl_bits_skip(16 * 55);
+-        if (jxl_bits(1))
+-            jxl_bits_skip(16 * 210);
++        if (jxl_bits(1)) {
++            int bits_needed = 16 * 15;
++            if (get_bits_count(&gb) + bits_needed > buflen * 8) return -1;
++            jxl_bits_skip(bits_needed);
++        }
++        if (jxl_bits(1)) {
++            int bits_needed = 16 * 55;
++            if (get_bits_count(&gb) + bits_needed > buflen * 8) return -1;
++            jxl_bits_skip(bits_needed);
++        }
++        if (jxl_bits(1)) {
++            int bits_needed = 16 * 210;
++            if (get_bits_count(&gb) + bits_needed > buflen * 8) return -1;
++            jxl_bits_skip(bits_needed);
++        }

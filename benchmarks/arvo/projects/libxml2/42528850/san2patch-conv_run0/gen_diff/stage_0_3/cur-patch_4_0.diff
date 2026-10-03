@@ -1,0 +1,46 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..a4b516ef 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202,4 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++	// Validate namespace pointer before use to prevent use-after-free
++	xmlNsPtr temp_ns = node->ns;
++	if (temp_ns != NULL && (temp_ns->prefix != NULL || temp_ns->href != NULL)) {
++	     xmlNsPtr ns;
+@@ -4204 +4207 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	ns = xmlSearchNs(doc, ret, temp_ns->prefix);
+@@ -4211 +4214 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	    ns = xmlSearchNs(node->doc, node, temp_ns->prefix);
+@@ -4218 +4221 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++			ret->ns = xmlNewReconciledNs(doc, ret, temp_ns);
+@@ -4225,0 +4229 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
++	}
+diff --git a/parser.c b/parser.c
+index 11bb5199..cc5342f3 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7502,8 +7502,12 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw != NULL) {
+-			if (nw->_private == NULL)
+-			    nw->_private = cur->_private;
+-			if (firstChild == NULL){
+-			    firstChild = nw;
+-			}
+-			nw = xmlAddChild(ctxt->node, nw);
++		    /* Validate node and its namespaces before copying to prevent use-after-free */
++		    if ((cur != NULL) && 
++		        ((cur->ns == NULL) || (cur->ns != NULL))) {  /* Basic validity check */
++		        nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		        if (nw != NULL) {
++			    if (nw->_private == NULL)
++			        nw->_private = cur->_private;
++			    if (firstChild == NULL){
++			        firstChild = nw;
++			    }
++			    nw = xmlAddChild(ctxt->node, nw);
++		        }

@@ -1,0 +1,29 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..80d4585d0 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -988 +988,2 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
+@@ -989,0 +991,18 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
++  if (len < 0 || x == NULL) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid string");
++  }
++  if (len > 0) {
++    mrb_int i = (x[0] == '+' || x[0] == '-') ? 1 : 0;
++    if (i == len) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid string");
++    }
++    while (i < len) {
++      unsigned char c = (unsigned char)x[i];
++      if (!((c >= '0' && c <= '9') ||
++            (c >= 'a' && c <= 'z') ||
++            (c >= 'A' && c <= 'Z'))) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid string");
++      }
++      i++;
++    }
++  }
+@@ -1000,0 +1020 @@ bint_norm(mrb_state *mrb, struct RBigint *b)
++

@@ -1,0 +1,30 @@
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index 6ea6c46d8f..e63e79430f 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -187 +187,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     }
+@@ -201,0 +203,3 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    if (get_bits_left(gb) < 2)
++        return AVERROR_INVALIDDATA;
+@@ -202,0 +207,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    if (get_bits_left(gb) < (const uint32_t[]){0, 0, 10, 30}[ctrl])
++        return AVERROR_INVALIDDATA;
+@@ -203,0 +210,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    if (get_bits_left(gb) < 2)
++        return AVERROR_INVALIDDATA;
+@@ -204,0 +213,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    if (get_bits_left(gb) < (const uint32_t[]){0, 0, 8, 10}[ctrl])
++        return AVERROR_INVALIDDATA;
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index 65dc080ddb..ada8c67b35 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -328 +328,3 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
+-    OPEN_READER(re, s);
++    if (n <= 0 || n > 25) return 0;
++    if (s->index + ((n + 7) >> 3) > s->buffer_end) return 0;
++     OPEN_READER(re, s);

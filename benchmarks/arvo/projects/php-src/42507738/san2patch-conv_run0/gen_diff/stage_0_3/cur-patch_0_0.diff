@@ -1,0 +1,12 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 797ac66c96d..a6989fb083f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40110 +40110,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_OBJ_W_SPEC_CV_CONST_HAND
+-	property = RT_CONSTANT(opline, opline->op2);
++	// Check if container object is still valid before accessing properties
++	if (UNEXPECTED(Z_TYPE_P(container) == IS_OBJECT && !Z_OBJ_HT_P(container))) {
++		zend_error(E_ERROR, "Cannot access property of destroyed object");
++		ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++	}
++  	property = RT_CONSTANT(opline, opline->op2);

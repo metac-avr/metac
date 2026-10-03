@@ -1,0 +1,33 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..9c7282d39 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -431,0 +432,10 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
++					// Create a copy of packet data before clearing the stream
++					char *packet_copy = NULL;
++					u32 packet_size = 0;
++					if (oggpacket.packet && oggpacket.bytes > 0) {
++						packet_size = oggpacket.bytes;
++						packet_copy = gf_malloc(packet_size);
++						if (packet_copy) {
++							memcpy(packet_copy, oggpacket.packet, packet_size);
++						}
++					}
+@@ -432,0 +443,4 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
++					// Free the packet copy after use
++					if (packet_copy) {
++						gf_free(packet_copy);
++					}
+@@ -438 +452,2 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-				}
++// FIXME: Crash CWE-416: Use After Free
++ 				}
+@@ -712 +726,0 @@ static void oggdmx_parse_tags(GF_Filter *filter, GF_OGGStream *st, u8 *data, u32
+-
+@@ -720 +734,2 @@ GF_Err oggdmx_process(GF_Filter *filter)
+-
++	// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -721,0 +737,2 @@ GF_Err oggdmx_process(GF_Filter *filter)
++	// Create a copy of stream information before calling oggdmx_check_dur
++	// to prevent use-after-free when ogg_stream_clear is called internally

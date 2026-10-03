@@ -1,0 +1,20 @@
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index 0f2f5aa8d..51f3d0625 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -7538,3 +7538,4 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-	s32 poc_lt_curr[16];
+-	for (i=0; i < rps->num_negative_pics; i++) {
+-		if (!rps->used_by_curr_pic[i]) continue;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	s32 poc_lt_curr[16];
++	for (i=0; i < rps->num_negative_pics && i < sizeof(poc_st_curr0)/sizeof(poc_st_curr0[0]); i++) {
++		if (i >= sizeof(rps->used_by_curr_pic)/sizeof(rps->used_by_curr_pic[0]) || !rps->used_by_curr_pic[i]) continue;
+@@ -7545,2 +7546,2 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-	for (; i < rps->num_negative_pics+rps->num_positive_pics; i++) {
+-		if (!rps->used_by_curr_pic[i]) continue;
++	for (; i < rps->num_negative_pics+rps->num_positive_pics && i < sizeof(poc_st_curr1)/sizeof(poc_st_curr1[0]); i++) {
++		if (i >= sizeof(rps->used_by_curr_pic)/sizeof(rps->used_by_curr_pic[0]) || !rps->used_by_curr_pic[i]) continue;
+@@ -7554 +7555 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		if (!rps->used_by_curr_pic[i]) continue;
++		if (i >= sizeof(poc_lt_curr)/sizeof(poc_lt_curr[0]) || i >= sizeof(rps->used_by_curr_pic)/sizeof(rps->used_by_curr_pic[0]) || !rps->used_by_curr_pic[i]) continue;

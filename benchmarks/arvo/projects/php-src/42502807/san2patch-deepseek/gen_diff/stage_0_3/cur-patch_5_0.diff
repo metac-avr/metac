@@ -1,0 +1,22 @@
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index c9d23d11b7d..d5099cff8ab 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -1077,3 +1077,5 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-			sizeof(zval) * op_array->last_literal);
++		zend_uint required_size = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) + sizeof(zval) * op_array->last_literal;
++		if (required_size <= ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16)) {
++			zend_error_noreturn(E_ERROR, "Integer overflow in op_array reallocation");
++		}
++		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes, required_size);
+@@ -1188,3 +1190,5 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes,
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
+-			sizeof(zval) * op_array->last_literal);
++		zend_uint required_size = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) + sizeof(zval) * op_array->last_literal;
++		if (required_size <= ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16)) {
++			zend_error_noreturn(E_ERROR, "Integer overflow in op_array reallocation");
++		}
++		op_array->opcodes = (zend_op *) erealloc(op_array->opcodes, required_size);

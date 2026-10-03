@@ -1,0 +1,39 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..352d4a3e 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2148 +2148,3 @@ xmlXIncludeLoadNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		((xmlStrEqual(children->ns->href, XINCLUDE_NS)) ||
++		(children->ns->href != NULL) &&
++// FIXME: Crash CWE-416: Use After Free
++ 		((xmlStrEqual(children->ns->href, XINCLUDE_NS)) ||
+diff --git a/tree.c b/tree.c
+index 8077348a..fc98a72a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699,12 +3699,13 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
+-	return;
+-    }
+-    if (cur->doc != NULL) dict = cur->doc->dict;
+-    while (1) {
+-        while ((cur->children != NULL) &&
+-               (cur->type != XML_DOCUMENT_NODE) &&
+-               (cur->type != XML_HTML_DOCUMENT_NODE) &&
+-               (cur->type != XML_DTD_NODE) &&
+-               (cur->type != XML_ENTITY_REF_NODE)) {
+-            cur = cur->children;
+-            depth += 1;
++    xmlFreeNsList((xmlNsPtr) cur);
++    return;
++}
++// Fixed: Added null check to prevent use-after-free
++if (cur == NULL) return;
++if (cur->doc != NULL) dict = cur->doc->dict;
++while (1) {
++    while ((cur->children != NULL) &&
++           (cur->type != XML_DOCUMENT_NODE) &&
++           (cur->type != XML_HTML_DOCUMENT_NODE) &&
++           (cur->type != XML_DTD_NODE) &&
++           (cur->type != XML_ENTITY_REF_NODE)) {
++        cur = cur->children;            depth += 1;

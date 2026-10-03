@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..8d9093f2a80 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,9 +1172,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
+-	}
+-}
+-
+@@ -1184,0 +1176 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if ((p->u.type_info & GC_HAS_DESTRUCTOR) && p->refcount == 1) return 0; // Avoid UAF on objects with destructors
+@@ -1186,9 +1178 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..90dbf4eeca1 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30065 +30065,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++			/* Add null check to prevent use-after-free */
++			if (EX_VAR((opline+1)->op1.var)) {
++				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++			}
+@@ -49652 +49655,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++			/* Add null check to prevent use-after-free */
++			if (EX_VAR((opline+1)->op1.var)) {
++				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++			}

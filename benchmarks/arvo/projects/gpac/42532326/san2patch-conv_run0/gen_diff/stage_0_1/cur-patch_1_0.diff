@@ -1,0 +1,158 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..0d22dd837 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -130 +130,2 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -132,10 +133,12 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-	if ((oggpacket->bytes >= 7) && !strncmp((char *) &oggpacket->packet[1], "vorbis", 6)) {
+-		info->streamType = GF_STREAM_AUDIO;
+-		oggpack_readinit(&opb, oggpacket->packet, oggpacket->bytes);
+-		oggpack_adv( &opb, 88);
+-		info->nb_chan = oggpack_read( &opb, 8);	/*nb chan*/
+-		info->sample_rate = oggpack_read(&opb, 32);
+-		oggpack_adv( &opb, 32);	/*max rate*/
+-		info->bitrate = oggpack_read(&opb, 32);
+-		info->num_init_headers = 3;
+-		info->type = GF_CODECID_VORBIS;
++	if (oggpacket && oggpacket->packet && oggpacket->bytes >= 7) {
++		if (!strncmp((char *) &oggpacket->packet[1], "vorbis", 6)) {
++			info->streamType = GF_STREAM_AUDIO;
++			oggpack_readinit(&opb, oggpacket->packet, oggpacket->bytes);
++			oggpack_adv( &opb, 88);
++			info->nb_chan = oggpack_read( &opb, 8);	/*nb chan*/
++			info->sample_rate = oggpack_read(&opb, 32);
++			oggpack_adv( &opb, 32);	/*max rate*/
++			info->bitrate = oggpack_read(&opb, 32);
++			info->num_init_headers = 3;
++			info->type = GF_CODECID_VORBIS;
++		}
+@@ -144,9 +147,11 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-	else if ((oggpacket->bytes >= 7) && !strncmp((char *) &oggpacket->packet[0], "Speex", 5)) {
+-		info->streamType = GF_STREAM_AUDIO;
+-		oggpack_readinit(&opb, oggpacket->packet, oggpacket->bytes);
+-		oggpack_adv(&opb, 224);
+-		oggpack_adv(&opb, 32);
+-		oggpack_adv( &opb, 32);
+-		info->sample_rate = oggpack_read(&opb, 32);
+-		info->type = GF_CODECID_SPEEX;
+-		info->num_init_headers = 1;
++	else if (oggpacket && oggpacket->packet && oggpacket->bytes >= 7) {
++		if (!strncmp((char *) &oggpacket->packet[0], "Speex", 5)) {
++			info->streamType = GF_STREAM_AUDIO;
++			oggpack_readinit(&opb, oggpacket->packet, oggpacket->bytes);
++			oggpack_adv(&opb, 224);
++			oggpack_adv(&opb, 32);
++			oggpack_adv( &opb, 32);
++			info->sample_rate = oggpack_read(&opb, 32);
++			info->type = GF_CODECID_SPEEX;
++			info->num_init_headers = 1;
++		}
+@@ -155,4 +160,6 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-	else if ((oggpacket->bytes >= 4) && !strncmp((char *) &oggpacket->packet[0], "fLaC", 4)) {
+-		info->streamType = GF_STREAM_AUDIO;
+-		info->type = GF_CODECID_FLAC;
+-		info->num_init_headers = 3;
++	else if (oggpacket && oggpacket->packet && oggpacket->bytes >= 4) {
++		if (!strncmp((char *) &oggpacket->packet[0], "fLaC", 4)) {
++			info->streamType = GF_STREAM_AUDIO;
++			info->type = GF_CODECID_FLAC;
++			info->num_init_headers = 3;
++		}
+@@ -161,5 +168,7 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-	else if ((oggpacket->bytes >= 8) && !strncmp((char *) &oggpacket->packet[0], "OpusHead", 8)) {
+-		info->streamType = GF_STREAM_AUDIO;
+-		info->type = GF_CODECID_OPUS;
+-		info->num_init_headers = 1;
+-		info->sample_rate = 48000;
++	else if (oggpacket && oggpacket->packet && oggpacket->bytes >= 8) {
++		if (!strncmp((char *) &oggpacket->packet[0], "OpusHead", 8)) {
++			info->streamType = GF_STREAM_AUDIO;
++			info->type = GF_CODECID_OPUS;
++			info->num_init_headers = 1;
++			info->sample_rate = 48000;
++		}
+@@ -168,37 +177,41 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-	else if ((oggpacket->bytes >= 7) && !strncmp((char *) &oggpacket->packet[1], "theora", 6)) {
+-		GF_BitStream *bs;
+-		u32 keyframe_freq_force;
+-
+-		info->streamType = GF_STREAM_VISUAL;
+-		info->type = GF_CODECID_THEORA;
+-		bs = gf_bs_new((char *) oggpacket->packet, oggpacket->bytes, GF_BITSTREAM_READ);
+-		gf_bs_read_int(bs, 56);
+-		gf_bs_read_int(bs, 8); /* major version num */
+-		gf_bs_read_int(bs, 8); /* minor version num */
+-		gf_bs_read_int(bs, 8); /* subminor version num */
+-		info->width = gf_bs_read_int(bs, 16) << 4; /* width */
+-		info->height = gf_bs_read_int(bs, 16) << 4; /* height */
+-		gf_bs_read_int(bs, 24); /* frame width */
+-		gf_bs_read_int(bs, 24); /* frame height */
+-		gf_bs_read_int(bs, 8); /* x offset */
+-		gf_bs_read_int(bs, 8); /* y offset */
+-		info->frame_rate.den = gf_bs_read_u32(bs);
+-		info->frame_rate.num = gf_bs_read_u32(bs);
+-		info->sar.num = gf_bs_read_int(bs, 24); /* aspect_numerator */
+-		info->sar.den =gf_bs_read_int(bs, 24); /* aspect_denominator */
+-		gf_bs_read_int(bs, 8); /* colorspace */
+-		info->bitrate = gf_bs_read_int(bs, 24);/* bitrate */
+-		gf_bs_read_int(bs, 6); /* quality */
+-
+-		/*patch for compatibility with old arch*/
+-		if ((info->frame_rate.den==25025) && (info->frame_rate.num==1001) ) {
+-			info->frame_rate.den = 25000;
+-			info->frame_rate.num = 1000;
+-		}
+-
+-		keyframe_freq_force = 1 << gf_bs_read_int(bs, 5);
+-		info->theora_kgs = 0;
+-		keyframe_freq_force--;
+-		while (keyframe_freq_force) {
+-			info->theora_kgs ++;
+-			keyframe_freq_force >>= 1;
++	else if (oggpacket && oggpacket->packet && oggpacket->bytes >= 7) {
++		if (!strncmp((char *) &oggpacket->packet[1], "theora", 6)) {
++			GF_BitStream *bs;
++			u32 keyframe_freq_force;
++
++			info->streamType = GF_STREAM_VISUAL;
++			info->type = GF_CODECID_THEORA;
++			bs = gf_bs_new((char *) oggpacket->packet, oggpacket->bytes, GF_BITSTREAM_READ);
++			gf_bs_read_int(bs, 56);
++			gf_bs_read_int(bs, 8); /* major version num */
++			gf_bs_read_int(bs, 8); /* minor version num */
++			gf_bs_read_int(bs, 8); /* subminor version num */
++			info->width = gf_bs_read_int(bs, 16) << 4; /* width */
++			info->height = gf_bs_read_int(bs, 16) << 4; /* height */
++			gf_bs_read_int(bs, 24); /* frame width */
++			gf_bs_read_int(bs, 24); /* frame height */
++			gf_bs_read_int(bs, 8); /* x offset */
++			gf_bs_read_int(bs, 8); /* y offset */
++			info->frame_rate.den = gf_bs_read_u32(bs);
++			info->frame_rate.num = gf_bs_read_u32(bs);
++			info->sar.num = gf_bs_read_int(bs, 24); /* aspect_numerator */
++			info->sar.den =gf_bs_read_int(bs, 24); /* aspect_denominator */
++			gf_bs_read_int(bs, 8); /* colorspace */
++			info->bitrate = gf_bs_read_int(bs, 24);/* bitrate */
++			gf_bs_read_int(bs, 6); /* quality */
++
++			/*patch for compatibility with old arch*/
++			if ((info->frame_rate.den==25025) && (info->frame_rate.num==1001) ) {
++				info->frame_rate.den = 25000;
++				info->frame_rate.num = 1000;
++			}
++
++			keyframe_freq_force = 1 << gf_bs_read_int(bs, 5);
++			info->theora_kgs = 0;
++			keyframe_freq_force--;
++			while (keyframe_freq_force) {
++				info->theora_kgs ++;
++				keyframe_freq_force >>= 1;
++			}
++			info->num_init_headers = 3;
++			gf_bs_del(bs);
+@@ -206,2 +218,0 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
+-		info->num_init_headers = 3;
+-		gf_bs_del(bs);

@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..e9036934c75 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1376,0 +1377,4 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++	/* Synchronize garbage collection before memory deallocation */
++	if (Z_GC_TYPE(p->val) != 0) {
++		zend_gc_delref(Z_COUNTED(p->val));
++	}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..c7d4844be11 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -275 +274 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
++	/* Run garbage collection cycle and reset before hash table destruction */
+@@ -276,0 +276,2 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
++		zend_gc_collect_cycles();
++		zend_gc_reset();
+@@ -282,2 +283 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-		} else {
+-			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
++		} else {			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {

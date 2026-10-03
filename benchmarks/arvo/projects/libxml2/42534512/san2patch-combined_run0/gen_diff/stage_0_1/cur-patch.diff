@@ -1,0 +1,40 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..02bf276e 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3637,0 +3638,7 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Zero out critical fields before freeing to prevent dangling pointers */
++	    memset(&(cur->properties), 0, sizeof(cur->properties));
++	    memset(&(cur->nsDef), 0, sizeof(cur->nsDef));
++	    memset(&(cur->content), 0, sizeof(cur->content));
++	    memset(&(cur->name), 0, sizeof(cur->name));
++	    
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 10b4b0cd..ce5bb382 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -601,6 +600,0 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
+-        return 0;
+-
+-    return ((1 << child->type) & CHILD_MASK_DTD) != 0;
+-}
+-
+@@ -611 +605,4 @@ nodeGetTree(xmlNodePtr node) {
+-    while (cur->parent)
++    if (cur == NULL)
++        return NULL;
++
++    while (cur && cur->parent)
+@@ -614,9 +611 @@ nodeGetTree(xmlNodePtr node) {
+-}
+-
+-/*
+- * This function is called whenever a reference to a node is removed.
+- * It checks whether the node is still reachable and frees unreferenced
+- * nodes.
+- *
+- * A node is reachable if its tree, identified by the root node,
+- * is reachable. If a non-document tree is unreachable, it can be
++} * is reachable. If a non-document tree is unreachable, it can be

@@ -1,0 +1,22 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..0df6d83ab4 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -465 +464,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-
+@@ -468,2 +467,5 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-                    memcpy(s->frame->data[0] + x, s->keyframe + x,
+-                           cur_blk_width * 3);
++                    // Defensive check for valid memory pointers
++                    if (s->keyframe && s->frame->data[0]) {
++                        memcpy(s->frame->data[0] + x, s->keyframe + x,
++                               cur_blk_width * 3);
++                    }
+@@ -473 +475,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-            /* skip unchanged blocks, which have size 0 */
++// FIXME: Crash CWE-416: Use After Free
++             /* skip unchanged blocks, which have size 0 */
+@@ -485,2 +488 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if (!s->keyframe) {
+-            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);
++        if (!s->keyframe) {            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);

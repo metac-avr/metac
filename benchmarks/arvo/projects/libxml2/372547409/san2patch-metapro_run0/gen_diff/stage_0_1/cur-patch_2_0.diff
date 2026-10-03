@@ -1,0 +1,61 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..21eeb922 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1866 +1865,0 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-
+@@ -1874 +1873,2 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-static void
++// Fixed CWE-416: Use After Free by implementing reference tracking
++ static void
+@@ -1876 +1876,8 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeAttribute((xmlAttributePtr) attr);
++    xmlAttributePtr attrPtr = (xmlAttributePtr) attr;
++    /* Check if attribute is still referenced */
++    if (attrPtr != NULL && attrPtr->nexthash == NULL) {
++        xmlFreeAttribute(attrPtr);
++    } else if (attrPtr != NULL) {
++        /* Mark as pending deletion instead of immediate free */
++        attrPtr->atype = (xmlAttributeType)(-1); /* Invalid type marker */
++    }
+@@ -1886,2 +1893 @@ void
+-xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++xmlFreeAttributeTable(xmlAttributeTablePtr table) {    xmlHashFree(table, xmlFreeAttributeTableEntry);
+@@ -5982,7 +5987,0 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
+-
+@@ -5990,13 +5989,15 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    attr = elemDecl->attributes;
+-    while (attr != NULL) {
+-	if (attr->def == XML_ATTRIBUTE_REQUIRED) {
+-	    int qualified = -1;
+-
+-	    if ((attr->prefix == NULL) &&
+-		(xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
+-		xmlNsPtr ns;
+-
+-		ns = elem->nsDef;
+-		while (ns != NULL) {
+-		    if (ns->prefix == NULL)
+-			goto found;
++// FIXME: Crash CWE-416: Use After Free
++    if (elemDecl && elemDecl->attributes) {
++	attr = elemDecl->attributes;
++	while (attr != NULL) {
++	    if (attr->def == XML_ATTRIBUTE_REQUIRED) {
++		int qualified = -1;
++
++		if ((attr->prefix == NULL) &&
++		    (xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
++		    xmlNsPtr ns;
++
++		    ns = elem->nsDef;
++		    while (ns != NULL) {
++		        if (ns->prefix == NULL)
++			    goto found;

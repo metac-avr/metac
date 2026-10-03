@@ -1,0 +1,28 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..4ff17719990 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267 +2267,2 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-{
++// Fixed CWE-825: Expired Pointer Dereference - Added null checks before pointer access
++ {
+@@ -2278 +2279,3 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-		DATEG(last_errors) = *last_errors;
++		if (DATEG(last_errors) == NULL) {  // Prevent reassignment to already freed pointer
++			DATEG(last_errors) = *last_errors;
++		}
+@@ -2281 +2284,3 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-	timelib_error_container_dtor(*last_errors);
++	if (*last_errors != NULL) {  // Double-check before calling dtor
++		timelib_error_container_dtor(*last_errors);
++	}
+@@ -2506 +2511 @@ PHP_METHOD(DateTime, __construct)
+-	zval *timezone_object = NULL;
++zval *timezone_object = NULL;
+@@ -2513,0 +2519,4 @@ PHP_METHOD(DateTime, __construct)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++	if (DATEG(last_errors) && *DATEG(last_errors)) {
++		timelib_error_container_dtor(DATEG(last_errors));
++	}
+@@ -2526 +2534,0 @@ PHP_METHOD(DateTimeImmutable, __construct)
+-

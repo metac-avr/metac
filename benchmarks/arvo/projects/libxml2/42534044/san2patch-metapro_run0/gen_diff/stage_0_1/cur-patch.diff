@@ -1,0 +1,54 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..ff8ad841 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3611,2 +3611,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->properties != NULL))
+-		xmlFreePropList(cur->properties);
++		(cur->properties != NULL)) {
++		xmlAttrPtr temp_props = cur->properties;
++		cur->properties = NULL;  /* Prevent dangling pointer */
++		xmlFreePropList(temp_props);
++	    }
+@@ -3618 +3621,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		DICT_FREE(cur->content)
++		xmlChar *temp_content = cur->content;
++		cur->content = NULL;  /* Prevent dangling pointer */
++		DICT_FREE(temp_content)
+@@ -3623,2 +3628,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->nsDef != NULL))
+-		xmlFreeNsList(cur->nsDef);
++		(cur->nsDef != NULL)) {
++		xmlNsPtr temp_nsdef = cur->nsDef;
++		cur->nsDef = NULL;  /* Prevent dangling pointer */
++		xmlFreeNsList(temp_nsdef);
++	    }
+@@ -3634,2 +3642,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
++		(cur->type != XML_COMMENT_NODE)) {
++		const xmlChar *temp_name = cur->name;
++		cur->name = NULL;  /* Prevent dangling pointer */
++		DICT_FREE(temp_name)
++	    }
+@@ -6818,0 +6830 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
++    xmlNodePtr node_check;
+@@ -6829,0 +6842,3 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
++    /* Store node reference for validation */
++    node_check = node;
++    
+@@ -6835,2 +6850,6 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr ret = xmlSetNsProp(node, ns, localname, value);
++            /* Validate node is still accessible after operation */
++            if (node_check != node || node == NULL) return(NULL);
++            return(ret);
++        }
+@@ -6839 +6858,4 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr ret = xmlSetNsProp(node, NULL, name, value);
++    /* Validate node is still accessible after operation */
++    if (node_check != node || node == NULL) return(NULL);
++    return(ret);

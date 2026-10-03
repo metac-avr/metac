@@ -1,0 +1,32 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..3d05fd0fd 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -294,2 +294,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	if(packet->content_disposition_line.ptr[attachment_len] == '\"') {
+-	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '\"') {
++	if(packet->content_disposition_line.ptr[attachment_len] == '"') {
++	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '"') {
+@@ -297 +297,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    flow->http.filename = ndpi_malloc(filename_len);
++// FIXME: Crash CWE-190: Integer Overflow or Wraparound
++ 	    flow->http.filename = ndpi_malloc(filename_len);
+@@ -299,2 +300,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++	      size_t safe_len = (filename_len > 0) ? filename_len - 1 : 0;
++	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, safe_len);
++	      flow->http.filename[safe_len] = '\0';
+@@ -307,0 +310 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
++	      size_t safe_len = (filename_len > 1) ? filename_len - 2 : 0;
+@@ -309,2 +312,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++		      safe_len);
++	      flow->http.filename[safe_len] = '\0';
+@@ -319,2 +322,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    size_t safe_len = (filename_len > 0) ? filename_len : 0;
++	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, safe_len);
++	    flow->http.filename[safe_len] = '\0';

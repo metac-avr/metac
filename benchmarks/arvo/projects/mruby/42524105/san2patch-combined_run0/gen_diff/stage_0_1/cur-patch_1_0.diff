@@ -1,0 +1,29 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..d67da1add 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1713 +1713,2 @@ static mrb_value
+-mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++// FIXME: Crash CWE-416: Use After Free
++ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+@@ -1715 +1716,2 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+-  mrb_int key = mrb_str_hash(mrb, self);
++  mrb_value temp_str = mrb_str_new(mrb, RSTRING_PTR(self), RSTRING_LEN(self));
++  mrb_int key = mrb_str_hash(mrb, temp_str);
+@@ -1725,2 +1727 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+- *  Returns <code>true</code> if <i>str</i> contains the given string or
+- *  character.
++ *  Returns <code>true</code> if <i>str</i> contains the given string or *  character.
+diff --git a/src/gc.c b/src/gc.c
+index 823297612..1704bc921 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -253 +253,3 @@ mrb_free(mrb_state *mrb, void *p)
+-  (mrb->allocf)(mrb, p, 0, mrb->allocf_ud);
++  if (mrb && p) {
++    (mrb->allocf)(mrb, p, 0, mrb->allocf_ud);
++  }
+@@ -265,2 +267 @@ static mrb_bool
+-heap_p(mrb_gc *gc, struct RBasic *object)
+-{
++heap_p(mrb_gc *gc, struct RBasic *object){

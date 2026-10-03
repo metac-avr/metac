@@ -1,0 +1,16 @@
+diff --git a/src/media_tools/isom_tools.c b/src/media_tools/isom_tools.c
+index a41e51a0d..f005fcf17 100644
+--- a/src/media_tools/isom_tools.c
++++ b/src/media_tools/isom_tools.c
+@@ -1405,0 +1406 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
++		GF_AVCConfigurationBox *avc_cfg;
+@@ -1417,2 +1418,7 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-		if (e == GF_OK && props.config) {
+-			gf_odf_avc_cfg_write(((GF_AVCConfigurationBox *)props.config)->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++		avc_cfg = (GF_AVCConfigurationBox *)props.config;
++		if (e == GF_OK && avc_cfg && avc_cfg->config && avc_cfg->config->sequenceParameterSets && avc_cfg->config->pictureParameterSets) {
++			if (gf_list_count(avc_cfg->config->sequenceParameterSets) == 0 || gf_list_count(avc_cfg->config->pictureParameterSets) == 0) {
++				gf_odf_desc_del((GF_Descriptor *)esd);
++				return NULL;
++			}
++			gf_odf_avc_cfg_write(avc_cfg->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);

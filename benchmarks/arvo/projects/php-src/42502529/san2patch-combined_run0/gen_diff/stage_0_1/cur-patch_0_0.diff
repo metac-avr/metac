@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..ff3398cdf2e 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1371,0 +1372 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++				if (i >= ht->nTableSize) break; // Guard against invalid indices
+@@ -1374 +1375,7 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}
++	}
++
++	// Nullify the bucket pointer before deletion to prevent use-after-free
++	if (p) {
++		p->key = NULL;
++		ZVAL_UNDEF(&p->val);
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..5c24c8a6c28 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -200,0 +201,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++			// Clear the object pointer immediately after free to prevent UAF
++			object = NULL;
++		}
++		if (object != NULL) {  // Additional safety check
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
+@@ -202,3 +208,0 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);

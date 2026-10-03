@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 4a26e0c252e..efccb9afb26 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -22485 +22485,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_VAR_CONST_H
+-			zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			if (UNEXPECTED(Z_TYPE_P(var_ptr) == IS_STRING)) {
++				zend_string *orig = Z_STR_P(var_ptr);
++				Z_TRY_ADDREF_P(var_ptr);
++				zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++				if (Z_TYPE_P(var_ptr) != IS_STRING || Z_STR_P(var_ptr) != orig) {
++					zend_string_release(orig);
++				}
++			} else {
++				zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			}
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..9b79640b436 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1968 +1968,13 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			zend_string *old_str = Z_STR_P(result);
++			old_str = zend_string_copy(old_str);
++			result_str = zend_string_extend(old_str, result_len, 0);
++			if (UNEXPECTED(!result_str)) {
++				zend_string_release(old_str);
++				zval_ptr_dtor_str(&op1_copy);
++				zval_ptr_dtor_str(&op2_copy);
++				if (orig_op1 != result) {
++					ZVAL_UNDEF(result);
++				}
++				return FAILURE;
++			}
++			zend_string_release(old_str);

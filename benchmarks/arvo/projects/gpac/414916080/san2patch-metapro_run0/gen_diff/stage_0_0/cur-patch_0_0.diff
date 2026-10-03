@@ -1,0 +1,31 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..9731eb66b 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -566,2 +566,11 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
+-			section->data = (unsigned char*)gf_malloc(sizeof(unsigned char)*section->data_size);
+-			memcpy(section->data, sec->section + section_start, sizeof(unsigned char)*section->data_size);
++			if (section->data_size > 0) {
++				section->data = (unsigned char*)gf_malloc(sizeof(unsigned char)*section->data_size);
++				if (section->data) {
++					memcpy(section->data, sec->section + section_start, sizeof(unsigned char)*section->data_size);
++				} else {
++					gf_free(section);
++					return;
++				}
++			} else {
++				section->data = NULL;
++			}
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..05cbbeaf8 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -592 +592,2 @@ static void m2tsdmx_setup_program(GF_M2TSDmxCtx *ctx, GF_M2TS_Program *prog)
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -594 +595,3 @@ static void m2tsdmx_setup_program(GF_M2TSDmxCtx *ctx, GF_M2TS_Program *prog)
+-			m2tsdmx_declare_pid(ctx, (GF_M2TS_PES *)es, NULL);
++			if (es != NULL) { // Add null check before using es
++				m2tsdmx_declare_pid(ctx, (GF_M2TS_PES *)es, NULL);
++			}

@@ -1,0 +1,15 @@
+diff --git a/src/filters/reframe_ac4.c b/src/filters/reframe_ac4.c
+index eacaea264..d66526e49 100644
+--- a/src/filters/reframe_ac4.c
++++ b/src/filters/reframe_ac4.c
+@@ -544 +544,2 @@ static const char *ac4dmx_probe_data(const u8 *_data, u32 _size, GF_FilterProbeS
+-	while (gf_bs_available(bs) && nb_frames <= 4) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	while (gf_bs_available(bs) && nb_frames <= 4) {
+@@ -557 +558,5 @@ static const char *ac4dmx_probe_data(const u8 *_data, u32 _size, GF_FilterProbeS
+-		sync_framesize = ahdr.frame_size + ahdr.header_size + ahdr.crc_size;
++		if (ahdr.frame_size < 14) {  // Add bounds check before array access
++			sync_framesize = ahdr.frame_size + ahdr.header_size + ahdr.crc_size;
++		} else {
++			break; // Prevent out-of-bounds access
++		}

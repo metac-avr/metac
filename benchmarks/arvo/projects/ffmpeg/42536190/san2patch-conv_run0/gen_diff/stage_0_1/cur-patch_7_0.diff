@@ -1,0 +1,37 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..ca30a75752 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1403 +1403 @@ do {
+-} while (0)
++ } while (0)
+@@ -1436 +1436,3 @@ do {
+-                    s->cbf_luma[y_tu * min_tu_width + x_tu] = 1;
++                    // Add bounds checking before array access
++                    if (s && s->cbf_luma && (y_tu * min_tu_width + x_tu) < (sps->tb_width * sps->tb_height))
++                        s->cbf_luma[y_tu * min_tu_width + x_tu] = 1;
+@@ -1440 +1442,3 @@ do {
+-            ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
++            // Validate pointers before calling deblocking function
++            if (lc && pps && s) 
++                ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
+@@ -1442 +1446 @@ do {
+-                lc->cu.cu_transquant_bypass_flag)
++                lc && lc->cu.cu_transquant_bypass_flag)
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..df554ab3f2 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -52 +52,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -58 +59,3 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-    return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
++    if (ref && ref->rpl_tab && ctb_addr_ts >= 0 && ref->rpl_tab[ctb_addr_ts])
++        return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
++    return NULL;
+@@ -64,2 +67 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)        ff_hevc_unref_frame(&s->DPB[i],

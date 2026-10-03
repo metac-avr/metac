@@ -1,0 +1,26 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..a8e65228 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..2c2fb77f 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1299 +1299 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
+@@ -1301 +1301,10 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-		xmlTextReaderFreeNode(reader, tmp);
++		/* Implement reference counting check for namespaces */
++		if (tmp->type != XML_ELEMENT_NODE || tmp->ns == NULL || 
++		    (tmp->ns && tmp->ns->refcnt <= 1)) {
++		    xmlTextReaderFreeNode(reader, tmp);
++		} else {
++		    /* Node has referenced namespaces, preserve it */
++		    tmp->extra |= NODE_IS_PRESERVED;
++		    reader->preserves++;
++		    tmp->ns->refcnt--;
++		}

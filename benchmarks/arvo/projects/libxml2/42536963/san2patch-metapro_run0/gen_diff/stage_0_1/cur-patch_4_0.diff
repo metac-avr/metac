@@ -1,0 +1,28 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..69a10ed6 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -421 +421,2 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     */
++// FIXME: Crash CWE-125: Out-of-bounds Read
++      */
+@@ -423 +424,5 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-    c = *cur;
++    if (cur >= ctxt->input->end) {
++        c = 0;
++    } else {
++        c = *cur;
++    }
+@@ -3103,0 +3109,4 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
++	/* Bounds check before NEXTL */
++	if ((ctxt->input->cur + l) > (ctxt->input->base + ctxt->input->length)) {
++	    break; /* Prevent buffer overflow */
++	}
+@@ -3130 +3139,6 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
+-	cur = CUR_CHAR(l);
++	/* Safe bounds check for CUR_CHAR */
++	if (ctxt->input->cur < (ctxt->input->base + ctxt->input->length)) {
++	    cur = CUR_CHAR(l);
++	} else {
++	    cur = 0; /* Exit condition */
++	}

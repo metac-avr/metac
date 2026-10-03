@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 9efe205abe0..fa0bd258f6e 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -215,0 +216,3 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++		if (Z_OBJ_P(zv) == NULL || Z_OBJ_P(zv)->gc.refcount == 0) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..86ef06a4843 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,0 +203 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Move GC buffer removal before efree to prevent UAF during shutdown */
+@@ -203,0 +205,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Additional safety check to ensure object is not accessed after free */
++		if (EG(objects_store).destructor_handlers) {
++			zend_hash_del_ptr(EG(objects_store).destructor_handlers, object);
++		}

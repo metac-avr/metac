@@ -1,0 +1,32 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..8f7bc3dfc 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -741,3 +741,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-      for (i=0; i<e; i++) {
+-        mrb_gc_mark_value(mrb, p[i]);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
++      if (a != NULL && p != NULL) {  // Double check both array and pointer
++        for (i=0; i<e; i++) {
++          mrb_gc_mark_value(mrb, p[i]);
++        }
+@@ -1203,4 +1206,13 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++      /* Add safety check before freeing */
++      if (!gc->in_progress_marking) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      } else {
++        /* Delay freeing until marking completes */
++        page->next = gc->delayed_free_list;
++        gc->delayed_free_list = page;
++        page = next;
++      }

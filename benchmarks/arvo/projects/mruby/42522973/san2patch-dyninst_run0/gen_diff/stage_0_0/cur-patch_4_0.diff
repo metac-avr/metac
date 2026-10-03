@@ -1,0 +1,33 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..4510896ed 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -732 +731,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -743,0 +743 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (obj->tt >= MRB_TT_MAXDEFINE) return;
+@@ -752,2 +752 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1156,3 +1155,17 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Add reference check before freeing page */
++      mrb_bool can_free = TRUE;
++      RVALUE *check_p = objects(page);
++      RVALUE *check_e = check_p + MRB_HEAP_PAGE_SIZE;
++      while (check_p < check_e) {
++        if (check_p->as.basic.tt != MRB_TT_FREE && !is_dead(gc, &check_p->as.basic)) {
++          can_free = FALSE;
++          break;
++        }
++        check_p++;
++      }
++      
++      if (can_free) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }

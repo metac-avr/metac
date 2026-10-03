@@ -1,0 +1,28 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..7d919d861 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++ {
+@@ -791,0 +791,3 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (obj->tt == MRB_TT_STRING) {
++    if (((struct RString*)obj)->flags & MRB_STR_FREE) return;
++  }
+@@ -799,2 +801 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1202,0 +1204,10 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Mark objects in current page as being swept to prevent UAF */
++      RVALUE *sweep_p = objects(page);
++      RVALUE *sweep_e = sweep_p + MRB_HEAP_PAGE_SIZE;
++      while (sweep_p < sweep_e) {
++        if (sweep_p->as.basic.tt != MRB_TT_FREE) {
++          sweep_p->as.basic.flags |= MRB_GC_STATE_SWEEPING;
++        }
++        sweep_p++;
++      }
++      

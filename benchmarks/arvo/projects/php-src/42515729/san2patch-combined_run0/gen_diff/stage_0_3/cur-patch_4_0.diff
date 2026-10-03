@@ -1,0 +1,21 @@
+diff --git a/ext/date/lib/timelib.c b/ext/date/lib/timelib.c
+index d42c69bbd6f..bf268c77b21 100644
+--- a/ext/date/lib/timelib.c
++++ b/ext/date/lib/timelib.c
+@@ -156,0 +157,3 @@ void timelib_error_container_dtor(timelib_error_container *errors)
++	/* Fixed CWE-416: Use After Free - check for null pointer */
++	if (!errors) return;
++
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..277ff7803d1 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2278,0 +2279 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++		*last_errors = NULL;
+@@ -2281,2 +2282,4 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-	timelib_error_container_dtor(*last_errors);
+-	*last_errors = NULL;
++	if (*last_errors != NULL) {
++		timelib_error_container_dtor(*last_errors);
++		*last_errors = NULL;
++	}

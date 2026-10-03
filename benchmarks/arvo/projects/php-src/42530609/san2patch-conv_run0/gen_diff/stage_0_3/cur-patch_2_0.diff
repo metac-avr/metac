@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..a5978a55b3d 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272,2 +3272,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+-				}
++                    zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++                }
++        }
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++	if (EX_VAR(throw_op->result.var) && Z_REFCOUNTED_P(EX_VAR(throw_op->result.var))) {
++		zend_refcounted *ref = Z_COUNTED_P(EX_VAR(throw_op->result.var));
++		if (ref && !(GC_FLAGS(ref) & GC_PURGED)) {
++			zval_ptr_dtor(EX_VAR(throw_op->result.var));
+@@ -3274,0 +3281,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
++	} else if (EX_VAR(throw_op->result.var)) {
++		free_zval(EX_VAR(throw_op->result.var));
++		EX_VAR(throw_op->result.var) = NULL;
+@@ -3275,0 +3285 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
++  	}
+@@ -3282,0 +3293 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_USER_OPCODE_SPEC_HANDLER(ZEND_
++
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..f3719fb69ae 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55 +55,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
++	if (!p) return;
++	if (GC_TYPE(p) > IS_CONSTANT_AST) return;

@@ -1,0 +1,19 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..7f20da556 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1245,5 +1245,9 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-     size_t tried_sweep = 0;
+-     tried_sweep = incremental_sweep_phase(mrb, gc, limit);
+-     if (tried_sweep == 0)
+-       gc->state = MRB_GC_STATE_ROOT;
+-     return tried_sweep;
++    size_t tried_sweep = 0;
++    /* Synchronize marking and sweeping phases to avoid race conditions */
++    if (gc->phase_lock) {
++      return 0;
++    }
++    tried_sweep = incremental_sweep_phase(mrb, gc, limit);
++    if (tried_sweep == 0)
++      gc->state = MRB_GC_STATE_ROOT;
++    return tried_sweep;

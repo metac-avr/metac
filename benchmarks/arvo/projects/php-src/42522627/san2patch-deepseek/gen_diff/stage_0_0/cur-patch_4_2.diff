@@ -1,0 +1,168 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index 4c31ee0eae6..60753d5785b 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2175,28 +2175,135 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-						switch (state) {
+-							case 1: /* escaped */
+-								bptr++;
+-								state = 0;
+-								break;
+-							case 2: /* embedded enclosure ? let's check it */
+-								if (*bptr != enclosure) {
+-									/* real enclosure */
+-									memcpy(tptr, hunk_begin, bptr - hunk_begin - 1);
+-									tptr += (bptr - hunk_begin - 1);
+-									hunk_begin = bptr;
+-									goto quit_loop_2;
+-								}
+-								memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-								tptr += (bptr - hunk_begin);
+-								bptr++;
+-								hunk_begin = bptr;
+-								state = 0;
+-								break;
+-							default:
+-								if (*bptr == enclosure) {
+-									state = 2;
+-								} else if (escape_char != PHP_CSV_NO_ESCAPE && *bptr == escape_char) {
+-									state = 1;
+-								}
+-								bptr++;
+-								break;
+-						}
++						php_fgetcsv(INTERNAL_FUNCTION_PARAMETERS, zend_string *delimiter, zend_string *enclosure, zend_string *escape_char)
++{
++	php_stream *stream;
++
++	char *buf, *temp, *tptr, *bptr, *hunk_begin;
++	size_t buf_len;
++	size_t temp_len;
++	int idx;
++	int hunk_len;
++	int state = 0;
++	int enclosure_len = (int)enclosure->len;
++	int escape_len = (escape_char == NULL) ? 0 : (int)escape_char->len;
++	zval *tmp;
++
++	zend_long length = 0;
++
++	ZEND_PARSE_PARAMETERS_START(2, 5)
++		Z_PARAM_RESOURCE(stream_zval)
++		Z_PARAM_OPTIONAL
++		Z_PARAM_LONG(length)
++		Z_PARAM_STR(delimiter)
++		Z_PARAM_STR(enclosure)
++		Z_PARAM_STR_OR_NULL(escape_char)
++	ZEND_PARSE_PARAMETERS_END();
++
++	php_stream_from_zval(stream, stream_zval);
++
++	if (!length) {
++		length = 0;
++	}
++
++	buf_len = length;
++	if (buf_len == 0) {
++		buf_len = PHP_CSV_READ_BUF_SIZE;
++	}
++
++	buf = emalloc(buf_len + 1);
++	temp = emalloc(buf_len + 1);
++	tptr = temp;
++	buf[0] = '\0';
++
++	idx = 0;
++
++	array_init(return_value);
++
++	while (1) {
++		char *read_buf;
++		int read_len;
++
++		read_buf = buf + idx;
++
++		read_len = php_stream_get_line(stream, read_buf, (size_t)(buf_len - idx), NULL);
++
++		if (read_len < 0) {
++			efree(buf);
++			efree(temp);
++			RETURN_FALSE;
++		}
++
++		if (read_len == 0) {
++			break;
++		}
++
++		idx += read_len;
++
++		buf[idx] = '\0';
++
++		bptr = buf;
++		tptr = temp;
++		state = 0;
++		hunk_len = 0;
++		hunk_begin = bptr;
++
++		while (1) {
++			if (*bptr == '\0') {
++				break;
++			}
++
++			switch (state) {
++				case 1: /* escaped */
++					bptr++;
++					state = 0;
++					break;
++				case 2: /* embedded enclosure ? let's check it */
++					if (*bptr != *enclosure->val) {
++						/* real enclosure */
++						memcpy(tptr, hunk_begin, bptr - hunk_begin - 1);
++						tptr += (bptr - hunk_begin - 1);
++						hunk_begin = bptr;
++						goto quit_loop_2;
++					}
++					memcpy(tptr, hunk_begin, bptr - hunk_begin);
++					tptr += (bptr - hunk_begin);
++					bptr++;
++					hunk_begin = bptr;
++					state = 0;
++					break;
++				default:
++					if (*bptr == *enclosure->val) {
++						state = 2;
++					} else if (escape_char != NULL && *bptr == *escape_char->val) {
++						state = 1;
++					}
++					bptr++;
++					break;
++			}
++		}
++
++quit_loop_2:
++		if (hunk_len > 0) {
++			memcpy(tptr, hunk_begin, hunk_len);
++			tptr += hunk_len;
++			hunk_len = 0;
++		}
++
++		*tptr = '\0';
++
++		ZVAL_STRINGL(tmp, temp, tptr - temp);
++		add_next_index_zval(return_value, tmp);
++
++		if (read_len < buf_len - idx - 1) {
++			break;
++		}
++
++		if (idx < buf_len - 1) {
++			buf_len *= 2;
++			buf = erealloc(buf, buf_len + 1);
++			temp = erealloc(temp, buf_len + 1);
++			tptr = temp + (tptr - temp);
++		}
++	}
++
++	efree(buf);
++	efree(temp);
++}

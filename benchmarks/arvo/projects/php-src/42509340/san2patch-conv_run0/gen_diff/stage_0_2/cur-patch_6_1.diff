@@ -1,0 +1,14 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 63a3112405b..738ea24adc7 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3071 +3071,8 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-		ZEND_VM_TAIL_CALL(zend_leave_helper_SPEC(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));
++		/* Check for valid execution context before tail call */
++		if (EXPECTED(EX(opline) != NULL)) {
++			ZEND_VM_TAIL_CALL(zend_leave_helper_SPEC(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));
++		} else {
++			/* Handle expired context safely */
++			zend_vm_stack_free_call_frame(EX(call));
++			ZEND_VM_RETURN();
++		}

@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..59cfab12058 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -33,0 +34 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str);
++// FIXME: Crash CWE-416: Use After Free
+@@ -46 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_STRING] =       (zend_rc_dtor_func_t)zend_string_destroy,
++	[IS_STRING] =       NULL,
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..b13c1578036 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++		/* Mark the object inert before freeing so any external destructor
++		 * traversal that reaches its zval cannot perform refcount reads. */
++		GC_TYPE_INFO_PP(&object) = IS_NULL;
++ 		ptr = ((char*)object) - object->handlers->offset;

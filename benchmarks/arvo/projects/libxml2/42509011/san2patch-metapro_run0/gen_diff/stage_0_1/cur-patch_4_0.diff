@@ -1,0 +1,18 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..fdffaa75 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2092 +2092,2 @@ xmlFreePropList(xmlAttrPtr cur) {
+-    while (cur != NULL) {
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     while (cur != NULL) {
+@@ -2093,0 +2095,7 @@ xmlFreePropList(xmlAttrPtr cur) {
++        // Temporarily nullify dictionary-owned names to prevent double-free
++        xmlChar *orig_name = cur->name;
++        if (cur->name != NULL && ((xmlNodePtr)cur)->doc != NULL && 
++            ((xmlNodePtr)cur)->doc->dict != NULL &&
++            xmlDictOwns(((xmlNodePtr)cur)->doc->dict, cur->name)) {
++            cur->name = NULL;  // Prevent xmlFreeProp from trying to free dict-owned string
++        }
+@@ -2094,0 +2103 @@ xmlFreePropList(xmlAttrPtr cur) {
++        cur->name = orig_name;  // Restore for potential reuse

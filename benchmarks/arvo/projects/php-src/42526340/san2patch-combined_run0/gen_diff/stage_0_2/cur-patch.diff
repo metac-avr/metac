@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..fba85c9bb0b 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,3 +202,9 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++		/* Add safety check to avoid accessing freed memory */
++		if (object->handlers) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++		} else {
++			GC_REMOVE_FROM_BUFFER(object);
++		}
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index 6a9762eb549..5df15d8ac7f 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -448 +448 @@ static void gc_trace_ref(zend_refcounted *ref) {
+-			ref, GC_REFCOUNT(ref), GC_REF_ADDRESS(ref),
++ 			ref, GC_REFCOUNT(ref), GC_REF_ADDRESS(ref),

@@ -1,0 +1,32 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..991cd7af 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2050,0 +2051,16 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++    
++    /* Validate node pointer before accessing it - Fix for CWE-416 Use After Free */
++    if (ref->elem == NULL || 
++        (ref->elem->type != XML_ELEMENT_NODE && 
++         ref->elem->type != XML_TEXT_NODE && 
++         ref->elem->type != XML_CDATA_SECTION_NODE && 
++         ref->elem->type != XML_ENTITY_REF_NODE && 
++         ref->elem->type != XML_ENTITY_NODE && 
++         ref->elem->type != XML_PI_NODE && 
++         ref->elem->type != XML_COMMENT_NODE && 
++         ref->elem->type != XML_DOCUMENT_NODE && 
++         ref->elem->type != XML_HTML_DOCUMENT_NODE && 
++         ref->elem->type != XML_XINCLUDE_START && 
++         ref->elem->type != XML_XINCLUDE_END))
++        return(-1);
++        
+@@ -2279,3 +2295,7 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            if ((ctxt->incTab[i]->inc != NULL) ||
+-                (ctxt->incTab[i]->emptyFb != 0)) {	/* (empty fallback) */
+-                xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++// FIXME: Crash CWE-416: Use After Free
++             if ((ctxt->incTab[i]->inc != NULL) ||
++                (ctxt->incTab[i]->emptyFb != 0)) {    /* (empty fallback) */
++                /* Validate node pointer before use to prevent use-after-free */
++                if (ctxt->incTab[i] != NULL) {
++                    xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++                }

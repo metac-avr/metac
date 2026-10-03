@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..ea596430e3c 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1183,3 +1184,7 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
+-	ZEND_RC_MOD_CHECK(p);
+-	return --(p->refcount);
++	/* Validate pointer before use to prevent use-after-free */
++	if (__builtin_expect(!!(p), 1)) {
++		ZEND_ASSERT(p->refcount > 0);
++		ZEND_RC_MOD_CHECK(p);
++		return --(p->refcount);
++	}
++	return 0;
+@@ -1193 +1197,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..72a3692bc0a 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30063 +30063,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			// Check if object_ptr is valid before accessing to prevent use-after-free
++			if (EXPECTED(object_ptr != NULL && Z_TYPE_P(object_ptr) != IS_UNDEF)) {
++				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			} else {
++				// Skip dim assignment when object_ptr is invalid
++				dim = NULL;
++			}
+@@ -49650 +49656,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			// Check if object_ptr is valid before accessing to prevent use-after-free
++			if (EXPECTED(object_ptr != NULL && Z_TYPE_P(object_ptr) != IS_UNDEF)) {
++				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			} else {
++				// Skip dim assignment when object_ptr is invalid
++				dim = NULL;
++			}

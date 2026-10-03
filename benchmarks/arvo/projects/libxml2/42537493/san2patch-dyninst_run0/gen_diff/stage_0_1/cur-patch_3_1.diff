@@ -1,0 +1,28 @@
+diff --git a/encoding.c b/encoding.c
+index 3d336fb1..db84eca1 100644
+--- a/encoding.c
++++ b/encoding.c
+@@ -1918 +1918 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
+-        return(0);
++         return(0);
+@@ -1923,4 +1923,16 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
+-    xmlFree(handler->name);
+-    if (handler->ctxtDtor != NULL) {
+-        handler->ctxtDtor(handler->inputCtxt);
+-        handler->ctxtDtor(handler->outputCtxt);
++    /* Store name pointer locally before freeing */
++    char *name_copy = handler->name;
++    xmlCharEncodingInputContextPtr input_ctxt = handler->inputCtxt;
++    xmlCharEncodingOutputContextPtr output_ctxt = handler->outputCtxt;
++    xmlCharEncodingCloseFunc ctxt_dtor = handler->ctxtDtor;
++    
++    /* Clear the handler fields to prevent accidental reuse */
++    handler->name = NULL;
++    handler->inputCtxt = NULL;
++    handler->outputCtxt = NULL;
++    handler->ctxtDtor = NULL;
++    
++    xmlFree(name_copy);
++    if (ctxt_dtor != NULL) {
++        ctxt_dtor(input_ctxt);
++        ctxt_dtor(output_ctxt);

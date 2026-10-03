@@ -1,0 +1,31 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..bd76ae657 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -788,0 +789 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (!is_live(obj)) return;
+@@ -799,2 +800 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1235 +1235,2 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-  case MRB_GC_STATE_MARK:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   case MRB_GC_STATE_MARK:
+@@ -1237 +1238,9 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      return incremental_marking_phase(mrb, gc, limit);
++      /* Add validation check before incremental marking */
++      if (gc->gray_list != NULL && (uintptr_t)gc->gray_list < (uintptr_t)0x100000000ULL) {
++        return incremental_marking_phase(mrb, gc, limit);
++      } else {
++        gc->gray_list = NULL;  /* Clear invalid pointer */
++        final_marking_phase(mrb, gc);
++        prepare_incremental_sweep(mrb, gc);
++        return 0;
++      }

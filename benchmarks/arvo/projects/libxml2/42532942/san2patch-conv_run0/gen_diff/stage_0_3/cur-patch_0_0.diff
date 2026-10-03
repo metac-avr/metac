@@ -1,0 +1,31 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..c9ad6f66 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743,4 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
++
++    /* Check if the ID value is valid before accessing it */
++    if (attr->id->value == NULL) return(-1);
+diff --git a/tree.c b/tree.c
+index 8e0b346a..9ea1558a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4366 +4366,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -4367,0 +4369,10 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
++    if (ret != NULL) {
++        /* Remove ID references before freeing the node to prevent use-after-free */
++        xmlAttrPtr prop = ret->properties;
++        while (prop != NULL) {
++            if (prop->atype == XML_ATTRIBUTE_ID) {
++                xmlRemoveID(ret->doc, prop);
++            }
++            prop = prop->next;
++        }
++    }
+@@ -4378 +4388,0 @@ xmlStaticCopyNodeList(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent) {
+-

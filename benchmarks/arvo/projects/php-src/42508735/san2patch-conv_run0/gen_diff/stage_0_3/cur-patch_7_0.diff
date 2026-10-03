@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_generators.c b/Zend/zend_generators.c
+index a5fcad31dfe..38dfaa7dcc8 100644
+--- a/Zend/zend_generators.c
++++ b/Zend/zend_generators.c
+@@ -425,0 +426,3 @@ static zend_object *zend_generator_create(zend_class_entry *class_type) /* {{{ *
++	/* Mark object as valid to prevent expired pointer dereference */
++	GC_ADD_FLAGS(&generator->std, IS_OBJ_VALID);
++
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..ea61627536f 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		ptr = ((char*)object) - object->handlers->offset;
+@@ -204,0 +206,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Set object bucket to NULL after freeing to prevent dangling pointer access */
++		EG(objects_store).object_buckets[handle] = NULL;

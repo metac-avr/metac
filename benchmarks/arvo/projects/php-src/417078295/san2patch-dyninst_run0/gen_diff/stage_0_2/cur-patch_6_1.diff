@@ -1,0 +1,15 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..7cdef6cc8d6 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40397,2 +40397,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZEND_ASSERT(!Z_REFCOUNTED_P(value));
+-				ZVAL_COPY(&ref->val, get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R));
++				zval *rhs = get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R);
++				if (rhs && Z_REFCOUNTED_P(rhs) && GC_DELREF(Z_COUNTED_P(rhs)) == 0) {
++					// Object has been freed, avoid use-after-free
++					ZVAL_UNDEF(&ref->val);
++				} else {
++					ZEND_ASSERT(!Z_REFCOUNTED_P(value));
++					ZVAL_COPY(&ref->val, rhs);
++				}

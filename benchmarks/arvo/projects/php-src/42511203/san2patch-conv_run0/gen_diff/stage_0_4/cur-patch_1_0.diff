@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..ece41f6eb45 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -572 +572,3 @@ static zend_never_inline ZEND_COLD zval *zend_wrong_assign_to_variable_reference
+-	Z_TRY_ADDREF_P(value_ptr);
++	if (value_ptr != NULL && Z_TYPE_P(value_ptr) != IS_UNDEF) {
++		Z_TRY_ADDREF_P(value_ptr);
++	}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..c11477ad5c2 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -27158 +27158,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
+-			   UNEXPECTED(!Z_ISREF_P(value_ptr))) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++  			   UNEXPECTED(!Z_ISREF_P(value_ptr))) {
+@@ -27163 +27164,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
+-		zend_assign_to_variable_reference(variable_ptr, value_ptr);
++		/* Validate pointer before reference assignment to prevent use-after-free */
++		if (value_ptr != NULL) {
++			zend_assign_to_variable_reference(variable_ptr, value_ptr);
++		}

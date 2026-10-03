@@ -1,0 +1,38 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..4d2702246 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -161,0 +162,8 @@ DEFINE_DECREMENTER(ar, size)
++// Patched h_size function to prevent expired pointer dereference
++#undef DEFINE_ACCESSOR
++#define DEFINE_ACCESSOR(type, name, ctype, expr) \
++  static inline ctype type##_##name(type *t) { \
++    if (!t) return (ctype)0; \
++    return expr; \
++  }
++
+@@ -164,0 +173,22 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++// Added safety check for hash_table access
++static inline void ht_size_increment_check(hash_table *ht) {
++  if (!ht) return;
++  ht->size++;
++}
++
++static inline void ht_size_decrement_check(hash_table *ht) {
++  if (!ht || ht->size == 0) return;
++  ht->size--;
++}
++
++#define DEFINE_INCREMENTER(type, name) \
++  static inline void type##_##name##_increment(type *t) { \
++    if (t && t->hsh.ht) ht_size_increment_check(t->hsh.ht); \
++  }
++
++#define DEFINE_DECREMENTER(type, name) \
++  static inline void type##_##name##_decrement(type *t) { \
++    if (t && t->hsh.ht) ht_size_decrement_check(t->hsh.ht); \
++  }
++
+@@ -177 +206,0 @@ DEFINE_SWITCHER(ht, HT)
+-

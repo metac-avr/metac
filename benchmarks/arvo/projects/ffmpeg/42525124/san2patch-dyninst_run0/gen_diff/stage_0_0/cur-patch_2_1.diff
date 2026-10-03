@@ -1,0 +1,25 @@
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index 6ea6c46d8f..33bbcb6680 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -181,3 +181,5 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-            jpegxl_collect_codestream_header(buf, read, head + headsize, sizeof(head) - headsize, &copied);
+-            memcpy(ctx->initial->data + (ctx->initial->size - read), buf, read);
+-            headsize += copied;
++            if (headsize < (int)sizeof(head)) {
++                jpegxl_collect_codestream_header(buf, read, head + headsize, sizeof(head) - headsize, &copied);
++                memcpy(ctx->initial->data + (ctx->initial->size - read), buf, read);
++                headsize += copied;
++            }
+@@ -187 +189 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    }
++     }
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index 65dc080ddb..4cf3c8bda4 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -328 +328,3 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
+-    OPEN_READER(re, s);
++    if (!s) return 0;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     OPEN_READER(re, s);

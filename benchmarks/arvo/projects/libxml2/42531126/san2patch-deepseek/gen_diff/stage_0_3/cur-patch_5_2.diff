@@ -1,0 +1,86 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..f141f152 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -416,0 +417,10 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++static int
++htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++    const xmlChar *cur;
++    unsigned int val;
++
++    if (ctxt->instate == XML_PARSER_EOF)
++        return(0);
++
++    /*
++     * We are supposed to handle UTF-8 encoded chars.
+@@ -427,2 +437,4 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-    c = *cur;
+-    if (c & 0x80) {
++    if (xmlParserGrow(ctxt) < 0)
++        return(0);
++    cur = ctxt->input->cur;
++    if (*cur & 0x80) {
+@@ -431 +443 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        if ((c & 0x40) == 0)
++        if ((*cur & 0x40) == 0)
+@@ -438 +450,59 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        if ((c & 0xe0) == 0xe0) {
++
++        if ((*cur & 0xe0) == 0xe0) {
++            if ((avail < 3) || ((cur[2] & 0xc0) != 0x80))
++                goto encoding_error;
++            if ((*cur & 0xf0) == 0xf0) {
++                if ((avail < 4) || ((cur[3] & 0xc0) != 0x80))
++                    goto encoding_error;
++                if ((*cur & 0xf8) != 0xf0)
++                    goto encoding_error;
++
++                /* 4-byte code */
++                *len = 4;
++                val = (*cur & 0x07) << 18;
++                val |= (cur[1] & 0x3f) << 12;
++                val |= (cur[2] & 0x3f) << 6;
++                val |= cur[3] & 0x3f;
++            } else {
++                /* 3-byte code */
++                *len = 3;
++                val = (*cur & 0x0f) << 12;
++                val |= (cur[1] & 0x3f) << 6;
++                val |= cur[2] & 0x3f;
++            }
++        } else {
++            /* 2-byte code */
++            *len = 2;
++            val = (*cur & 0x1f) << 6;
++            val |= cur[1] & 0x3f;
++        }
++        if (!IS_CHAR(val)) {
++            htmlParseErrInt(ctxt, XML_ERR_INVALID_CHAR,
++                            "Char 0x%X out of allowed range\n", val);
++        }
++        return(val);
++    } else {
++        /* 1-byte code */
++        *len = 1;
++        return((int) *cur);
++    }
++
++encoding_error:
++    {
++        /*
++         * The current character is not encodable as UTF-8.
++         * If the parser has an encoding, replace the character sequence
++         * with an invalid character reference and call the error handler.
++         */
++        int count;
++
++        count = xmlCurrentChar(ctxt, len);
++        if ((ctxt->input->flags & XML_INPUT_HAS_ENCODING) == 0)
++            return(-1);
++        if (count < 0)
++            return(-1);
++        htmlParseErrInt(ctxt, XML_ERR_INVALID_ENCODING,
++                        "Invalid character encoding\n", 1);
++        return(0xFFFD);
++    }
++}        if ((c & 0xe0) == 0xe0) {

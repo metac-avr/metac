@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..5504ffd9577 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1183,3 +1184,7 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
+-	ZEND_RC_MOD_CHECK(p);
+-	return --(p->refcount);
++	if (__builtin_expect(!!p, 1)) {
++		ZEND_ASSERT(p->refcount > 0);
++		ZEND_RC_MOD_CHECK(p);
++		return --(p->refcount);
++	} else {
++		return 0;
++	}
+@@ -1193 +1197,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-

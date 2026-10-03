@@ -1,0 +1,22 @@
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..6d93cb749 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -463,0 +464,5 @@ static u8 BS_ReadByte(GF_BitStream *bs)
++				if (bs->position >= bs->size) {
++					if (bs->EndOfStream) bs->EndOfStream(bs->par);
++					if (!bs->overflow_state) bs->overflow_state = 1;
++					return 0;
++				}
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..579495b8f 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -480,0 +481,7 @@ static void dump_mdcv(FILE *dump, GF_BitStream *bs, Bool isMPEG)
++
++	// Validate sufficient bytes remain in bitstream buffer before reading
++	// Need at least 12 bytes (3*4 bytes) for the following reads
++	if (gf_bs_get_size(bs) - gf_bs_get_position(bs) < 12) {
++		return; // Exit early if not enough data to prevent buffer overflow
++	}
++

@@ -1,0 +1,39 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..b5a8df4aa 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779,6 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
+-    break;
+-  }
+-}
+-
+@@ -791,0 +786,4 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  /* Check if we're currently sweeping and obj might be in sweep range */
++  if (mrb->gc.state == MRB_GC_STATE_SWEEP && 
++      ((char*)obj >= (char*)mrb->gc.sweep_page && 
++       (char*)obj < (char*)mrb->gc.sweep_page + sizeof(struct mrb_heap_page))) return;
+@@ -793,8 +791 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++}  case MRB_TT_OBJECT:
+@@ -1203,3 +1194,9 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Prevent premature page freeing during incremental GC */
++      if (gc->state != MRB_GC_STATE_MARK) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      } else {
++        /* Defer freeing until mark phase completes */
++        page->old = TRUE;
++      }

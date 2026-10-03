@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..48791b39668 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1340 +1340,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1341,0 +1343 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (!p) return 0; /* Prevent dereference of expired/null pointer */
+@@ -1347,0 +1350 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
++	if (!p) return 0; /* Prevent dereference of expired/null pointer */
+@@ -1352 +1354,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..04f739a0056 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3270 +3270,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				/* smart branch opcodes may not initialize result */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 				/* smart branch opcodes may not initialize result */
+@@ -3272 +3273,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *var_ptr = EX_VAR(throw_op->result.var);
++					if (var_ptr && Z_TYPE_P(var_ptr) != IS_UNDEF) {
++						zval_ptr_dtor_nogc(var_ptr);
++					}

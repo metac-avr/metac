@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..838469b2ed2 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2433,5 +2433,5 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-				zend_use_scalar_as_array();
+-				ZVAL_UNDEF(result);
+-			}
+-		}
+-	}
++                zend_use_scalar_as_array();
++                ZVAL_UNDEF(result);
++            }
++        }
++    }
+@@ -2443 +2443,11 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-	zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_W EXECUTE_DATA_CC);
++	if (container_ptr != NULL) {
++		if (Z_REFCOUNTED_P(container_ptr) && Z_REFVAL_P(container_ptr) == NULL) {
++			zend_use_scalar_as_array();
++			ZVAL_UNDEF(result);
++			return;
++		}
++		zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_W EXECUTE_DATA_CC);
++	} else {
++		zend_use_scalar_as_array();
++		ZVAL_UNDEF(result);
++	}

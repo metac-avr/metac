@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..1ca6f6ef0e5 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1301 +1301,3 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	zend_refcounted_h *counted = Z_COUNTED_P(pz);
++	if (!counted) return 0;
++	return GC_REFCOUNT(counted);
+@@ -1311,0 +1314 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..6a46b472d19 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -200,0 +201,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++			// Clear object pointers to prevent use-after-free
++			*((zend_object**)object) = NULL;

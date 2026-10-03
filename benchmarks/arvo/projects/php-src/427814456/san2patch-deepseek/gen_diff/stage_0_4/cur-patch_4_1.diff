@@ -1,0 +1,53 @@
+diff --git a/main/spprintf.c b/main/spprintf.c
+index 4c01347fcf4..781b3975784 100644
+--- a/main/spprintf.c
++++ b/main/spprintf.c
+@@ -549,10 +549,8 @@ static void xbuf_format_converter(void *xbuf, bool is_char, const char *fmt, va_
+-					if (s != NULL) {
+-						if (!adjust_precision) {
+-							s_len = strlen(s);
+-						} else {
+-							s_len = strnlen(s, precision);
+-						}
+-					} else {
+-						s = S_NULL;
+-						s_len = S_NULL_LEN;
+-					}
++					static ZEND_COLD void zend_error_va_list(
++		int orig_type, zend_string *error_filename, uint32_t error_lineno,
++		const char *format, va_list args)
++{
++	zend_string *message = zend_vstrpprintf(0, format, args);
++	zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
++	zend_string_release(message);
++}
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..1218e22d826 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1445,6 +1444,0 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			EG(exit_status) = 255;
+-		}
+-	}
+-}
+-/* }}} */
+-
+@@ -1453 +1447 @@ static ZEND_COLD void zend_error_va_list(
+-		const char *format, va_list args)
++ 		const char *format, va_list args)
+@@ -1456 +1450,3 @@ static ZEND_COLD void zend_error_va_list(
+-	zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
++	zend_string *owned_message = zend_string_copy(message);
++	zend_error_zstr_at(orig_type, error_filename, error_lineno, owned_message);
++	zend_string_release(owned_message);
+@@ -1458,9 +1454 @@ static ZEND_COLD void zend_error_va_list(
+-}
+-
+-static ZEND_COLD void get_filename_lineno(int type, zend_string **filename, uint32_t *lineno) {
+-	/* Obtain relevant filename and lineno */
+-	switch (type) {
+-		case E_CORE_ERROR:
+-		case E_CORE_WARNING:
+-			*filename = NULL;
+-			*lineno = 0;
++}			*lineno = 0;

@@ -1,0 +1,36 @@
+diff --git a/parser.c b/parser.c
+index 12ca104e..cc3765e4 100644
+--- a/parser.c
++++ b/parser.c
+@@ -9342,8 +9342,21 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
+-	(!ctxt->disableSAX)) {
+-	if (nbNs > 0)
+-	    ctxt->sax->startElementNs(ctxt->userData, localname, prefix, uri,
+-                          nbNs, ctxt->nsTab + 2 * (ctxt->nsNr - nbNs),
+-			  nbatts / 5, nbdef, atts);
+-	else
+-	    ctxt->sax->startElementNs(ctxt->userData, localname, prefix, uri,
+-                          0, NULL, nbatts / 5, nbdef, atts);
++// FIXME: Crash CWE-416: Use After Free - Fixed by validating pointers before use
++    (!ctxt->disableSAX)) {
++    /* Validate namespace pointers before use */
++    int validNs = 1;
++    if (nbNs > 0) {
++        for (int i = 0; i < nbNs; i++) {
++            xmlNsPtr ns = (xmlNsPtr)(ctxt->nsTab + 2 * (ctxt->nsNr - nbNs) + 2*i);
++            if (ns == NULL || ns->type != XML_NAMESPACE_DECL) {
++                validNs = 0;
++                break;
++            }
++        }
++    }
++    if (validNs) {
++        if (nbNs > 0)
++            ctxt->sax->startElementNs(ctxt->userData, localname, prefix, uri,
++                              nbNs, ctxt->nsTab + 2 * (ctxt->nsNr - nbNs),
++                              nbatts / 5, nbdef, atts);
++        else
++            ctxt->sax->startElementNs(ctxt->userData, localname, prefix, uri,
++                              0, NULL, nbatts / 5, nbdef, atts);
+@@ -9350,0 +9364 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
++}

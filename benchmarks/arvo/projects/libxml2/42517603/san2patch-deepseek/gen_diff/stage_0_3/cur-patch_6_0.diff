@@ -1,0 +1,166 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..d81939ec 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2050 +2050 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	return(-1);
++ 	return(-1);
+@@ -2055,4 +2054,0 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-    list = ref->inc;
+-    ref->inc = NULL;
+-    ref->emptyFb = 0;
+-
+@@ -2060 +2056,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-     * Check against the risk of generating a multi-rooted document
++     * Snapshot required node metadata while the node is guaranteed alive.
++     * A previous xmlTextReaderRead() may have invalidated/freed the reader
++     * node, so avoid direct dereferences of cur later in this function when
++     * the current node can no longer be trusted.
+@@ -2062,26 +2061,10 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-    if ((cur->parent != NULL) &&
+-	(cur->parent->type != XML_ELEMENT_NODE)) {
+-	int nb_elem = 0;
+-
+-	tmp = list;
+-	while (tmp != NULL) {
+-	    if (tmp->type == XML_ELEMENT_NODE)
+-		nb_elem++;
+-	    tmp = tmp->next;
+-	}
+-	if (nb_elem > 1) {
+-	    xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_MULTIPLE_ROOT,
+-		       "XInclude error: would result in multiple root nodes\n",
+-			   NULL);
+-            xmlFreeNodeList(list);
+-	    return(-1);
+-	}
+-    }
+-
+-    if (ctxt->parseFlags & XML_PARSE_NOXINCNODE) {
+-	/*
+-	 * Add the list of nodes
+-	 */
+-	while (list != NULL) {
+-	    end = list;
+-	    list = list->next;
++    {
++        xmlElementType curType = cur->type;
++        xmlNodePtr curParent = cur->parent;
++        xmlNsPtr curNs = cur->ns;
++        const xmlChar *curName = cur->name;
++        xmlDocPtr curDoc = cur->doc;
++
++        list = ref->inc;
++        ref->inc = NULL;
++        ref->emptyFb = 0;
+@@ -2089,2 +2071,0 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	    xmlAddPrevSibling(cur, end);
+-	}
+@@ -2092 +2073 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-         * FIXME: xmlUnlinkNode doesn't coalesce text nodes.
++         * Check against the risk of generating a multi-rooted document
+@@ -2094,17 +2075,17 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	xmlUnlinkNode(cur);
+-	xmlFreeNode(cur);
+-    } else {
+-        xmlNodePtr child, next;
+-
+-	/*
+-	 * Change the current node as an XInclude start one, and add an
+-	 * XInclude end one
+-	 */
+-        if (ref->fallback)
+-            xmlUnsetProp(cur, BAD_CAST "href");
+-	cur->type = XML_XINCLUDE_START;
+-        /* Remove fallback children */
+-        for (child = cur->children; child != NULL; child = next) {
+-            next = child->next;
+-            xmlUnlinkNode(child);
+-            xmlFreeNode(child);
++        if ((curParent != NULL) &&
++            (curParent->type != XML_ELEMENT_NODE)) {
++            int nb_elem = 0;
++
++            tmp = list;
++            while (tmp != NULL) {
++                if (tmp->type == XML_ELEMENT_NODE)
++                    nb_elem++;
++                tmp = tmp->next;
++            }
++            if (nb_elem > 1) {
++                xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_MULTIPLE_ROOT,
++                           "XInclude error: would result in multiple root nodes\n",
++                               NULL);
++                xmlFreeNodeList(list);
++                return(-1);
++            }
+@@ -2112,9 +2092,0 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	end = xmlNewDocNode(cur->doc, cur->ns, cur->name, NULL);
+-	if (end == NULL) {
+-	    xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_BUILD_FAILED,
+-			   "failed to build node\n", NULL);
+-            xmlFreeNodeList(list);
+-	    return(-1);
+-	}
+-	end->type = XML_XINCLUDE_END;
+-	xmlAddNextSibling(cur, end);
+@@ -2122,6 +2094,7 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	/*
+-	 * Add the list of nodes
+-	 */
+-	while (list != NULL) {
+-	    cur = list;
+-	    list = list->next;
++        if (ctxt->parseFlags & XML_PARSE_NOXINCNODE) {
++            /*
++             * Add the list of nodes
++             */
++            while (list != NULL) {
++                end = list;
++                list = list->next;
+@@ -2129,2 +2102,43 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	    xmlAddPrevSibling(end, cur);
+-	}
++                xmlAddPrevSibling(cur, end);
++            }
++            /*
++             * FIXME: xmlUnlinkNode doesn't coalesce text nodes.
++             */
++            xmlUnlinkNode(cur);
++            xmlFreeNode(cur);
++        } else {
++            xmlNodePtr child, next;
++
++            /*
++             * Change the current node as an XInclude start one, and add an
++             * XInclude end one
++             */
++            if (ref->fallback)
++                xmlUnsetProp(cur, BAD_CAST "href");
++            cur->type = XML_XINCLUDE_START;
++            /* Remove fallback children */
++            for (child = cur->children; child != NULL; child = next) {
++                next = child->next;
++                xmlUnlinkNode(child);
++                xmlFreeNode(child);
++            }
++            end = xmlNewDocNode(curDoc, curNs, curName, NULL);
++            if (end == NULL) {
++                xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_BUILD_FAILED,
++                               "failed to build node\n", NULL);
++                xmlFreeNodeList(list);
++                return(-1);
++            }
++            end->type = XML_XINCLUDE_END;
++            xmlAddNextSibling(cur, end);
++
++            /*
++             * Add the list of nodes
++             */
++            while (list != NULL) {
++                cur = list;
++                list = list->next;
++
++                xmlAddPrevSibling(end, cur);
++            }
++        }

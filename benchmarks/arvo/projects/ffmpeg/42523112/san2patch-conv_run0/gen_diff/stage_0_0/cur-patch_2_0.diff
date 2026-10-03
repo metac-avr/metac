@@ -1,0 +1,17 @@
+diff --git a/libavcodec/mpegvideo_dec.c b/libavcodec/mpegvideo_dec.c
+index 522a0aada5..faf1db04a6 100644
+--- a/libavcodec/mpegvideo_dec.c
++++ b/libavcodec/mpegvideo_dec.c
+@@ -989 +989 @@ static int lowest_referenced_row(MpegEncContext *s, int dir)
+-    return av_clip(s->mb_y + off, 0, s->mb_height - 1);
++return av_clip(s->mb_y + off, 0, s->mb_height - 1);
+@@ -997,3 +997,6 @@ static inline void add_dct(MpegEncContext *s,
+-{
+-    if (s->block_last_index[i] >= 0) {
+-        s->idsp.idct_add(dest, line_size, block);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
++    if (s->block_last_index[i] >= 0 && block != NULL) {
++        if (dest != NULL && line_size > 0 && line_size <= 65536) {
++            s->idsp.idct_add(dest, line_size, block);
++        }

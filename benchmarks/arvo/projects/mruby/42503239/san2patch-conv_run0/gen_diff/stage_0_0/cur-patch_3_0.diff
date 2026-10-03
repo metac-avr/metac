@@ -1,0 +1,15 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..d797ec7e4 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515,2 +515,8 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++       if (argc > 0) {
++         // Check stack bounds before copying
++         if (argc <= (mrb->c->stend - (ci->stack + 1))) {
++           stack_copy(ci->stack+1, argv, argc);
++         } else {
++           stack_copy(ci->stack+1, argv, mrb->c->stend - (ci->stack + 1));
++         }
++       }

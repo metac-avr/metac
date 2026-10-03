@@ -1,0 +1,63 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..0bddade86f 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,12 +2016,0 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+@@ -2030,8 +2018,18 @@ WRITE_FRAME(16, uint16_t)
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
++static inline void write_frame_8(const Jpeg2000DecoderContext * s, Jpeg2000Tile * tile,
++                                   uint8_t * datap, int compno,
++                                   AVFrame * picture, int ci) {
++    int     x, y;
++    int     stride = picture->linesize[compno];
++    uint8_t * line = picture->data[compno];
++    
++    for (y = 0; y < tile->comp[compno].height; y++) {
++        if (line >= picture->data[compno] + stride * picture->height)
++            break;
++        for (x = 0; x < tile->comp[compno].width; x++) {
++            if (line + x >= picture->data[compno] + stride * picture->height)
++                break;
++            line[x] = *datap++;
++        }
++        line += stride;
++    }
++}
+@@ -2038,0 +2037,18 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
++static inline void write_frame_16(const Jpeg2000DecoderContext * s, Jpeg2000Tile * tile,
++                                   uint16_t * datap, int compno,
++                                   AVFrame * picture, int ci) {
++    int      x, y;
++    int      stride = picture->linesize[compno] / 2;
++    uint16_t * line = (uint16_t *)picture->data[compno];
++    
++    for (y = 0; y < tile->comp[compno].height; y++) {
++        if (line >= (uint16_t*)(picture->data[compno] + stride * 2 * picture->height))
++            break;
++        for (x = 0; x < tile->comp[compno].width; x++) {
++            if ((uint8_t*)line + x*2 >= picture->data[compno] + stride * 2 * picture->height)
++                break;
++            line[x] = *datap++;
++        }
++        line += stride;
++    }
++}

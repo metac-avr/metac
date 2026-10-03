@@ -1,0 +1,57 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..f1885c0e2a 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -193,0 +194 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++// FIXME: Crash CWE-416: Use After Free
+@@ -195,0 +197,4 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        if (!s->tmpblock) {
++            av_log(avctx, AV_LOG_ERROR, "tmpblock is NULL\n");
++            return AVERROR_INVALIDDATA;
++        }
+@@ -348,0 +354,36 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++static int flashsv_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
++{
++    struct FlashSVContext *s = avctx->priv_data;
++    int ret;
++    int block_size, blocks, deblock, ver, i;
++    int version, h_blocks, v_blocks, h_part, v_part;
++    int x, y, blk_idx;
++    GetBitContext gb;
++    int prev_block_size = 0;
++    int prev_blocks = 0;
++    int prev_deblock = 0;
++    int prev_ver = 0;
++    int prev_i = 0;
++    int prev_x = 0;
++    int prev_y = 0;
++    int prev_blk_idx = 0;
++
++    if (avpkt->size < 3) {
++        av_log(avctx, AV_LOG_ERROR, "Packet too small\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    /* no cursor handling yet */
++    if (bytestream_get_byte(&avpkt->data) & 0x40)
++        av_log(avctx, AV_LOG_WARNING, "Cursor packet not handled\n");
++
++    s->image_width  = bytestream_get_le16(&avpkt->data);
++    s->image_height = bytestream_get_le16(&avpkt->data);
++
++    if (s->image_width == 0 || s->image_height == 0) {
++        av_log(avctx, AV_LOG_ERROR, "Invalid image dimensions\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    if (s->image_width != avctx->width || s->image_height != avctx->height) {
++        av_log(avctx, AV_LOG_ERROR,
+@@ -356,0 +398 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++    // FIXME: Crash CWE-416: Use After Free
+@@ -361 +403,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        if (s->keyframedata != NULL)
++            memcpy(s->keyframedata, avpkt->data, avpkt->size);
+@@ -370,0 +414,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++    return 0;
++}

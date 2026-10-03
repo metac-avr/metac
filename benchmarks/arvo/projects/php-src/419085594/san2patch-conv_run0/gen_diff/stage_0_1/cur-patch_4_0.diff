@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..09f258bbacb 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45997,0 +45998 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++			zval *original_var_ptr = var_ptr; /* Store original pointer for validation */
+@@ -46005,0 +46007,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++			/* Validate that var_ptr hasn't been invalidated during operations */
++			if (original_var_ptr != var_ptr && Z_REFCOUNTED_P(original_var_ptr)) {
++				/* Original var_ptr may have been freed, revalidate */
++				if (UNEXPECTED(Z_TYPE_P(container) != IS_ARRAY)) {
++					goto assign_dim_op_ret_null;
++				}
++			}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..74ba6699839 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1414 +1414,4 @@ static zend_always_inline int zend_binary_op(zval *ret, zval *op1, zval *op2 OPL
+-	return zend_binary_ops[opcode - ZEND_ADD](ret, op1, op2);
++	if (opcode >= ZEND_ADD && opcode <= ZEND_POW) {
++		return zend_binary_ops[opcode - ZEND_ADD](ret, op1, op2);
++	}
++	return FAILURE;

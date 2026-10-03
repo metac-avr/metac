@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..ab5f19cb2bf 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	/* Clear hash table data before freeing to prevent use-after-free */
++	if (HT_GET_DATA_ADDR(ht)) {
++		efree(HT_GET_DATA_ADDR(ht));
++		HT_SET_DATA_ADDR(ht, NULL);
++	}
++	/* Ensure iterators are removed and hashtable is freed safely */
++ free_ht:
+@@ -1688,5 +1692,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-

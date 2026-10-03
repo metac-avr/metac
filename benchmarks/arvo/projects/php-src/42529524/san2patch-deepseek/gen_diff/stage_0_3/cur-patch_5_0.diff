@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..6070ff0b08f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3144 +3144,3 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-			cleanup_live_vars(execute_data, op_num, try_catch->catch_op);
++			if (Z_TYPE_P(EX_VAR(op_num)) != IS_UNDEF) {
++				cleanup_live_vars(execute_data, op_num, try_catch->catch_op);
++			}
+@@ -3155 +3157,3 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-			cleanup_live_vars(execute_data, op_num, try_catch->finally_op);
++			if (Z_TYPE_P(EX_VAR(op_num)) != IS_UNDEF) {
++				cleanup_live_vars(execute_data, op_num, try_catch->finally_op);
++			}
+@@ -3190 +3194,5 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-		zend_observer_fcall_end(execute_data, NULL);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		zend_observer_fcall_end(execute_data, NULL);
++	}
++	if (Z_TYPE_P(EX_VAR(op_num)) != IS_UNDEF) {
++		cleanup_live_vars(execute_data, op_num, 0);
+@@ -3192 +3199,0 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-	cleanup_live_vars(execute_data, op_num, 0);

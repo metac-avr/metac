@@ -1,0 +1,49 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..23564ab1cbe 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74,2 +74,5 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
++i_zval_ptr_dtor(&ref->val);
++	/* Atomic flag check before freeing to prevent expired pointer dereference */
++	if (__atomic_load_n(&ref, __ATOMIC_ACQUIRE) != 0) {
++		efree_size(ref, sizeof(zend_reference));
++	}
+@@ -82 +85,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +88,5 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	/* Memory barrier to ensure pointer validity */
++	__atomic_thread_fence(__ATOMIC_ACQUIRE);
++	if (zval_ptr != NULL) {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -90 +98 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr != NULL && Z_REFCOUNTED_P(zval_ptr)) {
+@@ -92,4 +100,3 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++		/* Double-free protection with atomic operation */
++		if (__atomic_load_n(&ref->gc.refcount, __ATOMIC_RELAXED) > 0 && GC_DELREF(ref) == 0) {
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..02a59aac50f 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -192 +192,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+@@ -197,2 +198,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
++		if (ptr != NULL) {
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++		}

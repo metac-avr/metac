@@ -1,0 +1,55 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..ba4caadf967 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -1486,22 +1486 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
+-		if (GC_G(gc_active)) {
+-			return 0;
+-		}
+-
+-		GC_TRACE("Collecting cycles");
+-		GC_G(gc_runs)++;
+-		GC_G(gc_active) = 1;
+-
+-		GC_TRACE("Marking roots");
+-		gc_mark_roots(&stack);
+-		GC_TRACE("Scanning roots");
+-		gc_scan_roots(&stack);
+-
+-		GC_TRACE("Collecting roots");
+-		count = gc_collect_roots(&gc_flags, &stack);
+-
+-		if (!GC_G(num_roots)) {
+-			/* nothing to free */
+-			GC_TRACE("Nothing to free");
+-			gc_stack_free(&stack);
+-			GC_G(gc_active) = 0;
++zend_gc_collect_cycles			GC_G(gc_active) = 0;
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..6aeefe07dc9 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -210,21 +210 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-	if (!spl_fixedarray_empty(&intern->array)) {
+-		zend_long j = zend_hash_num_elements(ht);
+-
+-		if (GC_REFCOUNT(ht) > 1) {
+-			intern->std.properties = zend_array_dup(ht);
+-			GC_TRY_DELREF(ht);
+-		}
+-		for (zend_long i = 0; i < intern->array.size; i++) {
+-			zend_hash_index_update(ht, i, &intern->array.elements[i]);
+-			Z_TRY_ADDREF(intern->array.elements[i]);
+-		}
+-		if (j > intern->array.size) {
+-			for (zend_long i = intern->array.size; i < j; ++i) {
+-				zend_hash_index_del(ht, i);
+-			}
+-		}
+-		if (HT_IS_PACKED(ht)) {
+-			/* Engine doesn't expet packed array */
+-			zend_hash_packed_to_hash(ht);
+-		}
+-	}
++	spl_fixedarray_write_dimension_handler

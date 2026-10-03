@@ -1,0 +1,31 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..824dc56b8e1 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2490,3 +2490,4 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	GC_REMOVE_FROM_BUFFER(ht);
+-	if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
+-		_zend_hash_iterators_remove(ht);
++	HashTable *temp_ht = ht;
++	GC_REMOVE_FROM_BUFFER(temp_ht);
++	if (UNEXPECTED(HT_HAS_ITERATORS(temp_ht))) {
++		_zend_hash_iterators_remove(temp_ht);
+@@ -2494,2 +2495,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
+-		efree(HT_GET_DATA_ADDR(ht));
++	if (!(EXPECTED(HT_FLAGS(temp_ht) & HASH_FLAG_UNINITIALIZED))) {
++		efree(HT_GET_DATA_ADDR(temp_ht));
+@@ -2497 +2498,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	FREE_HASHTABLE(ht);
++	FREE_HASHTABLE(temp_ht);
++	temp_ht = NULL;
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..ee917dc2e73 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -647 +647 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			if (Z_TYPE_P(zv) == IS_OBJECT) {
++			if (zv && Z_TYPE_P(zv) == IS_OBJECT) {
+@@ -649 +649 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			} else if (Z_TYPE_P(zv) == IS_ARRAY) {
++			} else if (zv && Z_TYPE_P(zv) == IS_ARRAY && Z_ARRVAL_P(zv) != NULL) {

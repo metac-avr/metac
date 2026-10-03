@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..0162a07ddd8 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35 +36 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr) && Z_DELREF_P(zval_ptr) == 0) {
+@@ -45,0 +47 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 1819d0b671d..5fb5a84a8c3 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4495 +4495,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zval_ptr_dtor_nogc(var);
++					if (EXPECTED(var != NULL)) {
++						zval_ptr_dtor_nogc(var);
++					}
+@@ -4506 +4508,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zval_ptr_dtor_nogc(var);
++					if (EXPECTED(var != NULL)) {
++						zval_ptr_dtor_nogc(var);
++					}

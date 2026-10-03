@@ -1,0 +1,32 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..a5ecfadd23 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -281,2 +281,4 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = 0; h < (16 >> (vsub + lowres)); h++){
+-                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
++            int max_w = 16 >> (hsub + lowres);
++            int max_h = 16 >> (vsub + lowres);
++            for (int h = 0; h < max_h; h++){
++                for (int w = 0, idx = 0; w < max_w && w < (linesize[i] / 2); w++, idx += step)
+@@ -297,0 +300,2 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++            int max_w = 16 >> (hsub + lowres);
++            int max_h = 16 >> (vsub + lowres);
+@@ -299,2 +303,2 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
++            for (int h = max_h - 1; h >= 0; h--){
++                for (int w = max_w - 1, idx = 0; w >= 0 && w < (linesize[i] / 2); w--, idx += step)
+diff --git a/libavcodec/h263dec.c b/libavcodec/h263dec.c
+index f4e7048a5f..22a5e8056a 100644
+--- a/libavcodec/h263dec.c
++++ b/libavcodec/h263dec.c
+@@ -287 +287 @@ static int decode_slice(MpegEncContext *s)
+-            }
++             }
+@@ -288,0 +289,5 @@ static int decode_slice(MpegEncContext *s)
++            // Validate macroblock coordinates before reconstruction to prevent out-of-bounds writes
++            if (s->mb_x < 0 || s->mb_x >= s->mb_width || s->mb_y < 0 || s->mb_y >= s->mb_height) {
++                av_log(s->avctx, AV_LOG_ERROR, "Macroblock coordinates out of bounds: %d,%d\n", s->mb_x, s->mb_y);
++                return AVERROR_INVALIDDATA;
++            }

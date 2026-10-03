@@ -1,0 +1,62 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..84426ff1 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1159,0 +1160 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		// Fixed CWE-416: Use After Free - Defensive programming approach
+@@ -1161,0 +1163,6 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		/* Additional safeguard against corrupted node pointers */
++		if (set->nodeTab[i] != NULL && set->nodeTab[i]->type < XML_ELEMENT_NODE) {
++		    /* Validate node type range to prevent invalid memory access */
++		    if (set->nodeTab[i]->type < 0 || set->nodeTab[i]->type > XML_ENTITY_DECL)
++		        continue;
++		}
+@@ -1178,0 +1186,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			    /* Double-check pointer validity before use */
++			    if (!cur) break;
+@@ -1189,4 +1198,7 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
++				    /* Ensure tmp is valid before linking */
++				    if (tmp) {
++				        if (last == NULL) {
++					    list = last = tmp;
++				        } else {
++					    last = xmlAddNextSibling(last, tmp);
++				        }
+@@ -1193,0 +1206,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++				    /* Verify cur is still accessible */
++				    if (!cur) break;
+@@ -1214,9 +1228,14 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		/* Final validation before node copy operation */
++		if (set->nodeTab[i]) {
++		    if (last == NULL)
++			list = last = xmlXIncludeCopyNode(ctxt, target, source,
++				                              set->nodeTab[i]);
++		    else {
++			xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
++					                    set->nodeTab[i]);
++			if (new_node) {
++			    xmlAddNextSibling(last, new_node);
++			    if (last->next != NULL)
++				last = last->next;
++			}
++		    }
+@@ -2275 +2294,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-416: Use After Free
++          */
+@@ -2277,0 +2298,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	/* Clear pointer to prevent use-after-free vulnerability */
++	cur = NULL;

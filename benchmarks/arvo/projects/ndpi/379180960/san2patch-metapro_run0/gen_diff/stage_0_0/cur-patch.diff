@@ -1,0 +1,60 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 4bfc34ce0..8adc25e56 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -7560,2 +7560,6 @@ static u_int32_t check_ndpi_udp_flow_func(struct ndpi_detection_module_struct *n
+-					  struct ndpi_flow_struct *flow,
+-					  NDPI_SELECTION_BITMASK_PROTOCOL_SIZE *ndpi_selection_packet) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++  				  struct ndpi_flow_struct *flow,
++				  NDPI_SELECTION_BITMASK_PROTOCOL_SIZE *ndpi_selection_packet) {
++  // Bounds checking to prevent out-of-bounds read in protocol detection
++  if(ndpi_str->callback_buffer_size_udp < sizeof(u_int32_t) * 4) // Ensure minimum 16 bytes for MikroTik
++    return 0;
+@@ -7570,4 +7574,3 @@ static u_int32_t check_ndpi_tcp_flow_func(struct ndpi_detection_module_struct *n
+-					  struct ndpi_flow_struct *flow,
+-					  NDPI_SELECTION_BITMASK_PROTOCOL_SIZE *ndpi_selection_packet)
+-{
+-  if(ndpi_str->packet.payload_packet_len != 0) {
++				  struct ndpi_flow_struct *flow,
++				  NDPI_SELECTION_BITMASK_PROTOCOL_SIZE *ndpi_selection_packet)
++{  if(ndpi_str->packet.payload_packet_len != 0) {
+diff --git a/src/lib/protocols/mikrotik.c b/src/lib/protocols/mikrotik.c
+index b1d315581..02ca3b637 100644
+--- a/src/lib/protocols/mikrotik.c
++++ b/src/lib/protocols/mikrotik.c
+@@ -59 +59 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    if(m_len == 6)
++	    if(m_len == 6 && ndpi_struct->packet.payload_packet_len >= offset + 4 + m_len)
+@@ -63 +63,2 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    snprintf(flow->protos.mikrotik.identity, sizeof(flow->protos.mikrotik.identity), 
++	    if(ndpi_struct->packet.payload_packet_len >= offset + 4 + m_len)
++	      snprintf(flow->protos.mikrotik.identity, sizeof(flow->protos.mikrotik.identity), 
+@@ -67 +68,2 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    snprintf(flow->protos.mikrotik.version, sizeof(flow->protos.mikrotik.version), 
++	    if(ndpi_struct->packet.payload_packet_len >= offset + 4 + m_len)
++	      snprintf(flow->protos.mikrotik.version, sizeof(flow->protos.mikrotik.version), 
+@@ -71 +73 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    if(m_len == 4)
++	    if(m_len == 4 && ndpi_struct->packet.payload_packet_len >= offset + 4 + m_len)
+@@ -75 +77,2 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    snprintf(flow->protos.mikrotik.sw_id, sizeof(flow->protos.mikrotik.sw_id), 
++	    if(ndpi_struct->packet.payload_packet_len >= offset + 4 + m_len)
++	      snprintf(flow->protos.mikrotik.sw_id, sizeof(flow->protos.mikrotik.sw_id), 
+@@ -79 +82,2 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    snprintf(flow->protos.mikrotik.board, sizeof(flow->protos.mikrotik.board), 
++	    if(ndpi_struct->packet.payload_packet_len >= offset + 4 + m_len)
++	      snprintf(flow->protos.mikrotik.board, sizeof(flow->protos.mikrotik.board), 
+@@ -82,2 +86,3 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	  case 15: /* IPv6 */
+-	    if(m_len == 16)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	  case 15: /* IPv6 */
++	    if(m_len == 16 && ndpi_struct->packet.payload_packet_len >= offset + 4 + m_len)
+@@ -87 +92,2 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    snprintf(flow->protos.mikrotik.iface_name, sizeof(flow->protos.mikrotik.iface_name), 
++	    if(ndpi_struct->packet.payload_packet_len >= offset + 4 + m_len)
++	      snprintf(flow->protos.mikrotik.iface_name, sizeof(flow->protos.mikrotik.iface_name), 
+@@ -91 +97 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    if(m_len == 4)
++	    if(m_len == 4 && ndpi_struct->packet.payload_packet_len >= offset + 4 + m_len)

@@ -1,0 +1,27 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..4ce3f0f0f 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -791,0 +792,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  // Check if object is still valid before marking
++  if (obj->tt >= MRB_TT_MAXDEFINE) return;
+@@ -799,2 +801 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1203,3 +1204,6 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++// FIXME: Crash CWE-416: Use After Free
++       if (!gc->atomic_state) {  /* Ensure atomic operation completion before freeing */
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++       }

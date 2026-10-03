@@ -1,0 +1,99 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..4da8f71c84 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -44,7 +43,0 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
+-        ff_refstruct_unref(&frame->rpl_tab);
+-        frame->refPicList = NULL;
+-
+-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+-    }
+-}
+-
+@@ -58,8 +51,9 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-    return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
+-}
+-
+-void ff_hevc_clear_refs(HEVCContext *s)
+-{
+-    int i;
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    
++    if (!ref || !ref->rpl_tab)
++        return NULL;
++    
++    if (ctb_addr_ts >= 0 && ref->rpl_tab[ctb_addr_ts])
++        return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
++    
++    return NULL;
++}        ff_hevc_unref_frame(&s->DPB[i],
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..6a5a6ea53b 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1390,54 +1390,8 @@ static int hls_transform_tree(HEVCLocalContext *lc,
+-    if (split_transform_flag) {
+-        const int trafo_size_split = 1 << (log2_trafo_size - 1);
+-        const int x1 = x0 + trafo_size_split;
+-        const int y1 = y0 + trafo_size_split;
+-
+-#define SUBDIVIDE(x, y, idx)                                                    \
+-do {                                                                            \
+-    ret = hls_transform_tree(lc, pps, sps,                                      \
+-                             x, y, x0, y0, cb_xBase, cb_yBase, log2_cb_size,    \
+-                             log2_trafo_size - 1, trafo_depth + 1, idx,         \
+-                             cbf_cb, cbf_cr);                                   \
+-    if (ret < 0)                                                                \
+-        return ret;                                                             \
+-} while (0)
+-
+-        SUBDIVIDE(x0, y0, 0);
+-        SUBDIVIDE(x1, y0, 1);
+-        SUBDIVIDE(x0, y1, 2);
+-        SUBDIVIDE(x1, y1, 3);
+-
+-#undef SUBDIVIDE
+-    } else {
+-        int min_tu_size      = 1 << sps->log2_min_tb_size;
+-        int log2_min_tu_size = sps->log2_min_tb_size;
+-        int min_tu_width     = sps->min_tb_width;
+-        int cbf_luma         = 1;
+-
+-        if (lc->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
+-            cbf_cb[0] || cbf_cr[0] ||
+-            (sps->chroma_format_idc == 2 && (cbf_cb[1] || cbf_cr[1]))) {
+-            cbf_luma = ff_hevc_cbf_luma_decode(lc, trafo_depth);
+-        }
+-
+-        ret = hls_transform_unit(lc, pps, sps,
+-                                 x0, y0, xBase, yBase, cb_xBase, cb_yBase,
+-                                 log2_cb_size, log2_trafo_size,
+-                                 blk_idx, cbf_luma, cbf_cb, cbf_cr);
+-        if (ret < 0)
+-            return ret;
+-        // TODO: store cbf_luma somewhere else
+-        if (cbf_luma) {
+-            int i, j;
+-            for (i = 0; i < (1 << log2_trafo_size); i += min_tu_size)
+-                for (j = 0; j < (1 << log2_trafo_size); j += min_tu_size) {
+-                    int x_tu = (x0 + j) >> log2_min_tu_size;
+-                    int y_tu = (y0 + i) >> log2_min_tu_size;
+-                    s->cbf_luma[y_tu * min_tu_width + x_tu] = 1;
+-                }
+-        }
+-        if (!s->sh.disable_deblocking_filter_flag) {
+-            ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
+-            if (pps->transquant_bypass_enable_flag &&
+-                lc->cu.cu_transquant_bypass_flag)
+-                set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++                    if (!s->sh.disable_deblocking_filter_flag) {
++            const RefPicList *ref_list = ff_hevc_get_ref_list(s, s->ref, x0, y0);
++            if (ref_list && ref_list->refPicList[0].frame) {
++                ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
++                if (pps->transquant_bypass_enable_flag &&
++                    lc->cu.cu_transquant_bypass_flag)
++                    set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++            }
+@@ -1445 +1398,0 @@ do {
+-    }

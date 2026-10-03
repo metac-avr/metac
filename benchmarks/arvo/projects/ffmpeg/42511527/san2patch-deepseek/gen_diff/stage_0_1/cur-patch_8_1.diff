@@ -1,0 +1,34 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..4ea5a12f0d 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -349,14 +348,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+-    /* we care for keyframes only in Screen Video v2 */
+-    s->is_keyframe = (avpkt->flags & AV_PKT_FLAG_KEY) && (s->ver == 2);
+-    if (s->is_keyframe) {
+-        int err;
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
+-            return err;
+-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
+-    }
+@@ -370,0 +357,14 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++    /* we care for keyframes only in Screen Video v2 */
++    s->is_keyframe = (avpkt->flags & AV_PKT_FLAG_KEY) && (s->ver == 2);
++    if (s->is_keyframe) {
++        int err;
++        uint8_t *new_keyframedata = av_malloc(avpkt->size);
++        if (!new_keyframedata)
++            return AVERROR(ENOMEM);
++        memcpy(new_keyframedata, avpkt->data, avpkt->size);
++        av_freep(&s->keyframedata);
++        s->keyframedata = new_keyframedata;
++        if (s->zstream) {
++            inflateReset(&s->zstream);
++        }
++    }

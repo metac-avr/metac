@@ -1,0 +1,48 @@
+diff --git a/parser.c b/parser.c
+index cd78db4b..cf22509c 100644
+--- a/parser.c
++++ b/parser.c
+@@ -10513,5 +10513,12 @@ xmlParseEncodingDecl(xmlParserCtxtPtr ctxt) {
+-            handler = xmlFindCharEncodingHandler((const char *) encoding);
+-	    if (handler != NULL) {
+-		if (xmlSwitchToEncoding(ctxt, handler) < 0) {
+-		    /* failed to convert */
+-		    ctxt->errNo = XML_ERR_UNSUPPORTED_ENCODING;
++/* Check buffer bounds before processing encoding */
++             if (ctxt->input->cur < ctxt->input->end) {
++                 handler = xmlFindCharEncodingHandler((const char *) encoding);
++		if (handler != NULL) {
++		    if (xmlSwitchToEncoding(ctxt, handler) < 0) {
++			/* failed to convert */
++			ctxt->errNo = XML_ERR_UNSUPPORTED_ENCODING;
++			return(NULL);
++		    }
++		} else {
++		    xmlFatalErrMsgStr(ctxt, XML_ERR_UNSUPPORTED_ENCODING,
++		    	"Unsupported encoding %s\n", encoding);
+@@ -10520,5 +10527,3 @@ xmlParseEncodingDecl(xmlParserCtxtPtr ctxt) {
+-	    } else {
+-		xmlFatalErrMsgStr(ctxt, XML_ERR_UNSUPPORTED_ENCODING,
+-			"Unsupported encoding %s\n", encoding);
+-		return(NULL);
+-	    }
++             } else {
++                 return(NULL);
++             }
+@@ -10525,0 +10531 @@ xmlParseEncodingDecl(xmlParserCtxtPtr ctxt) {
++
+@@ -12078,3 +12084,6 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
+-	snprintf(buffer, 149, "Bytes: 0x%02X 0x%02X 0x%02X 0x%02X\n",
+-			ctxt->input->cur[0], ctxt->input->cur[1],
+-			ctxt->input->cur[2], ctxt->input->cur[3]);
++        int bytes_available = ctxt->input->end - ctxt->input->cur;
++        snprintf(buffer, 149, "Bytes: 0x%02X 0x%02X 0x%02X 0x%02X\n",
++                (bytes_available > 0) ? ctxt->input->cur[0] : 0,
++                (bytes_available > 1) ? ctxt->input->cur[1] : 0,
++                (bytes_available > 2) ? ctxt->input->cur[2] : 0,
++                (bytes_available > 3) ? ctxt->input->cur[3] : 0);
+@@ -12082,2 +12091,2 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
+-		     "Input is not proper UTF-8, indicate encoding !\n%s",
+-		     BAD_CAST buffer, NULL);
++	     "Input is not proper UTF-8, indicate encoding !\n%s",
++	     BAD_CAST buffer, NULL);

@@ -1,0 +1,51 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..ff528f4204a 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -627,29 +627,11 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		if ((opline->op1_type & (IS_TMP_VAR|IS_VAR|IS_CV))
+-		 && opline->opcode != ZEND_ROPE_ADD
+-		 && opline->opcode != ZEND_ROPE_END
+-		 && opline->opcode != ZEND_NEW
+-		 && opline->opcode != ZEND_FETCH_CLASS_CONSTANT
+-		 && opline->opcode != ZEND_INIT_STATIC_METHOD_CALL) {
+-			zval *zv = EX_VAR(opline->op1.var);
+-			op1_type = Z_TYPE_P(zv);
+-			uint8_t flags = 0;
+-
+-			if (op1_type == IS_INDIRECT) {
+-				zv = Z_INDIRECT_P(zv);
+-				op1_type = Z_TYPE_P(zv);
+-				flags |= IS_TRACE_INDIRECT;
+-			}
+-			if (op1_type == IS_REFERENCE) {
+-				zv = Z_REFVAL_P(zv);
+-				op1_type = Z_TYPE_P(zv);
+-				flags |= IS_TRACE_REFERENCE;
+-			}
+-			if (Z_TYPE_P(zv) == IS_OBJECT) {
+-				ce1 = Z_OBJCE_P(zv);
+-			} else if (Z_TYPE_P(zv) == IS_ARRAY) {
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
+-				}
+-			}
+-			op1_type |= flags;
+-		}
++		static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++{
++	GC_REMOVE_FROM_BUFFER(ht);
++	if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
++		_zend_hash_iterators_remove(ht);
++	}
++	if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
++		efree(HT_GET_DATA_ADDR(ht));
++	}
++	FREE_HASHTABLE(ht);
++}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..c5b29f87975 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2496,0 +2497 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++	HT_FLAGS(ht) |= HASH_FLAG_DELETED; /* Mark as freed to prevent use-after-free */

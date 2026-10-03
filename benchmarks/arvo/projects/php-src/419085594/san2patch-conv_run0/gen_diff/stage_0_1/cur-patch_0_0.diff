@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..86891f487e1 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1412,0 +1413,11 @@ static zend_always_inline int zend_binary_op(zval *ret, zval *op1, zval *op2 OPL
++	zval op1_copy, op2_copy;
++	int result;
++
++	if (opcode == ZEND_CONCAT) {
++		ZVAL_COPY(&op1_copy, op1);
++		ZVAL_COPY(&op2_copy, op2);
++		result = concat_function(ret, &op1_copy, &op2_copy);
++		zval_ptr_dtor(&op1_copy);
++		zval_ptr_dtor(&op2_copy);
++		return result;
++	}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..9c171f46eb6 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45992,0 +45993,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++			zval temp_var;
++			ZVAL_COPY(&temp_var, var_ptr);
++			zend_binary_op(&temp_var, &temp_var, value OPLINE_CC);
++			ZVAL_COPY_VALUE(var_ptr, &temp_var);

@@ -1,0 +1,44 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..5bf4e0e33 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -185 +185 @@ int is_version_with_ietf_long_header(uint32_t version)
+-int quic_len(const uint8_t *buf, uint64_t *value)
++ int quic_len(const uint8_t *buf, uint64_t packet_len, uint64_t *value)
+@@ -186,0 +187,2 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  int required_len;
++  if(packet_len == 0) return 0;
+@@ -187,0 +190 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  required_len = 1;
+@@ -190,2 +193 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    (*value) &= 0x3F;
+-    return 1;
++    break;
+@@ -192,0 +195,13 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++    required_len = 2;
++    break;
++  case 2:
++    required_len = 4;
++    break;
++  case 3:
++    required_len = 8;
++    break;
++  default: /* No Possible */
++    return 0;
++  }
++  if(packet_len < (uint64_t)required_len) return 0;
++  if(required_len == 2) {
+@@ -195 +210,2 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-  case 2:
++  }
++  if(required_len == 4) {
+@@ -198 +214,2 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-  case 3:
++  }
++  if(required_len == 8) {
+@@ -201,2 +217,0 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-  default: /* No Possible */
+-    return 0;
+@@ -203,0 +219,2 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  (*value) &= 0x3F;
++  return 1;

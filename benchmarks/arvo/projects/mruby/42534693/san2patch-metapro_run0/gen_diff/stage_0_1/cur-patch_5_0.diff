@@ -1,0 +1,23 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..e6a148ed7 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -165 +165,3 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
+-DEFINE_INCREMENTER(ht, size)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++if (!hsh.ht) return 0; /* Prevent null pointer dereference */
++ DEFINE_INCREMENTER(ht, size)
+@@ -177 +178,0 @@ DEFINE_SWITCHER(ht, HT)
+-
+@@ -1567 +1568 @@ mrb_hash_aset(mrb_state *mrb, mrb_value self)
+-  const mrb_value *argv = mrb_get_argv(mrb);
++const mrb_value *argv = mrb_get_argv(mrb);
+@@ -1575 +1576,2 @@ MRB_API mrb_int
+-mrb_hash_size(mrb_state *mrb, mrb_value hash)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mrb_hash_size(mrb_state *mrb, mrb_value hash)
+@@ -1577 +1579,3 @@ mrb_hash_size(mrb_state *mrb, mrb_value hash)
+-  return (mrb_int)h_size(mrb_hash_ptr(hash));
++  struct RHash *h = mrb_hash_ptr(hash);
++  if (mrb_type(hash) != MRB_TT_HASH || h == NULL) return 0;
++  return (mrb_int)h_size(h);

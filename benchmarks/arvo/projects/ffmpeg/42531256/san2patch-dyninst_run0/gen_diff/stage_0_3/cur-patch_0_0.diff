@@ -1,0 +1,24 @@
+diff --git a/libavcodec/cbs_h266_syntax_template.c b/libavcodec/cbs_h266_syntax_template.c
+index 06f9f29e08..75de72c5f0 100644
+--- a/libavcodec/cbs_h266_syntax_template.c
++++ b/libavcodec/cbs_h266_syntax_template.c
+@@ -920 +920 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
+-        if (current->vps_timing_hrd_params_present_flag) {
++                if (current->vps_timing_hrd_params_present_flag) {
+@@ -932,6 +932,10 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
+-                if (!current->vps_default_ptl_dpb_hrd_max_tid_flag)
+-                    us(3, vps_hrd_max_tid[i], 0,
+-                       current->vps_max_sublayers_minus1, 1, i);
+-                else
+-                    infer(vps_hrd_max_tid[i],
+-                          current->vps_max_sublayers_minus1);
++                if (i < FF_ARRAY_ELEMS(current->vps_hrd_max_tid)) { // Bounds check added
++                    if (!current->vps_default_ptl_dpb_hrd_max_tid_flag)
++                        us(3, vps_hrd_max_tid[i], 0,
++                            current->vps_max_sublayers_minus1, 1, i);
++                    else
++                        infer(vps_hrd_max_tid[i],
++                              current->vps_max_sublayers_minus1);
++                } else {
++                    return AVERROR_INVALIDDATA; // Return error if index out of bounds
++                }

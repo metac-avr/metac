@@ -1,0 +1,31 @@
+diff --git a/buf.c b/buf.c
+index 9dc9400f..1facd94f 100644
+--- a/buf.c
++++ b/buf.c
+@@ -436,0 +437 @@ xmlBufGrow(xmlBufPtr buf, int len) {
++    xmlBufPtr old_buf = buf;  /* Store original buffer pointer */
+@@ -439 +440 @@ xmlBufGrow(xmlBufPtr buf, int len) {
+-    if (len == 0)
++     if (len == 0)
+@@ -442 +443,3 @@ xmlBufGrow(xmlBufPtr buf, int len) {
+-    if (buf->error != 0)
++    if (buf->error != 0) {
++        /* Validate that buffer pointer hasn't been corrupted */
++        if (buf != old_buf) return(-1);
+@@ -443,0 +447,3 @@ xmlBufGrow(xmlBufPtr buf, int len) {
++    }
++    /* Additional check to ensure buffer integrity */
++    if (buf != old_buf) return(-1);
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..44181d44 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -4884 +4884,7 @@ htmlParseDocument(htmlParserCtxtPtr ctxt) {
+-     * autoclose
++     * Check if context is still valid after parsing content
++     */
++    if (ctxt == NULL) return(-1);
++    
++    /*
++// FIXME: Crash CWE-416: Use After Free
++      * autoclose

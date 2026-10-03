@@ -1,0 +1,29 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..e515533ba 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -742,2 +742,4 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      for (i=0; i<e; i++) {
+-        mrb_gc_mark_value(mrb, p[i]);
++      if (e > 0 && p != NULL) {
++        for (i=0; i<e; i++) {
++          mrb_gc_mark_value(mrb, p[i]);
++        }
+@@ -779,2 +781 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
++default:
+@@ -791,0 +793,9 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  /* Check if object is within valid heap pages */
++  mrb_heap_page* page = mrb->gc.heaps;
++  while (page) {
++    if ((char*)obj >= (char*)page->freelist && (char*)obj < (char*)(page->freelist + MRB_HEAP_PAGE_SIZE)) break;
++    page = page->next;
++  }
++  if (page == NULL) return;
++  
+@@ -799,2 +809 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:

@@ -1,0 +1,40 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index bbddd459704..978c850e783 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1252,7 +1251,0 @@ ZEND_API void zend_activate(void) /* {{{ */
+-		memset(CG(map_ptr_real_base), 0, CG(map_ptr_last) * sizeof(void*));
+-	}
+-	zend_init_internal_run_time_cache();
+-	zend_observer_activate();
+-}
+-/* }}} */
+-
+@@ -1262,0 +1256,3 @@ void zend_call_destructors(void) /* {{{ */
++	} zend_catch {
++		/* Clear any pending destructors to prevent use-after-free */
++		zend_hash_clean(&EG(regular_list));
+@@ -1265,9 +1261 @@ void zend_call_destructors(void) /* {{{ */
+-/* }}} */
+-
+-ZEND_API void zend_deactivate(void) /* {{{ */
+-{
+-	/* we're no longer executing anything */
+-	EG(current_execute_data) = NULL;
+-
+-	zend_try {
+-		shutdown_scanner();
++/* }}} */		shutdown_scanner();
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..1a031d57ccb 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++		/* Clear object reference from GC buffer before efree to prevent dangling pointers */
+@@ -203,0 +204,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Zero out the object memory before freeing to catch invalid accesses */
++		memset(object, 0, sizeof(zend_object));
++		ptr = ((char*)object) - object->handlers->offset;
+@@ -208,0 +212 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++/* }}} */

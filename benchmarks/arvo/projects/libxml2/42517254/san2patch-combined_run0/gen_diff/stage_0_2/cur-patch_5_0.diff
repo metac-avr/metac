@@ -1,0 +1,28 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..e7eff28d 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2275 +2275,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-416: Use After Free
++          */
+@@ -2288 +2289 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-        /* Remove fallback children */
++        /* Remove fallback children - prevent use-after-free */
+@@ -2314,0 +2316,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    
++    /* Explicitly nullify cur to prevent any further access after freeing */
++    if (ctxt->parseFlags & XML_PARSE_NOXINCNODE) {
++        cur = NULL;
++    }
+@@ -2503,4 +2509,6 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-	if ((ctxt->incTab[i]->inc != NULL) ||
+-            (ctxt->incTab[i]->xptr != NULL) ||
+-	    (ctxt->incTab[i]->emptyFb != 0))	/* (empty fallback) */
+-	    xmlXIncludeIncludeNode(ctxt, i);
++        if (ctxt->incTab[i] != NULL) {
++	    if ((ctxt->incTab[i]->inc != NULL) ||
++                 (ctxt->incTab[i]->xptr != NULL) ||
++	        (ctxt->incTab[i]->emptyFb != 0))	/* (empty fallback) */
++	        xmlXIncludeIncludeNode(ctxt, i);
++        }

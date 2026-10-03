@@ -1,0 +1,42 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..9fcf082e8a6 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57,3 +56,0 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
+-}
+-
+@@ -66,0 +64,5 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Clear any potential error context before freeing */
++	if (EG(current_execute_data) && EG(current_execute_data)->opline && 
++	    EG(current_execute_data)->opline->filename == str) {
++		EG(current_execute_data)->opline = NULL;
++	}
+@@ -69,10 +71 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-#endif
+-
+-static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-{
+-	ZEND_ASSERT(!ZEND_REF_HAS_TYPE_SOURCES(ref));
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
+-}
+-
+-static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
++#endifstatic void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+diff --git a/Zend/zend_exceptions.c b/Zend/zend_exceptions.c
+index da4b664981f..81650765a5f 100644
+--- a/Zend/zend_exceptions.c
++++ b/Zend/zend_exceptions.c
+@@ -799 +799,8 @@ ZEND_API zend_class_entry *zend_get_error_exception(void)
+-	return zend_ce_error_exception;
++	zend_class_entry *result = zend_ce_error_exception;
++	
++	/* Check if the error exception class entry is valid before returning */
++	if (result == NULL) {
++		/* Fallback to regular exception class if error exception is not available */
++		return zend_ce_exception;
++	}
++	return result;
+@@ -810 +816,0 @@ static zend_object *zend_throw_exception_zstr(zend_class_entry *exception_ce, ze
+-

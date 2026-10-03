@@ -1,0 +1,35 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index b022e49c6..433524e5e 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -1476 +1475,0 @@ mrb_bint_mod(mrb_state *mrb, mrb_value x, mrb_value y)
+-  struct RBigint *b3 = bint_new(mrb);
+@@ -1478,0 +1478,2 @@ mrb_bint_mod(mrb_state *mrb, mrb_value x, mrb_value y)
++    struct RBigint *b3 = bint_new(mrb);
++    return bint_norm(mrb, b3);
+@@ -1479,0 +1481 @@ mrb_bint_mod(mrb_state *mrb, mrb_value x, mrb_value y)
++  struct RBigint *b3 = bint_new(mrb);
+diff --git a/src/numeric.c b/src/numeric.c
+index bfa8465f3..08fc84ba2 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1110 +1110,2 @@ int_mod(mrb_state *mrb, mrb_value x)
+-#ifdef MRB_USE_BIGINT
++// FIXME: Crash CWE-369: Divide By Zero
++ #ifdef MRB_USE_BIGINT
+@@ -1111,0 +1113,15 @@ int_mod(mrb_state *mrb, mrb_value x)
++    /* Prevent division by zero in bigint modulo operation */
++    if (mrb_integer_p(y)) {
++      if (mrb_integer(y) == 0) {
++        mrb_int_zerodiv(mrb);
++      }
++    } else if (mrb_bigint_p(y)) {
++      if (mrb_bint_is_zero(mrb, y)) {
++        mrb_int_zerodiv(mrb);
++      }
++    } else {
++      /* For other types, convert to float and check */
++      if (mrb_as_float(mrb, y) == 0.0) {
++        mrb_int_zerodiv(mrb);
++      }
++    }

@@ -1,0 +1,28 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..9d132585e 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -479 +479,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     c = mrb_class(mrb, self);
+@@ -485 +486,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if ((size_t)(n+1) < (mrb->c->stend - mrb->c->stbase)) {
++        ci->stack[n+1] = args;
++      }
+@@ -498 +501,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if ((size_t)(n+1) < (mrb->c->stend - mrb->c->stbase)) {
++        ci->stack[n+1] = args;
++      }
+@@ -517 +522,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[argc+1] = blk;
++      if ((size_t)(argc+1) < (mrb->c->stend - mrb->c->stbase)) {
++        ci->stack[argc+1] = blk;
++      }
+@@ -520 +527,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[2] = blk;
++      if (2U < (mrb->c->stend - mrb->c->stbase)) {
++        ci->stack[2] = blk;
++      }

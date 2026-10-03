@@ -1,0 +1,29 @@
+diff --git a/libavcodec/mpegvideo_dec.c b/libavcodec/mpegvideo_dec.c
+index 765ccd0ba4..2404d7e60c 100644
+--- a/libavcodec/mpegvideo_dec.c
++++ b/libavcodec/mpegvideo_dec.c
+@@ -1022,0 +1023,6 @@ void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
++    // Bounds check to prevent heap buffer overflow
++    if (s->mb_x >= s->mb_width || s->mb_y >= s->mb_height) {
++        av_log(s->avctx, AV_LOG_ERROR, "Macroblock coordinates out of bounds\n");
++        return;
++    }
++
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..0ba379862a 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -282,2 +282,4 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step) {
++                    if (dest_pcm[i] + w < (uint16_t*)((uint8_t*)dest_pcm[i] + linesize[i]))
++                        dest_pcm[i][w] = src[idx];
++                }
+@@ -300,2 +302,4 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step) {
++                    if (dest_pcm[i] + w < (uint16_t*)((uint8_t*)dest_pcm[i] + linesize[i]))
++                        dest_pcm[i][w] = src[idx];
++                }

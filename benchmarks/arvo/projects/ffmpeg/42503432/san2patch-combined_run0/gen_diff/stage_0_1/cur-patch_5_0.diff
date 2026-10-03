@@ -1,0 +1,16 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..7647c6b353 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -246,4 +246,7 @@ static int find_headers_search(FLACParseContext *fpc, uint8_t *buf,
+-            for (j = 0; j < 4; j++) {
+-                if ((AV_RB16(buf + i + j) & 0xFFFE) == 0xFFF8) {
+-                    int ret = find_headers_search_validate(fpc, search_start + i + j);
+-                    size = FFMAX(size, ret);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             for (j = 0; j < 4; j++) {
++                if (i + j + 2 <= buf_size) {
++                    if ((AV_RB16(buf + i + j) & 0xFFFE) == 0xFFF8) {
++                        int ret = find_headers_search_validate(fpc, search_start + i + j);
++                        size = FFMAX(size, ret);
++                    }

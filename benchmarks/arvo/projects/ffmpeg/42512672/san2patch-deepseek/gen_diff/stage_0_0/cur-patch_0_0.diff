@@ -1,0 +1,17 @@
+diff --git a/libavcodec/qdrw.c b/libavcodec/qdrw.c
+index 849d4a5cad..efef0f0061 100644
+--- a/libavcodec/qdrw.c
++++ b/libavcodec/qdrw.c
+@@ -53 +53 @@ static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
+-    for (i = 0; i <= colors; i++) {
++    for (i = 0; i <= colors && i < AVPALETTE_COUNT; i++) {
+@@ -68 +68,2 @@ static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
+-        b = bytestream2_get_byte(gbc);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         b = bytestream2_get_byte(gbc);
+@@ -69,0 +71,5 @@ static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
++        if (pixmap ? i >= AVPALETTE_COUNT : idx >= AVPALETTE_COUNT) {
++            av_log(avctx, AV_LOG_WARNING,
++                   "Palette index out of range: %u\n", idx);
++            continue;
++        }

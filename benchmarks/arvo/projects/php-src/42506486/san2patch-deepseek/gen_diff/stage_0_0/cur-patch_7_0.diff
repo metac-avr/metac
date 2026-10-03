@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..5348dbad709 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1184,0 +1185,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (UNEXPECTED(p->refcount == 1)) {
++		zend_gc_set_immutable(p);
++	}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..b98763dda41 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -210,5 +209,0 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		return ZEND_HASH_APPLY_KEEP;
+-	}
+-}
+-/* }}} */
+-
+@@ -219,0 +215,3 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
++	if (Z_REFCOUNTED_P(zv) && Z_REFCOUNT_P(zv) == 0) {
++		return;
++	}
+@@ -223,9 +220,0 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-
+-static ZEND_COLD void zend_throw_or_error(int fetch_type, zend_class_entry *exception_ce, const char *format, ...) /* {{{ */
+-{
+-	va_list va;
+-	char *message = NULL;
+-
+-	va_start(va, format);
+-	zend_vspprintf(&message, 0, format, va);
+-

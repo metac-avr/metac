@@ -1,0 +1,14 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..af00aa359 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -430 +430,2 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-				if (ogg_stream_pagein(&os, &oggpage) >= 0 ) {
++// FIXME: Crash CWE-416: Use After Free
++ 				if (ogg_stream_pagein(&os, &oggpage) >= 0 ) {
+@@ -432 +433,4 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-					oggdmx_get_stream_info(&oggpacket, &info);
++					// Copy stream info immediately to avoid referencing freed memory
++					GF_OGGStreamInfo local_info;
++					local_info = info;
++					oggdmx_get_stream_info(&oggpacket, &local_info);

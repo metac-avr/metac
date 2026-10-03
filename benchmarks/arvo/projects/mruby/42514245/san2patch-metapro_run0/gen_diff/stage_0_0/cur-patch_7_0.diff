@@ -1,0 +1,36 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..af861b516 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -425,0 +426 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  if (yd == 0 || yy->p == NULL) return;  /* validate divisor */
+@@ -428 +429 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  ulshift(mrb,&y,yy,ns);
++   ulshift(mrb,&y,yy,ns);
+@@ -430 +431,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  mpz_realloc(mrb,&q,xd);
++  if (xd < yd) return;  /* check bounds before allocation */
++  mpz_realloc(mrb,&q,xd >= yd ? xd - yd + 1 : 1);
+@@ -432,0 +435 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    if (j >= xd || j + yd >= xd + 1) break;  /* bounds check */
+@@ -436,0 +440 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        if (i+j >= xd) break;  /* prevent out-of-bounds access */
+@@ -442 +446 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if (i+j < xd) b += x.p[i+j];
+@@ -444 +448 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
++    for (; b!=0 && qhat > 0; qhat--) {  /* prevent underflow */
+@@ -446,0 +451 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        if (i+j >= xd) break;
+@@ -451 +456 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += c;
++      if (i+j < xd) b += c;
+@@ -453 +458 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < (xd-yd+1)) q.p[j] = qhat;
+@@ -492,0 +498,4 @@ mpz_mmod(mrb_state *mrb, mpz_t *r, mpz_t *x, mpz_t *y)
++  if (y == NULL || y->sn == 0) {
++    zero(r);
++    return;
++  }

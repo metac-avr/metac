@@ -1,0 +1,24 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..27fd5a70e 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1096,3 +1096,8 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc->gray_list = obj->gcnext;
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj != NULL) {
++      gc->gray_list = obj->gcnext;
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    } else {
++      gc->gray_list = NULL;
++      break;
++    }
+diff --git a/src/range.c b/src/range.c
+index fc126be80..d0114deae 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -397 +397,2 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      else {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       else {

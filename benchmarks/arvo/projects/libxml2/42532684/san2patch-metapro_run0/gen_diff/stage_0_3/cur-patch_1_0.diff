@@ -1,0 +1,35 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..75b28ca4 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2736,0 +2737 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    xmlChar *id_value;
+@@ -2743 +2744,5 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
++
++    /* Copy the ID value before removal to prevent use-after-free */
++    id_value = xmlStrdup(attr->id->value);
++    if (id_value == NULL) return(-1);
+@@ -2745 +2750,2 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++    if (xmlHashRemoveEntry(table, id_value, xmlFreeIDTableEntry) < 0) {
++        xmlFree(id_value);
+@@ -2746,0 +2753 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    }
+@@ -2749,0 +2757 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    xmlFree(id_value);
+diff --git a/tree.c b/tree.c
+index 8e0b346a..d75b6be5 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2078 +2078,2 @@ xmlFreeProp(xmlAttrPtr cur) {
+-    /* Check for ID removal -> leading to invalid references ! */
++// FIXME: Crash CWE-416: Use After Free
++     /* Check for ID removal -> leading to invalid references ! */
+@@ -2079,0 +2081,3 @@ xmlFreeProp(xmlAttrPtr cur) {
++	xmlAttrPtr temp_attr = cur;
++	int temp_atype = cur->atype;
++	if (temp_attr != NULL && temp_atype == XML_ATTRIBUTE_ID) {
+@@ -2080,0 +2085 @@ xmlFreeProp(xmlAttrPtr cur) {
++	}

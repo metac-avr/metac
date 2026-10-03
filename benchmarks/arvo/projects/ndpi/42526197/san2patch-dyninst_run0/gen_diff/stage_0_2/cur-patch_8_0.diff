@@ -1,0 +1,17 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..0ccf1768b 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -875 +875 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-		  packet->content_line.len, packet->content_line.ptr);
++	  packet->content_line.len, packet->content_line.ptr);
+@@ -896,3 +896,6 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	  strncpy(flow->http.content_type, (char*)packet->content_line.ptr,
+-		  packet->content_line.len);
+-	  flow->http.content_type[packet->content_line.len] = '\0';
++	  // Fix: Ensure non-negative length before strncpy operation
++	  if(packet->content_line.len >= 0) {
++	    strncpy(flow->http.content_type, (char*)packet->content_line.ptr,
++		    (size_t)packet->content_line.len);
++	    flow->http.content_type[packet->content_line.len] = '\0';
++	  }

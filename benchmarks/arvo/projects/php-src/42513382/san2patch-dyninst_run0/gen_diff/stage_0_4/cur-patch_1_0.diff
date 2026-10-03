@@ -1,0 +1,36 @@
+diff --git a/Zend/zend_enum.h b/Zend/zend_enum.h
+index 797eb0c8ab5..cb2dc212e03 100644
+--- a/Zend/zend_enum.h
++++ b/Zend/zend_enum.h
+@@ -45 +44,0 @@ ZEND_API zend_result zend_enum_get_case_by_value(zend_object **result, zend_clas
+-
+@@ -53 +52,2 @@ static zend_always_inline zval *zend_enum_fetch_case_value(zend_object *zobj)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
+@@ -55,0 +56 @@ static zend_always_inline zval *zend_enum_fetch_case_value(zend_object *zobj)
++	ZEND_ASSERT(zobj->ce->default_properties_count > 1);
+@@ -61 +62 @@ END_EXTERN_C()
+-#endif /* ZEND_ENUM_H */
++#endif /* ZEND_ENUM_H */
+\ No newline at end of file
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..b1dc32649d7 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6964 +6964 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
++if (zend_parse_parameters_none() == FAILURE) {
+@@ -6972 +6972 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-
++	
+@@ -6975,2 +6975,5 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-
+-	ZVAL_COPY_OR_DUP(return_value, member_p);
++	if (member_p && Z_TYPE_P(member_p) != IS_UNDEF) {
++		ZVAL_COPY_OR_DUP(return_value, member_p);
++	} else {
++		RETURN_NULL();
++	}
+@@ -6984 +6986,0 @@ ZEND_METHOD(ReflectionFiber, __construct)
+-

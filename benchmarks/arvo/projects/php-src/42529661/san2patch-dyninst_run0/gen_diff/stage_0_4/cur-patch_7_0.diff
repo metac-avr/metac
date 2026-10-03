@@ -1,0 +1,26 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..928c05a6887 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1530,3 +1530,18 @@ static void ZEND_FASTCALL zend_jit_assign_dim_helper(zval *object_ptr, zval *dim
+-		zval *var = dim
+-			? zend_jit_fetch_dim_w_helper(arr, dim)
+-			: zend_hash_next_index_insert_new(arr, &EG(uninitialized_zval));
++		zval *var = NULL;
++		if (dim) {
++			if (UNEXPECTED(!arr)) {
++				if (result) {
++					ZVAL_NULL(result);
++				}
++				return;
++			}
++			var = zend_jit_fetch_dim_w_helper(arr, dim);
++		} else {
++			if (UNEXPECTED(!arr)) {
++				if (result) {
++					ZVAL_NULL(result);
++				}
++				return;
++			}
++			var = zend_hash_next_index_insert_new(arr, &EG(uninitialized_zval));
++		}

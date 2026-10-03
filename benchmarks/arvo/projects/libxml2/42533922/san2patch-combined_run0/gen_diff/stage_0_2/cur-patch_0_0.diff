@@ -1,0 +1,45 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..bbb2258c 100644
+--- a/tree.c
++++ b/tree.c
+@@ -8452 +8452,8 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * Handle XML namespace.
++     * Check if namespace pointer is valid (not freed)
++     */
++    if (ns == NULL) {
++        return (-1);
++    }
++    /*
++// FIXME: Crash CWE-416: Use After Free
++     * Handle XML namespace.
+@@ -8464,2 +8471 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * If the search should be done in ancestors only and no
+-    * @elem (the first ancestor) was specified, then skip the search.
++    * If the search should be done in ancestors only and no    * @elem (the first ancestor) was specified, then skip the search.
+@@ -8725 +8731 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-			    (cur->ns == mi->oldNs)) {
++                            (cur->ns == mi->oldNs)) {
+@@ -8727,7 +8733,8 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-			    cur->ns = mi->newNs;
+-			    goto ns_end;
+-			}
+-		    }
+-		}
+-		/*
+-		* Acquire a normalized ns-decl and add it to the map.
++                            cur->ns = mi->newNs;
++                            goto ns_end;
++                        }
++                    }
++                }
++                /*
++// FIXME: Crash CWE-416: Use After Free
++ 		* Acquire a normalized ns-decl and add it to the map.
+@@ -8739 +8746 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-			(cur->type == XML_ATTRIBUTE_NODE) ? 1 : 0) == -1)
++			(cur->type == XML_ATTRIBUTE_NODE) ? 1 : 0) == -1) {
+@@ -8741 +8748,3 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-		cur->ns = ns;
++		} else if (ns != NULL) {
++		    cur->ns = ns;
++		}

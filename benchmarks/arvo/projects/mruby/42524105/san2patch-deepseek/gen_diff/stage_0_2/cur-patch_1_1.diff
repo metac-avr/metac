@@ -1,0 +1,23 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..f6b948d8f 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1692,6 +1691,0 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-uint32_t
+-mrb_byte_hash(const uint8_t *s, mrb_int len)
+-{
+-  return mrb_byte_hash_step(s, len, FNV1_32_INIT);
+-}
+-
+@@ -1699,0 +1694 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
++// FIXME: CWE-416: Use After Free
+@@ -1702 +1697,3 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-  return mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
++  mrb_gc_protect(mrb, str);
++  uint32_t result = mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
++  return result;
+@@ -1713,0 +1711,4 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++{
++  uint32_t key = mrb_str_hash(mrb, self);
++  return mrb_int_value(mrb, key);
++}mrb_str_hash_m(mrb_state *mrb, mrb_value self)

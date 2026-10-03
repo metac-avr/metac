@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..5c1644f744f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1779,0 +1780,25 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
++{
++	uint32_t idx;
++
++	IS_CONSISTENT(ht);
++	HT_ASSERT_RC1(ht);
++
++	zend_hash_clean(ht);
++
++	if (ht->nNumUsed) {
++		zval *p = HT_GET_DATA_ADDR(ht);
++		zend_hash_free_indirect_elements(ht);
++		for (idx = 0; idx < ht->nNumUsed; idx++) {
++			if (UNEXPECTED(Z_TYPE(p[idx]) == IS_UNDEF)) continue;
++			if (UNEXPECTED(Z_TYPE(p[idx]) == IS_INDIRECT)) {
++				zval *ptr = Z_INDIRECT(p[idx]);
++				if (UNEXPECTED(ptr == NULL)) continue;
++				if (EXPECTED(!Z_ISREF_P(ptr))) {
++					zval_dtor(ptr);
++				}
++				FREE_INDIRECT(ptr);
++				continue;
++			}
++			zval_dtor(&p[idx]);
++		}
+@@ -1781,0 +1807,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Ensure no active JIT references before freeing */
++	if (ht->nInternalPointer != HT_INVALID_IDX) {
++		ht->nInternalPointer = HT_INVALID_IDX;
++	}
+@@ -1786,6 +1815 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	IS_CONSISTENT(ht);
+-	HT_ASSERT_RC1(ht);
++}	HT_ASSERT_RC1(ht);

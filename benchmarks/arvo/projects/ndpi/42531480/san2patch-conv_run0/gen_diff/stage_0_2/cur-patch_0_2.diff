@@ -1,0 +1,236 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..fa864606d 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -1268,46 +1268,115 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-	if((handshake_len + 12) == block_len) {
+-          packet->payload = &block[13];
+-          packet->payload_packet_len = block_len;
+-          processTLSBlock(ndpi_struct, flow);
+-	} else if(handshake_len + 12 > block_len) {
+-	  int rc;
+-
+-#ifdef DEBUG_TLS
+-          printf("[TLS] DTLS fragment off %d len %d\n", handshake_frag_off, handshake_frag_len);
+-#endif
+-          if(handshake_frag_len + 12 > block_len) {
+-#ifdef DEBUG_TLS
+-            printf("[TLS] DTLS fragment invalid len %d + 12 > %d\n", handshake_frag_len, block_len);
+-#endif
+-            no_dtls = 1;
+-            break;
+-	  }
+-
+-          if(handshake_frag_off == 0) {
+-            rc = ndpi_search_tls_memory(ndpi_struct, flow,  &block[13],
+-					handshake_frag_len + 12,
+-					handshake_frag_off, message);
+-	  } else {
+-            rc = ndpi_search_tls_memory(ndpi_struct, flow,  &block[13 + 12],
+-					handshake_frag_len,
+-					handshake_frag_off + 12, message);
+-	  }
+-	  if(rc == -1) {
+-            no_dtls = 1;
+-            break;
+-	  }
+-#ifdef DEBUG_TLS
+-          printf("[TLS] DTLS reassembled len %d vs %d\n",
+-                 message->buffer_used, handshake_len + 12);
+-#endif
+-
+-          if(handshake_len + 12 == message->buffer_used) {
+-            packet->payload = message->buffer;
+-            packet->payload_packet_len = message->buffer_used;
+-            processTLSBlock(ndpi_struct, flow);
+-
+-            ndpi_free(message->buffer);
+-            memset(message, '\0', sizeof(*message));
+-            message = NULL;
+-          } else {
+-            /* No break, next fragments might be in the same packet */
++	static void ndpi_int_tls_dissection(struct ndpi_detection_module_struct *ndpi_struct, 
++                                             struct ndpi_flow_struct *flow)
++{
++  struct ndpi_packet_struct *packet = &flow->packet;
++  u_int32_t offset, base_offset, extension_offset, extensions_len;
++  u_int8_t handshake_type;
++  u_int32_t handshake_len;
++  u_int8_t handshake_protocol;
++  u_int8_t *block;
++  u_int32_t block_len;
++  u_int8_t no_dtls = 0;
++  struct dtls_handshake_fragment_cache *message = &flow->dtls_handshake_fragment_cache;
++  u_int32_t handshake_frag_off, handshake_frag_len;
++  
++  if(packet->payload_packet_len < 5) return;
++  
++  handshake_type = packet->payload[0];
++  handshake_len = ntohl(*(u_int32_t*)&packet->payload[1]) >> 8;
++  handshake_protocol = packet->payload[5];
++  
++  if(handshake_type == 0x01 /* Client Hello */) {
++    offset = 6;
++    
++    if(offset+2 < packet->payload_packet_len) {
++      u_int16_t client_version = ntohs(*(u_int16_t*)&packet->payload[offset]);
++      offset += 2;
++      
++      if(offset+32 <= packet->payload_packet_len) {
++        offset += 32; // Skip random
++        
++        if(offset < packet->payload_packet_len) {
++          u_int8_t session_id_len = packet->payload[offset];
++          offset++;
++          
++          if(offset+session_id_len <= packet->payload_packet_len) {
++            offset += session_id_len;
++            
++            if(offset+2 <= packet->payload_packet_len) {
++              u_int16_t cipher_suites_len = ntohs(*(u_int16_t*)&packet->payload[offset]);
++              offset += 2;
++              
++              if(offset+cipher_suites_len <= packet->payload_packet_len) {
++                offset += cipher_suites_len;
++                
++                if(offset+1 <= packet->payload_packet_len) {
++                  u_int8_t compression_methods_len = packet->payload[offset];
++                  offset++;
++                  
++                  if(offset+compression_methods_len <= packet->payload_packet_len) {
++                    offset += compression_methods_len;
++                    
++                    if(offset < packet->payload_packet_len) {
++                      extensions_len = ntohs(*(u_int16_t*)&packet->payload[offset]);
++                      offset += 2;
++                      
++                      if((extensions_len+offset) <= packet->payload_packet_len) {
++                        u_int32_t base_offset = offset;
++                        
++                        while(offset+4 <= packet->payload_packet_len &&
++                              (offset-base_offset) < extensions_len) {
++                          u_int16_t extension_type = ntohs(*(u_int16_t*)&packet->payload[offset]);
++                          u_int16_t extension_len = ntohs(*(u_int16_t*)&packet->payload[offset+2]);
++                          offset += 4;
++                          
++                          if(offset+extension_len <= packet->payload_packet_len) {
++                            if(extension_type == 0x000d /* Signature Algorithms */) {
++                              #ifdef TLS_HANDLE_SIGNATURE_ALGORITHMS
++                              if(offset+2 <= packet->payload_packet_len) {
++                                u_int16_t tot_signature_algorithms_len = ntohs(*(u_int16_t*)&packet->payload[offset]);
++                                offset += 2;
++                                
++                                if(offset+tot_signature_algorithms_len <= packet->payload_packet_len) {
++                                  u_int16_t sa_size = tot_signature_algorithms_len / 2;
++                                  
++                                  ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++                                  
++                                  for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
++                                    int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++                                                           sizeof(ja.client.signature_algorithms_str)-i*2,
++                                                           "%02X", packet->payload[s_offset+i]);
++                                    
++                                    /* Bounds check to prevent out-of-bounds read */
++                                    if(s_offset+i*2+1 < packet->payload_packet_len) {
++                                      ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++                                    } else {
++                                      break;
++                                    }
++                                    
++                                    if(rc < 0) break;
++                                  }
++                                  
++                                  for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
++                                    u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++                                    
++                                    if(last_signature == signature_algo) {
++                                      /* Consecutive duplication */
++                                      duplicate_found = 1;
++                                    }
++                                    last_signature = signature_algo;
++                                  }
++                                  #endif
++                                }
++                              }
++                            }
++                            offset += extension_len;
++                          } else {
++                            break;
++                          }
++                        }
++                      }
++                    }
++                  }
++                }
++              }
++            }
+@@ -1315,8 +1383,0 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-
+-        } else {
+-#ifdef DEBUG_TLS
+-          printf("[TLS] DTLS invalid handshake_len %d, %d\n",
+-                 handshake_len, block_len);
+-#endif
+-          no_dtls = 1;
+-          break;
+@@ -1324,0 +1386,14 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
++    }
++  }
++  
++  if(handshake_type == 0x02 /* Server Hello */) {
++    // Server Hello processing...
++  }
++  
++  // Additional handshake types...
++  
++  if(no_dtls) {
++    // DTLS error handling...
++  }
++}
++      }
+@@ -2381,22 +2456,23 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
+-
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+-
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
+-
+-		  if(rc < 0) break;
+-		}
+-
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+-
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++
++                for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
++                  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++                                         sizeof(ja.client.signature_algorithms_str)-i*2,
++                                         "%02X", packet->payload[s_offset+i]);
++                  
++                  /* Bounds check to prevent out-of-bounds read */
++                  if(s_offset+i*2+1 < packet->payload_packet_len) {
++                    ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++                  } else {
++                    break;
++                  }
++
++                  if(rc < 0) break;
++                }
++
++                for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
++                  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++
++                  if(last_signature == signature_algo) {
++                    /* Consecutive duplication */
++                    duplicate_found = 1;		    continue;

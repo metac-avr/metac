@@ -1,0 +1,30 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..7de9bde0 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -425 +425,9 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     */
++// FIXME: Crash CWE-416: Use After Free
++      */
++    if (ctxt->input == NULL)
++        return(0);
++    
++    /* Validate pointer integrity after potential buffer reallocation */
++    if (ctxt->input->cur == NULL || ctxt->input->cur >= ctxt->input->end)
++        return(0);
++        
+@@ -437,2 +445 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-            goto encoding_error;
+-        if ((c & 0xe0) == 0xe0) {
++            goto encoding_error;        if ((c & 0xe0) == 0xe0) {
+@@ -3457 +3464,2 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
+-	    (r != '-') || (q != '-'))) {
++// FIXME: Crash CWE-416: Use After Free
++ 	    (r != '-') || (q != '-'))) {
+@@ -3499,0 +3508,6 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	
++	if (ctxt->input == NULL || ctxt->input->cur == NULL) {
++	    htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++			 "Null pointer after comment processing", NULL, NULL);
++	    return;
++	}

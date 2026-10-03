@@ -1,0 +1,21 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..25279673d 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -302 +302,4 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
+-	if (es->slcfg) gf_free(es->slcfg);
++	if (es->slcfg) {
++		gf_free(es->slcfg);
++		es->slcfg = NULL;
++	}
+@@ -3113 +3116,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++  	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3116,0 +3121 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
++			ts->ess[i] = NULL; // Nullify after free to prevent dangling pointer access
+@@ -3129 +3134,3 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-			gf_m2ts_es_del(es, ts);
++			if (es) { // Check if es is not NULL before deletion
++				gf_m2ts_es_del(es, ts);
++			}

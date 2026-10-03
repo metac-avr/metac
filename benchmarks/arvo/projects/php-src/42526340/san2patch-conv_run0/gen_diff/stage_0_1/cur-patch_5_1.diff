@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..bb454ee56d3 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1251,8 +1250,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+-#endif
+@@ -1261 +1253 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	return p ? p->refcount : 0;
+@@ -1265,2 +1257,2 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
+-	p->refcount = rc;
+-	return p->refcount;
++	if (p) p->refcount = rc;
++	return p ? p->refcount : 0;
+@@ -1271 +1263,2 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
++	if (p) return ++(p->refcount);
++	return 0;
+@@ -1273,0 +1267,5 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p) return --(p->refcount);
++	return 0;
++}}
++
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..f86bf616397 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -164 +164,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+-ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
++ZEND_API void 
++ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */

@@ -1,0 +1,28 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..35f3504afe 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -52 +52,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-476: NULL Pointer Dereference
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -57,0 +59,5 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++    
++    /* Check for NULL pointers to prevent segmentation fault */
++    if (!ref || !ref->rpl_tab || ctb_addr_ts >= FF_ARRAY_ELEMS(ref->rpl_tab) || !ref->rpl_tab[ctb_addr_ts])
++        return s && s->cur_frame ? &s->cur_frame->refPicList[0] : NULL;
++        
+@@ -64,2 +70 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)        ff_hevc_unref_frame(&s->DPB[i],
+diff --git a/libavcodec/hevc/filter.c b/libavcodec/hevc/filter.c
+index 56e354b486..75c1da27aa 100644
+--- a/libavcodec/hevc/filter.c
++++ b/libavcodec/hevc/filter.c
+@@ -767,0 +768,5 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *
++        
++        if (rpl_top == NULL) {
++            return;
++        }
++        

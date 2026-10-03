@@ -1,0 +1,31 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..91167bc02 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515,3 +515,12 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
+-      ci->stack[argc+1] = blk;
++      if (argc > 0) {
++        if (ci->stack + 1 + argc < mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          goto stack_overflow;
++        }
++      }
++      if (ci->stack + argc + 1 < mrb->c->stend) {
++        ci->stack[argc+1] = blk;
++      } else {
++        goto stack_overflow;
++      }
+@@ -531,0 +541,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    goto funcall_end;
++  stack_overflow:
++    mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in funcall");
++  funcall_end:;
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..1979305a6 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -789,0 +790 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  if (!mrb) return mrb_nil_value();

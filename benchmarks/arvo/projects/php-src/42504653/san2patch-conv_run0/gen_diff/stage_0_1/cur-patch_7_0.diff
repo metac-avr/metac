@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..3f5a0b91127 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30063 +30063,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			/* Check if object_ptr is valid before accessing it - prevents use-after-free */
++			if (EXPECTED(object_ptr != NULL && Z_COUNTED_P(object_ptr))) {
++				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			} else {
++				/* Skip dim assignment for invalid/free'd pointer */
++				dim = NULL;
++				goto assign_dim_error;
++			}
+@@ -49650 +49657,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			/* Check if object_ptr is valid before accessing it - prevents use-after-free */
++			if (EXPECTED(object_ptr != NULL && Z_COUNTED_P(object_ptr))) {
++				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++			} else {
++				/* Skip dim assignment for invalid/free'd pointer */
++				dim = NULL;
++				goto assign_dim_error;
++			}
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..d1d327e6376 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -862,0 +864,10 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Check if execute_data points to valid memory before accessing */
++			if (!execute_data || (execute_data->This.u1.v.type_flags & IS_TYPE_REFCOUNTED) == 0) {
++				/* Skip if pointer is invalid or not refcounted */
++				continue;
++			}
++			/* Additional safety check for object validity */
++			if (Z_TYPE(execute_data->This) == IS_OBJECT && !Z_OBJ(execute_data->This)) {
++				continue;
++			}
++		}
+@@ -874,0 +886 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++

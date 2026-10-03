@@ -1,0 +1,35 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index 229d9890251..d47a6c37d38 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2272 +2272 @@ static void update_errors_warnings(timelib_error_container *last_errors) /* {{{
+-	if (last_errors->warning_count || last_errors->error_count) {
++	if (last_errors && last_errors->warning_count || last_errors && last_errors->error_count) {
+@@ -2275 +2275,3 @@ static void update_errors_warnings(timelib_error_container *last_errors) /* {{{
+-		timelib_error_container_dtor(last_errors);
++		if (last_errors) {
++			timelib_error_container_dtor(last_errors);
++		}
+@@ -2313 +2315 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	if (format) {
++if (format) {
+@@ -2325,0 +2328,13 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
++	/* Clone error data before processing */
++	timelib_error_container *saved_err = NULL;
++	if (err && (flags & PHP_DATE_INIT_CTOR)) {
++		saved_err = timelib_error_container_ctor();
++		if (err->error_count > 0 && err->error_messages) {
++			saved_err->error_count = err->error_count;
++			saved_err->error_messages = timelib_error_message_ctor(err->error_count);
++			for (int i = 0; i < err->error_count; i++) {
++				saved_err->error_messages[i] = err->error_messages[i];
++			}
++		}
++	}
++
+@@ -2330 +2345 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	if ((flags & PHP_DATE_INIT_CTOR) && err && err->error_count) {
++	if ((flags & PHP_DATE_INIT_CTOR) && saved_err && saved_err->error_count) {
+@@ -2333 +2348 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-			err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
++			saved_err->error_messages[0].position, saved_err->error_messages[0].character, saved_err->error_messages[0].message);

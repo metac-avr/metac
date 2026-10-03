@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..8f2121795b3 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -834 +834,2 @@ ZEND_API void ZEND_COLD zend_incompatible_double_to_long_error(double d)
+-ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string *s)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string *s)
+@@ -836 +837,11 @@ ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string
+-	zend_error(E_DEPRECATED, "Implicit conversion from float-string \"%s\" to int loses precision", ZSTR_VAL(s));
++	const char *str_val = ZSTR_VAL(s);
++	size_t str_len = ZSTR_LEN(s);
++	char *safe_copy = malloc(str_len + 1);
++	if (safe_copy) {
++		memcpy(safe_copy, str_val, str_len);
++		safe_copy[str_len] = '\0';
++		zend_error(E_DEPRECATED, "Implicit conversion from float-string \"%s\" to int loses precision", safe_copy);
++		free(safe_copy);
++	} else {
++		zend_error(E_DEPRECATED, "Implicit conversion from float-string to int loses precision");
++	}

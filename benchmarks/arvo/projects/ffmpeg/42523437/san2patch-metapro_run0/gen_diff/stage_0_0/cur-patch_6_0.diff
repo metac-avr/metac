@@ -1,0 +1,20 @@
+diff --git a/libavformat/imf_cpl.c b/libavformat/imf_cpl.c
+index ad84a68b13..1804d2b0ed 100644
+--- a/libavformat/imf_cpl.c
++++ b/libavformat/imf_cpl.c
+@@ -152 +152,2 @@ static void imf_trackfile_virtual_track_init(FFIMFTrackFileVirtualTrack *track)
+-static void imf_base_resource_init(FFIMFBaseResource *rsrc)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ static void imf_base_resource_init(FFIMFBaseResource *rsrc)
+@@ -153,0 +155 @@ static void imf_base_resource_init(FFIMFBaseResource *rsrc)
++    if (!rsrc) return;
+@@ -675 +677 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
+-            > INT_MAX / sizeof(FFIMFTrackFileResource))
++             > INT_MAX / sizeof(FFIMFTrackFileResource))
+@@ -688,0 +691,6 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
++        // Bounds check to prevent heap overflow
++        if (cpl->main_image_2d_track->resource_count >= 
++            cpl->main_image_2d_track->resources_alloc_sz / sizeof(FFIMFTrackFileResource)) {
++            av_log(NULL, AV_LOG_ERROR, "Resource count exceeds allocated buffer\n");
++            return AVERROR(ENOMEM);
++        }

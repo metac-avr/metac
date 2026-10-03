@@ -1,0 +1,28 @@
+diff --git a/src/media_tools/isom_tools.c b/src/media_tools/isom_tools.c
+index a41e51a0d..dee283683 100644
+--- a/src/media_tools/isom_tools.c
++++ b/src/media_tools/isom_tools.c
+@@ -1503,2 +1503,3 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
+-		if (e == GF_OK && props.config) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
++		if (e == GF_OK && props.config && props.config->boxType == GF_ISOM_BOX_TYPE_VVCC) {
+@@ -1506,0 +1508,4 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
++		else if (e == GF_OK && props.config) {
++			gf_odf_desc_del((GF_Descriptor *)esd);
++			return NULL;
++		}
+diff --git a/src/filters/isoffin_load.c b/src/filters/isoffin_load.c
+index 31f8c8458..d40c78696 100644
+--- a/src/filters/isoffin_load.c
++++ b/src/filters/isoffin_load.c
+@@ -1839 +1839,2 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -1851,0 +1853,4 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
++	}
++	if (esd && esd->decoderConfig && esd->decoderConfig->objectTypeIndication != GPAC_OTI_VIDEO_VVC) {
++		return GF_FALSE;
++	}

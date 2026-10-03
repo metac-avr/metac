@@ -1,0 +1,58 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..c6839aa1387 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272,11 +272,21 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+-	/* No PHP callback functions should be called after this point. */
+-	EG(active) = 0;
+-
+-	if (!fast_shutdown) {
+-		zend_hash_graceful_reverse_destroy(&EG(symbol_table));
+-
+-		/* Constants may contain objects, destroy them before the object store. */
+-		if (EG(full_tables_cleanup)) {
+-			zend_hash_reverse_apply(EG(zend_constants), clean_non_persistent_constant_full);
+-		} else {
++i_zval_ptr_dtor(&ref->val);
++												efree_size(ref, sizeof(zend_reference));
++											}
++											
++											static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
++											{
++											}
++											
++											ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++											{
++												i_zval_ptr_dtor(zval_ptr);
++											}
++											/* }}} */
++											
++											ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
++											{
++												if (Z_REFCOUNTED_P(zval_ptr)) {
++													zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++											
++													if (GC_DELREF(ref) == 0) {
++														if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..43ef2dcc626 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -82 +82,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -83,0 +85,3 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++	if (UNEXPECTED(!zval_ptr)) {
++		return;
++	}
+@@ -87,8 +90,0 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-
+-ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {

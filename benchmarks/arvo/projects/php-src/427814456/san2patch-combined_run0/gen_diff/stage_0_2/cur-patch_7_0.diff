@@ -1,0 +1,48 @@
+diff --git a/main/spprintf.c b/main/spprintf.c
+index 4c01347fcf4..8dba7422a07 100644
+--- a/main/spprintf.c
++++ b/main/spprintf.c
+@@ -774 +774,7 @@ PHPAPI void php_printf_to_smart_string(smart_string *buf, const char *format, va
+-	xbuf_format_converter(buf, 1, format, ap);
++	zend_string *safe_format = (format) ? zend_string_init(format, strlen(format), 0) : NULL;
++	if (safe_format) {
++		xbuf_format_converter(buf, 1, ZSTR_VAL(safe_format), ap);
++		zend_string_release(safe_format);
++	} else {
++		xbuf_format_converter(buf, 1, format, ap);
++	}
+@@ -778 +784,2 @@ PHPAPI void php_printf_to_smart_string(smart_string *buf, const char *format, va
+-PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list ap) /* {{{ */
++// FIXME: Crash CWE-416: Use After Free
++ PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list ap) /* {{{ */
+@@ -780 +787,7 @@ PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list
+-	xbuf_format_converter(buf, 0, format, ap);
++	zend_string *safe_format = (format) ? zend_string_init(format, strlen(format), 0) : NULL;
++	if (safe_format) {
++		xbuf_format_converter(buf, 0, ZSTR_VAL(safe_format), ap);
++		zend_string_release(safe_format);
++	} else {
++		xbuf_format_converter(buf, 0, format, ap);
++	}
+@@ -782 +795 @@ PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list
+-/* }}} */
++/* }}} */
+\ No newline at end of file
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..73c3e90b7c4 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -834 +834,2 @@ ZEND_API void ZEND_COLD zend_incompatible_double_to_long_error(double d)
+-ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string *s)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string *s)
+@@ -836 +837,8 @@ ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string
+-	zend_error(E_DEPRECATED, "Implicit conversion from float-string \"%s\" to int loses precision", ZSTR_VAL(s));
++	if (s != NULL) {
++		size_t len = ZSTR_LEN(s);
++		char *temp_str = emalloc(len + 1);
++		memcpy(temp_str, ZSTR_VAL(s), len);
++		temp_str[len] = '\0';
++		zend_error(E_DEPRECATED, "Implicit conversion from float-string \"%s\" to int loses precision", temp_str);
++		efree(temp_str);
++	}

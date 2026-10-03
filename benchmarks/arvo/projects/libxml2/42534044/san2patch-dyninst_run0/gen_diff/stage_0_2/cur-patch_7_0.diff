@@ -1,0 +1,26 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..1da1b698 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -653,2 +653,6 @@ dropNode(xmlNodePtr node) {
+-             (xmlDtdPtr) tree != doc->extSubset))
+-            xmlFreeNode(tree);
++             (xmlDtdPtr) tree != doc->extSubset)) {
++            /* Decrement reference count and only free when zero */
++            tree->references--;
++            if (tree->references <= 0)
++                xmlFreeNode(tree);
++        }
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..7816d7f6 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1698 +1698,7 @@ xmlNewPropInternal(xmlNodePtr node, xmlNsPtr ns,
+-            tmp = tmp->next;
++            /* Check if node is still valid before proceeding */
++            if (tmp->type == XML_TEXT_NODE || tmp->type == XML_CDATA_SECTION_NODE) {
++                tmp = tmp->next;
++            } else {
++                /* Invalid node type, stop processing */
++                break;
++            }

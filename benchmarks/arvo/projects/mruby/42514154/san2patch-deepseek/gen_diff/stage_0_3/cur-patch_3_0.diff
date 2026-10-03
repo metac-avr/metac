@@ -1,0 +1,31 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..366ee2958 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -432,0 +433,12 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    if (j >= q.alloc) {
++      size_t new_alloc = q.alloc ? q.alloc : 1;
++      while (new_alloc <= j) {
++        new_alloc *= 2;
++      }
++      mp_limb *new_p = (mp_limb *)mrb_realloc(mrb, q.p, sizeof(mp_limb) * new_alloc);
++      if (new_p == NULL) {
++        return;
++      }
++      q.p = new_p;
++      q.alloc = new_alloc;
++    }
+@@ -740 +752,2 @@ mpz_mul_2exp(mrb_state *mrb, mpz_t *z, mpz_t *x, mrb_int e)
+-    mpz_realloc(mrb,&y,x->sz+digs);
++    size_t need = x->sz + digs;
++    mpz_realloc(mrb,&y,need);
+@@ -742 +755,2 @@ mpz_mul_2exp(mrb_state *mrb, mpz_t *z, mpz_t *x, mrb_int e)
+-      y.p[i+digs] = x->p[i];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       y.p[i+digs] = x->p[i];
+@@ -744,0 +759 @@ mpz_mul_2exp(mrb_state *mrb, mpz_t *z, mpz_t *x, mrb_int e)
++      z->sn = sn;
+@@ -747,0 +763 @@ mpz_mul_2exp(mrb_state *mrb, mpz_t *z, mpz_t *x, mrb_int e)
++      z->sn = sn;
+@@ -749 +764,0 @@ mpz_mul_2exp(mrb_state *mrb, mpz_t *z, mpz_t *x, mrb_int e)
+-    z->sn = sn;

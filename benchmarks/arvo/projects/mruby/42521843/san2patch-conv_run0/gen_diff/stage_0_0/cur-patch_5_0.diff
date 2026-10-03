@@ -1,0 +1,21 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..03b392162 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -148,0 +150,4 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  // Validate t structure integrity before use
++  if ((uintptr_t)t & 0x3) return 0; // Check alignment
++  if (t->ptr == NULL) return 0;
++
+@@ -155 +160 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-  if (pos < t->alloc) {
++  if (pos < t->alloc && pos >= 0) { // Added bounds check
+@@ -166,0 +172 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (pos < 0 || pos >= t->alloc) return 0; // Prevent array bounds violation
+@@ -171 +177 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      if (pos < 0x100) {
++      if (pos < 0x100 && pos >= 0) { // Added lower bound check

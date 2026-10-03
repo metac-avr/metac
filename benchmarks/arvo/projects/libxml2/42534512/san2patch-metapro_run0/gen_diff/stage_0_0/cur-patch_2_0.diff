@@ -1,0 +1,30 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..7bb6dfb7 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6857,2 +6857,8 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr result = xmlSetNsProp(node, ns, localname, value);
++            /* Clear any dangling references before returning */
++            if (result != NULL && result->parent == NULL) {
++                return(NULL);
++            }
++            return(result);
++        }
+@@ -6861 +6867,6 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr result = xmlSetNsProp(node, NULL, name, value);
++    /* Clear any dangling references before returning */
++    if (result != NULL && result->parent == NULL) {
++        return(NULL);
++    }
++    return(result);
+@@ -6904 +6915 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6905,0 +6917 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++	}
+@@ -6916,0 +6929 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++		tmp->doc = node->doc;

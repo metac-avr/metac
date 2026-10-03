@@ -1,0 +1,14 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..45ab15bea 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -240 +240,8 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (mrb_immediate_p(v) || mrb_nil_p(v) || mrb_fixnum_p(v) || mrb_symbol_p(v) || mrb_false_p(v) || mrb_true_p(v)) {
++    return 0;
++  }
++  
++  struct RBasic *obj = mrb_basic_ptr(v);
++  if (obj && obj->tt != MRB_TT_FREE) {
++    mrb_gc_mark_value(mrb, v);
++  }

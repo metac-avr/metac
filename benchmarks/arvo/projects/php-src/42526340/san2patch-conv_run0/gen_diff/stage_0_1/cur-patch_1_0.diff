@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index 4d40b76854d..41f3dea0b62 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -177 +177 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-			} else {
++            } else {
+@@ -185 +185,2 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+@@ -189,0 +191,3 @@ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++	if (object) {
++		object->handlers = ce->default_object_handlers; // Set handlers immediately to avoid dangling references
++	}
+@@ -197,2 +201 @@ ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object,
+-	if (old_object->ce->default_properties_count) {
+-		zval *src = old_object->properties_table;
++	if (old_object->ce->default_properties_count) {		zval *src = old_object->properties_table;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index eb7ef1624b9..03ba3684fba 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3270 +3270,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				/* smart branch opcodes may not initialize result */
++// FIXME: Crash CWE-416: Use After Free
++ 				/* smart branch opcodes may not initialize result */
+@@ -3272 +3273,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *result_zval = EX_VAR(throw_op->result.var);
++					if (result_zval != NULL) {
++						zval_ptr_dtor_nogc(result_zval);
++					}

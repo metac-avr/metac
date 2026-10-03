@@ -1,0 +1,18 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..b1248438a 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -500,3 +500,10 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    if (j%2)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
+-    else
++    if (j%2) {
++      // Safe shift operation with overflow protection
++      if (__builtin_expect((qhat << HALFDIGITBITS) >> HALFDIGITBITS == qhat, 1)) {
++        // No overflow detected, perform normal operation
++        q.p[j/2] |= qhat << HALFDIGITBITS;
++      } else {
++        // Overflow would occur, handle gracefully
++        q.p[j/2] |= (qhat & ((1U << (32 - HALFDIGITBITS)) - 1)) << HALFDIGITBITS;
++      }
++    } else

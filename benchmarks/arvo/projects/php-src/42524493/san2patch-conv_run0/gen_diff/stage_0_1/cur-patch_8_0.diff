@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index 4d40b76854d..c0db1caa6c0 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -177 +177 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-			} else {
++		} else {
+@@ -185 +185,2 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++// Fixed CWE-416: Use After Free - Prevent expired pointer dereference
++ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+@@ -189,0 +191 @@ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++	object->in_destructor_queue = 0; /* Initialize destructor queue tracking */
+@@ -197,2 +199 @@ ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object,
+-	if (old_object->ce->default_properties_count) {
+-		zval *src = old_object->properties_table;
++	if (old_object->ce->default_properties_count) {		zval *src = old_object->properties_table;
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..81c1114e9ba 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55 +55,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -57 +58,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	/* Prevent UAF by checking if pointer is valid before access */
++	if (__builtin_expect(!!(p), 1)) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

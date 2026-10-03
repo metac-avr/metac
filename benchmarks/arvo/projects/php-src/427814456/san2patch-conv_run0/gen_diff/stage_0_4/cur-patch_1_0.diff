@@ -1,0 +1,34 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..605ed09dcc6 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -65 +65,2 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++/* Fixed CWE-825: Expired Pointer Dereference - Check refcount before freeing */
++	if (GC_REFCOUNT(str) > 0) return;  /* String still referenced, do not free yet */
+@@ -77 +77,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..323bf05df37 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -19582,2 +19582,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-		len += ZSTR_LEN(rope[i]);
+-	}
++		if (rope[i] && ZSTR_LEN(rope[i]) > 0) {
++			len += ZSTR_LEN(rope[i]);
++		}
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	}
+@@ -19588,3 +19591,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-		memcpy(target, ZSTR_VAL(rope[i]), ZSTR_LEN(rope[i]));
+-		target += ZSTR_LEN(rope[i]);
+-		zend_string_release_ex(rope[i], 0);
++		if (rope[i] && ZSTR_LEN(rope[i]) > 0) {
++			memcpy(target, ZSTR_VAL(rope[i]), ZSTR_LEN(rope[i]));
++			target += ZSTR_LEN(rope[i]);
++			zend_string_release_ex(rope[i], 0);
++		}

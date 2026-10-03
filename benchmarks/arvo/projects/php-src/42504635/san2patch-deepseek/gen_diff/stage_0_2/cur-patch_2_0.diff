@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..c3ffacf4f43 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1966 +1966 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-		if (result == op1 && Z_REFCOUNTED_P(result)) {
++		if (result == op1 && Z_REFCOUNTED_P(result) && GC_REFCOUNT(Z_STR_P(result)) == 1) {
+@@ -1969,0 +1970 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
++			zend_string *old_str = NULL;
+@@ -1973 +1974,9 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-				i_zval_ptr_dtor(result);
++				if (Z_REFCOUNTED_P(result)) {
++					old_str = Z_STR_P(result);
++					i_zval_ptr_dtor(result);
++				} else if (!Z_ISUNDEF_P(result)) {
++					old_str = Z_STR_P(result);
++				}
++			}
++			if (old_str && !Z_REFCOUNTED(old_str)) {
++				efree(old_str);

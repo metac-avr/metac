@@ -1,0 +1,39 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..b1c8d998 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2496 +2496,6 @@ xmlNewDocText(const xmlDoc *doc, const xmlChar *content) {
+-    if (cur != NULL) cur->doc = (xmlDoc *)doc;
++    if (cur != NULL) {
++        cur->doc = (xmlDoc *)doc;
++        /* Clear any potential stale references */
++        cur->next = NULL;
++        cur->prev = NULL;
++    }
+@@ -2505,2 +2510 @@ xmlNewDocText(const xmlDoc *doc, const xmlChar *content) {
+- * Use of this function is DISCOURAGED in favor of xmlNewDocTextLen.
+- *
++ * Use of this function is DISCOURAGED in favor of xmlNewDocTextLen. *
+@@ -6926 +6930 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	return(prop);
++    return(prop);
+@@ -6929 +6933,14 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-    * No equal attr found; create a new one.
++     * Validate node state before property creation to prevent use-after-free
++    */
++    if (node != NULL && node->doc != NULL) {
++        /* Force validation of node integrity before proceeding */
++        xmlNodePtr temp_node = node;
++        if (temp_node->type == XML_ELEMENT_NODE) {
++            /* Ensure parent chain is valid */
++            while (temp_node->parent != NULL) {
++                temp_node = temp_node->parent;
++            }
++        }
++    }
++    /*
++     * No equal attr found; create a new one.
+@@ -6936,2 +6953 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-/**
+- * xmlNodeIsText:
++/** * xmlNodeIsText:

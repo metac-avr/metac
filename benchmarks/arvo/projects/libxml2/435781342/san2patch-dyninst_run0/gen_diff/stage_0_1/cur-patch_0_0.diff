@@ -1,0 +1,36 @@
+diff --git a/parser.c b/parser.c
+index 12ca104e..8791fdef 100644
+--- a/parser.c
++++ b/parser.c
+@@ -9342,3 +9342,11 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
+-	(!ctxt->disableSAX)) {
+-	if (nbNs > 0)
+-	    ctxt->sax->startElementNs(ctxt->userData, localname, prefix, uri,
++// FIXME: Crash CWE-416: Use After Free - Fixed by adding reference counting
++    (!ctxt->disableSAX)) {
++    if (nbNs > 0) {
++        /* Increment reference count before calling startElementNs */
++        for (int i = 0; i < nbNs; i++) {
++            xmlNsPtr ns = (xmlNsPtr)(ctxt->nsTab + 2 * (ctxt->nsNr - nbNs) + 2*i);
++            if (ns && ns->type == XML_NAMESPACE_DECL) {
++                ns->_private = (void*)((long)ns->_private + 1);
++            }
++        }
++        ctxt->sax->startElementNs(ctxt->userData, localname, prefix, uri,
+@@ -9346,3 +9354,10 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
+-			  nbatts / 5, nbdef, atts);
+-	else
+-	    ctxt->sax->startElementNs(ctxt->userData, localname, prefix, uri,
++                          nbatts / 5, nbdef, atts);
++        /* Decrement reference count after calling startElementNs */
++        for (int i = 0; i < nbNs; i++) {
++            xmlNsPtr ns = (xmlNsPtr)(ctxt->nsTab + 2 * (ctxt->nsNr - nbNs) + 2*i);
++            if (ns && ns->type == XML_NAMESPACE_DECL) {
++                ns->_private = (void*)((long)ns->_private - 1);
++            }
++        }
++    } else
++        ctxt->sax->startElementNs(ctxt->userData, localname, prefix, uri,
+@@ -9350 +9365 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
+-    }
++}

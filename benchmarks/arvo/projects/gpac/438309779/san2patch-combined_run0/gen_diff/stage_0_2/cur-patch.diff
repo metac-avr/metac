@@ -1,0 +1,18 @@
+diff --git a/src/filters/reframe_ac4.c b/src/filters/reframe_ac4.c
+index e86b40a57..100475a42 100644
+--- a/src/filters/reframe_ac4.c
++++ b/src/filters/reframe_ac4.c
+@@ -386 +386,2 @@ GF_Err ac4dmx_process(GF_Filter *filter)
+-		u32 sync_pos, bytes_to_drop=0;
++// FIXME: Crash CWE-416: Use After Free
++ 		u32 sync_pos, bytes_to_drop=0;
+@@ -390,2 +391,7 @@ GF_Err ac4dmx_process(GF_Filter *filter)
+-		sync_pos = (u32) gf_bs_get_position(ctx->bs);
+-		sync_framesize = ctx->hdr.frame_size + ctx->hdr.header_size + ctx->hdr.crc_size;
++		if (ctx->hdr.ac4_config) {
++			sync_pos = (u32) gf_bs_get_position(ctx->bs);
++			sync_framesize = ctx->hdr.frame_size + ctx->hdr.header_size + ctx->hdr.crc_size;
++		} else {
++			sync_pos = 0;
++			sync_framesize = 0;
++		}

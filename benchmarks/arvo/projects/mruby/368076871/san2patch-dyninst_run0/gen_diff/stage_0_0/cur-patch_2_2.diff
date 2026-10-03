@@ -1,0 +1,18 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index bfa8465f3..8c58016ce 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1110 +1110,2 @@ int_mod(mrb_state *mrb, mrb_value x)
+-#ifdef MRB_USE_BIGINT
++// FIXME: Crash CWE-369: Divide By Zero
++ #ifdef MRB_USE_BIGINT
+@@ -1111,0 +1113,9 @@ int_mod(mrb_state *mrb, mrb_value x)
++    /* Validate divisor before modular operation */
++    if (mrb_bigint_p(y)) {
++      mrb_value zero = mrb_bint_new_si(mrb, 0);
++      if (mrb_bint_cmp(mrb, y, zero) == 0) {
++        mrb_int_zerodiv(mrb);
++      }
++    } else if (mrb_integer_p(y) && mrb_integer(y) == 0) {
++      mrb_int_zerodiv(mrb);
++    }

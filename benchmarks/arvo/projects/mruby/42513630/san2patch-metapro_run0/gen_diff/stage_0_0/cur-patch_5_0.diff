@@ -1,0 +1,26 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 239492add..3291190da 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1826 +1826,5 @@ cmpnum(mrb_state *mrb, mrb_value v1, mrb_value v2)
+-    return mrb_bint_cmp(mrb, v1, v2);
++    mrb_value temp_v2 = v2;
++    if (!mrb_bigint_p(temp_v2)) {
++      return -2;
++    }
++    return mrb_bint_cmp(mrb, v1, temp_v2);
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..47ff9be28 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -37 +37,2 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
+@@ -39,2 +40,4 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-    x->p=(mp_limb*)mrb_realloc(mrb,x->p,size * sizeof(mp_limb));
+-    for (size_t i=x->sz; i<size; i++)
++    mp_limb* old_p = x->p;
++    x->p = (mp_limb*)mrb_realloc(mrb, x->p, size * sizeof(mp_limb));
++    if (x->p == NULL) { x->p = old_p; return; } // Revert on failure
++    for (size_t i = x->sz; i < size; i++)

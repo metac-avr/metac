@@ -1,0 +1,38 @@
+diff --git a/ext/date/lib/timelib.c b/ext/date/lib/timelib.c
+index d42c69bbd6f..3d25750566e 100644
+--- a/ext/date/lib/timelib.c
++++ b/ext/date/lib/timelib.c
+@@ -159,2 +159,9 @@ void timelib_error_container_dtor(timelib_error_container *errors)
+-	for (i = 0; i < errors->warning_count; i++) {
+-		timelib_free(errors->warning_messages[i].message);
++	if (errors == NULL) return;
++	
++	if (errors->warning_messages != NULL) {
++		for (i = 0; i < errors->warning_count; i++) {
++			if (errors->warning_messages[i].message) {
++				timelib_free(errors->warning_messages[i].message);
++			}
++		}
++		timelib_free(errors->warning_messages);
+@@ -162,3 +169,7 @@ void timelib_error_container_dtor(timelib_error_container *errors)
+-	timelib_free(errors->warning_messages);
+-	for (i = 0; i < errors->error_count; i++) {
+-		timelib_free(errors->error_messages[i].message);
++	if (errors->error_messages != NULL) {
++		for (i = 0; i < errors->error_count; i++) {
++			if (errors->error_messages[i].message) {
++				timelib_free(errors->error_messages[i].message);
++			}
++		}
++		timelib_free(errors->error_messages);
+@@ -166 +176,0 @@ void timelib_error_container_dtor(timelib_error_container *errors)
+-	timelib_free(errors->error_messages);
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..6386f32892a 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2269 +2269,3 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-		timelib_error_container_dtor(DATEG(last_errors));
++		if (DATEG(last_errors) != NULL) {
++			timelib_error_container_dtor(DATEG(last_errors));
++		}

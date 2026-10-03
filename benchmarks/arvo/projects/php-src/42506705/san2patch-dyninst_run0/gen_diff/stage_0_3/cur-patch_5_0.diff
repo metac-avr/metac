@@ -1,0 +1,42 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..17b8969d3da 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -421,5 +421,16 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-	retval = zend_hash_find(ht, offset_key);
+-	if (!retval) {
+-		zend_error(E_WARNING, "Undefined array key \"%s\"", ZSTR_VAL(offset_key));
+-		ZVAL_NULL(result);
+-		return;
++	if (UNEXPECTED(ht->gc.u.v.type_flags & IS_ARRAY_IMMUTABLE)) {
++		retval = zend_hash_find(ht, offset_key);
++		if (!retval) {
++			zend_error(E_WARNING, "Undefined array key \"%s\"", ZSTR_VAL(offset_key));
++			ZVAL_NULL(result);
++			return;
++		}
++		ZVAL_COPY(result, retval);
++	} else {
++		retval = zend_hash_find(ht, offset_key);
++		if (!retval) {
++			zend_error(E_WARNING, "Undefined array key \"%s\"", ZSTR_VAL(offset_key));
++			ZVAL_NULL(result);
++			return;
++		}
++		ZVAL_COPY_DEREF(result, retval);
+@@ -427 +437,0 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-	ZVAL_COPY_DEREF(result, retval);
+@@ -429 +439,2 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -431,2 +442,7 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-	ZEND_HASH_INDEX_FIND(ht, hval, retval, num_undef);
+-	ZVAL_COPY_DEREF(result, retval);
++	if (UNEXPECTED(ht->gc.u.v.type_flags & IS_ARRAY_IMMUTABLE)) {
++		ZEND_HASH_INDEX_FIND(ht, hval, retval, num_undef);
++		ZVAL_COPY(result, retval);
++	} else {
++		ZEND_HASH_INDEX_FIND(ht, hval, retval, num_undef);
++		ZVAL_COPY_DEREF(result, retval);
++	}

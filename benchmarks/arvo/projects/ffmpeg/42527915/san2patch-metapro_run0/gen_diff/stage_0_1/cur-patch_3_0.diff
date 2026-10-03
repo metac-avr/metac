@@ -1,0 +1,31 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..3e766f1854 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
++     } else {
+@@ -243,0 +244 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++            vlc->table = NULL;  // Prevent dangling pointer
+@@ -245,0 +247,4 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++        // Clear pointer to prevent use-after-free
++        if (!(flags & INIT_VLC_USE_NEW_STATIC)) {
++            vlc->table = NULL;
++        }
+@@ -427,0 +433,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    
++    // Validate input parameters to prevent null pointer dereference
++    if (!table || !single || !buf) {
++        av_log(logctx, AV_LOG_ERROR, "Invalid input parameters\n");
++        return AVERROR(EINVAL);
++    }
+@@ -439,3 +450,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++        // Add bounds check before accessing table and single->table
++        if (j < nb_elems && j < (1<<numbits)) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        }

@@ -1,0 +1,25 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..6c3396f36 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -146 +146,5 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-  return str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++  struct RString *str = mrb_obj_alloc_string(mrb);
++  if (str && p) {
++    str->flags |= MRB_STR_PTR_NOT_FREEABLE;
++  }
++  return str_init_normal(mrb, str, p, len);
+@@ -253 +257,2 @@ mrb_gc_free_str(mrb_state *mrb, struct RString *str)
+-    /* no code */;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     /* no code */;
+@@ -256,2 +261,7 @@ mrb_gc_free_str(mrb_state *mrb, struct RString *str)
+-  else if (!RSTR_NOFREE_P(str) && !RSTR_FSHARED_P(str))
+-    mrb_free(mrb, str->as.heap.ptr);
++  else if (!RSTR_NOFREE_P(str) && !RSTR_FSHARED_P(str)) {
++    // Add reference counting check to prevent premature deallocation
++    if (mrb->gc.state != GC_STATE_SWEEP || str->RefCount == 0) {
++      mrb_free(mrb, str->as.heap.ptr);
++    }
++    // Otherwise defer freeing until safe
++  }

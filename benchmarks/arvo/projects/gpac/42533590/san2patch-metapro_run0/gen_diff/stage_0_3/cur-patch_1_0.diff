@@ -1,0 +1,49 @@
+diff --git a/src/utils/error.c b/src/utils/error.c
+index 957e7dc9b..05b4c1972 100644
+--- a/src/utils/error.c
++++ b/src/utils/error.c
+@@ -2187,2 +2187,2 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-       //basically a memmem clone (we don't use for portability reasons)
+-       while (1) {
++        // Fixed: Validate data_size before each iteration
++        while (data_size > 0 && data_size >= len_pat) {
+diff --git a/src/filters/load_text.c b/src/filters/load_text.c
+index ff3caecac..9129653a7 100644
+--- a/src/filters/load_text.c
++++ b/src/filters/load_text.c
+@@ -4349,0 +4350,5 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
++	if (!res) {
++		if (dst) gf_free(dst);
++		return NULL;
++	}
++
+@@ -4361,2 +4366,3 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (!strncmp(data, "WEBVTT", 6)) {
+-		PROBE_OK(GF_FPROBE_SUPPORTED, "subtitle/vtt")
++	if (res_size >= 6 && !strncmp(data, "WEBVTT", 6)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		PROBE_OK(GF_FPROBE_SUPPORTED, "subtitle/vtt")
+@@ -4364 +4370 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (gf_strmemstr(data, res_size, " --> ")) {
++	if (res_size >= 5 && gf_strmemstr(data, res_size, " --> ")) {
+@@ -4367 +4373 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (!strncmp(data, "FWS", 3) || !strncmp(data, "CWS", 3)) {
++	if (res_size >= 3 && (!strncmp(data, "FWS", 3) || !strncmp(data, "CWS", 3))) {
+@@ -4370 +4376 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (!strncmp(data, "[Script Info", 12)) {
++	if (res_size >= 12 && !strncmp(data, "[Script Info", 12)) {
+@@ -4374 +4380 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if ((data[0]=='{') && gf_strmemstr(data, res_size, "}{")) {
++	if (res_size >= 3 && (data[0]=='{') && gf_strmemstr(data, res_size, "}{")) {
+@@ -4379 +4385 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (!gf_strmemstr(data, res_size, "?>") ) {
++	if (res_size >= 3 && !gf_strmemstr(data, res_size, "?>") ) {
+@@ -4384 +4390 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (gf_strmemstr(data, res_size, "<x-quicktime-tx3g") || gf_strmemstr(data, res_size, "<text3GTrack")) {
++	if (res_size >= 19 && (gf_strmemstr(data, res_size, "<x-quicktime-tx3g") || gf_strmemstr(data, res_size, "<text3GTrack"))) {
+@@ -4387 +4393 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (gf_strmemstr(data, res_size, "TextStream")) {
++	if (res_size >= 11 && gf_strmemstr(data, res_size, "TextStream")) {
+@@ -4390 +4396 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (gf_strmemstr(data, res_size, "<tt ") || gf_strmemstr(data, res_size, ":tt ")) {
++	if (res_size >= 5 && (gf_strmemstr(data, res_size, "<tt ") || gf_strmemstr(data, res_size, ":tt "))) {

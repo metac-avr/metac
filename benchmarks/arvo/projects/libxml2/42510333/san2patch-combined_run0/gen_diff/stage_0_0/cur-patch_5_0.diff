@@ -1,0 +1,35 @@
+diff --git a/tree.c b/tree.c
+index 8077348a..e45963f1 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699,2 +3699,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
+-	return;
++    xmlFreeNsList((xmlNsPtr) cur);
++    return;
+@@ -3702 +3702,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-    if (cur->doc != NULL) dict = cur->doc->dict;
++// Patched CWE-416: Use After Free - add defensive checks before node traversal
++     if (cur == NULL) return;  // Early exit if cur is NULL
++     if (cur->doc != NULL) dict = cur->doc->dict;
+@@ -3703,0 +3706 @@ xmlFreeNodeList(xmlNodePtr cur) {
++        if (cur == NULL) break;  // Prevent dereferencing NULL pointer
+@@ -3709,2 +3712 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-            cur = cur->children;
+-            depth += 1;
++            cur = cur->children;            depth += 1;
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..d80eb20d 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2464,0 +2465,2 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++        /* Prevent use-after-free by nullifying the pointer */
++        ctxt->incTab[i] = NULL;
+@@ -2470,6 +2472 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-}
+-
+-/**
+- * xmlXIncludeSetFlags:
+- * @ctxt:  an XInclude processing context
+- * @flags: a set of xmlParserOption used for parsing XML includes
++} * @flags: a set of xmlParserOption used for parsing XML includes

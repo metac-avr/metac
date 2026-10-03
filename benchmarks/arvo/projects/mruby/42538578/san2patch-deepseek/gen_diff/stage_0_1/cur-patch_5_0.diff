@@ -1,0 +1,38 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..2630befb0 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -2702,9 +2702 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      NEXT;
+-    }
+-    CASE(OP_ARRAY2, BBB) {
+-      regs[a] = ary_new_from_regs(mrb, c, b);
+-      mrb_gc_arena_restore(mrb, ai);
+-      NEXT;
+-    }
+-
+-    CASE(OP_ARYCAT, B) {
++     CASE(OP_ARYCAT, B) {
+@@ -2712,6 +2704,9 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      if (mrb_nil_p(regs[a])) {
+-        regs[a] = splat;
+-      }
+-      else {
+-        mrb_assert(mrb_array_p(regs[a]));
+-        mrb_ary_concat(mrb, regs[a], splat);
++      {
++        mrb_value *refreshed_regs = mrb->c->stack + a;
++        if (mrb_nil_p(refreshed_regs[a])) {
++          refreshed_regs[a] = splat;
++        }
++        else {
++          mrb_assert(mrb_array_p(refreshed_regs[a]));
++          mrb_ary_concat(mrb, refreshed_regs[a], splat);
++        }
+@@ -2718,0 +2714 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
++      regs = mrb->c->stack + a;
+@@ -2721,3 +2717 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    }
+-
+-    CASE(OP_ARYPUSH, BB) {
++    }    CASE(OP_ARYPUSH, BB) {

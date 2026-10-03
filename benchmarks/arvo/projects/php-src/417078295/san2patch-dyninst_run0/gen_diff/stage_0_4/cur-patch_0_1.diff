@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_API.c b/Zend/zend_API.c
+index e9058f3e43d..fa083cdbb19 100644
+--- a/Zend/zend_API.c
++++ b/Zend/zend_API.c
+@@ -1772,3 +1772,12 @@ ZEND_API zend_result object_and_properties_init(zval *arg, zend_class_entry *cla
+-ZEND_API zend_result object_init_ex(zval *arg, zend_class_entry *class_type) /* {{{ */
+-{
+-	return _object_and_properties_init(arg, class_type, NULL);
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API zend_result object_init_ex(zval *arg, zend_class_entry *class_type) /* {{{ */
++{
++	zend_result result;
++	result = _object_and_properties_init(arg, class_type, NULL);
++	if (result == SUCCESS && Z_OBJ_P(arg) != NULL) {
++		zend_object *obj = Z_OBJ_P(arg);
++		if (obj->gc.u.type_info & GC_MARKED) {
++			return FAILURE;
++		}
++	}
++	return result;
+@@ -1784,2 +1793 @@ ZEND_API void object_init(zval *arg) /* {{{ */
+-ZEND_API void add_assoc_long_ex(zval *arg, const char *key, size_t key_len, zend_long n) /* {{{ */
+-{
++ZEND_API void add_assoc_long_ex(zval *arg, const char *key, size_t key_len, zend_long n) /* {{{ */{

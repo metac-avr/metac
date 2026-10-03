@@ -1,0 +1,33 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..430a7a6af 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -294 +294 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	if(packet->content_disposition_line.ptr[attachment_len] == '\"') {
++	        if(packet->content_disposition_line.ptr[attachment_len] == '\"') {
+@@ -297 +297 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    flow->http.filename = ndpi_malloc(filename_len);
++	    flow->http.filename = ndpi_malloc(packet->content_disposition_line.len - attachment_len - 1);
+@@ -299,2 +299,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
++		      packet->content_disposition_line.len - attachment_len - 2);
++	      flow->http.filename[packet->content_disposition_line.len - attachment_len - 2] = '\0';
+@@ -305 +306 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    flow->http.filename = ndpi_malloc(filename_len-1);
++	    flow->http.filename = ndpi_malloc(packet->content_disposition_line.len - attachment_len - 2);
+@@ -309,2 +310,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++		      packet->content_disposition_line.len - attachment_len - 3);
++	      flow->http.filename[packet->content_disposition_line.len - attachment_len - 3] = '\0';
+@@ -316 +317 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	  flow->http.filename = ndpi_malloc(filename_len+1);
++	  flow->http.filename = ndpi_malloc(packet->content_disposition_line.len - attachment_len + 1);
+@@ -319,2 +320,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len,
++		    packet->content_disposition_line.len - attachment_len);
++	    flow->http.filename[packet->content_disposition_line.len - attachment_len] = '\0';

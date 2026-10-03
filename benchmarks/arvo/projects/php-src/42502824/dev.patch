@@ -1,0 +1,25 @@
+diff --git a/ext/opcache/jit/zend_jit_arm64.dasc b/ext/opcache/jit/zend_jit_arm64.dasc
+index d25d82c779d36..967ba0e5d1467 100644
+--- a/ext/opcache/jit/zend_jit_arm64.dasc
++++ b/ext/opcache/jit/zend_jit_arm64.dasc
+@@ -5461,6 +5461,7 @@ static int zend_jit_simple_assign(dasm_State    **Dst,
+ 			ZEND_ASSERT(Z_MODE(val_addr) == IS_MEM_ZVAL && Z_REG(val_addr) == ZREG_FP);
+ 			|	LOAD_32BIT_VAL FCARG1w, Z_OFFSET(val_addr)
+ 			|	EXT_CALL zend_jit_undefined_op_helper, REG0
++			|	cbz RETVALx, ->exception_handler_undef
+ 			if (save_r1) {
+ 				|	ldr FCARG1x, T1	// restore
+ 			}
+diff --git a/ext/opcache/jit/zend_jit_x86.dasc b/ext/opcache/jit/zend_jit_x86.dasc
+index f1b9ab99b0487..a08f26ca8eb28 100644
+--- a/ext/opcache/jit/zend_jit_x86.dasc
++++ b/ext/opcache/jit/zend_jit_x86.dasc
+@@ -5949,6 +5949,8 @@ static int zend_jit_simple_assign(dasm_State    **Dst,
+ 			ZEND_ASSERT(Z_MODE(val_addr) == IS_MEM_ZVAL && Z_REG(val_addr) == ZREG_FP);
+ 			|	mov FCARG1d, Z_OFFSET(val_addr)
+ 			|	EXT_CALL zend_jit_undefined_op_helper, r0
++			|	test r0, r0
++			|	jz ->exception_handler_undef
+ 			if (save_r1) {
+ 				|	mov FCARG1a, aword T1 // restore
+ 			}

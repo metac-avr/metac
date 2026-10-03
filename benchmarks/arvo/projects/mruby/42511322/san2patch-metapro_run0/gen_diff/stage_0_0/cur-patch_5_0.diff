@@ -1,0 +1,21 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..811249d0f 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -99 +99,2 @@ static inline void
+-stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
++// FIXME: Crash CWE-416: Use After Free
++ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+@@ -100,0 +102 @@ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
++  if (!dst || !src) return;
+@@ -180,0 +183,3 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Preserve critical stack pointers before reallocation */
++  mrb_callinfo *current_ci = mrb->c->ci;
++  
+@@ -188,0 +194,6 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  
++  /* Update current call info stack pointer */
++  if (current_ci->stack) {
++    ptrdiff_t offset = current_ci->stack - oldbase;
++    current_ci->stack = mrb->c->stbase + offset;
++  }

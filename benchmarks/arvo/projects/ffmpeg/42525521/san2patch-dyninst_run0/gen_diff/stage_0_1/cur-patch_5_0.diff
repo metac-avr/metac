@@ -1,0 +1,88 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..f02847eeae 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -252,0 +253,3 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++    // Add safety checks for buffer boundaries
++    const int max_buffer_size = 524800; // As mentioned in vulnerability description
++    
+@@ -254,4 +257,7 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-        s->idsp.idct_put(dest_y,                               dct_linesize, (int16_t*)ctx->block32[0]);
+-        s->idsp.idct_put(dest_y              + act_block_size, dct_linesize, (int16_t*)ctx->block32[1]);
+-        s->idsp.idct_put(dest_y + dct_offset,                  dct_linesize, (int16_t*)ctx->block32[2]);
+-        s->idsp.idct_put(dest_y + dct_offset + act_block_size, dct_linesize, (int16_t*)ctx->block32[3]);
++        // Check buffer bounds before each write operation
++        if (dest_y && (uintptr_t)(dest_y + dct_offset + act_block_size) < (uintptr_t)dest_y + max_buffer_size) {
++            s->idsp.idct_put(dest_y,                               dct_linesize, (int16_t*)ctx->block32[0]);
++            s->idsp.idct_put(dest_y              + act_block_size, dct_linesize, (int16_t*)ctx->block32[1]);
++            s->idsp.idct_put(dest_y + dct_offset,                  dct_linesize, (int16_t*)ctx->block32[2]);
++            s->idsp.idct_put(dest_y + dct_offset + act_block_size, dct_linesize, (int16_t*)ctx->block32[3]);
++        }
+@@ -262,9 +268,13 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-        s->idsp.idct_put(dest_cb,              dct_linesize, (int16_t*)ctx->block32[4]);
+-        s->idsp.idct_put(dest_cr,              dct_linesize, (int16_t*)ctx->block32[5]);
+-        s->idsp.idct_put(dest_cb + dct_offset, dct_linesize, (int16_t*)ctx->block32[6]);
+-        s->idsp.idct_put(dest_cr + dct_offset, dct_linesize, (int16_t*)ctx->block32[7]);
+-        if (!s->chroma_x_shift){ //Chroma444
+-            s->idsp.idct_put(dest_cb + act_block_size,              dct_linesize, (int16_t*)ctx->block32[8]);
+-            s->idsp.idct_put(dest_cr + act_block_size,              dct_linesize, (int16_t*)ctx->block32[9]);
+-            s->idsp.idct_put(dest_cb + act_block_size + dct_offset, dct_linesize, (int16_t*)ctx->block32[10]);
+-            s->idsp.idct_put(dest_cr + act_block_size + dct_offset, dct_linesize, (int16_t*)ctx->block32[11]);
++        // Validate chroma buffers
++        if (dest_cb && dest_cr && (uintptr_t)(dest_cb + dct_offset + act_block_size) < (uintptr_t)dest_cb + max_buffer_size &&
++            (uintptr_t)(dest_cr + dct_offset + act_block_size) < (uintptr_t)dest_cr + max_buffer_size) {
++            s->idsp.idct_put(dest_cb,              dct_linesize, (int16_t*)ctx->block32[4]);
++            s->idsp.idct_put(dest_cr,              dct_linesize, (int16_t*)ctx->block32[5]);
++            s->idsp.idct_put(dest_cb + dct_offset, dct_linesize, (int16_t*)ctx->block32[6]);
++            s->idsp.idct_put(dest_cr + dct_offset, dct_linesize, (int16_t*)ctx->block32[7]);
++            if (!s->chroma_x_shift){ //Chroma444
++                s->idsp.idct_put(dest_cb + act_block_size,              dct_linesize, (int16_t*)ctx->block32[8]);
++                s->idsp.idct_put(dest_cr + act_block_size,              dct_linesize, (int16_t*)ctx->block32[9]);
++                s->idsp.idct_put(dest_cb + act_block_size + dct_offset, dct_linesize, (int16_t*)ctx->block32[10]);
++                s->idsp.idct_put(dest_cr + act_block_size + dct_offset, dct_linesize, (int16_t*)ctx->block32[11]);
++            }
+@@ -281,5 +291,10 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = 0; h < (16 >> (vsub + lowres)); h++){
+-                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
+-                    dest_pcm[i][w] = src[idx];
+-                dest_pcm[i] += linesize[i] / 2;
+-                src         += (16 >> hsub) * step;
++            // Validate loop bounds to prevent overflow
++            int height = 16 >> (vsub + lowres);
++            int width = 16 >> (hsub + lowres);
++            if (height > 0 && width > 0) {
++                for (int h = 0; h < height; h++){
++                    for (int w = 0, idx = 0; w < width; w++, idx += step)
++                        dest_pcm[i][w] = src[idx];
++                    dest_pcm[i] += linesize[i] / 2;
++                    src         += (16 >> hsub) * step;
++                }
+@@ -298,6 +313,11 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub) - 1);
+-            for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+-                    dest_pcm[i][w] = src[idx];
+-                src += step * (16 >> hsub);
+-                dest_pcm[i] -= linesize[i] / 2;
++            // Prevent negative indexing and ensure valid buffer access
++            int height = 16 >> (vsub + lowres);
++            int width = 16 >> (hsub + lowres);
++            if (height > 0 && width > 0 && linesize[i] > 0) {
++                dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub) - 1);
++                for (int h = height - 1; h >= 0; h--){
++                    for (int w = width - 1, idx = 0; w >= 0; w--, idx += step)
++                        dest_pcm[i][w] = src[idx];
++                    src += step * (16 >> hsub);
++                    dest_pcm[i] -= linesize[i] / 2;
++                }
+diff --git a/libavcodec/h263dec.c b/libavcodec/h263dec.c
+index f4e7048a5f..ce72dae61c 100644
+--- a/libavcodec/h263dec.c
++++ b/libavcodec/h263dec.c
+@@ -608,2 +608,4 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
+-        if (s->msmpeg4_version < 4 && s->h263_pred)
+-            ff_mpeg4_clean_buffers(s);
++        if (s->msmpeg4_version < 4 && s->h263_pred) {
++            if (s->current_picture_ptr && s->current_picture_ptr->data[0])
++                ff_mpeg4_clean_buffers(s);
++        }

@@ -1,0 +1,37 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 69eaeb052..cc4c8789a 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -179 +179,3 @@ static void ndpi_trecurse(ndpi_node *root, void (*action)(const void *, ndpi_VIS
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
++  if(root == NULL) return;
+@@ -184,2 +186,4 @@ static void ndpi_trecurse(ndpi_node *root, void (*action)(const void *, ndpi_VIS
+-    if(root->left != (ndpi_node *)0)
+-      ndpi_trecurse(root->left, action, level + 1, user_data);
++    if(root->left != (ndpi_node *)0) {
++      if(root->left != NULL) // Validate left pointer before recursive call
++        ndpi_trecurse(root->left, action, level + 1, user_data);
++    }
+@@ -187,2 +191,4 @@ static void ndpi_trecurse(ndpi_node *root, void (*action)(const void *, ndpi_VIS
+-    if(root->right != (ndpi_node *)0)
+-      ndpi_trecurse(root->right, action, level + 1, user_data);
++    if(root->right != (ndpi_node *)0) {
++      if(root->right != NULL) // Validate right pointer before recursive call
++        ndpi_trecurse(root->right, action, level + 1, user_data);
++    }
+@@ -3451 +3457 @@ u_int8_t ndpi_is_encrypted_proto(struct ndpi_detection_module_struct *ndpi_str,
+-    return(!ndpi_str->proto_defaults[proto.proto.app_protocol].isClearTextProto);
++    return(ndpi_str ? !ndpi_str->proto_defaults[proto.proto.app_protocol].isClearTextProto : 0);
+@@ -3453,2 +3459,3 @@ u_int8_t ndpi_is_encrypted_proto(struct ndpi_detection_module_struct *ndpi_str,
+-    if(ndpi_str->proto_defaults[proto.proto.master_protocol].isClearTextProto
+-       && (!ndpi_str->proto_defaults[proto.proto.app_protocol].isClearTextProto))
++    if(ndpi_str && ndpi_str->proto_defaults[proto.proto.master_protocol].isClearTextProto
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++        && (!ndpi_str->proto_defaults[proto.proto.app_protocol].isClearTextProto))
+@@ -3457,2 +3464,2 @@ u_int8_t ndpi_is_encrypted_proto(struct ndpi_detection_module_struct *ndpi_str,
+-      return((ndpi_str->proto_defaults[proto.proto.master_protocol].isClearTextProto
+-	      && ndpi_str->proto_defaults[proto.proto.app_protocol].isClearTextProto) ? 0 : 1);
++      return(ndpi_str ? (ndpi_str->proto_defaults[proto.proto.master_protocol].isClearTextProto
++	      && ndpi_str->proto_defaults[proto.proto.app_protocol].isClearTextProto) ? 0 : 1 : 0);

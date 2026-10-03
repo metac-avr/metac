@@ -1,0 +1,28 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..6123f7cf4 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1034 +1034,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      size_t content_len;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t content_len;
+@@ -1039 +1040,3 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      if(content != NULL) {
++      if(content != NULL && content_len > 0) {
++	// Ensure null termination for safe string operations
++	content[content_len - 1] = '\0';
+@@ -1042 +1045 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	if(double_dot) {
++	if(double_dot && (size_t)(double_dot - (char*)content) < content_len) {
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..ef0c850d3 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -956 +956 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++// Fixed CWE-125: Out-of-bounds Read by ensuring proper buffer allocation
+@@ -963 +963 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-  for(i = 0; i < len; i++) {
++  for(i = 0; i < len && pos < out + olen; i++) { // Added boundary check
+@@ -972,0 +973 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++      if(pos + 2 >= out + olen) break; // Prevent buffer overflow

@@ -1,0 +1,23 @@
+diff --git a/libavcodec/vvc/vvc_ps.c b/libavcodec/vvc/vvc_ps.c
+index ac96ed9f43..110d5f2e2f 100644
+--- a/libavcodec/vvc/vvc_ps.c
++++ b/libavcodec/vvc/vvc_ps.c
+@@ -998 +998,2 @@ int ff_vvc_decode_aps(VVCParamSets *ps, const CodedBitstreamUnit *unit)
+-            break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             break;
+@@ -999,0 +1001,14 @@ int ff_vvc_decode_aps(VVCParamSets *ps, const CodedBitstreamUnit *unit)
++            if (aps->scaling_list_data.scaling_list_chroma_present_flag) {
++                int i;
++                int invalid = 0;
++                for (i = 0; i < 256; i++) {
++                    if (aps->scaling_list_data.scaling_list_copy_mode_flag[i] != 0) {
++                        invalid = 1;
++                        break;
++                    }
++                }
++                if (invalid) {
++                    ret = AVERROR_INVALIDDATA;
++                    break;
++                }
++            }

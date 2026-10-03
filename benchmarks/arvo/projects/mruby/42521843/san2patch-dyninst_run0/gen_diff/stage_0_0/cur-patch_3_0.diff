@@ -1,0 +1,35 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..2251b7800 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -150,0 +152,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  
++  if (keys == NULL || vals == NULL) return 0;
++  
+@@ -159 +163 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-        *pp = vals[pos];
++        if (pp != NULL) *pp = vals[pos];
+@@ -166,0 +171 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (pos >= t->alloc) return 0;
+@@ -169 +174 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      *pp = vals[pos];
++      if (pp != NULL) *pp = vals[pos];
+diff --git a/src/vm.c b/src/vm.c
+index 6f6b9b001..ec194ff9a 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1763 +1763,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      recv = regs[0];
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       recv = regs[0];
+@@ -1764,0 +1766,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      
++      /* Add null pointer check for target_class before method search */
++      if (ci->u.target_class == NULL) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid target class for method lookup");
++      }
++      

@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..28f784ecec9 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1233,0 +1234,7 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
++		// Clear dangling pointers before reallocating
++		for (uint32_t i = 0; i < ht->nNumUsed; i++) {
++			if (Z_TYPE(old_buckets[i].key) == IS_UNDEF) {
++				old_buckets[i].val.ptr = NULL; // Prevent dangling pointer access
++			}
++		}
++
+@@ -1236 +1242,0 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
+-		ht->nTableMask = HT_SIZE_TO_MASK(ht->nTableSize);
+@@ -1433 +1439,2 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1435 +1442,2 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	if (p->key) {
++	/* Only access p->key if p is likely valid */
++	if (p && p->key) {  /* Add null check for p before accessing p->key */

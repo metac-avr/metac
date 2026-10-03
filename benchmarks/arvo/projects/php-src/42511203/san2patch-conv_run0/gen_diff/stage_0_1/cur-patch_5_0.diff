@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..2def2f2c21c 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -156,7 +156,10 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			zend_copy_to_variable(variable_ptr, value, value_type);
+-			if (GC_DELREF(garbage) == 0) {
+-				rc_dtor_func(garbage);
+-			} else { /* we need to split */
+-				/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
+-				if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
+-					gc_possible_root(garbage);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++			if (Z_TYPE_P(variable_ptr) != IS_UNDEF) { 
++				zend_copy_to_variable(variable_ptr, value, value_type);
++				if (GC_DELREF(garbage) == 0) {
++					rc_dtor_func(garbage);
++				} else { /* we need to split */
++					/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
++					if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
++						gc_possible_root(garbage);
++					}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..26941f6c2e2 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
++/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -55,0 +56,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	// Fix for CWE-825: Expired Pointer Dereference - validate pointer before use
++	if (UNEXPECTED(p == NULL)) return;
+@@ -57 +59,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	// Additional safety check to prevent accessing freed memory
++	if (EXPECTED(GC_TYPE(p) >= 0)) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

@@ -1,0 +1,26 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..750705d866 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2025 +2025,8 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-    }
++// Fixed CWE-787: Out-of-bounds Write - Added bounds validation
++        ptrdiff_t offset = (uint8_t*)dst - (uint8_t*)picture->data[plane];                        \
++        if (offset >= 0 && offset < picture->linesize[plane] * s->height)                         \
++            *dst = *i_datap;                                                                      \
++        i_datap++;                                                                                \
++        dst += pixelsize;                                                                         \
++    }                                                                                             \
++}
+@@ -2501 +2508,10 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-    avctx->execute2(avctx, jpeg2000_decode_tile, picture, NULL, s->numXtiles * s->numYtiles);
++    // Bounds check for tile processing to prevent buffer overflow
++    if (s->numXtiles > 0 && s->numYtiles > 0) {
++        // Ensure the multiplication won't overflow
++        if (s->numXtiles <= INT_MAX / s->numYtiles) {
++            avctx->execute2(avctx, jpeg2000_decode_tile, picture, NULL, s->numXtiles * s->numYtiles);
++        } else {
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }
++    }

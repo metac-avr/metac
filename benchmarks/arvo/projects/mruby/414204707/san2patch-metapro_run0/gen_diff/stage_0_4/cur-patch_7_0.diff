@@ -1,0 +1,31 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..7ecec27ac 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -791,0 +792,4 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  /* Validate object pointer before GC marking */
++  if (obj && mrb && !mrb->gc.state) return;
++  
+@@ -799,2 +803 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1096,3 +1099,8 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc->gray_list = obj->gcnext;
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj && obj != (struct RBasic*)0xdeadbeef) {
++      gc->gray_list = obj->gcnext;
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    } else {
++      gc->gray_list = NULL;
++      break;
++    }

@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..f024e491919 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40406,2 +40406,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
+-			ZVAL_REF(variable_ptr, Z_REF_P(value));
++			if (Z_REFCOUNTED_P(value) && Z_REF_P(value) != NULL && !GC_DELREF(Z_REF_P(value))) {
++				Z_ADDREF_P(value);
++				ZVAL_REF(variable_ptr, Z_REF_P(value));
++			} else {
++				ZVAL_NULL(variable_ptr);
++			}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index af5f3821723..695c97a3a08 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1260 +1260 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++return p->refcount;
+@@ -1268 +1268,2 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+@@ -1269,0 +1271,3 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++#ifdef ZEND_GUARD_USE_AFTER_FREE
++	if (__builtin_expect(!p, 0)) return 0;
++#endif
+@@ -1280,2 +1284 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
++static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {	if (!(p->u.type_info & GC_IMMUTABLE)) {

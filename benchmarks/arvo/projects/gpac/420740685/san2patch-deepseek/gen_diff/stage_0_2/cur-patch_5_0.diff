@@ -1,0 +1,23 @@
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..d4ec330aa 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -894 +894,2 @@ static void m2tsdmx_on_event(GF_M2TS_Demuxer *ts, u32 evt_type, void *param)
+-		break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		break;
+@@ -896,6 +897,8 @@ static void m2tsdmx_on_event(GF_M2TS_Demuxer *ts, u32 evt_type, void *param)
+-		m2tsdmx_setup_program(ctx, param);
+-		if (ctx->mux_tune_state == DMX_TUNE_WAIT_PROGS) {
+-			assert(ctx->wait_for_progs);
+-			ctx->wait_for_progs--;
+-			if (!ctx->wait_for_progs) {
+-				ctx->mux_tune_state = DMX_TUNE_WAIT_SEEK;
++		if (!gf_m2ts_pmt_is_malformed(param)) {
++			m2tsdmx_setup_program(ctx, param);
++			if (ctx->mux_tune_state == DMX_TUNE_WAIT_PROGS) {
++				assert(ctx->wait_for_progs);
++				ctx->wait_for_progs--;
++				if (!ctx->wait_for_progs) {
++					ctx->mux_tune_state = DMX_TUNE_WAIT_SEEK;
++				}

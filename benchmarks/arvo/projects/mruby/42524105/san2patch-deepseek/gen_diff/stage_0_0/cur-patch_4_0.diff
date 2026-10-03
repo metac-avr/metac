@@ -1,0 +1,44 @@
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..5a3d1b6c2 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326,6 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    {
++      mrb_value key_root = key;
++      mrb_gc_register(mrb, key_root);
++      hash_code = mrb_str_hash(mrb, key_root);
++      mrb_gc_unregister(mrb, key_root);
++    }
+@@ -343 +348,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-416: Use After Free
++     break;
+@@ -346 +352,4 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-      hash_code_obj = mrb_funcall_argv(mrb, key, MRB_SYM(hash), 0, NULL);
++      mrb_value key_root = key;
++      mrb_gc_register(mrb, key_root);
++      hash_code_obj = mrb_funcall_argv(mrb, key_root, MRB_SYM(hash), 0, NULL);
++      mrb_gc_unregister(mrb, key_root);
+@@ -1236,5 +1244,0 @@ mrb_hash_fetch(mrb_state *mrb, mrb_value hash, mrb_value key, mrb_value def)
+-  }
+-  /* not found */
+-  return def;
+-}
+-
+@@ -1243,0 +1248 @@ mrb_hash_set(mrb_state *mrb, mrb_value hash, mrb_value key, mrb_value val)
++  mrb_value key_root = key;
+@@ -1245 +1250 @@ mrb_hash_set(mrb_state *mrb, mrb_value hash, mrb_value key, mrb_value val)
+-  key = h_key_for(mrb, key);
++  key = h_key_for(mrb, key_root);
+@@ -1249,9 +1254 @@ mrb_hash_set(mrb_state *mrb, mrb_value hash, mrb_value key, mrb_value val)
+-}
+-
+-/* 15.2.13.4.16 */
+-/*
+- *  call-seq:
+- *     Hash.new                          -> new_hash
+- *     Hash.new(obj)                     -> new_hash
+- *     Hash.new {|hash, key| block }     -> new_hash
+- *
++} *

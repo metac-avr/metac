@@ -1,0 +1,19 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 239492add..d5a9f35d8 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1824 +1824,2 @@ cmpnum(mrb_state *mrb, mrb_value v1, mrb_value v2)
+-#ifdef MRB_USE_BIGINT
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ #ifdef MRB_USE_BIGINT
+@@ -1825,0 +1827 @@ cmpnum(mrb_state *mrb, mrb_value v1, mrb_value v2)
++    if (mrb_nil_p(v1) || mrb_nil_p(v2)) return -2;
+@@ -1889,2 +1891,6 @@ num_cmp(mrb_state *mrb, mrb_value self)
+-  n = cmpnum(mrb, self, other);
+-  if (n == -2) return mrb_nil_value();
++  if (!mrb_bigint_p(self) && !mrb_bigint_p(other)) {
++    n = cmpnum(mrb, self, other);
++    if (n == -2) return mrb_nil_value();
++  } else {
++    return mrb_nil_value();
++  }

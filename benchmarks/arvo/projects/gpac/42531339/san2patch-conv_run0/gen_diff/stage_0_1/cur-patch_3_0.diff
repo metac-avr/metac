@@ -1,0 +1,20 @@
+diff --git a/src/media_tools/webvtt.c b/src/media_tools/webvtt.c
+index f7e3a88ec..d18747229 100644
+--- a/src/media_tools/webvtt.c
++++ b/src/media_tools/webvtt.c
+@@ -1028,0 +1029 @@ GF_Err gf_webvtt_parser_parse_internal(GF_WebVTTParser *parser, GF_WebVTTCue *cu
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -1030,2 +1031,11 @@ GF_Err gf_webvtt_parser_parse_internal(GF_WebVTTParser *parser, GF_WebVTTCue *cu
+-					else
+-						prevLine = gf_strdup(szLine);
++					else {
++						// Limit szLine to prevent out-of-bounds read
++						char* temp = gf_malloc(len + 1);
++						if (temp) {
++							memcpy(temp, szLine, len);
++							temp[len] = '\0';
++							prevLine = temp;
++						} else {
++							prevLine = gf_strdup("");
++						}
++					}

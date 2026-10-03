@@ -1,0 +1,27 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..5657ad009 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -956 +956 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++ 
+@@ -958 +958 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-  pos = out = ndpi_malloc(olen);
++  pos = out = ndpi_malloc(olen + 1); // Allocate extra space for null terminator
+@@ -960,0 +961 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++  out[olen] = '\0'; // Pre-null-terminate to prevent out-of-bounds access
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..e2e5ee69e 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1038 +1038 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
++ 
+@@ -1040 +1040,6 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
++	char *double_dot = NULL;
++	/* Add bounds check before using strchr */
++	if(content_len > 0 && content_len < packet->authorization_line.len - len) {
++	  content[content_len] = '\0';  /* Ensure null termination */
++	  double_dot = strchr((char*)content, ':');
++	}

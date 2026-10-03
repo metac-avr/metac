@@ -1,0 +1,42 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..0ea51e2867e 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -543,16 +543 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
+-#define IS_PTR						13
+-#define IS_ALIAS_PTR				14
+-#define _IS_ERROR					15
+-
+-/* used for casts */
+-#define _IS_BOOL					18
+-#define _IS_NUMBER					19
+-
+-static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-	return pz->u1.v.type;
+-}
+-
+-#define ZEND_SAME_FAKE_TYPE(faketype, realtype) ( \
+-	(faketype) == (realtype) \
+-	|| ((faketype) == _IS_BOOL && ((realtype) == IS_TRUE || (realtype) == IS_FALSE)) \
++#define IS_INDIRECT             <|fim_suffix|>ealtype) == IS_FALSE)) \
+@@ -562,2 +547,2 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
++#define Z_TYPE(zval)                zval_get_type(&(zval))
++#define Z_TYPE_P(zval_p)            Z_TYPE(*(zval_p))
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..f896e345d24 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1654 +1654,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_deprecated_function(const zend_functi
+-ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
+@@ -1656,0 +1658,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++	/* Ensure proper reference counting to prevent use-after-free */
++	/* This prevents the array from being destroyed while still referenced */
+@@ -1666,2 +1669 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
+-	/* Illegal offset assignment */
+-	if (UNEXPECTED(EG(exception) != NULL)) {
++	/* Illegal offset assignment */	if (UNEXPECTED(EG(exception) != NULL)) {

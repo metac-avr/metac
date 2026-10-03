@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..12216108452 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2168,0 +2169,9 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++			/* Check if object is still valid before calling apply_func */
++			zend_object *obj;
++			if (Z_TYPE(p->val) == IS_OBJECT && (obj = Z_OBJ(p->val)) != NULL) {
++				if (obj->handle >= EG(objects_store)->top || 
++				    EG(objects_store)->object_buckets[obj->handle] == NULL) {
++					continue; /* Skip freed objects */
++				}
++			}
++
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..05ec6582f49 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// Fixed: Set object to NULL in object_buckets before freeing to prevent use-after-free
++		EG(objects_store).object_buckets[handle] = NULL;
++ 		ptr = ((char*)object) - object->handlers->offset;

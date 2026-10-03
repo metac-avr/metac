@@ -1,0 +1,35 @@
+diff --git a/error.c b/error.c
+index 1b4fe767..757262a7 100644
+--- a/error.c
++++ b/error.c
+@@ -650,2 +650,2 @@ __xmlRaiseError(xmlStructuredErrorFunc schannel,
+-	    data = xmlGenericErrorContext;
+-	}
++        data = xmlGenericErrorContext;
++    }
+@@ -658,2 +658,3 @@ __xmlRaiseError(xmlStructuredErrorFunc schannel,
+-	(channel == xmlParserValidityError) ||
+-	(channel == xmlParserValidityWarning))
++// FIXME: Crash CWE-416: Use After Free - Added buffer validation
++	((channel == xmlParserValidityError) && ctxt != NULL) ||
++	((channel == xmlParserValidityWarning) && ctxt != NULL))
+@@ -670,2 +671 @@ __xmlRaiseError(xmlStructuredErrorFunc schannel,
+- * @domain: where the error comes from
+- * @code: the error code
++ * @domain: where the error comes from * @code: the error code
+diff --git a/parser.c b/parser.c
+index 19f2e615..d0117ed2 100644
+--- a/parser.c
++++ b/parser.c
+@@ -8268,0 +8269,7 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
++    /* Fix: Ensure error context is preserved during buffer operations */
++    xmlChar *error_context = NULL;
++    size_t error_context_size = 0;
++    if (input->buf->buffer != NULL) {
++        error_context = xmlStrdup(xmlBufContent(input->buf->buffer));
++        error_context_size = xmlBufUse(input->buf->buffer);
++    }
+@@ -8277,0 +8285 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
++        if (error_context) xmlFree(error_context);
+@@ -8279,0 +8288 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
++    if (error_context) xmlFree(error_context);

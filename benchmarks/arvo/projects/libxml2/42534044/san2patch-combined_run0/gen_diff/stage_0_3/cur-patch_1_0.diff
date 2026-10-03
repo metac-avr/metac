@@ -1,0 +1,26 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..c2c6df63 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3635,0 +3636,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Set node type to invalid to detect use-after-free */
++	    cur->type = (xmlElementType)0;
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..a8870591 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -593 +593 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
++if (child == NULL)
+@@ -601 +601,2 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++// FIXME: Crash CWE-416: Use After Free
++     xmlNodePtr cur = node;
+@@ -603 +604,3 @@ nodeGetTree(xmlNodePtr node) {
+-    while (cur->parent)
++    while (cur && cur->parent) {
++        if (cur->type < XML_ELEMENT_NODE || cur->type > XML_ENTITY_DECL) 
++            return NULL;
+@@ -604,0 +608 @@ nodeGetTree(xmlNodePtr node) {
++    }

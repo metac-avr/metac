@@ -1,0 +1,27 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..d1e5a8b70 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1199,0 +1200,4 @@ int_mod(mrb_state *mrb, mrb_value x)
++    
++    // Implement overflow-safe modulus with bounds checking
++    if (a == 0) return mrb_fixnum_value(0);
++    
+@@ -1201,2 +1205,13 @@ int_mod(mrb_state *mrb, mrb_value x)
+-    if ((a < 0) != (b < 0) && mod != 0) {
+-      mod += b;
++    
++    // Safe correction for negative results
++    if (mod != 0) {
++      if ((a < 0 && b > 0 && mod > 0) || (a > 0 && b < 0 && mod < 0)) {
++        // This would cause overflow, return appropriate value
++        if (b > 0) {
++          mod = mod - b;
++        } else {
++          mod = mod - b;
++        }
++      } else if ((a < 0) != (b < 0)) {
++        mod += b;
++      }
+@@ -1203,0 +1219 @@ int_mod(mrb_state *mrb, mrb_value x)
++    

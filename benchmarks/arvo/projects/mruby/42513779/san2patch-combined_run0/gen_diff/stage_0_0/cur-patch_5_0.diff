@@ -1,0 +1,21 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..1da6e7c7e 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -37 +37 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-{
++ {
+@@ -39,4 +39,9 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-    x->p=(mp_limb*)mrb_realloc(mrb,x->p,size*sizeof(mp_limb));
+-    for (size_t i=x->sz; i<size; i++)
+-      (x->p)[i] = 0;
+-    x->sz = size;
++    // Validate size parameter to prevent excessive allocation
++    if (size > 0 && size < (SIZE_MAX / sizeof(mp_limb))) {
++      x->p = (mp_limb*)mrb_realloc(mrb, x->p, size * sizeof(mp_limb));
++      if (x->p != NULL) {
++        for (size_t i = x->sz; i < size; i++)
++          (x->p)[i] = 0;
++        x->sz = size;
++      }
++    }

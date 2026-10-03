@@ -1,0 +1,25 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..75ae328a98 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -706,2 +706,2 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
+-        // Annex B, or later MP4 with already-known parameters.
+-
++    // Fixed: Added validation to prevent integer overflow leading to negative size param
++    if (frag->data_size > 0) {
+@@ -718,0 +719,2 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
++    } else {
++        return AVERROR_INVALIDDATA;
+@@ -719,0 +722 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
++}
+@@ -1214 +1217,2 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        // This happens normally for CABAC.
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         // This happens normally for CABAC.
+@@ -1216,2 +1220,4 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        memcpy(put_bits_ptr(pbc), pos, rest);
+-        skip_put_bytes(pbc, rest);
++        if (rest > 0 && rest <= data_size) {
++            memcpy(put_bits_ptr(pbc), pos, rest);
++            skip_put_bytes(pbc, rest);
++        }

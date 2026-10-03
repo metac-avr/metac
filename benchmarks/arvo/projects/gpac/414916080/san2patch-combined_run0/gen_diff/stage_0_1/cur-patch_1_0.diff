@@ -1,0 +1,16 @@
+diff --git a/src/filter_core/filter_props.c b/src/filter_core/filter_props.c
+index f507546bf..b3db9ffcc 100644
+--- a/src/filter_core/filter_props.c
++++ b/src/filter_core/filter_props.c
+@@ -1123 +1123,8 @@ GF_Err gf_props_set_property(GF_PropertyMap *map, u32 p4cc, const char *name, ch
+-	else
++	else {
++		// Add bounds checking for property values to prevent out-of-bounds reads
++		if (value->type == GF_PROP_DATA && value->value.data.ptr && value->value.data.size > 0) {
++			if (value->value.data.size > 65536) { // Limit data properties to 64KB
++				gf_mx_v(map->session->info_mx);
++				return GF_OUT_OF_MEM;
++			}
++		}
+@@ -1124,0 +1132 @@ GF_Err gf_props_set_property(GF_PropertyMap *map, u32 p4cc, const char *name, ch
++	}

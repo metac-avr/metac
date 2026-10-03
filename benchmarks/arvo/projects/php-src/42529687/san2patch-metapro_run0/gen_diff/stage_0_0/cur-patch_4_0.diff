@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..6a4da463bdb 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1332,2 +1331,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+@@ -1340 +1338,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1341,0 +1341 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p == NULL) return 0;
+@@ -1351,3 +1351 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..49d15c795a6 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -36 +37,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && (uintptr_t)ref > sizeof(void*)) {
++			rc_dtor_func(ref);
++		}

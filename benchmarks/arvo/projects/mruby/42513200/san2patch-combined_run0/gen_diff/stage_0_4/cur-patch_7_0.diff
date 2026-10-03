@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..d2d6b8736 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1730 +1730,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-            check_method_noarg(mrb, ci);
++// FIXME: Crash CWE-190: Integer Overflow or Wraparound
++             check_method_noarg(mrb, ci);
+@@ -1755,0 +1757,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Use saturated arithmetic for stack assignment */
++        volatile uintptr_t stack_addr = (uintptr_t)ci->stack;
++        volatile uintptr_t offset = sizeof(mrb_value);
++        if (stack_addr > UINTPTR_MAX - offset) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "Stack pointer overflow");
++        }
+@@ -1768 +1775,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        mrb_stack_extend(mrb, (irep->nregs < 4) ? 4 : irep->nregs);
++        /* Prevent integer overflow in stack extension calculation */
++        size_t required_stack = (irep->nregs < 4) ? 4 : irep->nregs;
++        if (required_stack > SIZE_MAX / sizeof(mrb_value)) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "Stack size overflow");
++        }
++        mrb_stack_extend(mrb, required_stack);

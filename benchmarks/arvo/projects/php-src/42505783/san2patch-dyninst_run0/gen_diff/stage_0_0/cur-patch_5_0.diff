@@ -1,0 +1,21 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..c6e8abd7065 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1201 +1201 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-{
++ {
+@@ -1230,2 +1230,11 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-	memcpy(ZSTR_VAL(result_str) + op1_len, Z_STRVAL_P(op2), op2_len);
+-	ZSTR_VAL(result_str)[result_len] = '\0';
++	// Fix: Ensure op1_str is still valid before accessing op2 data
++	if (op1_str && !ZSTR_IS_INTERNED(op1_str) && GC_REFCOUNT(op1_str) > 0) {
++		memcpy(ZSTR_VAL(result_str) + op1_len, Z_STRVAL_P(op2), op2_len);
++		ZSTR_VAL(result_str)[result_len] = '\0';
++	} else {
++		// Fallback if op1_str was freed
++		zend_string *op2_str = zval_get_string(op2);
++		memcpy(ZSTR_VAL(result_str) + op1_len, ZSTR_VAL(op2_str), op2_len);
++		ZSTR_VAL(result_str)[result_len] = '\0';
++		zend_string_release(op2_str);
++	}

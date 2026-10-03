@@ -1,0 +1,44 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..b6c68c507 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -647 +647,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super && !is_dead(gc, (struct RBasic*)c->super)) {
++        mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      }
+@@ -651 +653,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   case MRB_TT_OBJECT:
+@@ -653 +656,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (!is_dead(gc, obj)) {
++      mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    }
+@@ -660,2 +665,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper && !is_dead(gc, (struct RBasic*)p->upper)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++      }
++      if (p->e.env && !is_dead(gc, (struct RBasic*)p->e.env)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      }
+@@ -664 +672,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -732 +739,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -740 +747,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -744,0 +753,4 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  // Check if object is valid before adding to gray list
++  if ((obj)->tt >= MRB_TT_MAXDEFINE || (obj)->tt < 0) return;
++  
+@@ -752,2 +764 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:

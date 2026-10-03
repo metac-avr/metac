@@ -1,0 +1,35 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..4bf9cd8a2 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -129,0 +130,3 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
++	/* Safety check to prevent use-after-free - validate packet before access */
++	if (!oggpacket) return;
++	if (oggpacket->bytes == 0 || !oggpacket->packet) return;
+@@ -429,9 +432,17 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-				ogg_stream_packetpeek(&os, &oggpacket);
+-				if (ogg_stream_pagein(&os, &oggpage) >= 0 ) {
+-					ogg_stream_packetpeek(&os, &oggpacket);
+-					oggdmx_get_stream_info(&oggpacket, &info);
+-				}
+-				if (!has_stream) {
+-					has_stream = GF_TRUE;
+-					ogg_stream_init(&the_os, ogg_page_serialno(&oggpage));
+-					the_info = info;
++				ogg_packet temp_packet;
++				if (ogg_stream_packetpeek(&os, &temp_packet) == 1) {
++					if (ogg_stream_pagein(&os, &oggpage) >= 0 ) {
++						ogg_packet another_temp_packet;
++						if (ogg_stream_packetpeek(&os, &another_temp_packet) == 1) {
++							oggdmx_get_stream_info(&another_temp_packet, &info);
++						}
++						else {
++							oggdmx_get_stream_info(&temp_packet, &info);
++						}
++					}
++					if (!has_stream) {
++						has_stream = GF_TRUE;
++						ogg_stream_init(&the_os, ogg_page_serialno(&oggpage));
++						the_info = info;
++// FIXME: Crash CWE-416: Use After Free
++ 					}

@@ -1,0 +1,53 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..446311d78 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -963 +963 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-  for(i = 0; i < len; i++) {
++  for(i = 0; i < len && count < 4; i++) {
+@@ -970,2 +970,5 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-    block[count] = tmp;
+-    count++;
++    if(pad > 2) {
++      ndpi_free(out);
++      return NULL;
++    }
++    block[count++] = tmp;
+@@ -972,0 +976,11 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++      if(pad == 1) {
++        if(block[2] == 0) {
++          ndpi_free(out);
++          return NULL;
++        }
++      } else if(pad == 2) {
++        if(block[1] == 0) {
++          ndpi_free(out);
++          return NULL;
++        }
++      }
+@@ -974,2 +988,4 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-      *pos++ = (block[1] << 4) | (block[2] >> 2);
+-      *pos++ = (block[2] << 6) | block[3];
++      if(pad < 2)
++        *pos++ = (block[1] << 4) | (block[2] >> 2);
++      if(pad < 1)
++        *pos++ = (block[2] << 6) | block[3];
+@@ -977,12 +992,0 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-      if(pad) {
+-	if(pad == 1)
+-	  pos--;
+-	else if(pad == 2)
+-	  pos -= 2;
+-	else {
+-	  /* Invalid padding */
+-	  ndpi_free(out);
+-	  return NULL;
+-	}
+-	break;
+-      }
+@@ -991,0 +996,5 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++  if(count != 0 || pad > 2) {
++    ndpi_free(out);
++    return NULL;
++  }
++

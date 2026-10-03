@@ -1,0 +1,46 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..a3494c87f9 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,8 +2017,24 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
++#define WRITE_FRAME(DIRECTORY, PIXEL)                                                     \
++    static void j2k_write_##DIRECTORY##_frame(Jpeg2000DecoderContext *s, AVFrame *picture,   \
++                                              int tile_index, int compno, int plane,          \
++                                              PIXEL *i_datap, int pixelsize)                  \
++    {                                                                                         \
++        Jpeg2000Tile *tile = s->tile + tile_index;                                            \
++        int x, y, line;                                                                       \
++        PIXEL *linep, *dst;                                                                   \
++                                                                                              \
++        for (y = tile->comp[compno].y0; y < tile->comp[compno].y1; y++) {                     \
++            line = y * (picture->linesize[plane] / sizeof(PIXEL));                            \
++            linep = (PIXEL *)(picture->data[plane] + line);                                   \
++            for (x = tile->comp[compno].x0; x < tile->comp[compno].x1; x++) {                 \
++                dst = linep + x;                                                              \
++                // Fixed CWE-787: Out-of-bounds Write - Validate write position before operation \
++                size_t offset = (uint8_t*)dst - (uint8_t*)linep;                             \
++                if (offset + sizeof(PIXEL) <= (size_t)picture->linesize[plane]) {             \
++                    *(PIXEL*)dst = *i_datap;                                                  \
++                }                                                                             \
++                i_datap++;                                                                    \
++                dst += pixelsize;                                                             \
++            }                                                                                 \
++            line += picture->linesize[plane] / sizeof(PIXEL);                                 \
++        }                                                                                     \
+@@ -2031,8 +2046,0 @@ WRITE_FRAME(16, uint16_t)
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-

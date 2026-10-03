@@ -1,0 +1,54 @@
+diff --git a/error.c b/error.c
+index 1b4fe767..0e2ca07d 100644
+--- a/error.c
++++ b/error.c
+@@ -183,0 +184,5 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
++    /* Validate that input pointers are within valid memory bounds */
++    if ((input->base == NULL) || (input->end == NULL) || 
++        (input->cur < input->base) || (input->cur > input->end))
++        return;
++
+@@ -208 +213,2 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
+-    start = cur;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     start = cur;
+@@ -219,9 +225,12 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
+-    memcpy(content, start, n);
+-    content[n] = 0;
+-    /* print out the selected text */
+-    channel(data ,"%s\n", content);
+-    /* create blank line with problem pointer */
+-    n = 0;
+-    ctnt = content;
+-    /* (leave buffer space for pointer + line terminator) */
+-    while ((n<col) && (n++ < sizeof(content)-2) && (*ctnt != 0)) {
++    /* Additional validation before memcpy to prevent use-after-free */
++    if ((start >= input->base) && (start <= input->end) && 
++        (n <= sizeof(content)-1)) {
++        memcpy(content, start, n);
++        content[n] = 0;
++        /* print out the selected text */
++        channel(data ,"%s\n", content);
++        /* create blank line with problem pointer */
++        n = 0;
++        ctnt = content;
++        /* (leave buffer space for pointer + line terminator) */
++        while ((n<col) && (n++ < sizeof(content)-2) && (*ctnt != 0)) {
+@@ -230,0 +240,4 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
++        }
++        *ctnt++ = '^';
++        *ctnt = 0;
++        channel(data ,"%s\n", content);
+@@ -232,3 +244,0 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
+-    *ctnt++ = '^';
+-    *ctnt = 0;
+-    channel(data ,"%s\n", content);
+diff --git a/parser.c b/parser.c
+index 19f2e615..9b8d4468 100644
+--- a/parser.c
++++ b/parser.c
+@@ -8273,0 +8274 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
++    /* Recalculate input pointers after potential buffer reallocation */
+@@ -8275 +8276 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
+-
++ 

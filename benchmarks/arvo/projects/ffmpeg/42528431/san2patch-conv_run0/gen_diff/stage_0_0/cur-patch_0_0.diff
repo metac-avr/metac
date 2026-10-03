@@ -1,0 +1,17 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..3667b90774 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1214 +1214,2 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        // This happens normally for CABAC.
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         // This happens normally for CABAC.
+@@ -1216,2 +1217,6 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        memcpy(put_bits_ptr(pbc), pos, rest);
+-        skip_put_bytes(pbc, rest);
++        if (rest > 0) {
++            memcpy(put_bits_ptr(pbc), pos, rest);
++            skip_put_bytes(pbc, rest);
++        } else {
++            return AVERROR(ENOSPC);
++        }

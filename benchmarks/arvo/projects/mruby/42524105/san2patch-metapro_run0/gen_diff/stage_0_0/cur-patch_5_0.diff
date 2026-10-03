@@ -1,0 +1,48 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..c003d02d4 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -139,0 +140,2 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
++  struct RString *result;
++  
+@@ -141 +143,5 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-    return str_init_embed(mrb_obj_alloc_string(mrb), p, len);
++    result = mrb_obj_alloc_string(mrb);
++    if (!result) {
++      return NULL;
++    }
++    return str_init_embed(result, p, len);
+@@ -144 +150,9 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-    return str_init_nofree(mrb_obj_alloc_string(mrb), p, len);
++    result = mrb_obj_alloc_string(mrb);
++    if (!result) {
++      return NULL;
++    }
++    return str_init_nofree(result, p, len);
++  }
++  result = mrb_obj_alloc_string(mrb);
++  if (!result) {
++    return NULL;
+@@ -146 +160 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-  return str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++  return str_init_normal(mrb, result, p, len);
+@@ -212,4 +226,13 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-  shared->refcnt--;
+-  if (shared->refcnt == 0) {
+-    mrb_free(mrb, shared->ptr);
+-    mrb_free(mrb, shared);
++  // Defensive check for null pointer
++  if (!shared) return;
++  
++  // Ensure we don't underflow the reference counter
++  if (shared->refcnt > 0) {
++    shared->refcnt--;
++    if (shared->refcnt == 0) {
++      // Null check before accessing ptr
++      if (shared->ptr) {
++        mrb_free(mrb, shared->ptr);
++      }
++      mrb_free(mrb, shared);
++    }
+@@ -224 +246,0 @@ str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
+-

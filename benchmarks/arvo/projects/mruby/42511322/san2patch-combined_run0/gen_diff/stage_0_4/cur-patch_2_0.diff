@@ -1,0 +1,20 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..1ab55ef7d 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -108 +108,3 @@ stack_init(mrb_state *mrb)
+-
++  mrb_value *old_stack = mrb->stack;
++  mrb_callinfo *old_ci = c->ci;
++ 
+@@ -117,2 +119,8 @@ stack_init(mrb_state *mrb)
+-  c->ci->u.target_class = mrb->object_class;
+-  c->ci->stack = c->stbase;
++  
++  /* Ensure we don't use stale pointers */
++  if (old_ci && old_ci->u.target_class) {
++    c->ci->u.target_class = old_ci->u.target_class;
++  } else {
++    c->ci->u.target_class = mrb->object_class;
++  }
++  c->ci->stack = c->stbase;  /* Always point to new stack */

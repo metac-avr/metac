@@ -1,0 +1,36 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..b2ba35c64 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -531 +531 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
++  }
+@@ -538,0 +539 @@ MRB_API mrb_value
++// FIXME: Crash CWE-787: Out-of-bounds Write
+@@ -541 +542,14 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
+-  return mrb_funcall_with_block(mrb, self, mid, argc, argv, mrb_nil_value());
++  mrb_value result;
++  
++  if (mrb == NULL) return mrb_nil_value();
++  
++  // Validate input parameters
++  if (argc < 0) return mrb_nil_value();
++  if (argc > 0 && argv == NULL) return mrb_nil_value();
++  
++  result = mrb_funcall_with_block(mrb, self, mid, argc, argv, mrb_nil_value());
++  
++  // Additional safety check after call
++  if (mrb->exc) return mrb_nil_value();
++  
++  return result;
+@@ -549,0 +564,2 @@ exec_irep(mrb_state *mrb, mrb_value self, struct RProc *p)
++  if (mrb == NULL || ci == NULL) return mrb_nil_value();
++  if (ci->stack == NULL) return mrb_nil_value();
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..bb346117b 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -790,0 +791,3 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  if (mrb->c->stack + 1 >= mrb->c->stend) {
++    mrb_stack_extend(mrb, 2);
++  }

@@ -1,0 +1,18 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 8d2f4dd7f..7eea909e2 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -3274 +3274,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		char buf[256], *tmp, *item;
++// FIXME: Crash CWE-416: Use After Free
++ 		char buf[256], *tmp, *item;
+@@ -3276 +3277,8 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
++		/* Use direct memory copy instead of snprintf to avoid pointer dereference */
++		size_t alpn_len = strlen(flow->protos.tls_quic.advertised_alpns);
++		if(alpn_len < sizeof(buf)) {
++		  memcpy(buf, flow->protos.tls_quic.advertised_alpns, alpn_len + 1);
++		} else {
++		  memcpy(buf, flow->protos.tls_quic.advertised_alpns, sizeof(buf) - 1);
++		  buf[sizeof(buf) - 1] = '\0';
++		}

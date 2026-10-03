@@ -1,0 +1,53 @@
+diff --git a/libavcodec/vvc/vvcdec.c b/libavcodec/vvc/vvcdec.c
+index 608d497cb7..f2d1eb1a25 100644
+--- a/libavcodec/vvc/vvcdec.c
++++ b/libavcodec/vvc/vvcdec.c
+@@ -811,0 +812,12 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
++    
++    /* Add bounds checking for frame data to prevent buffer overflows */
++    if (frame->data && frame->data_size > 0) {
++        /* Verify that frame data pointer is valid and within reasonable bounds */
++        if ((uintptr_t)frame->data < (uintptr_t)NULL || 
++            (uintptr_t)frame->data > (uintptr_t)SIZE_MAX - frame->data_size) {
++            av_log(s->avctx, AV_LOG_ERROR, "Invalid frame data pointer or size.\n");
++            ret = AVERROR_INVALIDDATA;
++            goto fail;
++        }
++    }
++    
+@@ -821 +833 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-                s->eos = 1;
++                 s->eos = 1;
+@@ -823,4 +835,19 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-            ret = decode_nal_unit(s, fc, nal, unit);
+-            if (ret < 0) {
+-                av_log(s->avctx, AV_LOG_WARNING,
+-                        "Error parsing NAL unit #%d.\n", i);
++            /* Add comprehensive validation of VVC parameter set sizes */
++            if (unit->data && unit->data_size > 0) {
++                /* Check unit data bounds against frame bounds */
++                if ((const uint8_t*)unit->data < frame->data || 
++                    (const uint8_t*)unit->data >= frame->data + frame->data_size ||
++                    unit->data_size > frame->data_size) {
++                    av_log(s->avctx, AV_LOG_ERROR, "Parameter set data out of bounds.\n");
++                    ret = AVERROR_INVALIDDATA;
++                    goto fail;
++                }
++                ret = decode_nal_unit(s, fc, nal, unit);
++                if (ret < 0) {
++                    av_log(s->avctx, AV_LOG_WARNING,
++                            "Error parsing NAL unit #%d.\n", i);
++                    goto fail;
++                }
++            } else {
++                av_log(s->avctx, AV_LOG_WARNING, "Empty or invalid NAL unit data.\n");
++                ret = AVERROR_INVALIDDATA;
+diff --git a/libavcodec/refstruct.c b/libavcodec/refstruct.c
+index 7597f6d0ee..e959f05b46 100644
+--- a/libavcodec/refstruct.c
++++ b/libavcodec/refstruct.c
+@@ -161 +161 @@ void ff_refstruct_replace(void *dstp, const void *src)
+-{
++ {
+@@ -162,0 +163 @@ void ff_refstruct_replace(void *dstp, const void *src)
++    if (!dstp) return;

@@ -1,0 +1,28 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..2e1248420 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -582 +582,5 @@ mrb_obj_alloc(mrb_state *mrb, enum mrb_vtype ttype, struct RClass *cls)
+-  }
++    // Ensure GC is fully completed to prevent expired pointer dereference
++    while (gc->state != MRB_GC_STATE_ROOT) {
++      mrb_incremental_gc(mrb);
++    }
++   }
+@@ -1245,5 +1249,11 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-     size_t tried_sweep = 0;
+-     tried_sweep = incremental_sweep_phase(mrb, gc, limit);
+-     if (tried_sweep == 0)
+-       gc->state = MRB_GC_STATE_ROOT;
+-     return tried_sweep;
++    size_t tried_sweep = 0;
++    /* Ensure no marking occurs after sweep begins */
++    if (gc->gray_list == NULL) {
++      tried_sweep = incremental_sweep_phase(mrb, gc, limit);
++      if (tried_sweep == 0)
++        gc->state = MRB_GC_STATE_ROOT;
++      return tried_sweep;
++    } else {
++      /* Process remaining gray objects before sweeping */
++      return incremental_marking_phase(mrb, gc, limit);
++    }

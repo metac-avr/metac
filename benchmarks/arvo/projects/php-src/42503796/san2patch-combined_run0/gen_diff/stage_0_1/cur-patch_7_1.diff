@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..d98dcc59f0e 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,9 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+-#endif
+-
+@@ -1154,0 +1146 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (p == NULL) return 0;
+@@ -1166 +1158 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-}
++}}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..ff45445512c 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30087 +30087 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	SAVE_OPLINE();
++SAVE_OPLINE();
+@@ -30092,0 +30093,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++		/* Validate array pointer after separation to prevent use-after-free */
++		if (UNEXPECTED(Z_REFCOUNTED_P(object_ptr) && Z_COUNTED_P(object_ptr)->gc.refcount == 0)) {
++			ZVAL_UNDEF(object_ptr);
++			goto exit_assign_dim_handler;
++		}

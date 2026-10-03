@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..37ef296ec93 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -220 +220,4 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-	i_zval_ptr_dtor(zv);
++	/* Check if zval is valid before dereferencing to prevent use-after-free */
++	if (zv && !Z_IS_RECURSIVE_P(zv)) {
++		i_zval_ptr_dtor(zv);
++	}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..c498838aace 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1354 +1354,13 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ht->pDestructor(&tmp);
++		if (EXPECTED(!Z_IS_REFCOUNTED(tmp))) {
++			ht->pDestructor(&tmp);
++		} else {
++			zend_refcounted *ref = Z_COUNTED(tmp);
++			if (GC_DELREF(ref) > 0) {
++				ht->pDestructor(&tmp);
++			} else {
++				GC_REMOVE_FROM_BUFFER(ref);
++				GC_TYPE_INFO(ref) |= GC_PURGED;
++				ht->pDestructor(&tmp);
++				GC_REMOVE_FROM_ROOTS(ref);
++			}
++		}

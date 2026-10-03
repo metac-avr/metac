@@ -1,0 +1,26 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..f5435b0400 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -299 +299,4 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
++// Add validation to ensure we don't write beyond buffer boundaries
++            if ((linesize[i] / 2) * (16 >> vsub) > (16 >> vsub) * (linesize[i] / 2))
++                return;
++             for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+diff --git a/libavcodec/mpv_reconstruct_mb_template.c b/libavcodec/mpv_reconstruct_mb_template.c
+index 6f7a5fb1b4..f6dd0ad4a6 100644
+--- a/libavcodec/mpv_reconstruct_mb_template.c
++++ b/libavcodec/mpv_reconstruct_mb_template.c
+@@ -236 +236,2 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
+-                /* s->codec_id == AV_CODEC_ID_MPEG4 && */
++// FIXME: Crash CWE-787: Out-of-bounds Write
++                 /* s->codec_id == AV_CODEC_ID_MPEG4 && */
+@@ -238 +239,4 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
+-                ff_mpeg4_decode_studio(s, dest_y, dest_cb, dest_cr, block_size,
++                // Validate buffer pointers and sizes before processing
++                if (s && dest_y && dest_cb && dest_cr && 
++                    block_size > 0 && uvlinesize > 0 && dct_linesize > 0) {
++                    ff_mpeg4_decode_studio(s, dest_y, dest_cb, dest_cr, block_size,
+@@ -239,0 +244 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
++                }

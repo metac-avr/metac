@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 3eb2930205e..fb9eb433465 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3846,4 +3845,0 @@ static void zend_check_symbol(zval *pz)
+-	}
+-}
+-
+-
+@@ -3854 +3850,2 @@ static void zend_check_symbol(zval *pz)
+-ZEND_API void execute_internal(zend_execute_data *execute_data, zval *return_value)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void execute_internal(zend_execute_data *execute_data, zval *return_value)
+@@ -3856 +3853,3 @@ ZEND_API void execute_internal(zend_execute_data *execute_data, zval *return_val
+-	execute_data->func->internal_function.handler(execute_data, return_value);
++	if (execute_data != NULL && execute_data->func != NULL) {
++		execute_data->func->internal_function.handler(execute_data, return_value);
++	}
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..707e66660ab 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -122 +122,5 @@ ZEND_METHOD(SensitiveParameterValue, __construct)
+-	zend_update_property_ex(zend_ce_sensitive_parameter_value, Z_OBJ_P(ZEND_THIS), ZSTR_KNOWN(ZEND_STR_VALUE), value);
++	// Validate object and value before property update to prevent dangling pointer access
++	zend_object *obj = Z_OBJ_P(ZEND_THIS);
++	if (obj && value) {
++		zend_update_property_ex(zend_ce_sensitive_parameter_value, obj, ZSTR_KNOWN(ZEND_STR_VALUE), value);
++	}
+@@ -129 +133,6 @@ ZEND_METHOD(SensitiveParameterValue, getValue)
+-	ZVAL_COPY(return_value, OBJ_PROP_NUM(Z_OBJ_P(ZEND_THIS), 0));
++	zend_object *obj = Z_OBJ_P(ZEND_THIS);
++	if (obj) {
++		ZVAL_COPY(return_value, OBJ_PROP_NUM(obj, 0));
++	} else {
++		RETURN_NULL();
++	}
+@@ -131 +139,0 @@ ZEND_METHOD(SensitiveParameterValue, getValue)
+-

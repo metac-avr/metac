@@ -1,0 +1,30 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..ab426e15e 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -952 +952,2 @@ static GF_Err pcapng_load_shb(GF_NetcapFilter *nf)
+-		blen = ntohl(blen);
++// FIXME: Crash CWE-416: Use After Free
++ 		blen = ntohl(blen);
+@@ -954 +955 @@ static GF_Err pcapng_load_shb(GF_NetcapFilter *nf)
+-		gf_net_close_capture();
++		gf_net_close_capture(nf);
+@@ -1480,5 +1481,9 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
+-			gf_netcap_load_pck_pcap(nf);
+-
++		if (nf->cap_mode==NETCAP_GPAC) {
++			if (nf->cap_bs != NULL) 
++				gf_netcap_load_pck_gpac(nf);
++		} else {
++			if (nf->cap_bs != NULL)
++				gf_netcap_load_pck_pcap(nf);
++		}
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1489 +1494,2 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-			gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);
++			if (nf->cap_bs != NULL)
++				gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);

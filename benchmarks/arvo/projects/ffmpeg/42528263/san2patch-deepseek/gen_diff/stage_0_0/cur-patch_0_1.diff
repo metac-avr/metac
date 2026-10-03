@@ -1,0 +1,29 @@
+diff --git a/libavcodec/evc_parse.c b/libavcodec/evc_parse.c
+index 447f6195c2..9cbfdc6bd2 100644
+--- a/libavcodec/evc_parse.c
++++ b/libavcodec/evc_parse.c
+@@ -56,2 +56,2 @@ int ff_evc_parse_slice_header(GetBitContext *gb, EVCParserSliceHeader *sh,
+-        if (pps->arbitrary_slice_present_flag)
+-            sh->arbitrary_slice_flag = get_bits1(gb);
++    if (pps->arbitrary_slice_present_flag)
++        sh->arbitrary_slice_flag = get_bits1(gb);
+@@ -59,8 +59,9 @@ int ff_evc_parse_slice_header(GetBitContext *gb, EVCParserSliceHeader *sh,
+-        if (!sh->arbitrary_slice_flag)
+-            sh->last_tile_id = get_bits(gb, pps->tile_id_len_minus1 + 1);
+-        else {
+-            sh->num_remaining_tiles_in_slice_minus1 = get_ue_golomb_long(gb);
+-            num_tiles_in_slice = sh->num_remaining_tiles_in_slice_minus1 + 2;
+-            for (int i = 0; i < num_tiles_in_slice - 1; ++i)
+-                sh->delta_tile_id_minus1[i] = get_ue_golomb_long(gb);
+-        }
++    if (!sh->arbitrary_slice_flag)
++        sh->last_tile_id = get_bits(gb, pps->tile_id_len_minus1 + 1);
++    else {
++        sh->num_remaining_tiles_in_slice_minus1 = get_ue_golomb_long(gb);
++        if (sh->num_remaining_tiles_in_slice_minus1 > FFMIN(pic->tile_num, 1024) - 2)
++            return AVERROR_INVALIDDATA;
++        num_tiles_in_slice = sh->num_remaining_tiles_in_slice_minus1 + 2;
++        for (int i = 0; i < num_tiles_in_slice - 1; ++i)
++            sh->delta_tile_id_minus1[i] = get_ue_golomb_long(gb);
+@@ -67,0 +69 @@ int ff_evc_parse_slice_header(GetBitContext *gb, EVCParserSliceHeader *sh,
++}

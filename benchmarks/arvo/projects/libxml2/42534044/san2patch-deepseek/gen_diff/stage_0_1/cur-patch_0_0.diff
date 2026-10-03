@@ -1,0 +1,60 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..ca079dff 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -593,6 +592,0 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
+-        return 0;
+-
+-    return ((1 << child->type) & CHILD_MASK_DTD) != 0;
+-}
+-
+@@ -600,0 +595 @@ nodeGetTree(xmlNodePtr node) {
++// FIXME: Crash CWE-416: Use After Free
+@@ -603 +598,27 @@ nodeGetTree(xmlNodePtr node) {
+-    while (cur->parent)
++    if (node == NULL)
++        return NULL;
++
++    if (node->type != XML_ELEMENT_NODE &&
++        node->type != XML_ATTRIBUTE_NODE &&
++        node->type != XML_TEXT_NODE &&
++        node->type != XML_CDATA_SECTION_NODE &&
++        node->type != XML_ENTITY_REF_NODE &&
++        node->type != XML_ENTITY_NODE &&
++        node->type != XML_PI_NODE &&
++        node->type != XML_COMMENT_NODE &&
++        node->type != XML_DOCUMENT_NODE &&
++        node->type != XML_DOCUMENT_TYPE_NODE &&
++        node->type != XML_DOCUMENT_FRAG_NODE &&
++        node->type != XML_NOTATION_NODE &&
++        node->type != XML_HTML_DOCUMENT_NODE &&
++        node->type != XML_DTD_NODE &&
++        node->type != XML_ELEMENT_DECL &&
++        node->type != XML_ATTRIBUTE_DECL &&
++        node->type != XML_ENTITY_DECL &&
++        node->type != XML_NAMESPACE_DECL &&
++        node->type != XML_XINCLUDE_START &&
++        node->type != XML_XINCLUDE_END) {
++        return NULL;
++    }
++
++    while (cur && cur->parent)
+@@ -606,9 +627 @@ nodeGetTree(xmlNodePtr node) {
+-}
+-
+-/*
+- * This function is called whenever a reference to a node is removed.
+- * It checks whether the node is still reachable and frees unreferenced
+- * nodes.
+- *
+- * A node is reachable if its tree, identified by the root node,
+- * is reachable. If a non-document tree is unreachable, it can be
++} * is reachable. If a non-document tree is unreachable, it can be
+@@ -631,0 +645,2 @@ dropNode(xmlNodePtr node) {
++    if (tree == NULL)
++        return;
+@@ -642 +657,2 @@ dropNode(xmlNodePtr node) {
+-         * Return if tree is referenced from another node
++// FIXME: Crash CWE-416: Use After Free
++          * Return if tree is referenced from another node

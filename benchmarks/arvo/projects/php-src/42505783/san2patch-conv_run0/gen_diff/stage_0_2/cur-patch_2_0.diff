@@ -1,0 +1,53 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..27980fb422c 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1201 +1201,2 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -1207,0 +1209,5 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
++	// Early validation of pointers
++	if (op1 == NULL || op2 == NULL || result == NULL) {
++		return;
++	}
++
+@@ -1216,5 +1222,15 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-				Z_STR_P(op1) = result_str =
+-					perealloc(op1_str, ZEND_MM_ALIGNED_SIZE(_ZSTR_STRUCT_SIZE(result_len)), 0);
+-				ZSTR_LEN(result_str) = result_len;
+-				zend_string_forget_hash_val(result_str);
+-				break;
++				// Check if op1_str is still valid before perealloc
++				if (op1_str != NULL) {
++					Z_STR_P(op1) = result_str =
++						perealloc(op1_str, ZEND_MM_ALIGNED_SIZE(_ZSTR_STRUCT_SIZE(result_len)), 0);
++					ZSTR_LEN(result_str) = result_len;
++					zend_string_forget_hash_val(result_str);
++					break;
++				} else {
++					result_str = zend_string_alloc(result_len, 0);
++					break;
++				}
++			}
++			// Check if op1_str is still valid before GC_DELREF
++			if (op1_str != NULL) {
++				GC_DELREF(op1_str);
+@@ -1222 +1237,0 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-			GC_DELREF(op1_str);
+@@ -1225 +1240,4 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-		memcpy(ZSTR_VAL(result_str), ZSTR_VAL(op1_str), op1_len);
++		// Check if op1_str is still valid before memcpy
++		if (op1_str != NULL) {
++			memcpy(ZSTR_VAL(result_str), ZSTR_VAL(op1_str), op1_len);
++		}
+@@ -2022 +2040,8 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
+-	value = zend_assign_to_variable(property_val, &tmp, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++	/* Defensive check: validate tmp zval before assignment to prevent UAF */
++	if (Z_TYPE(tmp) == IS_STRING && Z_STR(tmp) != NULL && !GC_IS_RECURSIVE(Z_STR(tmp))) {
++		value = zend_assign_to_variable(property_val, &tmp, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++	} else {
++		zval_ptr_dtor(&tmp);
++		if (result) ZVAL_NULL(result);
++		return;
++	}

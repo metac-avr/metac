@@ -1,0 +1,37 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..042e0546d 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -164,0 +165,14 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
++#ifndef __has_feature
++  #define __has_feature(x) 0
++#endif
++#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
++extern void __asan_poison_memory_region(void const volatile *addr, size_t size);
++extern int __asan_address_is_poisoned(void const volatile *addr);
++#define DEFINE_INCREMENTER(ht, field) \
++  static inline void ht##_inc_##field(hash_struct *hsh) \
++  { \
++    if (hsh->ht != NULL && !__asan_address_is_poisoned(&hsh->ht->field)) { \
++      hsh->ht->field++; \
++    } \
++  }
++#else
+@@ -165,0 +180,13 @@ DEFINE_INCREMENTER(ht, size)
++#endif
++#ifndef __has_feature
++  #define __has_feature(x) 0
++#endif
++#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
++#define DEFINE_DECREMENTER(ht, field) \
++  static inline void ht##_dec_##field(hash_struct *hsh) \
++  { \
++    if (hsh->ht != NULL && !__asan_address_is_poisoned(&hsh->ht->field)) { \
++      hsh->ht->field--; \
++    } \
++  }
++#else
+@@ -166,0 +194 @@ DEFINE_DECREMENTER(ht, size)
++#endif
+@@ -177 +204,0 @@ DEFINE_SWITCHER(ht, HT)
+-

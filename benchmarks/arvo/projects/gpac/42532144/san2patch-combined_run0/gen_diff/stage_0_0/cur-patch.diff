@@ -1,0 +1,36 @@
+diff --git a/src/filter_core/filter_props.c b/src/filter_core/filter_props.c
+index f507546bf..29f5e4c8d 100644
+--- a/src/filter_core/filter_props.c
++++ b/src/filter_core/filter_props.c
+@@ -1123,2 +1123,14 @@ GF_Err gf_props_set_property(GF_PropertyMap *map, u32 p4cc, const char *name, ch
+-	else
+-		e = gf_props_insert_property(map, hash, p4cc, name, dyn_name, value);
++	else {
++		if (value->type == GF_PROP_DATA && value->value.data.ptr) {
++			if (value->value.data.size > 0 && value->value.data.size <= 900) {
++				e = gf_props_insert_property(map, hash, p4cc, name, dyn_name, value);
++			} else {
++				GF_PropertyValue safe_value = *value;
++				if (value->value.data.size > 900 || value->value.data.size == 0) 
++					safe_value.value.data.size = 900;
++				e = gf_props_insert_property(map, hash, p4cc, name, dyn_name, &safe_value);
++			}
++		} else {
++			e = gf_props_insert_property(map, hash, p4cc, name, dyn_name, value);
++		}
++	}
+diff --git a/src/filters/reframe_adts.c b/src/filters/reframe_adts.c
+index 43531ca54..6b84838da 100644
+--- a/src/filters/reframe_adts.c
++++ b/src/filters/reframe_adts.c
+@@ -461,2 +461,2 @@ static void adts_dmx_check_pid(GF_Filter *filter, GF_ADTSDmxCtx *ctx)
+-	gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_TIMESCALE, & PROP_UINT(ctx->timescale ? ctx->timescale : timescale));
+-	gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_NUM_CHANNELS, & PROP_UINT(ctx->nb_ch) );
++gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_TIMESCALE, & PROP_UINT(ctx->timescale ? ctx->timescale : timescale));
++gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_NUM_CHANNELS, & PROP_UINT(ctx->nb_ch) );
+@@ -467,2 +467,3 @@ static void adts_dmx_check_pid(GF_Filter *filter, GF_ADTSDmxCtx *ctx)
+-
+-	if (ctx->id3_buffer_size) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++	if (ctx->id3_buffer_size > 0 && ctx->id3_buffer_size <= 0x100000) {

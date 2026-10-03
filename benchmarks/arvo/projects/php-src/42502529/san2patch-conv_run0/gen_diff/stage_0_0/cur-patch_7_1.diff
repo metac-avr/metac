@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..76ded7ce807 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1351,0 +1352 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
++		/* Copy and immediately mark as undefined to prevent reuse */
+@@ -1354 +1355,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ht->pDestructor(&tmp);
++		if (Z_TYPE(tmp) != IS_UNDEF) {
++			ht->pDestructor(&tmp);
++		}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..32824e352ab 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
+@@ -84 +84,14 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr == NULL) {
++		return;
++	}
++	
++	if (Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref->gc.refcount > 0) {
++			i_zval_ptr_dtor(zval_ptr);
++		} else {
++			i_zval_ptr_dtor(zval_ptr);
++		}
++	} else {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -92,3 +104,0 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {

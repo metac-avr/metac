@@ -1,0 +1,125 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..6324e679241 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1380,2 +1380,3 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			ZVAL_STR_COPY(&params[1], message);
+-			ZVAL_LONG(&params[0], type);
++			{
++				zend_string *safe_message = zend_string_copy(message);
++				zend_string *safe_error_filename = error_filename ? zend_string_copy(error_filename) : NULL;
+@@ -1383,5 +1384,2 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			if (error_filename) {
+-				ZVAL_STR_COPY(&params[2], error_filename);
+-			} else {
+-				ZVAL_NULL(&params[2]);
+-			}
++				ZVAL_STR_COPY(&params[1], safe_message);
++				ZVAL_LONG(&params[0], type);
+@@ -1389 +1387,5 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			ZVAL_LONG(&params[3], error_lineno);
++				if (safe_error_filename) {
++					ZVAL_STR_COPY(&params[2], safe_error_filename);
++				} else {
++					ZVAL_NULL(&params[2]);
++				}
+@@ -1391,2 +1393 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			ZVAL_COPY_VALUE(&orig_user_error_handler, &EG(user_error_handler));
+-			ZVAL_UNDEF(&EG(user_error_handler));
++				ZVAL_LONG(&params[3], error_lineno);
+@@ -1394,4 +1395,2 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			/* User error handler may include() additional PHP files.
+-			 * If an error was generated during compilation PHP will compile
+-			 * such scripts recursively, but some CG() variables may be
+-			 * inconsistent. */
++				ZVAL_COPY_VALUE(&orig_user_error_handler, &EG(user_error_handler));
++				ZVAL_UNDEF(&EG(user_error_handler));
+@@ -1399,8 +1398,13 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			in_compilation = CG(in_compilation);
+-			if (in_compilation) {
+-				saved_class_entry = CG(active_class_entry);
+-				CG(active_class_entry) = NULL;
+-				SAVE_STACK(loop_var_stack);
+-				SAVE_STACK(delayed_oplines_stack);
+-				CG(in_compilation) = 0;
+-			}
++				/* User error handler may include() additional PHP files.
++				 * If an error was generated during compilation PHP will compile
++				 * such scripts recursively, but some CG() variables may be
++				 * inconsistent. */
++
++				in_compilation = CG(in_compilation);
++				if (in_compilation) {
++					saved_class_entry = CG(active_class_entry);
++					CG(active_class_entry) = NULL;
++					SAVE_STACK(loop_var_stack);
++					SAVE_STACK(delayed_oplines_stack);
++					CG(in_compilation) = 0;
++				}
+@@ -1408,4 +1412,6 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			if (call_user_function(CG(function_table), NULL, &orig_user_error_handler, &retval, 4, params) == SUCCESS) {
+-				if (Z_TYPE(retval) != IS_UNDEF) {
+-					if (Z_TYPE(retval) == IS_FALSE) {
+-						zend_error_cb(orig_type, error_filename, error_lineno, message);
++				if (call_user_function(CG(function_table), NULL, &orig_user_error_handler, &retval, 4, params) == SUCCESS) {
++					if (Z_TYPE(retval) != IS_UNDEF) {
++						if (Z_TYPE(retval) == IS_FALSE) {
++							zend_error_cb(orig_type, safe_error_filename, error_lineno, safe_message);
++						}
++						zval_ptr_dtor(&retval);
+@@ -1413 +1419,3 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-					zval_ptr_dtor(&retval);
++				} else if (!EG(exception)) {
++					/* The user error handler failed, use built-in error handler */
++					zend_error_cb(orig_type, safe_error_filename, error_lineno, safe_message);
+@@ -1415,4 +1422,0 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			} else if (!EG(exception)) {
+-				/* The user error handler failed, use built-in error handler */
+-				zend_error_cb(orig_type, error_filename, error_lineno, message);
+-			}
+@@ -1420,6 +1424,6 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			if (in_compilation) {
+-				CG(active_class_entry) = saved_class_entry;
+-				RESTORE_STACK(loop_var_stack);
+-				RESTORE_STACK(delayed_oplines_stack);
+-				CG(in_compilation) = 1;
+-			}
++				if (in_compilation) {
++					CG(active_class_entry) = saved_class_entry;
++					RESTORE_STACK(loop_var_stack);
++					RESTORE_STACK(delayed_oplines_stack);
++					CG(in_compilation) = 1;
++				}
+@@ -1427,2 +1431,2 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			zval_ptr_dtor(&params[2]);
+-			zval_ptr_dtor(&params[1]);
++				zval_ptr_dtor(&params[2]);
++				zval_ptr_dtor(&params[1]);
+@@ -1430,4 +1434,5 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			if (Z_TYPE(EG(user_error_handler)) == IS_UNDEF) {
+-				ZVAL_COPY_VALUE(&EG(user_error_handler), &orig_user_error_handler);
+-			} else {
+-				zval_ptr_dtor(&orig_user_error_handler);
++				if (Z_TYPE(EG(user_error_handler)) == IS_UNDEF) {
++					ZVAL_COPY_VALUE(&EG(user_error_handler), &orig_user_error_handler);
++				} else {
++					zval_ptr_dtor(&orig_user_error_handler);
++				}
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..eb26b4602ce 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -348,0 +349 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
++				zend_string *zstr_copy = zend_string_copy(Z_STR_P(op));
+@@ -351 +352 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
+-				type = is_numeric_string_ex(Z_STRVAL_P(op), Z_STRLEN_P(op), &lval, &dval,
++				type = is_numeric_string_ex(ZSTR_VAL(zstr_copy), ZSTR_LEN(zstr_copy), &lval, &dval,
+@@ -353,0 +355 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
++					zend_string_release(zstr_copy);
+@@ -363,0 +366 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
++					zend_string_release(zstr_copy);
+@@ -373 +376 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
+-						zend_incompatible_string_to_long_error(Z_STR_P(op));
++						zend_incompatible_string_to_long_error(zstr_copy);
+@@ -377,0 +381 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
++					zend_string_release(zstr_copy);

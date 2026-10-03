@@ -1,0 +1,25 @@
+diff --git a/src/media_tools/dash_client.c b/src/media_tools/dash_client.c
+index 6b1f874df..feb294e0f 100644
+--- a/src/media_tools/dash_client.c
++++ b/src/media_tools/dash_client.c
+@@ -10364 +10364,2 @@ char *gf_dash_group_get_template(GF_DashClient *dash, u32 idx, u32 *segment_time
+-		ext = strrchr(first_seg->media, '.');
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		ext = strrchr(first_seg->media, '.');
+@@ -10383 +10384,5 @@ char *gf_dash_group_get_template(GF_DashClient *dash, u32 idx, u32 *segment_time
+-			solved_template[last_num+1] = 0;
++			if (last_num + 1 < len) {  // Bounds check before modification
++				solved_template[last_num+1] = 0;
++			} else {
++				return NULL; // Prevent out-of-bounds write
++			}
+@@ -10393,2 +10398,7 @@ char *gf_dash_group_get_template(GF_DashClient *dash, u32 idx, u32 *segment_time
+-			else
+-				solved_template[last_non_num+1] = 0;
++			else {
++				if (last_non_num + 1 < strlen(solved_template)) {  // Bounds check
++					solved_template[last_non_num+1] = 0;
++				} else {
++					return NULL; // Prevent out-of-bounds write
++				}
++			}

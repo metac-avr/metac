@@ -1,0 +1,30 @@
+diff --git a/fuzz/fuzz_ndpi_reader.c b/fuzz/fuzz_ndpi_reader.c
+index 3989accbc..db7b24fb5 100644
+--- a/fuzz/fuzz_ndpi_reader.c
++++ b/fuzz/fuzz_ndpi_reader.c
+@@ -97,9 +97,16 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-    /* allocate an exact size buffer to check overflows */
+-    uint8_t *packet_checked = malloc(header->caplen);
+-
+-    if(packet_checked) {
+-      ndpi_risk flow_risk;
+-
+-      memcpy(packet_checked, pkt, header->caplen);
+-      ndpi_workflow_process_packet(workflow, header, packet_checked, &flow_risk, NULL);
+-      free(packet_checked);
++    /* Validate header->caplen to prevent buffer overflow */
++    if (header->caplen > 0) {
++      /* Check if there's enough data available */
++      if (header->caplen <= (size_t)(Size - (pkt - Data))) {
++        /* allocate an exact size buffer to check overflows */
++        uint8_t *packet_checked = malloc(header->caplen);
++
++        if(packet_checked) {
++          ndpi_risk flow_risk;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++          memcpy(packet_checked, pkt, header->caplen);
++          ndpi_workflow_process_packet(workflow, header, packet_checked, &flow_risk, NULL);
++          free(packet_checked);
++        }
++      }

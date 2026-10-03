@@ -1,0 +1,17 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..84e10de4 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -426 +426,2 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-    cur = ctxt->input->cur;
++    /* Ensure cursor validity after buffer operations */
++    cur = ctxt->input->cur;  /* Re-fetch cursor to prevent use-after-free */
+@@ -3457 +3458,2 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
+-	    (r != '-') || (q != '-'))) {
++// FIXME: Crash CWE-416: Use After Free
++ 	    (r != '-') || (q != '-'))) {
+@@ -3478,0 +3481,4 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	    /* Reset parser context after buffer reallocation to avoid use-after-free */
++            if (ctxt->input->buf != NULL) {
++                ctxt->input->cur = ctxt->input->buf->content + (ctxt->input->cur - ctxt->input->buf->content);
++            }

@@ -1,0 +1,25 @@
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index 0f2f5aa8d..7dc7afb93 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -7403,2 +7403,3 @@ s32 hevc_parse_slice_segment(GF_BitStream *bs, HEVCState *hevc, HEVCSliceInfo *s
+-
+-				if (NumPicTotalCurr>1) {
++// Fixed CWE-787: Out-of-bounds Write by ensuring NumPicTotalCurr is within safe range
++ 
++				if (NumPicTotalCurr > 1 && NumPicTotalCurr <= MAX_REFS_IN_LIST) { // Using defined constant for safety
+@@ -7430,2 +7431,2 @@ s32 hevc_parse_slice_segment(GF_BitStream *bs, HEVCState *hevc, HEVCSliceInfo *s
+-				hevc_pred_weight_table(bs, hevc, si, pps, sps, si->num_ref_idx_l0_active, si->num_ref_idx_l1_active);
+-			}
++					hevc_pred_weight_table(bs, hevc, si, pps, sps, si->num_ref_idx_l0_active, si->num_ref_idx_l1_active);
++				}
+@@ -9103 +9104,2 @@ s32 gf_hevc_parse_nalu_bs(GF_BitStream *bs, HEVCState *hevc, u8 *nal_unit_type,
+-		is_slice = GF_TRUE;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		is_slice = GF_TRUE;
+@@ -9107,0 +9110,5 @@ s32 gf_hevc_parse_nalu_bs(GF_BitStream *bs, HEVCState *hevc, u8 *nal_unit_type,
++		// Validate NumPicTotalCurr against buffer size before proceeding
++		if (n_state.NumPicTotalCurr > sizeof(n_state.ref_pic_list_struct)/sizeof(n_state.ref_pic_list_struct[0])) {
++			return -1; // Prevent out-of-bounds access
++		}
++

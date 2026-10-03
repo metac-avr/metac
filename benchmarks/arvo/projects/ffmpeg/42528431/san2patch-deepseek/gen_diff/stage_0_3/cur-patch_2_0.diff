@@ -1,0 +1,21 @@
+diff --git a/libavcodec/cbs.c b/libavcodec/cbs.c
+index daf7f66427..9911196168 100644
+--- a/libavcodec/cbs.c
++++ b/libavcodec/cbs.c
+@@ -351,0 +352 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
++    size_t written;
+@@ -367 +368 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
+-    init_put_bits(&pbc, ctx->write_buffer, ctx->write_buffer_size);
++     init_put_bits(&pbc, ctx->write_buffer, ctx->write_buffer_size);
+@@ -392 +393,7 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
+-    ret = cbs_alloc_unit_data(unit, put_bytes_output(&pbc));
++    written = put_bytes_output(&pbc);
++    if (written > ctx->write_buffer_size || written == 0) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid written byte count.\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    ret = cbs_alloc_unit_data(unit, written);
+@@ -396 +403 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
+-    memcpy(unit->data, ctx->write_buffer, unit->data_size);
++    memcpy(unit->data, ctx->write_buffer, written);

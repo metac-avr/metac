@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..a326d6c97c5 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1182,0 +1184,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (!p || (uintptr_t)p < 4096) { /* Guard against null and invalid low addresses */
++		return 0;
++	}
+@@ -1193 +1196,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index f2eb205d53c..cec3e86d3d8 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3109,0 +3110 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -3112 +3113,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *result_var = EX_VAR(throw_op->result.var);
++					if (result_var && !Z_IS_REFCOUNTED_P(result_var) || Z_REFCOUNT_P(result_var) > 0) {
++						zval_ptr_dtor_nogc(result_var);
++					}

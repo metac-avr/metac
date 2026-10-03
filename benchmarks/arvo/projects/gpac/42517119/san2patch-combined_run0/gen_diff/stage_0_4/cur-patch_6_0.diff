@@ -1,0 +1,26 @@
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index d7f39328b..28e45f206 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -745 +745,2 @@ void unkn_box_del(GF_Box *s)
+-	GF_UnknownBox *ptr = (GF_UnknownBox *) s;
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ 	GF_UnknownBox *ptr = (GF_UnknownBox *) s;
+@@ -747 +748,4 @@ void unkn_box_del(GF_Box *s)
+-	if (ptr->data) gf_free(ptr->data);
++	if (ptr->data) {
++		gf_free(ptr->data);
++		ptr->data = NULL;
++	}
+diff --git a/src/isomedia/box_funcs.c b/src/isomedia/box_funcs.c
+index 98ef3c904..880723b9d 100644
+--- a/src/isomedia/box_funcs.c
++++ b/src/isomedia/box_funcs.c
+@@ -357 +357,6 @@ void gf_isom_box_array_reset(GF_List *boxlist)
+-		if (a) gf_isom_box_del(a);
++		if (a) {
++			gf_isom_box_del(a);
++			gf_list_rem(boxlist, i);
++			i--;
++			count--;
++		}

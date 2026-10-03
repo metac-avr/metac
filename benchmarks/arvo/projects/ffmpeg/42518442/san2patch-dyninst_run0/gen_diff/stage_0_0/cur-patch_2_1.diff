@@ -1,0 +1,36 @@
+diff --git a/libavcodec/vqcdec.c b/libavcodec/vqcdec.c
+index 5d1a03158c..d8ae742025 100644
+--- a/libavcodec/vqcdec.c
++++ b/libavcodec/vqcdec.c
+@@ -270,0 +271 @@ static void transform1(const int16_t * a, const int16_t * b, int16_t * dst, int
++    if (width < 2) return;
+@@ -273 +274,5 @@ static void transform1(const int16_t * a, const int16_t * b, int16_t * dst, int
+-    for (int i = 0; i < width / 2 - 1; i++) {
++    int limit = width / 2 - 1;
++    if (limit < 0) return;
++    
++    for (int i = 0; i < limit; i++) {
++        if (i * 2 >= width || i * 2 + 1 >= width) break;
+@@ -279,2 +284,3 @@ static void transform1(const int16_t * a, const int16_t * b, int16_t * dst, int
+-    dst[width - 2] = s0;
+-    dst[width - 1] = a[width / 2 - 1] + ((b[width / 2 - 2] - 2 * b[width / 2 - 1]) >> 2) - b[width / 2 - 1];
++    if (width - 2 >= 0) dst[width - 2] = s0;
++    if (width - 1 >= 0 && width / 2 - 1 >= 0) 
++        dst[width - 1] = a[width / 2 - 1] + ((b[width / 2 - 2] - 2 * b[width / 2 - 1]) >> 2) - b[width / 2 - 1];
+@@ -307,0 +314,12 @@ static void decode_strip(VqcContext * s, uint8_t * dst, int stride, int width)
++    // Validate width parameter to prevent buffer overflow
++    if (width <= 0 || width > MAX_WIDTH) {
++        av_log(s->avctx, AV_LOG_ERROR, "Invalid width: %d\n", width);
++        return;
++    }
++
++    // Check if width/4 is sufficient for array access
++    if (width / 4 < 2) {
++        av_log(s->avctx, AV_LOG_ERROR, "Width too small for transform operations\n");
++        return;
++    }
++
+@@ -315 +333,2 @@ static void decode_strip(VqcContext * s, uint8_t * dst, int stride, int width)
+-    coeff = s->coeff;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     coeff = s->coeff;

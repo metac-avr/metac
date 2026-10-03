@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..d9e0440630c 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	/* Fix for CWE-416: Use After Free - ensure data pointer is nullified after free */
++	void *temp_data = HT_GET_DATA_ADDR(ht);
++	if (temp_data != NULL) {
++		HT_SET_DATA_ADDR(ht, NULL);
++		efree(temp_data);
++	}
++ free_ht:
+@@ -1688,5 +1692,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-

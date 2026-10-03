@@ -1,0 +1,36 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..3f9af18c6e1 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -155,8 +155,12 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			garbage = Z_COUNTED_P(variable_ptr);
+-			zend_copy_to_variable(variable_ptr, value, value_type);
+-			if (GC_DELREF(garbage) == 0) {
+-				rc_dtor_func(garbage);
+-			} else { /* we need to split */
+-				/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
+-				if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
+-					gc_possible_root(garbage);
++			
++garbage = Z_COUNTED_P(variable_ptr);
++			/* Check if garbage is a valid pointer before use */
++			if (garbage != NULL) {
++				zend_copy_to_variable(variable_ptr, value, value_type);
++				if (GC_DELREF(garbage) == 0) {
++					rc_dtor_func(garbage);
++				} else { /* we need to split */
++					/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
++					if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
++						gc_possible_root(garbage);
++					}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..5538713e18b 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -573 +573,5 @@ static zend_never_inline ZEND_COLD zval *zend_wrong_assign_to_variable_reference
+-	return zend_assign_to_variable(variable_ptr, value_ptr, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++	/* Check if pointers are valid before assignment to prevent use-after-free */
++	if (variable_ptr && value_ptr) {
++		return zend_assign_to_variable(variable_ptr, value_ptr, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++	}
++	return &EG(uninitialized_zval);

@@ -1,0 +1,61 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..3298c45199 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -153,5 +153,9 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    s->zstream.next_in   = src;
+-    s->zstream.avail_in  = size;
+-    s->zstream.next_out  = s->tmpblock;
+-    s->zstream.avail_out = s->block_size * 3;
+-    inflate(&s->zstream, Z_SYNC_FLUSH);
++    if (s->tmpblock) {
++        s->zstream.next_in   = src;
++        s->zstream.avail_in  = size;
++        s->zstream.next_out  = s->tmpblock;
++        s->zstream.avail_out = s->block_size * 3;
++        inflate(&s->zstream, Z_SYNC_FLUSH);
++    } else {
++        return AVERROR_INVALIDDATA;
++    }
+@@ -161 +165,5 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    zs.next_in   = s->tmpblock;
++    zs.next_in   = s->tmpblock ? s->tmpblock : NULL;
++    if (!s->tmpblock) {
++        deflateEnd(&zs);
++        return AVERROR_INVALIDDATA;
++    }
+@@ -175 +183,3 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    s->zstream.next_out  = s->tmpblock;
++    s->zstream.next_out  = s->tmpblock ? s->tmpblock : NULL;
++    if (!s->tmpblock)
++        return AVERROR_INVALIDDATA;
+@@ -349,6 +358,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -357 +361,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -359,3 +364,15 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
+-            return err;
+-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        void *new_keyframedata = NULL;
++        
++        // Pre-validate inputs
++        if (!avpkt->data) return AVERROR_INVALIDDATA;
++        
++        // Allocate new memory separately first
++        new_keyframedata = av_malloc(avpkt->size);
++        if (!new_keyframedata) return AVERROR(ENOMEM);
++        
++        // Copy data to new buffer
++        memcpy(new_keyframedata, avpkt->data, avpkt->size);
++        
++        // Now safely replace the old buffer
++        av_freep(&s->keyframedata);
++        s->keyframedata = new_keyframedata;

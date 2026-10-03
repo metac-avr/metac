@@ -1,0 +1,28 @@
+diff --git a/encoding.c b/encoding.c
+index 3d336fb1..2b0e8889 100644
+--- a/encoding.c
++++ b/encoding.c
+@@ -1923,4 +1923,6 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
+-    xmlFree(handler->name);
+-    if (handler->ctxtDtor != NULL) {
+-        handler->ctxtDtor(handler->inputCtxt);
+-        handler->ctxtDtor(handler->outputCtxt);
++    /* Set handler pointer to NULL after freeing to prevent use-after-free */
++    xmlCharEncodingHandler *temp_handler = handler;
++    xmlFree(temp_handler->name);
++    if (temp_handler->ctxtDtor != NULL) {
++        temp_handler->ctxtDtor(temp_handler->inputCtxt);
++        temp_handler->ctxtDtor(temp_handler->outputCtxt);
+@@ -1928 +1930 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
+-    xmlFree(handler);
++    xmlFree(temp_handler);
+diff --git a/HTMLtree.c b/HTMLtree.c
+index cdfaed97..4e113b43 100644
+--- a/HTMLtree.c
++++ b/HTMLtree.c
+@@ -1111 +1111,4 @@ htmlSaveFileFormat(const char *filename, xmlDocPtr cur,
+-        xmlCharEncCloseFunc(handler);
++        if (handler != NULL) {
++            xmlCharEncCloseFunc(handler);
++            handler = NULL;  // Prevent use-after-free
++        }

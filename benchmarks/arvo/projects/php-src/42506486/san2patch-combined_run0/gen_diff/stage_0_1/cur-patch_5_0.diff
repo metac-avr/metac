@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..62a0fd91578 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -220 +220,4 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-	i_zval_ptr_dtor(zv);
++	/* Prevent use-after-free by checking GC flags before dereferencing */
++	if (zv && !(GC_FLAGS(Z_COUNTED_P(zv)) & GC_IMMUTABLE)) {
++		i_zval_ptr_dtor(zv);
++	}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..310f922cec4 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352 +1352,2 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
++// FIXME: Crash CWE-416: Use After Free
++ 		ZVAL_COPY_VALUE(&tmp, &p->val);
+@@ -1353,0 +1355,6 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
++		if (EXPECTED(Z_REFCOUNTED(tmp))) {
++			zend_refcounted *ref = Z_COUNTED(tmp);
++			if (GC_TYPE(ref) & (IS_OBJECT | IS_ARRAY)) {
++				GC_SET_SHUTDOWN_CHECK(ref);
++			}
++		}

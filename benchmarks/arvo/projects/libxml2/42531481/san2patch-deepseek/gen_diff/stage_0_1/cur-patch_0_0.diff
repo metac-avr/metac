@@ -1,0 +1,47 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..71e70cd2 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4452,6 +4451,0 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
+- *
+- * Do a copy of the node to a given document.
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
+- */
+@@ -4459,0 +4454 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++// FIXME: Crash CWE-416: Use After Free
+@@ -4460,0 +4456 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    xmlNsPtr ns, newNs, prevNs = NULL;
+@@ -4462,0 +4459,19 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (ret != NULL && node->ns != NULL) {
++        ns = node->ns;
++        ret->ns = NULL;
++        while (ns != NULL) {
++            newNs = (xmlNsPtr) xmlMalloc(sizeof(xmlNs));
++            if (newNs == NULL) {
++                xmlFreeNode(ret);
++                return(NULL);
++            }
++            memcpy(newNs, ns, sizeof(xmlNs));
++            newNs->next = NULL;
++            if (prevNs == NULL)
++                ret->ns = newNs;
++            else
++                prevNs->next = newNs;
++            prevNs = newNs;
++            ns = ns->next;
++        }
++    }
+@@ -4464,10 +4479 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-}
+-
+-/**
+- * xmlDocCopyNodeList:
+- * @doc: the target document
+- * @node:  the first node in the list.
+- *
+- * Do a recursive copy of the node list.
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
++} * Returns: a new #xmlNodePtr, or NULL in case of error.

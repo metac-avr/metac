@@ -1,0 +1,39 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 535a0c5bd..5fcd10caf 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1219 +1219,8 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      hostname_just_set = 1;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       hostname_just_set = 1;
++
++      if(packet->host_line.len == 0 ||
++         packet->host_line.ptr[packet->host_line.len - 1] != '\0' ||
++         ndpi_is_valid_hostname((char *)packet->host_line.ptr,
++                                packet->host_line.len) == 0) {
++        char str[128];
+@@ -1221,4 +1227,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      if(ndpi_is_valid_hostname((char *)packet->host_line.ptr,
+-				packet->host_line.len) == 0) {
+-	char str[128];
+-	
+@@ -1226,2 +1229,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	  snprintf(str, sizeof(str), "Invalid host %s", flow->host_server_name);
+-	  ndpi_set_risk(ndpi_struct, flow, NDPI_INVALID_CHARACTERS, str);
++          snprintf(str, sizeof(str), "Invalid host %s", flow->host_server_name);
++          ndpi_set_risk(ndpi_struct, flow, NDPI_INVALID_CHARACTERS, str);
+@@ -1232 +1235 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	/* This looks like an attack */
++        /* This looks like an attack */
+@@ -1234,2 +1237,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	snprintf(str, sizeof(str), "Suspicious hostname [%.*s]: attack ?", packet->host_line.len, (char *)packet->host_line.ptr);
+-	ndpi_set_risk(ndpi_struct, flow, NDPI_POSSIBLE_EXPLOIT, str);
++        snprintf(str, sizeof(str), "Suspicious hostname [%.*s]: attack ?", packet->host_line.len, (char *)packet->host_line.ptr);
++        ndpi_set_risk(ndpi_struct, flow, NDPI_POSSIBLE_EXPLOIT, str);
+@@ -1248,3 +1251,3 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	    snprintf(msg, sizeof(msg), "Expected %s, found %s",
+-		     ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
+-	    ndpi_set_risk(ndpi_struct, flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);
++            snprintf(msg, sizeof(msg), "Expected %s, found %s",
++                     ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
++            ndpi_set_risk(ndpi_struct, flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);

@@ -1,0 +1,27 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..b3821525ada 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2140,4 +2140,4 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-						}
+-						break;
+-					default:
+-						break;
++					}
++					break;
++				default:
++					break;
+@@ -2148,4 +2148,9 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-
+-		quit_loop_3:
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-			tptr += (bptr - hunk_begin);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++			if (bptr < hunk_begin || (size_t)(bptr - hunk_begin) > (size_t)(buf_end - hunk_begin)) {
++				zend_throw_exception_ex(NULL, 0, "Invalid CSV field length");
++				goto quit_loop_2;
++			}
++			size_t field_len = (size_t)(bptr - hunk_begin);
++	quit_loop_3:
++			memcpy(tptr, hunk_begin, field_len);
++			tptr += field_len;

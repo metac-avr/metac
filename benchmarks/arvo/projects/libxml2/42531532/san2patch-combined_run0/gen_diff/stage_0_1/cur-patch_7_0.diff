@@ -1,0 +1,40 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..211b382a 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2736,0 +2737 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    int ret;
+@@ -2743 +2744 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2746,8 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    if (attr->id->value != NULL) {
++        ret = xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry);
++        attr->id = NULL; /* Set to NULL immediately after use */
++        if (ret < 0)
++            return(-1);
++    } else {
++        attr->id = NULL;
++    }
+@@ -2749,2 +2756 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    attr->id = NULL;
+-
++    
+diff --git a/hash.c b/hash.c
+index 33e8581e..c4d0df97 100644
+--- a/hash.c
++++ b/hash.c
+@@ -1274,3 +1274,8 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
+-
+-    if ((dealloc != NULL) && (entry->payload != NULL))
+-        dealloc(entry->payload, entry->key);
++// FIXME: Crash CWE-416: Use After Free
++ 
++    /* Add null check before deallocation to prevent use-after-free */
++    if ((dealloc != NULL) && (entry->payload != NULL)) {
++        void *payload = entry->payload;  /* Store payload pointer locally */
++        entry->payload = NULL;           /* Clear the entry pointer immediately */
++        dealloc(payload, entry->key);
++    }

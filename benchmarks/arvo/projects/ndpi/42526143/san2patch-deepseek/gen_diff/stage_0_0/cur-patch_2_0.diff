@@ -1,0 +1,48 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..f6e72f332 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -299,2 +299,10 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++	      size_t src_avail = packet->content_disposition_line.len - attachment_len - 1;
++	      size_t dst_avail = sizeof(flow->http.filename) - 1;
++	      size_t to_copy = filename_len - 1;
++	      if(to_copy > dst_avail)
++	        to_copy = dst_avail;
++	      if(to_copy > src_avail)
++	        to_copy = src_avail;
++	      if(to_copy > 0)
++	        memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, to_copy);
++	      flow->http.filename[to_copy] = '\0';
+@@ -306 +313,0 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-
+@@ -308,3 +315,10 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++	      size_t src_avail = packet->content_disposition_line.len - attachment_len - 1;
++	      size_t dst_avail = sizeof(flow->http.filename) - 1;
++	      size_t to_copy = filename_len >= 3 ? filename_len - 2 : 0;
++	      if(to_copy > dst_avail)
++	        to_copy = dst_avail;
++	      if(to_copy > src_avail)
++	        to_copy = src_avail;
++	      if(to_copy > 0)
++	        memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, to_copy);
++	      flow->http.filename[to_copy] = '\0';
+@@ -317 +330,0 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-
+@@ -319,2 +332,10 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    size_t src_avail = packet->content_disposition_line.len - attachment_len;
++	    size_t dst_avail = sizeof(flow->http.filename) - 1;
++	    size_t to_copy = filename_len;
++	    if(to_copy > dst_avail)
++	      to_copy = dst_avail;
++	    if(to_copy > src_avail)
++	      to_copy = src_avail;
++	    if(to_copy > 0)
++	      memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, to_copy);
++	    flow->http.filename[to_copy] = '\0';

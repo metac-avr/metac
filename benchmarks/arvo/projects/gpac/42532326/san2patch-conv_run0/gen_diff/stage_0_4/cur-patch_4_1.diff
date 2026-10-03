@@ -1,0 +1,110 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..860d967c1 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -408 +408,51 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-	while (1) {
++	static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
++{
++	if (!ctx->is_file) return;
++
++	if (!ctx->duration.num) {
++		u32 i=0;
++		Double dur;
++		GF_OGGStream *st;
++		while ( (st = gf_list_enum(ctx->streams, &i)) ) {
++			if (st->dur.num) {
++				dur = ((Double) st->dur.num) / st->dur.den;
++				if (dur>ctx->duration.num) ctx->duration = st->dur;
++			}
++		}
++		i=0;
++		ctx->duration = dur;
++		while ( (st = gf_list_enum(ctx->streams, &i)) ) {
++			if (st->opid)
++				gf_filter_pid_set_property(st->opid, GF_PROP_PID_DURATION, & PROP_FRAC64(ctx->duration));
++		}
++	}
++	// Security fix for CWE-416: Use After Free vulnerability
++	// Defer memory cleanup until after all stream data operations are complete
++	gf_fclose(stream);
++}
++	ogg_sync_clear(&oy);
++	ctx->file_size = gf_ftell(stream);
++	if (has_stream) {
++		ogg_stream_clear(&the_os);
++		if (recompute_ts) {
++			dur.num = (u32) recompute_ts;
++			dur.den = the_info.sample_rate;
++		} else {
++			//convert granule to time
++			if (the_info.sample_rate) {
++				dur.num = (s32) max_gran;
++			} else if (the_info.frame_rate.num) {
++				s64 iframe = max_gran >> the_info.theora_kgs;
++				s64 pframe = max_gran - (iframe << the_info.theora_kgs);
++				pframe += iframe;
++				dur.num = (s32) (pframe / the_info.frame_rate.num);
++			} else {
++				dur.num = 0;
++			}
++			if (the_info.sample_rate) dur.den = the_info.sample_rate;
++			else dur.den = the_info.frame_rate.den;
++		}
++
++		if (!ctx->duration.num || (ctx->duration.num  * dur.den != dur.num * ctx->duration.den)) {
++			u32 i=0;
++while (1) {
+@@ -460 +510 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-					max_gran = oggpacket.granulepos;
++					max_gran = ogt->granulepos;
+@@ -464,48 +514 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-	}
+-	ogg_sync_clear(&oy);
+-	ctx->file_size = gf_ftell(stream);
+-	if (has_stream) {
+-		ogg_stream_clear(&the_os);
+-		if (recompute_ts) {
+-			dur.num = (u32) recompute_ts;
+-			dur.den = the_info.sample_rate;
+-		} else {
+-			//convert granule to time
+-			if (the_info.sample_rate) {
+-				dur.num = (s32) max_gran;
+-			} else if (the_info.frame_rate.num) {
+-				s64 iframe = max_gran >> the_info.theora_kgs;
+-				s64 pframe = max_gran - (iframe << the_info.theora_kgs);
+-				pframe += iframe;
+-				dur.num = (s32) (pframe / the_info.frame_rate.num);
+-			} else {
+-				dur.num = 0;
+-			}
+-			if (the_info.sample_rate) dur.den = the_info.sample_rate;
+-			else dur.den = the_info.frame_rate.den;
+-		}
+-
+-		if (!ctx->duration.num || (ctx->duration.num  * dur.den != dur.num * ctx->duration.den)) {
+-			u32 i=0;
+-			GF_OGGStream *st;
+-			ctx->duration = dur;
+-			while ( (st = gf_list_enum(ctx->streams, &i)) ) {
+-				if (st->opid)
+-					gf_filter_pid_set_property(st->opid, GF_PROP_PID_DURATION, & PROP_FRAC64(ctx->duration));
+-			}
+-		}
+-	}
+-	gf_fclose(stream);
+-}
+-
+-static Bool oggdmx_process_event(GF_Filter *filter, const GF_FilterEvent *evt)
+-{
+-	u32 i;
+-	GF_OGGStream *st;
+-	GF_FilterEvent fevt;
+-	GF_OGGDmxCtx *ctx = gf_filter_get_udta(filter);
+-
+-	switch (evt->base.type) {
+-	case GF_FEVT_PLAY:
+-		if (ctx->nb_playing && (ctx->start_range == evt->play.start_range)) {
+-			ctx->nb_playing++;
++	}			ctx->nb_playing++;

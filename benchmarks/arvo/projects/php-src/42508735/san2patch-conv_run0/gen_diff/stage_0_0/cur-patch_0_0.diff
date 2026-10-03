@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 6e809c87341..ba4e71ab5a4 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2150 +2150,6 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++// FIXME: Crash CWE-416: Use After Free
++ 			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++
++			if (UNEXPECTED(GC_IS_REFCOUNTED(Z_COUNTED(p->val)) && GC_DELREF(Z_COUNTED(p->val)) == 0)) {
++				continue;
++			}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..4fc3cd5969c 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -250 +250,7 @@ void shutdown_destructors(void) /* {{{ */
+-		do {
++		static zend_bool destructors_called = 0;
++		
++		if (destructors_called) {
++			return;
++		}
++		destructors_called = 1;
++ 		do {

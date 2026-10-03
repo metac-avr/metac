@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..3daa67b6a7b 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1233,0 +1234,11 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
++		// Validate old buckets before copying to prevent UAF
++		for (uint32_t i = 0; i < ht->nNumUsed; i++) {
++			if ((char*)old_buckets + i * sizeof(Bucket) >= (char*)old_data && 
++			    (char*)old_buckets + i * sizeof(Bucket) < (char*)old_data + HT_SIZE(ht)) {
++				continue; // Valid pointer range check
++			} else {
++				// Reset invalid bucket entry
++				memset(&old_buckets[i], 0, sizeof(Bucket));
++			}
++		}
++
+@@ -1236 +1246,0 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
+-		ht->nTableMask = HT_SIZE_TO_MASK(ht->nTableSize);
+@@ -1433,5 +1443,8 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-
+-	_zend_hash_del_el_ex(ht, idx, p, prev);
+-	if (p->key) {
+-		zend_string_release(p->key);
+-		p->key = NULL;
++// FIXME: Crash CWE-416: Use After Free
++ 
++	if ((void*)p >= (void*)ht->arData && (char*)p < (char*)ht->arData + (ht->nTableSize * sizeof(Bucket))) {
++		_zend_hash_del_el_ex(ht, idx, p, prev);
++		if (p->key) {
++			zend_string_release(p->key);
++			p->key = NULL;
++		}

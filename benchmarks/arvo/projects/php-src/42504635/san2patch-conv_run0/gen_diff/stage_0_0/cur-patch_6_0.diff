@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..6989d01e7ef 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1968 +1968,7 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			zend_string *old_str = Z_STR_P(result);
++			if (ZSTR_IS_INTERNED(old_str)) {
++				result_str = zend_string_alloc(result_len, 0);
++				memcpy(ZSTR_VAL(result_str), Z_STRVAL_P(op1), op1_len);
++			} else {
++				result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..4752401268e 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -65 +65 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+@@ -66,0 +67,2 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Clear pointer to avoid use-after-free */
++	str = NULL;
+@@ -73 +75,3 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	ZEND_ASSERT(!ZEND_REF_HAS_TYPE_SOURCES(ref));
++// FIXME: Crash CWE-416: Use After Free
++	if (ref == NULL) return; /* Prevent use-after-free by checking null pointer */
++ 	ZEND_ASSERT(!ZEND_REF_HAS_TYPE_SOURCES(ref));
+@@ -74,0 +79,2 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
++	/* Clear reference to prevent dangling pointer access */
++	ref = NULL;
+@@ -85,2 +91 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-}
+-/* }}} */
++}/* }}} */

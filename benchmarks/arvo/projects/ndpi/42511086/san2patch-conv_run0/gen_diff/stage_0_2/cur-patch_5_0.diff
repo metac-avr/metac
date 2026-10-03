@@ -1,0 +1,18 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 9432ce64b..0052fc16b 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -5051 +5051 @@ static u_int32_t check_ndpi_detection_func(struct ndpi_detection_module_struct *
+-                                 detection_bitmask) != 0)
++                                  detection_bitmask) != 0)
+@@ -5053,2 +5053,8 @@ static u_int32_t check_ndpi_detection_func(struct ndpi_detection_module_struct *
+-	    callback_buffer[a].func(ndpi_str, flow);
+-	    num_calls++;
++	    /* Validate packet buffer bounds before processing to avoid out-of-bounds access */
++	    if (flow->packet.payload_packet_len >= sizeof(uint16_t)) {
++	      callback_buffer[a].func(ndpi_str, flow);
++	      num_calls++;
++	    } else {
++	      /* Skip processing for insufficient packet length */
++	      continue;
++	    }

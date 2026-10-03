@@ -1,0 +1,91 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..fb50a1fba12 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7616,7 +7616,31 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+-			} else if (!zend_jit_traces[parent_num].polymorphism) {
+-				polymorphism = 1;
+-			} else if (exit_num == 0) {
+-				polymorphism = zend_jit_traces[parent_num].polymorphism + 1;
+-			}
+-		}
++static zend_always_inline int zend_jit_trace_hot_side(zend_execute_data *execute_data, uint32_t parent_num, uint32_t exit_num)
++{
++	zend_jit_trace_buffer *trace_buffer;
++	zend_jit_trace_info *trace_info;
++	uint32_t op_array_num;
++	uint8_t is_megamorphic = 0;
++	uint8_t polymorphism = 1;
++	zend_op *orig_opline = EX(opline);
++	zend_jit_trace_op op;
++	int8_t stop;
++	int32_t ret = 0;
++
++	trace_buffer = zend_jit_trace_buffer_acquire(ZEND_JIT_TRACE_START_SIDE,
++			EX(func)->op_array.last, zend_jit_trace_exit_is_consumed);
++	if (UNEXPECTED(!trace_buffer)) {
++		return -1;
++	}
++
++	op_array_num = trace_buffer[0].op_array->op_array_num;
++	trace_info = (zend_jit_trace_info*)ZEND_FUNC_INFO(trace_buffer[0].op_array);
++
++	if (!trace_info || !trace_info->traces[parent_num].trace) {
++		zend_jit_trace_buffer_release(trace_buffer);
++		return -1;
++	}
++
++	if (UNEXPECTED((EX(opline)->opcode == ZEND_ASSIGN_DIM) &&
++			(EX(opline)->op2_type == IS_CONST) &&
++			(EX(opline)->op1_type == IS_CV))) {
++		zend_jit_trace_buffer_release(trace_buffer);
++		return -1;
+@@ -7636,0 +7661,28 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
++
++			zend_jit_trace_verbosely_log_op_array(op_array);
++		}
++
++		if (ZEND_JIT_TRACE_STOP_OK(stop)) {
++			if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_COMPILED) {
++				fprintf(stderr, "---- Trace compiled %d/%d\n",
++					parent_num, exit_num);
++			}
++
++			if (zend_jit_trace_compile(trace_buffer, parent_num, exit_num,
++					zend_jit_trace_num_ref(trace_buffer))) {
++				ret = 0;
++			}
++		} else {
++			if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_ABORT) {
++				fprintf(stderr, "---- Trace aborted %d/%d\n", parent_num, exit_num);
++			}
++		}
++	} else {
++		if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_ABORT) {
++			fprintf(stderr, "---- Trace aborted %d/%d\n", parent_num, exit_num);
++		}
++	}
++
++	zend_jit_trace_buffer_release(trace_buffer);
++	return ret;
++}
+@@ -7864,0 +7917,6 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
++
++static zend_always_inline int zend_jit_trace_exit(zend_execute_data *execute_data, uint32_t trace_num, uint32_t exit_num)
++{
++	zend_jit_trace_info *t = (zend_jit_trace_info*)ZEND_FUNC_INFO(EX(func)->op_array);
++	zend_op *orig_opline = EX(opline);
++
+@@ -7872,0 +7931,2 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
++		} else if (zend_jit_trace_exit_is_consumed(trace_num, exit_num)) {
++			return 0;
+@@ -7875 +7935 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-		return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
++		return zend_jit_trace_hot_side_exit(execute_data, &op_array, opline, trace_buffer, trace_num, exit_num);
+@@ -7881,5 +7940,0 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:

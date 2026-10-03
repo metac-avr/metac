@@ -1,0 +1,46 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..1b4aee6dd70 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
+@@ -82 +82,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +85,12 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr != NULL) {
++		if (Z_REFCOUNTED_P(zval_ptr)) {
++			zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++			if (!(GC_FLAGS(ref) & GC_IMMUTABLE) && !GC_IS_RECURSIVE(ref)) {
++				i_zval_ptr_dtor(zval_ptr);
++			} else if (GC_FLAGS(ref) & GC_IMMUTABLE) {
++				i_zval_ptr_dtor(zval_ptr);
++			}
++		} else {
++			i_zval_ptr_dtor(zval_ptr);
++		}
++	}
+@@ -90,6 +102 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++	if (Z_REFCOUNTED_P(zval_ptr)) {				zend_string *str = (zend_string*)ref;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..45851b04da6 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -192 +192,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+@@ -194 +195,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			object->handlers->free_obj(object);
++			if (object->handlers && object->handlers->free_obj && object != NULL) {
++				object->handlers->free_obj(object);
++			}

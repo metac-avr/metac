@@ -1,0 +1,17 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 9f1dd9cf5..880aaec2a 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1217,3 +1217,9 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-
+-    ndpi_parse_packet_line_info(ndpi_struct, flow);
+-    ndpi_check_http_header(ndpi_struct, flow);
++ 
++    /* Validate packet line length before parsing to prevent out-of-bounds read */
++    if (packet->line[0].len > 0 && packet->line[0].len <= 105) {
++      ndpi_parse_packet_line_info(ndpi_struct, flow);
++      ndpi_check_http_header(ndpi_struct, flow);
++    } else {
++      NDPI_LOG_DBG2(ndpi_struct, "Invalid packet line length, skipping HTTP header check\n");
++      return;
++    }

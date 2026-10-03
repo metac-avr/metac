@@ -1,0 +1,38 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 535a0c5bd..ae9c4ceff 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1219 +1219,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      hostname_just_set = 1;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       hostname_just_set = 1;
+@@ -1221,3 +1222,4 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      if(ndpi_is_valid_hostname((char *)packet->host_line.ptr,
+-				packet->host_line.len) == 0) {
+-	char str[128];
++      if(packet->host_line.len > 0 && (packet->host_line.ptr[packet->host_line.len - 1] == '\0' || packet->host_line.ptr[packet->host_line.len] == '\0')) {
++        if(ndpi_is_valid_hostname((char *)packet->host_line.ptr,
++				  packet->host_line.len) == 0) {
++	  char str[128];
+@@ -1225,6 +1227,6 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-        if(is_flowrisk_info_enabled(ndpi_struct, NDPI_INVALID_CHARACTERS)) {
+-	  snprintf(str, sizeof(str), "Invalid host %s", flow->host_server_name);
+-	  ndpi_set_risk(ndpi_struct, flow, NDPI_INVALID_CHARACTERS, str);
+-        } else {
+-          ndpi_set_risk(ndpi_struct, flow, NDPI_INVALID_CHARACTERS, NULL);
+-        }
++          if(is_flowrisk_info_enabled(ndpi_struct, NDPI_INVALID_CHARACTERS)) {
++	    snprintf(str, sizeof(str), "Invalid host %s", flow->host_server_name);
++	    ndpi_set_risk(ndpi_struct, flow, NDPI_INVALID_CHARACTERS, str);
++          } else {
++            ndpi_set_risk(ndpi_struct, flow, NDPI_INVALID_CHARACTERS, NULL);
++          }
+@@ -1232 +1234 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	/* This looks like an attack */
++	  /* This looks like an attack */
+@@ -1234,2 +1236,3 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	snprintf(str, sizeof(str), "Suspicious hostname [%.*s]: attack ?", packet->host_line.len, (char *)packet->host_line.ptr);
+-	ndpi_set_risk(ndpi_struct, flow, NDPI_POSSIBLE_EXPLOIT, str);
++	  snprintf(str, sizeof(str), "Suspicious hostname [%.*s]: attack ?", packet->host_line.len, (char *)packet->host_line.ptr);
++	  ndpi_set_risk(ndpi_struct, flow, NDPI_POSSIBLE_EXPLOIT, str);
++        }

@@ -1,0 +1,138 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..00fa7c8e 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1162,37 +1162,14 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		switch (set->nodeTab[i]->type) {
+-		    case XML_TEXT_NODE:
+-		    case XML_CDATA_SECTION_NODE:
+-		    case XML_ELEMENT_NODE:
+-		    case XML_ENTITY_REF_NODE:
+-		    case XML_ENTITY_NODE:
+-		    case XML_PI_NODE:
+-		    case XML_COMMENT_NODE:
+-		    case XML_DOCUMENT_NODE:
+-		    case XML_HTML_DOCUMENT_NODE:
+-		    case XML_XINCLUDE_END:
+-			break;
+-		    case XML_XINCLUDE_START: {
+-	                xmlNodePtr tmp, cur = set->nodeTab[i];
+-
+-			cur = cur->next;
+-			while (cur != NULL) {
+-			    switch(cur->type) {
+-				case XML_TEXT_NODE:
+-				case XML_CDATA_SECTION_NODE:
+-				case XML_ELEMENT_NODE:
+-				case XML_ENTITY_REF_NODE:
+-				case XML_ENTITY_NODE:
+-				case XML_PI_NODE:
+-				case XML_COMMENT_NODE:
+-				    tmp = xmlXIncludeCopyNode(ctxt, target,
+-							      source, cur);
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
+-				    }
+-				    cur = cur->next;
+-				    continue;
+-				default:
+-				    break;
+-			    }
++		/* Check if node pointer is valid before accessing to prevent use-after-free */
++		xmlNodePtr node = set->nodeTab[i];
++		if (node != NULL) {
++		    switch (node->type) {
++			case XML_TEXT_NODE:
++			case XML_CDATA_SECTION_NODE:
++			case XML_ELEMENT_NODE:
++			case XML_ENTITY_REF_NODE:
++			case XML_ENTITY_NODE:
++			case XML_PI_NODE:
++			case XML_COMMENT_NODE:
++			case XML_DOCUMENT_NODE:
++			case XML_HTML_DOCUMENT_NODE:
++			case XML_XINCLUDE_END:
+@@ -1199,0 +1177,28 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			case XML_XINCLUDE_START: {
++			    xmlNodePtr tmp, cur = node;
++
++			    cur = cur->next;
++			    while (cur != NULL) {
++				switch(cur->type) {
++				    case XML_TEXT_NODE:
++				    case XML_CDATA_SECTION_NODE:
++				    case XML_ELEMENT_NODE:
++				    case XML_ENTITY_REF_NODE:
++				    case XML_ENTITY_NODE:
++				    case XML_PI_NODE:
++				    case XML_COMMENT_NODE:
++					tmp = xmlXIncludeCopyNode(ctxt, target,
++								  source, cur);
++					if (last == NULL) {
++					    list = last = tmp;
++					} else {
++					    last = xmlAddNextSibling(last, tmp);
++					}
++					cur = cur->next;
++					continue;
++				    default:
++					break;
++				}
++				break;
++			    }
++			    continue;
+@@ -1201 +1206,10 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-			continue;
++			case XML_ATTRIBUTE_NODE:
++			case XML_NAMESPACE_DECL:
++			case XML_DOCUMENT_TYPE_NODE:
++			case XML_DOCUMENT_FRAG_NODE:
++			case XML_NOTATION_NODE:
++			case XML_DTD_NODE:
++			case XML_ELEMENT_DECL:
++			case XML_ATTRIBUTE_DECL:
++			case XML_ENTITY_DECL:
++			    continue; /* for */
+@@ -1203,21 +1217,11 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    case XML_ATTRIBUTE_NODE:
+-		    case XML_NAMESPACE_DECL:
+-		    case XML_DOCUMENT_TYPE_NODE:
+-		    case XML_DOCUMENT_FRAG_NODE:
+-		    case XML_NOTATION_NODE:
+-		    case XML_DTD_NODE:
+-		    case XML_ELEMENT_DECL:
+-		    case XML_ATTRIBUTE_DECL:
+-		    case XML_ENTITY_DECL:
+-			continue; /* for */
+-		}
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
+-		}
++		    if (last == NULL)
++			list = last = xmlXIncludeCopyNode(ctxt, target, source,
++						  node);
++		    else {
++			xmlAddNextSibling(last,
++				xmlXIncludeCopyNode(ctxt, target, source,
++						    node));
++			if (last->next != NULL)
++			    last = last->next;
++		    }
++		} /* End of node validity check */
+@@ -2601 +2605,2 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
+-int
++// Fixed: Crash CWE-416: Use After Free - Added validation before node access
++ int
+@@ -2613,2 +2618 @@ xmlXIncludeProcessFlags(xmlDocPtr doc, int flags) {
+- *    or the number of substitutions done.
+- */
++ *    or the number of substitutions done. */

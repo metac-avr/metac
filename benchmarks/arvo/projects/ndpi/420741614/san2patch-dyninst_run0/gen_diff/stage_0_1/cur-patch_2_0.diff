@@ -1,0 +1,44 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index dcdde6966..5e76fee84 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -7133 +7133,3 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", kind);
++		  size_t max_write = sizeof(options_fp)-options_fp_len;
++		  if(max_write > 2) { /* Prevent overflow by checking max write size */
++		    rc = snprintf(&options_fp[options_fp_len], max_write, "%02x", kind);
+@@ -7135,2 +7137,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp)))
+-		    break;
++		    if((rc < 0) || ((size_t)(options_fp_len + rc) >= sizeof(options_fp)))
++		      break;
+@@ -7138 +7140,3 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  options_fp_len += rc;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		  options_fp_len += rc;
++		  } else break;
+@@ -7140 +7144,3 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&fingerprint[fp_idx], sizeof(fingerprint)-fp_idx, "%s%u", (i > 0) ? "-" : "", kind);
++		  size_t max_write = sizeof(fingerprint)-fp_idx;
++		  if(max_write > 10) { /* Ensure enough space for kind formatting with separator */
++		    rc = snprintf(&fingerprint[fp_idx], max_write, "%s%u", (i > 0) ? "-" : "", kind);
+@@ -7142,2 +7148,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(fp_idx + rc) == sizeof(fingerprint)))
+-		    break;
++		    if((rc < 0) || ((size_t)(fp_idx + rc) >= sizeof(fingerprint)))
++		      break;
+@@ -7145 +7151,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  fp_idx += rc;
++		    fp_idx += rc;
++		  } else break;
+@@ -7196,2 +7203,4 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-			rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", options[j]);
+-			if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp))) break;
++			size_t max_write = sizeof(options_fp)-options_fp_len;
++			if(max_write > 2) { /* Prevent overflow by checking max write size */
++			  rc = snprintf(&options_fp[options_fp_len], max_write, "%02x", options[j]);
++			  if((rc < 0) || ((size_t)(options_fp_len + rc) >= sizeof(options_fp))) break;
+@@ -7199 +7208,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-			options_fp_len += rc;
++			  options_fp_len += rc;
++			} else break;

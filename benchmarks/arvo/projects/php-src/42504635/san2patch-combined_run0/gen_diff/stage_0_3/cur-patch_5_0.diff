@@ -1,0 +1,46 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..ec915712c42 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && GC_REFCOUNT(ref) > 0 && !GC_DELREF(ref)) {
+@@ -45 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref && GC_REFCOUNT(ref) > 0) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..5cb4258d8c0 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1750 +1750,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1752 +1753,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				i_zval_ptr_dtor(zv);
++				if (zv && Z_COUNTED_P(zv)) {
++					i_zval_ptr_dtor(zv);
++				}
+@@ -1760 +1763,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++					if (&p->val && Z_COUNTED_P(&p->val)) {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1764,3 +1769,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
+-					if (EXPECTED(p->key)) {
+-						zend_string_release_ex(p->key, 0);
++					if (&p->val && Z_COUNTED_P(&p->val)) {
++						i_zval_ptr_dtor(&p->val);
++						if (EXPECTED(p->key)) {
++							zend_string_release_ex(p->key, 0);
++						}
+@@ -1772,3 +1779,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						i_zval_ptr_dtor(&p->val);
+-						if (EXPECTED(p->key)) {
+-							zend_string_release_ex(p->key, 0);
++						if (&p->val && Z_COUNTED_P(&p->val)) {
++							i_zval_ptr_dtor(&p->val);
++							if (EXPECTED(p->key)) {
++								zend_string_release_ex(p->key, 0);
++							}

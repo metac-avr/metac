@@ -1,0 +1,65 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..ceb835f6 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2229 +2229 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	(ctxt->incTab[nr]->xptr != NULL)) {
++ 	(ctxt->incTab[nr]->xptr != NULL)) {
+@@ -2232 +2232 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		                    ctxt->incTab[nr]->xptr);
++		            ctxt->incTab[nr]->xptr);
+@@ -2239,0 +2240,37 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    /*
++     * Ensure any nodes copied from an included document do not retain
++     * dictionary-owned strings from the source document. If a dictionary
++     * is present on the destination document, explicitly replace the
++     * copied content by re-copying it with a node copy operation that
++     * transfers ownership to the destination dictionary, so that no
++     * stale pointers to the source dictionary remain after the included
++     * document is destroyed.
++     */
++    if (list != NULL) {
++        xmlNodePtr child;
++        xmlDocPtr srcDoc = ctxt->doc;
++        xmlDictPtr dict = NULL;
++
++        if (srcDoc != NULL)
++            dict = srcDoc->dict;
++        if (dict != NULL) {
++            for (cur = list; cur != NULL; cur = cur->next) {
++                if (cur->type == XML_NAMESPACE_DECL)
++                    continue;
++                child = cur->children;
++                while (child != NULL) {
++                    xmlNodePtr next = child->next;
++                    if (child->type != XML_NAMESPACE_DECL) {
++                        xmlNodePtr copied = xmlDocCopyNode(child, srcDoc, 1);
++                        if (copied != NULL) {
++                            xmlReplaceNode(child, copied);
++                            xmlFreeNode(child);
++                            child = copied;
++                        }
++                    }
++                    child = next;
++                }
++            }
++        }
++    }
++
+@@ -2242,0 +2280,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++
++     */
+diff --git a/tree.c b/tree.c
+index 6a42f118..f29ea82a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2010,0 +2011,9 @@ xmlNewNsPropEatName(xmlNodePtr node, xmlNsPtr ns, xmlChar *name,
++    if ((node != NULL) && (node->doc != NULL) &&
++        (node->doc->dict != NULL) &&
++        (xmlDictOwns(node->doc->dict, name) == 0)) {
++        xmlChar *tmp = xmlStrdup(name);
++        if (tmp == NULL)
++            return(NULL);
++        name = tmp;
++    }
++

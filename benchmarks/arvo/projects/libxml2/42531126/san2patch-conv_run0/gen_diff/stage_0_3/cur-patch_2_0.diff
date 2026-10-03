@@ -1,0 +1,24 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..7c798dcd 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -425,0 +426,6 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++    /* Check for valid context and input buffer to prevent use-after-free */
++    if ((ctxt == NULL) || (ctxt->input == NULL) || (ctxt->input->cur == NULL)) {
++        if (len != NULL)
++            *len = 0;
++        return(0);
++    }
+@@ -3457 +3463,8 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
+-	    (r != '-') || (q != '-'))) {
++// FIXME: Crash CWE-416: Use After Free
++ 	    (r != '-') || (q != '-'))) {
++	/* Validate buffer boundaries before proceeding */
++	if (ctxt->input == NULL || ctxt->input->cur == NULL) {
++	    htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++			 "Null pointer in comment parsing context", NULL, NULL);
++	    break;
++	}
+@@ -3478,0 +3492,2 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	    /* Ensure buffer pointers are consistent after realloc */
++	    if (ctxt->input) ctxt->input->cur = buf;

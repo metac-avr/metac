@@ -1,0 +1,23 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..62a775719 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -164,0 +165,11 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
++// FIXME: Crash CWE-825: Expired Pointer Dereference - Guard against null dereference
++#ifndef PROTECT_INCREMENT
++#define ht_increment_size(ht) do { \
++  if ((ht) != NULL && (ht)->hsh.ht != NULL) (ht)->hsh.ht->size++; \
++} while(0)
++#define DEFINE_INCREMENTER_HT_SIZE(name, member) \
++  void ht_inc_size(RHash* h) { \
++    if (h != NULL && h->hsh.ht != NULL) h->hsh.ht->size++; \
++  }
++DEFINE_INCREMENTER_HT_SIZE(ht, size)
++#else
+@@ -165,0 +177 @@ DEFINE_INCREMENTER(ht, size)
++#endif
+@@ -176,3 +188 @@ DEFINE_SWITCHER(ht, HT)
+-} while (0)
+-
+-#define ea_each(ea, size, entry_var, code) do {                               \
++} while (0)#define ea_each(ea, size, entry_var, code) do {                               \

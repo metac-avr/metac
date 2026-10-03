@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..e969bfb2b78 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -44 +44 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && GC_IS_REFCOUNTED(ref) && !GC_DELREF(ref)) {
+@@ -46 +46 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref && GC_IS_REFCOUNTED(ref)) {
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index dbdc08c5a87..b0cb2719126 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -290 +290,3 @@ static zend_object *spl_fixedarray_object_new_ex(zend_class_entry *class_type, z
+-		spl_fixedarray_copy_ctor(&intern->array, &other->array);
++		if (other != NULL) {
++			spl_fixedarray_copy_ctor(&intern->array, &other->array);
++		}
+@@ -307 +309 @@ static zend_object *spl_fixedarray_object_new_ex(zend_class_entry *class_type, z
+-		if (fptr_count->common.scope == parent) {
++		if (fptr_count != NULL && fptr_count->common.scope == parent) {

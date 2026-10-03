@@ -1,0 +1,48 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..00fedd6445 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,15 +2016,0 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+@@ -2040,0 +2026,13 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
++    if (tile->codsty[0].mct)
++        mct_decode(s, tile);
++
++    if (s->precision <= 8) {
++        WRITE_FRAME(8, uint8_t)
++    } else {
++        WRITE_FRAME(16, uint16_t)
++    }
++
++    return 0;
++}
++    tile_codeblocks(s, tile);
++
+@@ -2469 +2467 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-    if (ret = jpeg2000_read_main_headers(s))
++    if ((ret = jpeg2000_read_main_headers(s)))
+@@ -2487 +2485 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-    if (ret = jpeg2000_read_bitstream_packets(s))
++    if ((ret = jpeg2000_read_bitstream_packets(s)))
+@@ -2500,0 +2499,7 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
++    // Validate tile dimensions before processing to prevent multiplication overflow
++    if (s->numXtiles > 0 && s->numYtiles > INT_MAX / s->numXtiles) {
++        av_log(avctx, AV_LOG_ERROR, "Excessive tile dimensions causing overflow\n");
++        ret = AVERROR_INVALIDDATA;
++        goto end;
++    }
++    

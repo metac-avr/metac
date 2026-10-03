@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index d13087a5b02..de19b208502 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -155,0 +156 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++// FIXME: Crash CWE-416: Use After Free
+@@ -158 +159 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-				rc_dtor_func(garbage);
++				zend_jit_safe_free(garbage);  /* Safe free that checks JIT references */
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..7708eab8f1f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -269 +268,0 @@ ZEND_API void ZEND_FASTCALL _zend_hash_init(HashTable *ht, uint32_t nSize, dtor_
+-
+@@ -277 +276,2 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
+-ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
+@@ -280,0 +281,2 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
++	/* Initialize JIT reference tracking */
++	ht->u.v.flags |= HASH_FLAG_JIT_TRACKED;
+@@ -289,2 +291 @@ ZEND_API HashTable* ZEND_FASTCALL zend_new_pair(zval *val1, zval *val2)
+-	ht->nNumUsed = ht->nNumOfElements = ht->nNextFreeElement = 2;
+-	zend_hash_real_init_packed_ex(ht);
++	ht->nNumUsed = ht->nNumOfElements = ht->nNextFreeElement = 2;	zend_hash_real_init_packed_ex(ht);

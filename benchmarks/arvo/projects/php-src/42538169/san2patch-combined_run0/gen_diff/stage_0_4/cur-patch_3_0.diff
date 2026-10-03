@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..c37ba4ffcf0 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
+@@ -81,0 +82 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -83,0 +85,6 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++	if (zval_ptr && !Z_REFCOUNTED_P(zval_ptr) || (Z_REFCOUNTED_P(zval_ptr) && !GC_DELREF(Z_COUNTED_P(zval_ptr)))) {
++		return;
++	}
++	if (Z_REFCOUNTED_P(zval_ptr) && GC_DELREF(Z_COUNTED_P(zval_ptr)) > 0) {
++		return;
++	}
+@@ -94,2 +101 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..ad3a4da39f5 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -192 +192,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+@@ -194 +195,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			object->handlers->free_obj(object);
++			if (object->handlers->free_obj) {
++				object->handlers->free_obj(object);
++			}

@@ -1,0 +1,21 @@
+diff --git a/parser.c b/parser.c
+index c3068cad..72d61488 100644
+--- a/parser.c
++++ b/parser.c
+@@ -13425,2 +13425,2 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-		oldctxt->valid &= xmlValidateElement(&oldctxt->vctxt,
+-			oldctxt->myDoc, cur);
++	oldctxt->valid &= xmlValidateElement(&oldctxt->vctxt,
++		oldctxt->myDoc, cur);
+@@ -13433 +13433,2 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-    }
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     }
+@@ -13435 +13436,6 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-	xmlFreeNode(ctxt->myDoc->children);
++	xmlNodePtr child = ctxt->myDoc->children;
++	if (child != NULL && (char*)child >= (char*)ctxt->dict && (char*)child < (char*)ctxt->dict + ctxt->dict->size) {
++	    /* Skip freeing if pointing to dictionary memory */
++	} else if (child != NULL) {
++	    xmlFreeNode(child);
++	}

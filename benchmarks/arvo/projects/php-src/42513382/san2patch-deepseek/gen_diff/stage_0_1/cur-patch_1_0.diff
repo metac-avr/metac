@@ -1,0 +1,26 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..6a60491dcde 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -283 +283,2 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
+-static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
+@@ -289,0 +291,4 @@ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{
++	intern->obj = NULL;
++	if (class_type == reflection_enum_backed_case_class) {
++		intern->obj = NULL;
++	}
+@@ -292,5 +297 @@ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{
+-/* }}} */
+-
+-static zval *reflection_instantiate(zend_class_entry *pce, zval *object) /* {{{ */
+-{
+-	object_init_ex(object, pce);
++/* }}} */	object_init_ex(object, pce);
+@@ -2129,0 +2131,5 @@ ZEND_METHOD(ReflectionFunctionAbstract, getParameters)
++	if (!Z_ISUNDEF(intern->obj) && !zend_object_is_live(&intern->obj)) {
++		zend_throw_error(NULL, "Cannot access expired reflection object");
++		RETURN_THROWS();
++	}
++

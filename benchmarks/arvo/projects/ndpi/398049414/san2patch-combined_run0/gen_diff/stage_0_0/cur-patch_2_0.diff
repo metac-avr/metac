@@ -1,0 +1,31 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 8d2f4dd7f..edb05a790 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -3274 +3274,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		char buf[256], *tmp, *item;
++// FIXME: Crash CWE-457: Use of Uninitialized Variable
++ 		char buf[256] = {0}, *tmp, *item;  /* Initialize buf to zero */
+@@ -3276 +3277,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
++		if(flow->protos.tls_quic.advertised_alpns != NULL) {  /* Additional null check */
++		  snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
+@@ -3278 +3280 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		item = strtok_r(buf, ",", &tmp);
++		  item = strtok_r(buf, ",", &tmp);
+@@ -3280,7 +3282,8 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		while(item != NULL) {
+-		  if(item[0] == 'h') {
+-		    /* Example 'h2' */
+-		    ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_ALPN_SNI_MISMATCH, item);
+-		    break;
+-		  } else
+-		    item = strtok_r(NULL, ",", &tmp);
++		  while(item != NULL) {
++		    if(item[0] == 'h') {
++		      /* Example 'h2' */
++		      ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_ALPN_SNI_MISMATCH, item);
++		      break;
++		    } else
++		      item = strtok_r(NULL, ",", &tmp);
++		  }

@@ -1,0 +1,105 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..23913f70 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2052 +2052,7 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-    if ((cur == NULL) || (cur->type == XML_NAMESPACE_DECL))
++    
++    /* Additional validation to prevent use-after-free */
++    if (cur == NULL) 
++        return(-1);
++        
++    /* Validate node type before proceeding */
++    if (cur->type == XML_NAMESPACE_DECL)
+@@ -2076 +2082 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-            xmlFreeNodeList(list);
++            if (list) xmlFreeNodeList(list);
+@@ -2089 +2095,7 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	    xmlAddPrevSibling(cur, end);
++	    /* Null check before operation to prevent use-after-free */
++	    if (cur != NULL) {
++	        xmlAddPrevSibling(cur, end);
++	    } else {
++                /* Clean up orphaned node */
++                xmlFreeNode(end);
++            }
+@@ -2094,2 +2106,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	xmlUnlinkNode(cur);
+-	xmlFreeNode(cur);
++	if (cur != NULL) {
++	    xmlUnlinkNode(cur);
++	    xmlFreeNode(cur);
++	}
+@@ -2103 +2117 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-        if (ref->fallback)
++        if (ref->fallback && cur != NULL)
+@@ -2105,6 +2119,8 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	cur->type = XML_XINCLUDE_START;
+-        /* Remove fallback children */
+-        for (child = cur->children; child != NULL; child = next) {
+-            next = child->next;
+-            xmlUnlinkNode(child);
+-            xmlFreeNode(child);
++	if (cur != NULL) cur->type = XML_XINCLUDE_START;
++        /* Remove fallback children with safety checks */
++        if (cur != NULL) {
++            for (child = cur->children; child != NULL; child = next) {
++                next = child->next;
++                xmlUnlinkNode(child);
++                xmlFreeNode(child);
++            }
+@@ -2112 +2128,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	end = xmlNewDocNode(cur->doc, cur->ns, cur->name, NULL);
++	end = NULL;
++	if (cur != NULL) end = xmlNewDocNode(cur->doc, cur->ns, cur->name, NULL);
+@@ -2115,2 +2132,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-			   "failed to build node\n", NULL);
+-            xmlFreeNodeList(list);
++			"failed to build node\n", NULL);
++            if (list) xmlFreeNodeList(list);
+@@ -2120 +2137 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	xmlAddNextSibling(cur, end);
++	if (cur != NULL) xmlAddNextSibling(cur, end);
+@@ -2129 +2146,7 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	    xmlAddPrevSibling(end, cur);
++	    /* Null check before operation to prevent use-after-free */
++	    if (end != NULL) {
++	        xmlAddPrevSibling(end, cur);
++	    } else {
++                /* Clean up orphaned node */
++                xmlFreeNode(cur);
++            }
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..43cc00c0 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1345 +1345 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-        if ((reader->preserves > 0) &&
++	if ((reader->preserves > 0) &&
+@@ -1364,3 +1364,23 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Prevent use-after-free by checking node validity */
++		int can_free = 1;
++#ifdef LIBXML_XINCLUDE_ENABLED
++		/* Check if any XInclude operations might reference this node */
++		if (reader->xincNode != NULL) {
++		    xmlNodePtr cur = reader->xincNode;
++		    while (cur != NULL) {
++		        if (cur == tmp) {
++			    can_free = 0;
++			    break;
++		        }
++		        cur = cur->next;
++		    }
++		}
++#endif
++		if (can_free) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		} else {
++		    /* Defer freeing until XInclude processing is complete */
++		    tmp->extra |= NODE_HAS_XINCLUDE_REF;
++		}

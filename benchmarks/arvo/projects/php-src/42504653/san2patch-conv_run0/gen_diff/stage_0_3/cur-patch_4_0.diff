@@ -1,0 +1,28 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..957d211c5b8 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++		/* Add safety check for freed memory access */
+@@ -862,0 +864,7 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Prevent access to potentially freed execute_data */
++			if (execute_data == NULL || prev_execute_data == NULL) {
++				stop = ZEND_JIT_TRACE_STOP_RETURN;
++				opline = NULL;
++				halt = ZEND_JIT_TRACE_HALT;
++				break;
++			}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..3939a14c61e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *ptr = EX_VAR(opline->op1.var);
++		if (ptr != NULL) {
++			zval_ptr_dtor_nogc(ptr);
++		}
++	} else {
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+@@ -29957 +29961,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));

@@ -1,0 +1,23 @@
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..82e6bb1ae 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326,5 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    if (!mrb_gc_is_object_dead(mrb, mrb_obj_ptr(key))) {
++      hash_code = mrb_str_hash(mrb, key);
++    } else {
++      hash_code = 0;
++    }
+@@ -343 +347,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-416: Use After Free
++     break;
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..2d7d61d13 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1683,0 +1684,3 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
++    /* Validate pointer before use to prevent use-after-free (SEI CERT C PRE01-C) */
++    if (!s) break;
++    

@@ -1,0 +1,62 @@
+diff --git a/libavcodec/faanidct.c b/libavcodec/faanidct.c
+index 3921f82dae..8acfe2f26e 100644
+--- a/libavcodec/faanidct.c
++++ b/libavcodec/faanidct.c
+@@ -106,17 +106,22 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-            dest[0*stride + i]= av_clip_uint8(((int)dest[0*stride + i]) + lrintf(os07 + od07));
+-            dest[7*stride + i]= av_clip_uint8(((int)dest[7*stride + i]) + lrintf(os07 - od07));
+-            dest[1*stride + i]= av_clip_uint8(((int)dest[1*stride + i]) + lrintf(os16 + od16));
+-            dest[6*stride + i]= av_clip_uint8(((int)dest[6*stride + i]) + lrintf(os16 - od16));
+-            dest[2*stride + i]= av_clip_uint8(((int)dest[2*stride + i]) + lrintf(os25 + od25));
+-            dest[5*stride + i]= av_clip_uint8(((int)dest[5*stride + i]) + lrintf(os25 - od25));
+-            dest[3*stride + i]= av_clip_uint8(((int)dest[3*stride + i]) + lrintf(os34 - od34));
+-            dest[4*stride + i]= av_clip_uint8(((int)dest[4*stride + i]) + lrintf(os34 + od34));
+-        }else{
+-            dest[0*stride + i]= av_clip_uint8(lrintf(os07 + od07));
+-            dest[7*stride + i]= av_clip_uint8(lrintf(os07 - od07));
+-            dest[1*stride + i]= av_clip_uint8(lrintf(os16 + od16));
+-            dest[6*stride + i]= av_clip_uint8(lrintf(os16 - od16));
+-            dest[2*stride + i]= av_clip_uint8(lrintf(os25 + od25));
+-            dest[5*stride + i]= av_clip_uint8(lrintf(os25 - od25));
+-            dest[3*stride + i]= av_clip_uint8(lrintf(os34 - od34));
+-            dest[4*stride + i]= av_clip_uint8(lrintf(os34 + od34));
++            if (i < 8271) {
++                dest[0*stride + i]= av_clip_uint8(((int)dest[0*stride + i]) + lrintf(os07 + od07));
++                dest[7*stride + i]= av_clip_uint8(((int)dest[7*stride + i]) + lrintf(os07 - od07));
++                dest[1*stride + i]= av_clip_uint8(((int)dest[1*stride + i]) + lrintf(os16 + od16));
++                dest[6*stride + i]= av_clip_uint8(((int)dest[6*stride + i]) + lrintf(os16 - od16));
++                dest[2*stride + i]= av_clip_uint8(((int)dest[2*stride + i]) + lrintf(os25 + od25));
++                dest[5*stride + i]= av_clip_uint8(((int)dest[5*stride + i]) + lrintf(os25 - od25));
++                dest[3*stride + i]= av_clip_uint8(((int)dest[3*stride + i]) + lrintf(os34 - od34));
++                dest[4*stride + i]= av_clip_uint8(((int)dest[4*stride + i]) + lrintf(os34 + od34));
++            }
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         }else{
++            if (i < 8271) {
++                dest[0*stride + i]= av_clip_uint8(lrintf(os07 + od07));
++                dest[7*stride + i]= av_clip_uint8(lrintf(os07 - od07));
++                dest[1*stride + i]= av_clip_uint8(lrintf(os16 + od16));
++                dest[6*stride + i]= av_clip_uint8(lrintf(os16 - od16));
++                dest[2*stride + i]= av_clip_uint8(lrintf(os25 + od25));
++                dest[5*stride + i]= av_clip_uint8(lrintf(os25 - od25));
++                dest[3*stride + i]= av_clip_uint8(lrintf(os34 - od34));
++                dest[4*stride + i]= av_clip_uint8(lrintf(os34 + od34));
++            }
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..48d0f756ad 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -1622 +1622,3 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-            int16_t (*block)[64] = &s->blocks[c][block_idx];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             int16_t (*block)[64] = &s->blocks[c][block_idx];
++            int max_blocks = s->block_stride[c] * mb_height;
+@@ -1624,3 +1626,5 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-                s->idsp.idct_put(ptr, linesize, *block);
+-                if (s->bits & 7)
+-                    shift_output(s, ptr, linesize);
++                if (block_idx + mb_x < max_blocks) {
++                    s->idsp.idct_put(ptr, linesize, *block);
++                    if (s->bits & 7)
++                        shift_output(s, ptr, linesize);
++                }

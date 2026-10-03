@@ -1,0 +1,19 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..031ed3f4f 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1237 +1237,11 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      return incremental_marking_phase(mrb, gc, limit);
++      mrb_obj *gray_obj = gc->gray_list;
++      while (gray_obj && !mrb_obj_in_heap_p(mrb, gray_obj)) {
++        gray_obj = gray_obj->gcnext;
++      }
++      if (gray_obj) {
++        gc->gray_list = gray_obj;
++        return incremental_marking_phase(mrb, gc, limit);
++      }
++      else {
++        gc->gray_list = NULL;
++      }
+@@ -1243,0 +1254 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
++    break;

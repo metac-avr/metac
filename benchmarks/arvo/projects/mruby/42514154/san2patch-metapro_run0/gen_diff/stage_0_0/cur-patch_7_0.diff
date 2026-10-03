@@ -1,0 +1,30 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..bbe950e60 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -37,2 +37,3 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-{
+-  if (x->sz < size) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
++  if (x && x->sz < size) { // Add null check for x
+@@ -39,0 +41 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
++    if (x->p == NULL) return; // Check for allocation failure
+@@ -106 +108,2 @@ static void
+-mpz_clear(mrb_state *mrb, mpz_t *s)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ mpz_clear(mrb_state *mrb, mpz_t *s)
+@@ -108,4 +111,7 @@ mpz_clear(mrb_state *mrb, mpz_t *s)
+-  if (s->p) mrb_free(mrb, s->p);
+-  s->p=NULL;
+-  s->sn=0;
+-  s->sz=0;
++  if (s == NULL) return;
++  if (s->p) {
++    mrb_free(mrb, s->p);
++    s->p = NULL;
++  }
++  s->sn = 0;
++  s->sz = 0;
+@@ -118 +123,0 @@ digits(mpz_t *x)
+-

@@ -1,0 +1,32 @@
+diff --git a/ext/opcache/jit/zend_jit.c b/ext/opcache/jit/zend_jit.c
+index 5143b977ed9..224734ce6d1 100644
+--- a/ext/opcache/jit/zend_jit.c
++++ b/ext/opcache/jit/zend_jit.c
+@@ -426,11 +426,16 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
+-						return 1;
+-					}
+-					return 0;
+-			}
+-			opline++;
+-			ssa_op++;
+-		}
+-
+-		return 1;
+-	} else {
+-		const zend_op *end = call_info->caller_call_opline;
++                        return 1;
++                    }
++                    return 0;
++// Protected against CWE-416: Use After Free - Check memory validity
++                    if (!call_info) return 0;
++                    if (!zend_call_info_is_valid(call_info)) {
++                        return 0;
++                    }
++                }
++                opline++;
++                ssa_op++;
++            }
++
++            return 1;
++        } else {
++            const zend_op *end = call_info->caller_call_opline;

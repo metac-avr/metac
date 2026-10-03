@@ -1,0 +1,29 @@
+diff --git a/src/range.c b/src/range.c
+index fc126be80..5db357f5e 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -387 +387,9 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      ary = mrb_ary_new_capa(mrb, (mrb_int)(b - a) + 1);
++      
++      // Validate and calculate size safely
++      mrb_int size_calc = (mrb_int)(b - a);
++      if (size_calc < 0 || size_calc > MRB_INT_MAX - 1) {
++        return mrb_ary_new_capa(mrb, 0); // Return empty array on invalid size
++      }
++      
++      mrb_int size = RANGE_EXCL(r) ? size_calc : size_calc + 1;
++      ary = mrb_ary_new_capa(mrb, size);
+@@ -389,0 +398 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
++      
+@@ -391 +400 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-        while (a < b) {
++        for (; a < b && i < size; a += 1.0) {  // Use for loop with bounds check
+@@ -394 +402,0 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-          a += 1.0;
+@@ -397,2 +405,2 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      else {
+-        while (a <= b) {
++       else {
++        for (; a <= b && i < size; a += 1.0) {  // Use for loop with bounds check
+@@ -401 +408,0 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-          a += 1.0;

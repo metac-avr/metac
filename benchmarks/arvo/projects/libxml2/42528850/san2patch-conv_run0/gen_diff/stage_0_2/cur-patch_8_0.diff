@@ -1,0 +1,44 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..0876200b 100644
+--- a/tree.c
++++ b/tree.c
+@@ -818,0 +819 @@ xmlFreeNs(xmlNsPtr cur) {
++    /* Set magic value to detect use-after-free */
+@@ -821 +822,2 @@ xmlFreeNs(xmlNsPtr cur) {
+-    xmlFree(cur);
++    *(unsigned int*)cur = 0xDEADBEAF;
++    xmlFree(((char*)cur) + sizeof(unsigned int));
+@@ -831,2 +833 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;
+diff --git a/parser.c b/parser.c
+index 11bb5199..87007ee7 100644
+--- a/parser.c
++++ b/parser.c
+@@ -11779,3 +11779,22 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
+-		    if ((!terminate) && (!xmlParseLookupChar(ctxt, ';')))
+-			goto done;
+-		    xmlParseReference(ctxt);
++// Add safety check for namespace validity before parsing references
++                    int safe_to_parse = 1;
++                    if (ctxt->node && ctxt->node->nsDef) {
++                        // Perform basic sanity check on namespace chain
++                        xmlNsPtr current_ns = ctxt->node->nsDef;
++                        int ns_count = 0;
++                        while (current_ns != NULL && ns_count < 1000) {  // Prevent infinite loop
++                            // Basic pointer validity check
++                            if ((uintptr_t)current_ns < 4096 || (uintptr_t)current_ns > (uintptr_t)0x7fffffffffffLL) {
++                                safe_to_parse = 0;
++                                break;
++                            }
++                            current_ns = current_ns->next;
++                            ns_count++;
++                        }
++                        if (ns_count >= 1000) safe_to_parse = 0;  // Likely corruption
++                    }
++                    if (safe_to_parse) {
++		        if ((!terminate) && (!xmlParseLookupChar(ctxt, ';')))
++			    goto done;
++		        xmlParseReference(ctxt);
++                    }

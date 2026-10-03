@@ -1,0 +1,23 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..5e2dafc1 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3636,0 +3637 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    cur = (xmlNodePtr)0xdeadbeef;  /* Sentinel value to detect UAF attempts */
+@@ -6835,2 +6836,7 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr prop_result = xmlSetNsProp(node, ns, localname, value);
++            if (node == NULL) {
++                return(NULL);
++            }
++            return(prop_result);
++        }
+@@ -6839 +6845,5 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr final_result = xmlSetNsProp(node, NULL, name, value);
++    if (node == NULL) {
++        return(NULL);
++    }
++    return(final_result);

@@ -1,0 +1,87 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..75b7d7cb762 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1680,0 +1681,36 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
++{
++	Bucket *p, *end;
++
++	IS_CONSISTENT(ht);
++	HT_ASSERT_RC1(ht);
++
++	if (ht->nNumUsed) {
++		end = ht->arData + ht->nNumUsed;
++		for (p = ht->arData; p != end; p++) {
++			if (UNEXPECTED(Z_TYPE(p->val) == IS_INDIRECT)) {
++				zval *zv = Z_INDIRECT(p->val);
++
++				if (UNEXPECTED(zv != NULL && Z_TYPE_P(zv) != IS_UNDEF)) {
++					if (UNEXPECTED(Z_TYPE_P(zv) == IS_INDIRECT)) {
++						/* This is a very rare case where a numeric index has
++						 * been overwritten with a string that references the
++						 * same pointer location, and then the hash table is
++						 * destroyed. We need to avoid double-destruction.
++						 */
++						ZVAL_UNDEF(zv);
++					} else {
++						zval_ptr_dtor(zv);
++					}
++				}
++			} else if (UNEXPECTED(Z_TYPE(p->val) == IS_PTR)) {
++				if (Z_PTR_P(&p->val)) {
++					zend_ptr_stack_3_push(&EG(regular_list), Z_PTR_P(&p->val));
++				}
++			} else {
++				zval_ptr_dtor(&p->val);
++			}
++			if (p->key) {
++				zend_string_release(p->key);
++			}
++		}
+@@ -1683 +1719,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
++	{
++		void *data_addr = HT_GET_DATA_ADDR(ht);
++		if (data_addr) {
++			efree(data_addr);
++		}
++	}
++	goto free_ht;
+@@ -1688,5 +1729,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..f3f1f10e319 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,7 +46,0 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+-	/* IS_OBJECT       */ (zend_rc_dtor_func_t)zend_objects_store_del,
+-	/* IS_RESOURCE     */ (zend_rc_dtor_func_t)zend_list_free,
+-	/* IS_REFERENCE    */ (zend_rc_dtor_func_t)zend_reference_destroy,
+-	/* IS_CONSTANT_AST */ (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+-
+@@ -56,13 +49,5 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-{
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++	if (p != NULL) {
++		ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
++}}

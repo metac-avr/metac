@@ -1,0 +1,29 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..3967bd994 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -199 +199,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++// FIXED: Refresh ci->stack pointer after stack extension to avoid expired pointers
++ {
+@@ -201,0 +203,6 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    // Synchronize all call frame stack pointers with the current stack
++    mrb_callinfo *ci = mrb->c->cibase;
++    while (ci <= mrb->c->ci) {
++      ci->stack = mrb->c->stack;
++      ci++;
++    }
+@@ -525 +532,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     c = mrb_class(mrb, self);
+@@ -529,2 +537,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = mrb_ary_new_from_values(mrb, argc, argv);
+-      ci->stack[n+2] = blk;
++      mrb->c->ci->stack[n+1] = mrb_ary_new_from_values(mrb, argc, argv);
++      mrb->c->ci->stack[n+2] = blk;
+@@ -535,2 +543,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-        stack_copy(ci->stack+n+1, argv, argc);
+-      ci->stack[n+argc+1] = blk;
++        stack_copy(mrb->c->ci->stack+n+1, argv, argc);
++      mrb->c->ci->stack[n+argc+1] = blk;

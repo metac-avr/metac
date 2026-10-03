@@ -1,0 +1,21 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..97bff002a 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -3137,0 +3138,12 @@ mrb_top_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int st
++  mrb_int nregs;
++
++  nregs = stack_keep + (proc && proc->body.irep ? proc->body.irep->nregs : 0);
++  if (MRB_PROC_CFUNC_P(proc) || nregs + 16 > mrb->c->stack + mrb->c->stbase - mrb->c->stbase) {
++    mrb_int required = nregs + 16;
++    mrb_int current = mrb->c->stack - mrb->c->stbase;
++    if (required > current) {
++      if (mrb_stack_extend(mrb, required - current) != 0) {
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++      }
++    }
++  }
+@@ -3142 +3154,2 @@ mrb_top_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int st
+-  if (mrb->c->ci == mrb->c->cibase) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++   if (mrb->c->ci == mrb->c->cibase) {

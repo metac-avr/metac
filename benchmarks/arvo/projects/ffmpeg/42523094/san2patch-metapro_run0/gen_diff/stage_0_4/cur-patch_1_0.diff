@@ -1,0 +1,50 @@
+diff --git a/libavcodec/hevc_ps.c b/libavcodec/hevc_ps.c
+index 348e4d8de2..8cdabc531e 100644
+--- a/libavcodec/hevc_ps.c
++++ b/libavcodec/hevc_ps.c
+@@ -1396,7 +1396,12 @@ static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
+-        pps->ref_loc_offset_layer_id[i] = get_bits(gb, 6);
+-        pps->scaled_ref_layer_offset_present_flag[i] = get_bits1(gb);
+-        if (pps->scaled_ref_layer_offset_present_flag[i]) {
+-            pps->scaled_ref_layer_left_offset[pps->ref_loc_offset_layer_id[i]]   = get_se_golomb_long(gb);
+-            pps->scaled_ref_layer_top_offset[pps->ref_loc_offset_layer_id[i]]    = get_se_golomb_long(gb);
+-            pps->scaled_ref_layer_right_offset[pps->ref_loc_offset_layer_id[i]]  = get_se_golomb_long(gb);
+-            pps->scaled_ref_layer_bottom_offset[pps->ref_loc_offset_layer_id[i]] = get_se_golomb_long(gb);
++        if (i < 64) {
++            pps->ref_loc_offset_layer_id[i] = get_bits(gb, 6);
++            pps->scaled_ref_layer_offset_present_flag[i] = get_bits1(gb);
++            if (pps->scaled_ref_layer_offset_present_flag[i]) {
++                pps->scaled_ref_layer_left_offset[pps->ref_loc_offset_layer_id[i]]   = get_se_golomb_long(gb);
++                pps->scaled_ref_layer_top_offset[pps->ref_loc_offset_layer_id[i]]    = get_se_golomb_long(gb);
++                pps->scaled_ref_layer_right_offset[pps->ref_loc_offset_layer_id[i]]  = get_se_golomb_long(gb);
++                pps->scaled_ref_layer_bottom_offset[pps->ref_loc_offset_layer_id[i]] = get_se_golomb_long(gb);
++            }
++        } else {
++            // Skip the bits that would have been read for this iteration
++            skip_bits(gb, 7); // 6 bits for layer_id + 1 bit for present flag
+@@ -1405,2 +1410,6 @@ static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
+-        pps->ref_region_offset_present_flag[i] = get_bits1(gb);
+-        if (pps->ref_region_offset_present_flag[i]) {
++        if (i < 64) {
++            pps->ref_region_offset_present_flag[i] = get_bits1(gb);
++        } else {
++            skip_bits(gb, 1); // Skip the bit that would have been read
++        }
++        if (pps->ref_region_offset_present_flag[i] && i < 64) {
+@@ -1410,0 +1420,3 @@ static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
++        } else if (pps->ref_region_offset_present_flag[i]) {
++            // Skip the bits that would have been read
++            skip_bits_long(gb, 4 * (2 * ff_golomb_to_porder(0) + 1)); // Approximate skip for 4 SE golomb values
+@@ -1413,2 +1425,6 @@ static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
+-        pps->resample_phase_set_present_flag[i] = get_bits1(gb);
+-        if (pps->resample_phase_set_present_flag[i]) {
++        if (i < 64) {
++            pps->resample_phase_set_present_flag[i] = get_bits1(gb);
++        } else {
++            skip_bits(gb, 1); // Skip the bit that would have been read
++        }
++        if (pps->resample_phase_set_present_flag[i] && i < 64) {
+@@ -1418,0 +1435,3 @@ static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
++        } else if (pps->resample_phase_set_present_flag[i]) {
++            // Skip the bits that would have been read
++            skip_bits_long(gb, 4 * (ff_golomb_to_porder(0) + 1)); // Approximate skip for 4 UE golomb values

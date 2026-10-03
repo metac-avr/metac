@@ -1,0 +1,40 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..66e7d954fe 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -52 +52,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -57,0 +59,7 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++    
++    if (!ref || !ref->rpl_tab || ctb_addr_ts < 0 || ctb_addr_ts >= FF_ARRAY_ELEMS(ref->rpl_tab))
++        return NULL;
++        
++    if (!ref->rpl_tab[ctb_addr_ts])
++        return NULL;
++    
+@@ -64,2 +72 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)        ff_hevc_unref_frame(&s->DPB[i],
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..20311cf839 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1440,4 +1440,11 @@ do {
+-            ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
+-            if (pps->transquant_bypass_enable_flag &&
+-                lc->cu.cu_transquant_bypass_flag)
+-                set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++            int ref_valid = 1;
++            // Check if reference frame is valid before accessing
++            if (lc->ref && (!lc->ref->frame || !lc->ref->frame->data[0])) {
++                ref_valid = 0;
++            }
++            if (ref_valid) {
++                ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
++                if (pps->transquant_bypass_enable_flag &&
++                    lc->cu.cu_transquant_bypass_flag)
++                    set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++            }

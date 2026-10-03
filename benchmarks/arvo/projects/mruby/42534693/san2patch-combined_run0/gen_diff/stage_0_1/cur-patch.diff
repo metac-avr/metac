@@ -1,0 +1,18 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..767953444 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -164,0 +165,11 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
++// Fixed CWE-825: Expired Pointer Dereference - Null-safe access pattern
++#if defined(MRB_DEBUG) || defined(MRB_ENABLE_SANitizer)
++static inline uint32_t safe_ht_size(hash_entry *hsh) {
++  if (!hsh) return 0;
++  if (!hsh->ht) return 0;
++  return hsh->ht->size;
++}
++#define HT_SIZE_FUNC safe_ht_size
++#else
++#define HT_SIZE_FUNC(hsh) ((hsh && hsh->ht) ? hsh->ht->size : 0)
++#endif
+@@ -177 +187,0 @@ DEFINE_SWITCHER(ht, HT)
+-

@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..fb95b1b58d4 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
++[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -55,0 +56,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p) {
++		return;
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index fbad44d2f2c..965eac4c463 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3880 +3880,12 @@ static zend_always_inline void i_free_compiled_variables(zend_execute_data *exec
+-		i_zval_ptr_dtor(cv);
++		if (cv && Z_TYPE_P(cv) != IS_UNDEF) {
++			if (Z_REFCOUNTED_P(cv)) {
++				zend_refcounted *ref = Z_COUNTED_P(cv);
++				if (ref && !IS_BAD_PTR(ref)) {
++					i_zval_ptr_dtor(cv);
++				} else {
++					ZVAL_UNDEF(cv);
++				}
++			} else {
++				i_zval_ptr_dtor(cv);
++			}
++		}

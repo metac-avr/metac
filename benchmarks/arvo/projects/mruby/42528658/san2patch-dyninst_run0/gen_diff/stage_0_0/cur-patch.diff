@@ -1,0 +1,28 @@
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 282f5e73e..e81a2c83f 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -935 +935,8 @@ unpack_bstr(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-      else bits = (unsigned char)*sptr++;
++      else {
++        if (sptr >= (const char*)src + slen) { // Prevent reading past buffer end
++          memset(dptr, '0', count - i); // Fill remaining with zeros
++          dptr += count - i;
++          break;
++        }
++        bits = (unsigned char)*sptr++;
++      }
+@@ -938 +945,2 @@ unpack_bstr(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-    else {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     else {
+@@ -940 +948,8 @@ unpack_bstr(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-      else bits = (unsigned char)*sptr++;
++      else {
++        if (sptr >= (const char*)src + slen) { // Prevent reading past buffer end
++          memset(dptr, '0', count - i); // Fill remaining with zeros
++          dptr += count - i;
++          break;
++        }
++        bits = (unsigned char)*sptr++;
++      }

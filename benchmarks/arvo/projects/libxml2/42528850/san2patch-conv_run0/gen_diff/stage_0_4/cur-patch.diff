@@ -1,0 +1,84 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..5e8ce9a8 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202,17 +4202,25 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
+-
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
+-
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-		} else {
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++         xmlNsPtr ns;
++
++	/* Validate namespace pointer before accessing */
++	if (node->ns != NULL) {
++	    ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	    if (ns == NULL) {
++	        /*
++	         * Humm, we are copying an element whose namespace is defined
++	         * out of the new tree scope. Search it in the original tree
++	         * and add it at the top of the new tree
++	         */
++	        ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	        if (ns != NULL) {
++	            xmlNodePtr root = ret;
++
++		    while (root->parent != NULL) root = root->parent;
++		    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		    } else {
++		        ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	        }
++	    } else {
++	        /*
++	         * reference the existing namespace definition in our own tree.
++	         */
++	        ret->ns = ns;
+@@ -4220,5 +4227,0 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	} else {
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..171f8fd4 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -421,3 +421,23 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	 (cur->type == XML_XINCLUDE_END)) &&
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	 (cur->type == XML_XINCLUDE_END)) &&
++	(cur->nsDef != NULL)) {
++        /* Fix for CWE-825: Expired Pointer Dereference */
++        /* Clear all references to namespace definitions before freeing them */
++        xmlNodePtr temp_node;
++        xmlNsPtr temp_ns;
++        
++        /* Iterate through the namespace list and clear references */
++        for (temp_ns = cur->nsDef; temp_ns != NULL; temp_ns = temp_ns->next) {
++            /* Clear references in current node */
++            if (cur->ns == temp_ns)
++                cur->ns = NULL;
++            
++            /* Clear references in parent chain */
++            for (temp_node = cur->parent; temp_node != NULL; temp_node = temp_node->parent) {
++                if (temp_node->ns == temp_ns)
++                    temp_node->ns = NULL;
++            }
++        }
++        xmlFreeNsList(cur->nsDef);
++        cur->nsDef = NULL;
++    }

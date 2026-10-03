@@ -1,0 +1,17 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..095c0ba48e2 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -759 +759,2 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -761,2 +762,6 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
++	if (ht && GC_REFCOUNT(ht) > 0) {
++		ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
++		return retval;
++	} else {
++		return NULL;
++	}

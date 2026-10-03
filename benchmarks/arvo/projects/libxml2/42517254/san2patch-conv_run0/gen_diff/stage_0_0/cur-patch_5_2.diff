@@ -1,0 +1,69 @@
+diff --git a/tree.c b/tree.c
+index 6a42f118..4f75c0fb 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3875,12 +3875,24 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->name != NULL) &&
+-        (cur->type != XML_TEXT_NODE) &&
+-        (cur->type != XML_COMMENT_NODE))
+-	DICT_FREE(cur->name)
+-
+-    xmlFree(cur);
+-}
+-
+-/**
+- * xmlUnlinkNode:
+- * @cur:  the node
+- *
++void xmlUnlinkNode(xmlNodePtr cur) {
++    if (cur == NULL) return;
++    
++    /* Remove from parent's children list */
++    if (cur->parent != NULL) {
++        if (cur->parent->children == cur) {
++            cur->parent->children = cur->next;
++        }
++        if (cur->parent->last == cur) {
++            cur->parent->last = cur->prev;
++        }
++    }
++    
++    /* Remove from siblings chain */
++    if (cur->next != NULL)
++        cur->next->prev = cur->prev;
++    if (cur->prev != NULL)
++        cur->prev->next = cur->next;
++    
++    /* Clear node links */
++    cur->parent = NULL;
++    cur->next = NULL;
++    cur->prev = NULL;
++} *
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..1aca6eb8 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1490,22 +1490 @@ xmlXIncludeLoadDoc(xmlXIncludeCtxtPtr ctxt, const xmlChar *url, int nr) {
+-    }
+-
+-    /*
+-     * Load it.
+-     */
+-#ifdef DEBUG_XINCLUDE
+-    printf("loading %s\n", URL);
+-#endif
+-#ifdef LIBXML_XPTR_ENABLED
+-    /*
+-     * If this is an XPointer evaluation, we want to assure that
+-     * all entities have been resolved prior to processing the
+-     * referenced document
+-     */
+-    saveFlags = ctxt->parseFlags;
+-    if (fragment != NULL) {	/* if this is an XPointer eval */
+-	ctxt->parseFlags |= XML_PARSE_NOENT;
+-    }
+-#endif
+-
+-    doc = xmlXIncludeParseFile(ctxt, (const char *)URL);
+-#ifdef LIBXML_XPTR_ENABLED
++xmlXIncludeLoadDoc#ifdef LIBXML_XPTR_ENABLED

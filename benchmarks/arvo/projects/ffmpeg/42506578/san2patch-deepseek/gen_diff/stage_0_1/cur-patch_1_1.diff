@@ -1,0 +1,28 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..852af296ce 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -849,22 +849 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
+-    bytestream2_init_writer(&pb, dst, is_yuv ? s->yuv_line_size : (stride * lines));
+-
+-    is_dng = (s->tiff_type == TIFF_TYPE_DNG || s->tiff_type == TIFF_TYPE_CINEMADNG);
+-
+-    /* Decode JPEG-encoded DNGs with strips */
+-    if (s->compr == TIFF_NEWJPEG && is_dng) {
+-        if (s->strips > 1) {
+-            av_log(s->avctx, AV_LOG_ERROR, "More than one DNG JPEG strips unsupported\n");
+-            return AVERROR_PATCHWELCOME;
+-        }
+-        if ((ret = dng_decode_strip(s->avctx, p)) < 0)
+-            return ret;
+-        return 0;
+-    }
+-
+-    if (is_dng && stride == 0)
+-        return AVERROR_INVALIDDATA;
+-
+-    for (line = 0; line < lines; line++) {
+-        if (src - ssrc > size) {
+-            av_log(s->avctx, AV_LOG_ERROR, "Source data overread\n");
+-            return AVERROR_INVALIDDATA;
++            ret = dng_decode_jpeg(s->avctx, p, s->gb, &dst, &stride);            return AVERROR_INVALIDDATA;

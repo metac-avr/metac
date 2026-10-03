@@ -1,0 +1,25 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..1361ea241 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -500,3 +500,15 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    if (j%2)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
+-    else
++    if (j%2) {
++      // Overflow protection for left shift and OR operation
++      uint32_t shifted_value = qhat << HALFDIGITBITS;
++      if (shifted_value < qhat) {  // Check if left shift caused overflow
++        mrb_raise(mrb, E_RANGE_ERROR, "shift overflow in bigint division");
++      }
++      if (q.p[j/2] > UINT32_MAX - shifted_value) {  // Check if OR operation will overflow
++        mrb_raise(mrb, E_RANGE_ERROR, "addition overflow in bigint division");
++      }
++      q.p[j/2] |= shifted_value;
++    } else {
++      // Overflow protection for direct OR operation
++      if (q.p[j/2] > UINT32_MAX - qhat) {
++        mrb_raise(mrb, E_RANGE_ERROR, "addition overflow in bigint division");
++      }
+@@ -503,0 +516 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    }

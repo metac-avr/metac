@@ -1,0 +1,49 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..83b808f8389 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1680,0 +1681,14 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
++{
++	Bucket *p, *end;
++
++	IS_CONSISTENT(ht);
++	HT_ASSERT_RC1(ht);
++
++	if (ht->nNumUsed) {
++		p = ht->arData;
++		end = p + ht->nNumUsed;
++		do {
++			if (Z_TYPE(p->val) == IS_UNDEF) continue;
++			zval_ptr_dtor(&p->val);
++		} while (++p != end);
+@@ -1688,5 +1701,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..59a39b01a2d 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -24,8 +23,0 @@
+-#include "zend_types.h"
+-#include "zend_gc.h"
+-
+-BEGIN_EXTERN_C()
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p);
+-ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-
+@@ -37,9 +29 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-}
+-
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
++}		} else {

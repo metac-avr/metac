@@ -1,0 +1,35 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..0752cce22f 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -1622 +1622,2 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-            int16_t (*block)[64] = &s->blocks[c][block_idx];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             int16_t (*block)[64] = &s->blocks[c][block_idx];
+@@ -1624,3 +1625,7 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-                s->idsp.idct_put(ptr, linesize, *block);
+-                if (s->bits & 7)
+-                    shift_output(s, ptr, linesize);
++                // Add boundary check before each pixel operation
++                int max_write_offset = (mb_y * 8 + 8) * linesize + (mb_x * bytes_per_pixel * 8);
++                if (max_write_offset <= s->height * linesize) {
++                    s->idsp.idct_put(ptr, linesize, *block);
++                    if (s->bits & 7)
++                        shift_output(s, ptr, linesize);
++                }
+@@ -2561,3 +2566,8 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
+-                s->progressive && s->cur_scan && s->got_picture)
+-                mjpeg_idct_scan_progressive_ac(s);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
++                s->progressive && s->cur_scan && s->got_picture) {
++                int max_mb_width = (avctx->width + 7) >> 3;
++                int max_mb_height = (avctx->height + 7) >> 3;
++                if (s->mb_width <= max_mb_width && s->mb_height <= max_mb_height)
++                    mjpeg_idct_scan_progressive_ac(s);
++            }
+@@ -2573,2 +2583 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-                if (s->bottom_field == !s->interlace_polarity)
+-                    break;
++                if (s->bottom_field == !s->interlace_polarity)                    break;

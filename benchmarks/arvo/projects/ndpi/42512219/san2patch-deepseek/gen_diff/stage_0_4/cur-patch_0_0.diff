@@ -1,0 +1,20 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index c3c18764d..061351a2e 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1186 +1186,2 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1188,2 +1189,9 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      if((flow->ssh_tls.tls_alpn = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.alpn)) != NULL)
+-	correct_csv_data_field(flow->ssh_tls.tls_alpn);
++      const char *alpn = flow->ndpi_flow->protos.tls_quic.alpn;
++      size_t alpn_len = ndpi_strnlen(alpn, MAX_ALPN_LEN);
++      if(alpn_len < MAX_ALPN_LEN && alpn[alpn_len] == '\0') {
++        flow->ssh_tls.tls_alpn = ndpi_strndup(alpn, alpn_len);
++        if(flow->ssh_tls.tls_alpn != NULL)
++          correct_csv_data_field(flow->ssh_tls.tls_alpn);
++      } else {
++        flow->ssh_tls.tls_alpn = NULL;
++      }

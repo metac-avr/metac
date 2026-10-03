@@ -1,0 +1,15 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..b2f9a2c573f 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1054,2 +1054,8 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (add_function_fast(result, op1, op2) == SUCCESS) {
+-		return SUCCESS;
++	if (EXPECTED(Z_TYPE_P(op2) != IS_UNDEF)) {
++		zval op2_local;
++		ZVAL_COPY_DEREF(&op2_local, op2);
++		if (add_function_fast(result, op1, &op2_local) == SUCCESS) {
++			zval_ptr_dtor(&op2_local);
++			return SUCCESS;
++		}
++		zval_ptr_dtor(&op2_local);

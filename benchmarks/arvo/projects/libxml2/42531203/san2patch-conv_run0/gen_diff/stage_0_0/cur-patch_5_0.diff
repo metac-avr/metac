@@ -1,0 +1,36 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..f2f4d26b 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -4770 +4770,7 @@ htmlParseContentInternal(htmlParserCtxtPtr ctxt) {
+-
++// FIXED: Refresh input buffer cursor after potential reallocation to avoid dangling pointer
++        if (ctxt->input != NULL && ctxt->input->buf != NULL) {
++            ctxt->input->cur = ctxt->input->base + (ctxt->input->cur - ctxt->input->base);
++        } else if (ctxt->input != NULL && ctxt->input->cur != NULL) {
++            ctxt->input->cur = ctxt->input->base;
++        }
++ 
+@@ -4775,9 +4781 @@ htmlParseContentInternal(htmlParserCtxtPtr ctxt) {
+-}
+-
+-/**
+- * htmlParseContent:
+- * @ctxt:  an HTML parser context
+- *
+- * Parse a content: comment, sub-element, reference or text.
+- * This is the entry point when called from parser.c
+- */
++} */
+@@ -4882,0 +4881,7 @@ htmlParseDocument(htmlParserCtxtPtr ctxt) {
++    /*
++     * Ensure current input buffer is valid before accessing
++     */
++    if (ctxt->input == NULL || ctxt->input->base == NULL) {
++        return(-1);
++    }
++
+@@ -4896,2 +4901 @@ htmlParseDocument(htmlParserCtxtPtr ctxt) {
+-    if ((!(ctxt->options & HTML_PARSE_NODEFDTD)) && (ctxt->myDoc != NULL)) {
+-	dtd = xmlGetIntSubset(ctxt->myDoc);
++    if ((!(ctxt->options & HTML_PARSE_NODEFDTD)) && (ctxt->myDoc != NULL)) {	dtd = xmlGetIntSubset(ctxt->myDoc);

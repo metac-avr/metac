@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..d7c90b57e1e 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -382 +382 @@ void shutdown_executor(void) /* {{{ */
+-	bool fast_shutdown = 0;
++    bool fast_shutdown = 0;
+@@ -384 +384 @@ void shutdown_executor(void) /* {{{ */
+-	bool fast_shutdown = is_zend_mm() && !EG(full_tables_cleanup);
++    bool fast_shutdown = is_zend_mm() && !EG(full_tables_cleanup);
+@@ -390,0 +391,9 @@ void shutdown_executor(void) /* {{{ */
++	if (Z_TYPE(EG(current_execute_data)) == IS_OBJECT) {
++		zend_object *obj = Z_OBJ(EG(current_execute_data));
++		if (obj && GC_REFCOUNT(obj) > 0) {
++			zval_ptr_dtor(&EG(current_execute_data));
++		} else {
++			ZVAL_UNDEF(&EG(current_execute_data));
++		}
++	}
++

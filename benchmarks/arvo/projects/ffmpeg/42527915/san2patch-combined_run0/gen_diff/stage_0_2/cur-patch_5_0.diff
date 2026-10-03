@@ -1,0 +1,36 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..39d5fe698f 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -427 +427,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-416: Use After Free
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
++
++    // Validate input parameters to prevent use-after-free
++    if (!table || !single || !buf) {
++        return AVERROR(EINVAL);
++    }
+@@ -439,3 +445,10 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++        // Check that single->table is accessible before use
++        if (single->table) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        } else {
++            table[j].len = 0;
++            table[j].num = 0;
++            AV_WN16(table[j].val, 0);
++        }
+@@ -495 +508 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -499,0 +513,5 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    
++    if (vlc->table_allocated && !vlc->table) {
++        av_log(logctx, AV_LOG_ERROR, "VLC table freed but still referenced\n");
++        return AVERROR_INVALIDDATA;
++    }

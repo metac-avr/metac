@@ -1,0 +1,27 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 1f24f47ef..56a0841d8 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -8085 +8085,3 @@ void ndpi_process_extra_packet(struct ndpi_detection_module_struct *ndpi_str,
+-  if(ndpi_init_packet(ndpi_str, flow, current_time_ms, packet_data, packetlen, input_info) != 0)
++  if(ndpi_init_packet(ndpi_str, flow, current_time_ms, packet_data, packetlen, input_info) == 0)
++    ndpi_connection_tracking(ndpi_str, flow);
++  else
+@@ -8088,2 +8089,0 @@ void ndpi_process_extra_packet(struct ndpi_detection_module_struct *ndpi_str,
+-  ndpi_connection_tracking(ndpi_str, flow);
+-
+@@ -8092,3 +8092,8 @@ void ndpi_process_extra_packet(struct ndpi_detection_module_struct *ndpi_str,
+-    if((flow->extra_packets_func(ndpi_str, flow) == 0) ||
+-       (!flow->monitoring && ++flow->num_extra_packets_checked == flow->max_extra_packets_to_check)) {
+-      flow->extra_packets_func = NULL; /* Done */
++    char options_fp[128];
++    size_t options_fp_offset = 0;
++
++    if((options_fp_offset < sizeof(options_fp)) && (flow->extra_packets_func(ndpi_str, flow) == 0)) {
++      flow->extra_packets_func = NULL;
++    }
++    else if(options_fp_offset >= sizeof(options_fp)) {
++      flow->extra_packets_func = NULL;
+@@ -8095,0 +8101,2 @@ void ndpi_process_extra_packet(struct ndpi_detection_module_struct *ndpi_str,
++    else if(!flow->monitoring && ++flow->num_extra_packets_checked == flow->max_extra_packets_to_check)
++      flow->extra_packets_func = NULL;

@@ -1,0 +1,47 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..ff845652769 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -58974,0 +58975 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
++// FIXME: Crash CWE-416: Use After Free
+@@ -58979 +58980,3 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
+-	zend_vm_stack_free_call_frame(execute_data);
++	if (execute_data != NULL) {
++		zend_vm_stack_free_call_frame(execute_data);
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..56861ca5628 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2433,7 +2432,0 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-				zend_use_scalar_as_array();
+-				ZVAL_UNDEF(result);
+-			}
+-		}
+-	}
+-}
+-
+@@ -2441,13 +2434,2 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-{
+-	zval *result = EX_VAR(opline->result.var);
+-	zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_W EXECUTE_DATA_CC);
+-}
+-
+-static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_RW(zval *container_ptr, zval *dim, int dim_type OPLINE_DC EXECUTE_DATA_DC)
+-{
+-	zval *result = EX_VAR(opline->result.var);
+-	zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_RW EXECUTE_DATA_CC);
+-}
+-
+-static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(zval *container_ptr, zval *dim, int dim_type OPLINE_DC EXECUTE_DATA_DC)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -2454,0 +2437,7 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(z
++	if (container_ptr && Z_TYPE_P(container_ptr) != IS_UNDEF) {
++		zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_W EXECUTE_DATA_CC);
++	} else {
++		zend_use_scalar_as_array();
++		ZVAL_UNDEF(result);
++	}
++}	zval *result = EX_VAR(opline->result.var);

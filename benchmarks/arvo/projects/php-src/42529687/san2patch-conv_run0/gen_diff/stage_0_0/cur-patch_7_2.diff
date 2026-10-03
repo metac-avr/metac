@@ -1,0 +1,116 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..ff2ad82e47b 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1332 +1332,3 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
++ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
++{
++	const zend_op *throw_op = EG(opline_before_exception);
+@@ -1334,4 +1336,3 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
++	/* Exception was thrown before executing any op */
++	if (UNEXPECTED(!throw_op)) {
++		ZEND_VM_TAIL_CALL(zend_dispatch_try_catch_finally_helper_SPEC(-1, 0 ZEND_OPCODE_HANDLER_ARGS_PASSTHRU_CC));
+@@ -1339 +1339,0 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-}
+@@ -1341,5 +1341,29 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
+-	ZEND_RC_MOD_CHECK(p);
+-	return --(p->refcount);
+-}
++	uint32_t throw_op_num = throw_op - EX(func)->op_array.opcodes;
++	int i, current_try_catch_offset = -1;
++
++	if ((throw_op->opcode == ZEND_FREE || throw_op->opcode == ZEND_FE_FREE)
++		&& throw_op->extended_value & ZEND_FREE_ON_RETURN) {
++		/* exceptions thrown because of loop var destruction on return/break/...
++		 * are logically thrown at the end of the foreach loop, so adjust the
++		 * throw_op_num.
++		 */
++		const zend_live_range *range = find_live_range(
++			&EX(func)->op_array, throw_op_num, throw_op->op1.var);
++		/* free op1 of the corresponding RETURN */
++		for (i = throw_op_num; i < range->end; i++) {
++			if (EX(func)->op_array.opcodes[i].opcode == ZEND_FREE
++			 || EX(func)->op_array.opcodes[i].opcode == ZEND_FE_FREE) {
++				/* pass */
++			} else {
++				if (EX(func)->op_array.opcodes[i].opcode == ZEND_RETURN
++				 && (EX(func)->op_array.opcodes[i].op1_type & (IS_VAR|IS_TMP_VAR))) {
++					zval *var_ptr = EX_VAR(EX(func)->op_array.opcodes[i].op1.var);
++					if (var_ptr != NULL && Z_TYPE_P(var_ptr) != IS_UNDEF) {
++						zval_ptr_dtor(var_ptr);
++					}
++				}
++				break;
++			}
++		}
++		throw_op_num = range->end;
++	}
+@@ -1347,5 +1371,36 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
++	/* Find the innermost try/catch/finally the exception was thrown in */
++	for (i = 0; i < EX(func)->op_array.last_try_catch; i++) {
++		zend_try_catch_element *try_catch = &EX(func)->op_array.try_catch_array[i];
++		if (try_catch->try_op > throw_op_num) {
++			/* further blocks will not be relevant... */
++			break;
++		}
++		if (throw_op_num < try_catch->catch_op || throw_op_num < try_catch->finally_end) {
++			current_try_catch_offset = i;
++		}
++	}
++
++	cleanup_unfinished_calls(execute_data, throw_op_num);
++
++	if (throw_op->result_type & (IS_VAR | IS_TMP_VAR)) {
++		switch (throw_op->opcode) {
++			case ZEND_ADD_ARRAY_ELEMENT:
++			case ZEND_ADD_ARRAY_UNPACK:
++			case ZEND_ROPE_INIT:
++			case ZEND_ROPE_ADD:
++				break; /* exception while building structures, live range handling will free those */
++
++			case ZEND_FETCH_CLASS:
++			case ZEND_DECLARE_ANON_CLASS:
++				break; /* return value is zend_class_entry pointer */
++
++			default:
++				/* smart branch opcodes may not initialize result */
++				if (!zend_is_smart_branch(throw_op)) {
++					zval *result_ptr = EX_VAR(throw_op->result.var);
++					if (result_ptr != NULL && Z_TYPE_P(result_ptr) != IS_UNDEF) {
++						zval_ptr_dtor_nogc(result_ptr);
++					}
++				}
++		}
++	}
+@@ -1353 +1408,2 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++	ZEND_VM_TAIL_CALL(zend_dispatch_try_catch_finally_helper_SPEC(current_try_catch_offset, throw_op_num ZEND_OPCODE_HANDLER_ARGS_PASSTHRU_CC));
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..0c7bfe7afae 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3235 +3235,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor(EX_VAR(EX(func)->op_array.opcodes[i].op1.var));
++					zval *var_ptr = EX_VAR(EX(func)->op_array.opcodes[i].op1.var);
++					if (var_ptr != NULL && Z_TYPE_P(var_ptr) != IS_UNDEF) {
++						zval_ptr_dtor(var_ptr);
++					}
+@@ -3272 +3275,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *result_ptr = EX_VAR(throw_op->result.var);
++					if (result_ptr != NULL && Z_TYPE_P(result_ptr) != IS_UNDEF) {
++						zval_ptr_dtor_nogc(result_ptr);
++					}

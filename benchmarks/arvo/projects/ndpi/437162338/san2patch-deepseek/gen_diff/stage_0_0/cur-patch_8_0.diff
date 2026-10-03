@@ -1,0 +1,33 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 42d0fa67d..16575ab09 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -3247 +3247,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  p = hostname;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   p = hostname;
+@@ -3249,2 +3250,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  while (p[idx] && (idx < len)) {
+-    if(*p == '.') {
++  while (idx < len && p[idx] != '\0') {
++    if(p[idx] == '.') {
+@@ -3261 +3262 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-    if(!(isalnum((unsigned char)*p) || *p == '-'))
++    if(!(isalnum((unsigned char)p[idx]) || p[idx] == '-'))
+@@ -3266 +3267 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-      if(!isalnum((unsigned char)*p))
++      if(!isalnum((unsigned char)p[idx]))
+@@ -3276,0 +3278,3 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
++  if(idx == len || p[idx] != '\0')
++    return(false); /* Input is not a bounded NUL-terminated string */
++
+@@ -3281 +3285 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  if(!isalnum(p[idx-1]))
++  if(idx == 0 || !isalnum((unsigned char)p[idx-1]))
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 95ea29ea9..7618d6e3a 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -1292 +1292 @@ const uint8_t *get_crypto_data(struct ndpi_detection_module_struct *ndpi_struct,
+-        if(frag_len + counter > clear_payload_len) {
++        if(frag_len > clear_payload_len - counter) {

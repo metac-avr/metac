@@ -1,0 +1,36 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..929ba0d65a 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -2561,3 +2561,7 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
+-                s->progressive && s->cur_scan && s->got_picture)
+-                mjpeg_idct_scan_progressive_ac(s);
++// Fixed: Added validation for buffer boundaries before IDCT operation
++             if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
++                s->progressive && s->cur_scan && s->got_picture) {
++                // Validate that pixel data writes won't exceed buffer boundaries
++                if (s->dest_ptr && s->buffer_size >= 64) // 8x8 block size check
++                    mjpeg_idct_scan_progressive_ac(s);
++            }
+@@ -2573,2 +2577 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-                if (s->bottom_field == !s->interlace_polarity)
+-                    break;
++                if (s->bottom_field == !s->interlace_polarity)                    break;
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..0f7025214f 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -656 +656,2 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    }
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     }
+@@ -704,0 +706,8 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
++    // Bounds check to prevent buffer overflow in ff_put_pixels_clamped_c
++    if ((int64_t)dst_x + w > frame->width || (int64_t)dst_y + h > frame->height ||
++        dst_x < 0 || dst_y < 0) {
++        av_log(avctx, AV_LOG_ERROR, "JPEG tile dimensions exceed frame boundaries\n");
++        av_frame_unref(s->jpgframe);
++        return AVERROR_INVALIDDATA;
++    }
++

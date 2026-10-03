@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..73e9fa9dfe4 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++		// Prevent use-after-free by moving GC_REMOVE_FROM_BUFFER before object access
+@@ -203,0 +204 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		ptr = ((char*)object) - object->handlers->offset;
+diff --git a/Zend/zend.c b/Zend/zend.c
+index c37cd9ed974..02626d04b2a 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1215 +1215 @@ ZEND_API void zend_activate(void) /* {{{ */
+-	if (CG(map_ptr_last)) {
++if (CG(map_ptr_last)) {
+@@ -1225,0 +1226,2 @@ void zend_call_destructors(void) /* {{{ */
++	} zend_catch {
++		/* Handle potential use-after-free during shutdown */
+@@ -1236 +1237,0 @@ ZEND_API void zend_deactivate(void) /* {{{ */
+-

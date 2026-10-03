@@ -1,0 +1,25 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..b320e10f6c 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -664 +664,2 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-                       ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                        ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
+@@ -665,0 +667,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
++        
++        /* Bounds check to prevent out-of-bounds read */
++        if (start_offset < 0 || start_offset > av_fifo_size(fpc->fifo_buf)) {
++            av_log(avctx, AV_LOG_ERROR, "Invalid start offset for header search\n");
++            goto handle_error;
++        }
++        
+@@ -693,3 +701,5 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-            fpc->fifo_buf->wptr -= MAX_FRAME_HEADER_SIZE;
+-            fpc->fifo_buf->wndx -= MAX_FRAME_HEADER_SIZE;
+-            if (warp) {
++            if (fpc->fifo_buf->wptr >= fpc->fifo_buf->buffer + MAX_FRAME_HEADER_SIZE) {
++                fpc->fifo_buf->wptr -= MAX_FRAME_HEADER_SIZE;
++                fpc->fifo_buf->wndx -= MAX_FRAME_HEADER_SIZE;
++            }
++            if (warp && fpc->fifo_buf->wptr) {

@@ -1,0 +1,27 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..f2b9ffec5 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -479 +479,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     c = mrb_class(mrb, self);
+@@ -481 +482,8 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    mrb_stack_extend(mrb, argc + 3);
++    
++    // Validate stack extension size to prevent buffer overflow
++    if (argc + 3 > 0 && argc + 3 < SIZE_MAX / sizeof(mrb_value)) {
++      mrb_stack_extend(mrb, argc + 3);
++    } else {
++      mrb_raise(mrb, E_RUNTIME_ERROR, "stack extension size too large");
++    }
++    
+@@ -507 +515,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-        mrb_stack_extend(mrb, p->body.irep->nregs + argc);
++        // Add validation for irep nregs to prevent overflow
++        if (p->body.irep->nregs > 0 && p->body.irep->nregs < SIZE_MAX / sizeof(mrb_value) && 
++            argc > 0 && argc < SIZE_MAX / sizeof(mrb_value)) {
++          mrb_stack_extend(mrb, p->body.irep->nregs + argc);
++        } else {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack extension size too large");
++        }

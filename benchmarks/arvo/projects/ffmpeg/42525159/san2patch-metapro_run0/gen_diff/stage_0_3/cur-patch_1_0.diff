@@ -1,0 +1,20 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..71d472edb1 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2044 +2044 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-
++ 
+@@ -2046 +2046,3 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-        write_frame_8(s, tile, picture, 8);
++        if (picture->data[0] && picture->linesize[0] > 0) {
++            write_frame_8(s, tile, picture, 8);
++        }
+@@ -2498,0 +2501,7 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
++     }
++
++    // Validate that the total number of tiles won't cause buffer overflow
++    if (s->numXtiles > 0 && s->numYtiles > 0 && s->numXtiles > INT_MAX / s->numYtiles) {
++        av_log(avctx, AV_LOG_ERROR, "Tile dimensions too large\n");
++        ret = AVERROR_INVALIDDATA;
++        goto end;

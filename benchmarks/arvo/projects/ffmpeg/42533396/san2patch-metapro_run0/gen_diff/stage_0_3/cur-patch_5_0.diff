@@ -1,0 +1,26 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..5faa466c86 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -405,0 +406,4 @@ int av_channel_layout_custom_init(AVChannelLayout *channel_layout, int nb_channe
++         return AVERROR(EINVAL);
++
++    // Prevent integer overflow and unreasonable allocations
++    if (nb_channels > INT_MAX / sizeof(*channel_layout->u.map))
+@@ -674,4 +678,12 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
+-        if (!dst->u.map)
+-            return AVERROR(ENOMEM);
+-        memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        if (src->nb_channels > 0) {
++            size_t map_size = src->nb_channels * sizeof(*dst->u.map);
++            if (map_size / sizeof(*dst->u.map) != src->nb_channels) {
++                return AVERROR(ENOMEM);
++            }
++            dst->u.map = av_malloc(map_size);
++            if (!dst->u.map)
++                return AVERROR(ENOMEM);
++            memcpy(dst->u.map, src->u.map, map_size);
++        } else {
++            dst->u.map = NULL;
++        }

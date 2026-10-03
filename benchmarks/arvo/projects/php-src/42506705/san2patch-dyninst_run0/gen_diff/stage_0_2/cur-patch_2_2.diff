@@ -1,0 +1,46 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 6a6476b2ce5..6017e197860 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -20636,0 +20637 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
++// FIXME: Crash CWE-416: Use After Free
+@@ -20639 +20640,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
+-		ZVAL_ARR(array, zend_new_array(size));
++		zend_array *temp_array = zend_new_array(size);
++		if (!temp_array) {
++			ZVAL_NULL(array);
++			ZEND_VM_NEXT_OPCODE();
++			return;
++		}
++		ZVAL_ARR(array, temp_array);
+@@ -20646 +20653,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
+-		ZVAL_ARR(array, zend_new_array(0));
++		zend_array *temp_array = zend_new_array(0);
++		if (!temp_array) {
++			ZVAL_NULL(array);
++			ZEND_VM_NEXT_OPCODE();
++			return;
++		}
++		ZVAL_ARR(array, temp_array);
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index d13087a5b02..ff30da85aef 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -156,7 +156,10 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			zend_copy_to_variable(variable_ptr, value, value_type);
+-			if (GC_DELREF(garbage) == 0) {
+-				rc_dtor_func(garbage);
+-			} else { /* we need to split */
+-				/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
+-				if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
+-					gc_possible_root(garbage);
++// Ensure garbage is not NULL and has valid refcount before decrementing to prevent use-after-free
++			if (garbage != NULL) {
++				zend_copy_to_variable(variable_ptr, value, value_type);
++				if (GC_DELREF(garbage) == 0) {
++					rc_dtor_func(garbage);
++				} else { /* we need to split */
++					/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
++					if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
++						gc_possible_root(garbage);
++					}

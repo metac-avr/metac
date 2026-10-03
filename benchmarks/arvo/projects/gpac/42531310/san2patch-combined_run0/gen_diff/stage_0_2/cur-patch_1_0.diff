@@ -1,0 +1,24 @@
+diff --git a/src/filters/reframe_av1.c b/src/filters/reframe_av1.c
+index 8309f74b1..65329a5e6 100644
+--- a/src/filters/reframe_av1.c
++++ b/src/filters/reframe_av1.c
+@@ -957 +957,3 @@ static GF_Err av1dmx_parse_flush_sample(GF_Filter *filter, GF_AV1DmxCtx *ctx)
+-	memcpy(output, ctx->state.frame_obus, pck_size);
++	if (ctx->state.frame_obus && pck_size > 0) {
++		memcpy(output, ctx->state.frame_obus, pck_size);
++	}
+@@ -1091 +1093,2 @@ GF_Err av1dmx_process_buffer(GF_Filter *filter, GF_AV1DmxCtx *ctx, const char *d
+-			e = av1dmx_parse_vp9(filter, ctx);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 			e = av1dmx_parse_vp9(filter, ctx);
+@@ -1093 +1096,9 @@ GF_Err av1dmx_process_buffer(GF_Filter *filter, GF_AV1DmxCtx *ctx, const char *d
+-			e = av1dmx_parse_av1(filter, ctx);
++			// Pass remaining bytes to prevent buffer overflow
++			u32 pos = (u32)gf_bs_get_position(ctx->bs);
++			if (pos < data_size) {
++				u32 remaining = data_size - pos;
++				e = av1dmx_parse_av1(filter, ctx, remaining);
++			} else {
++				e = GF_BUFFER_TOO_SMALL;
++				break;
++			}

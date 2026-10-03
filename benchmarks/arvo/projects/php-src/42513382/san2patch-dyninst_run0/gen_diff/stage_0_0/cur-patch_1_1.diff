@@ -1,0 +1,41 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..078114c1538 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -276,0 +277,5 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
++	if (!intern || !intern->obj) {
++		*gc_data = NULL;
++		*gc_data_count = 0;
++		return NULL;
++	}
+@@ -284,0 +290 @@ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{
++	if (!class_type) return NULL;
+@@ -285,0 +292 @@ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{
++	if (!intern) return NULL;
+@@ -295,2 +302 @@ static zval *reflection_instantiate(zend_class_entry *pce, zval *object) /* {{{
+-{
+-	object_init_ex(object, pce);
++{	object_init_ex(object, pce);
+@@ -6964 +6970 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
++if (zend_parse_parameters_none() == FAILURE) {
+@@ -6972 +6978,10 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-
++	// Fixed CWE-125: Out-of-bounds Read - Validate object pointer before accessing enum case value
++	if (Z_TYPE(ref->value) != IS_OBJECT || Z_OBJ(ref->value) == NULL) {
++		RETURN_NULL();
++	}
++	
++	zend_object *obj = Z_OBJ(ref->value);
++	if (obj->gc.refcount <= 0 || obj->ce == NULL) {
++		RETURN_NULL();
++	}
++	
+@@ -6974 +6989 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	zval *member_p = zend_enum_fetch_case_value(Z_OBJ(ref->value));
++	zval *member_p = zend_enum_fetch_case_value(obj);
+@@ -6983,3 +6998 @@ ZEND_METHOD(ReflectionFiber, __construct)
+-	reflection_object *intern;
+-
+-	object = ZEND_THIS;
++	reflection_object *intern;	object = ZEND_THIS;

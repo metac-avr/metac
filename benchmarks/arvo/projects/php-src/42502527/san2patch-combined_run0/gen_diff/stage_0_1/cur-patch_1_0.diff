@@ -1,0 +1,42 @@
+diff --git a/Zend/Optimizer/pass3.c b/Zend/Optimizer/pass3.c
+index 107c78f19f5..0669fc3c5a2 100644
+--- a/Zend/Optimizer/pass3.c
++++ b/Zend/Optimizer/pass3.c
+@@ -289,15 +289,20 @@ void zend_optimizer_pass3(zend_op_array *op_array, zend_optimizer_ctx *ctx)
+-					if (target->opcode == ZEND_JMP) {
+-						/* JMPZNZ(X,L1,L2), L1: JMP(L3) => JMPZNZ(X,L3,L2), L1: JMP(L3) */
+-						target = ZEND_OP1_JMP_ADDR(target);
+-						CHECK_LOOP(target);
+-					} else if ((target->opcode == ZEND_JMPZ || target->opcode == ZEND_JMPZNZ) &&
+-					           SAME_VAR(target->op1, opline->op1)) {
+-						/* JMPZNZ(X, L1, L2), L1: JMPZ(X, L3) -> JMPZNZ(X, L3, L2) */
+-						target = ZEND_OP2_JMP_ADDR(target);
+-						CHECK_LOOP(target);
+-					} else if (target->opcode == ZEND_JMPNZ &&
+-					           SAME_VAR(target->op1, opline->op1)) {
+-						/* JMPZNZ(X, L1, L2), L1: X = JMPNZ(X, L3) -> JMPZNZ(X, L1+1, L2) */
+-						target = target + 1;
+-					} else if (target->opcode == ZEND_NOP) {
+-						target = target + 1;
++					if ((char*)target >= (char*)op_array->opcodes && (char*)target < (char*)op_array->opcodes + sizeof(zend_op) * op_array->last) {
++						if (target->opcode == ZEND_JMP) {
++							/* JMPZNZ(X,L1,L2), L1: JMP(L3) => JMPZNZ(X,L3,L2), L1: JMP(L3) */
++							target = ZEND_OP1_JMP_ADDR(target);
++							CHECK_LOOP(target);
++						} else if ((target->opcode == ZEND_JMPZ || target->opcode == ZEND_JMPZNZ) &&
++						           SAME_VAR(target->op1, opline->op1)) {
++							/* JMPZNZ(X, L1, L2), L1: JMPZ(X, L3) -> JMPZNZ(X, L3, L2) */
++							target = ZEND_OP2_JMP_ADDR(target);
++							CHECK_LOOP(target);
++						} else if (target->opcode == ZEND_JMPNZ &&
++						           SAME_VAR(target->op1, opline->op1)) {
++							/* JMPZNZ(X, L1, L2), L1: X = JMPNZ(X, L3) -> JMPZNZ(X, L1+1, L2) */
++							target = target + 1;
++						} else if (target->opcode == ZEND_NOP) {
++							target = target + 1;
++						} else {
++							break;
++						}
++						ZEND_SET_OP_JMP_ADDR(opline, opline->op2, target);
+@@ -307 +311,0 @@ void zend_optimizer_pass3(zend_op_array *op_array, zend_optimizer_ctx *ctx)
+-					ZEND_SET_OP_JMP_ADDR(opline, opline->op2, target);

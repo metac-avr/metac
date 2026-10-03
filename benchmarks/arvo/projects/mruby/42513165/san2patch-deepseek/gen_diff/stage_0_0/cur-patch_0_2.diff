@@ -1,0 +1,33 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..6f9b7a32d 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -988 +988,2 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
+@@ -989,0 +991,22 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
++  if (len < 0 || x == NULL) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid string");
++  }
++  if (len > 0) {
++    const char *p = x;
++    const char *end = x + len;
++    if (*p == '+' || *p == '-') p++;
++    if (p == end) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid string");
++    }
++    for (; p < end; p++) {
++      char c = *p;
++      int d;
++      if (c >= '0' && c <= '9') d = c - '0';
++      else if (c >= 'a' && c <= 'z') d = c - 'a' + 10;
++      else if (c >= 'A' && c <= 'Z') d = c - 'A' + 10;
++      else d = -1;
++      if (d < 0 || d >= iabs(base)) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid string");
++      }
++    }
++  }
+@@ -1000,0 +1024 @@ bint_norm(mrb_state *mrb, struct RBigint *b)
++

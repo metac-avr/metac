@@ -1,0 +1,45 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..99ae81e7d 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -198,0 +199 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++  if (room <= 0) return;  /* Prevent invalid room size */
+@@ -202,10 +203 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-}
+-
+-static inline struct REnv*
+-uvenv(mrb_state *mrb, mrb_int up)
+-{
+-  const struct RProc *proc = mrb->c->ci->proc;
+-  struct REnv *e;
+-
+-  while (up--) {
+-    proc = proc->upper;
++}    proc = proc->upper;
+@@ -473 +465 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    if (mrb->c->stbase <= argv && argv < mrb->c->stend) {
++    if (mrb->c->stbase <= argv && argv < mrb->c->stbase + (mrb->c->stend - mrb->c->stbase)) {
+@@ -479 +471 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++     c = mrb_class(mrb, self);
+@@ -480,0 +473,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    if (argc + 3 > 0x10000) {
++      mrb_raise(mrb, E_RUNTIME_ERROR, "too many arguments");
++    }
+@@ -507 +502,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-        mrb_stack_extend(mrb, p->body.irep->nregs + argc);
++        mrb_int extend_size = p->body.irep->nregs + argc;
++        if (extend_size > 0x10000) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack extension too large");
++        }
++        mrb_stack_extend(mrb, extend_size);
+@@ -515,2 +514,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++      if (argc > 0) {
++        if (ci->stack + 1 + argc <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack copy would overflow");
++        }
++      }

@@ -1,0 +1,26 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..5fc26c9059c 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2014 +2014,11 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
+-	if (UNEXPECTED(!zend_verify_property_type(info, &tmp, EX_USES_STRICT_TYPES()))) {
++	if (EXPECTED(Z_TYPE(tmp) != IS_STRING || Z_STR(tmp) == Z_STR_P(value) || GC_REFCOUNT(Z_STR(tmp)) > 0)) {
++		if (UNEXPECTED(!zend_verify_property_type(info, &tmp, EX_USES_STRICT_TYPES()))) {
++			zval_ptr_dtor(&tmp);
++			if (result) {
++				ZVAL_NULL(result);
++			}
++			return;
++		}
++
++		value = zend_assign_to_variable(property_val, &tmp, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++	} else {
+@@ -2017 +2027 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
+-			ZVAL_NULL(result);
++			ZVAL_UNDEF(result);
+@@ -2022 +2031,0 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
+-	value = zend_assign_to_variable(property_val, &tmp, IS_TMP_VAR, EX_USES_STRICT_TYPES());
+@@ -2557,0 +2567,3 @@ static zend_string* ZEND_FASTCALL zend_jit_rope_end(zend_string **rope, uint32_t
++		if (ZSTR_LEN(rope[i]) == 0 && ZSTR_VAL(rope[i]) == NULL) {
++			continue;
++		}

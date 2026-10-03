@@ -1,0 +1,79 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..f9d772af 100644
+--- a/valid.c
++++ b/valid.c
+@@ -6215,12 +6215,16 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-        ret &= xmlValidateOneElement(ctxt, doc, elem);
+-
+-        if (elem->type == XML_ELEMENT_NODE) {
+-            attr = elem->properties;
+-            while (attr != NULL) {
+-                value = xmlNodeListGetString(doc, attr->children, 0);
+-                if (value == NULL) {
+-                    xmlVErrMemory(ctxt);
+-                    ret = 0;
+-                } else {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
+-                    xmlFree((char *)value);
++        if (elem != NULL) {
++            int isValidElement = xmlValidateOneElement(ctxt, doc, elem);
++            ret &= isValidElement;
++
++            if ((elem->type == XML_ELEMENT_NODE) && (isValidElement)) {
++                attr = elem->properties;
++                while (attr != NULL) {
++                    value = xmlNodeListGetString(doc, attr->children, 0);
++                    if (value == NULL) {
++                        xmlVErrMemory(ctxt);
++                        ret = 0;
++                    } else {
++                        ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                        xmlFree((char *)value);
++                    }
++                    attr= attr->next;
+@@ -6228,2 +6231,0 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                attr= attr->next;
+-            }
+@@ -6231,11 +6233,11 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-            ns = elem->nsDef;
+-            while (ns != NULL) {
+-                if (elem->ns == NULL)
+-                    ret &= xmlValidateOneNamespace(ctxt, doc, elem, NULL,
+-                                                   ns, ns->href);
+-                else
+-                    ret &= xmlValidateOneNamespace(ctxt, doc, elem,
+-                                                   elem->ns->prefix, ns,
+-                                                   ns->href);
+-                ns = ns->next;
+-            }
++                ns = elem->nsDef;
++                while (ns != NULL) {
++                    if (elem->ns == NULL)
++                        ret &= xmlValidateOneNamespace(ctxt, doc, elem, NULL,
++                                                       ns, ns->href);
++                    else
++                        ret &= xmlValidateOneNamespace(ctxt, doc, elem,
++                                                       elem->ns->prefix, ns,
++                                                       ns->href);
++                    ns = ns->next;
++                }
+@@ -6243,3 +6245,4 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-            if (elem->children != NULL) {
+-                elem = elem->children;
+-                continue;
++                if (elem->children != NULL) {
++                    elem = elem->children;
++                    continue;
++                }
+@@ -6250 +6253 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-            if (elem == root)
++            if ((elem != NULL) && (elem == root))
+@@ -6252 +6255 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-            if (elem->next != NULL)
++            if ((elem != NULL) && (elem->next != NULL))
+@@ -6254 +6257 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-            elem = elem->parent;
++            elem = (elem != NULL) ? elem->parent : NULL;
+@@ -6256 +6259 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-        elem = elem->next;
++        elem = (elem != NULL) ? elem->next : NULL;

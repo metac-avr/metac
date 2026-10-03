@@ -1,0 +1,41 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 9a96810b6..c461dc00f 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1322 +1322 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-
++/* Fixed version - Added bounds checking for IPv6 packets */
+@@ -1331 +1331,5 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-  else
++  else {
++    /* Add bounds check to prevent out-of-bounds read in IPv6 extension headers */
++    if(packet == NULL || rawsize < sizeof(struct ndpi_ipv6hdr)) {
++      return(workflow->ndpi_struct->unknown_protocol_struct);
++    }
+@@ -1336,0 +1341 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
++  }
+@@ -1342,2 +1347 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-    workflow->stats.total_wire_bytes += rawsize + 24 /* CRC etc */,
+-      workflow->stats.total_ip_bytes += rawsize;
++    workflow->stats.total_wire_bytes += rawsize + 24 /* CRC etc */,      workflow->stats.total_ip_bytes += rawsize;
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index d5a169eac..31c12bfdc 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -4124,0 +4125 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
++  /* Fixed version - Added additional bounds check */
+@@ -4138,0 +4140,4 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
++      if(*l4len < 1) {
++        return(1);
++      }
++
+@@ -4150,0 +4156,4 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
++    if(*l4len < 1) {
++      return(1);
++    }
++
+@@ -4158,0 +4168,4 @@ int ndpi_handle_ipv6_extension_headers(struct ndpi_detection_module_struct *ndpi
++    if(*l4len < 1) {
++      return(1);
++    }
++

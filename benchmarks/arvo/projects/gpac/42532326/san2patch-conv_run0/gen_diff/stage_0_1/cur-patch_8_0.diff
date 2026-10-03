@@ -1,0 +1,39 @@
+diff --git a/src/media_tools/gpac_ogg.c b/src/media_tools/gpac_ogg.c
+index c79bed388..388f1308a 100644
+--- a/src/media_tools/gpac_ogg.c
++++ b/src/media_tools/gpac_ogg.c
+@@ -691,0 +692,9 @@ s32 ogg_stream_init(ogg_stream_state *os,s32 serialno) {
++		/* Check for allocation failures to avoid dangling pointers */
++		if (!(os->body_data && os->lacing_vals && os->granule_vals)) {
++			gf_free(os->body_data);
++			gf_free(os->lacing_vals);
++			gf_free(os->granule_vals);
++			os->body_data = os->lacing_vals = os->granule_vals = NULL;
++			return -1;
++		}
++
+@@ -700 +709,2 @@ s32 ogg_stream_init(ogg_stream_state *os,s32 serialno) {
+-s32 ogg_stream_clear(ogg_stream_state *os) {
++// FIXME: Crash CWE-416: Use After Free
++ s32 ogg_stream_clear(ogg_stream_state *os) {
+@@ -702,5 +712,15 @@ s32 ogg_stream_clear(ogg_stream_state *os) {
+-		if(os->body_data)gf_free(os->body_data);
+-		if(os->lacing_vals)gf_free(os->lacing_vals);
+-		if(os->granule_vals)gf_free(os->granule_vals);
+-
+-		memset(os,0,sizeof(*os));
++		if(os->body_data) {
++			gf_free(os->body_data);
++			os->body_data = NULL;
++		}
++		if(os->lacing_vals) {
++			gf_free(os->lacing_vals);
++			os->lacing_vals = NULL;
++		}
++		if(os->granule_vals) {
++			gf_free(os->granule_vals);
++			os->granule_vals = NULL;
++		}
++		os->body_storage = 0;
++		os->lacing_storage = 0;
++		os->granule_storage = 0;

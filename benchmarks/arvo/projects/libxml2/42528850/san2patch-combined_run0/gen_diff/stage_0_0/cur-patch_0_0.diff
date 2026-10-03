@@ -1,0 +1,66 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..28071f18 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4204,10 +4204,12 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
++        /* Check if the namespace pointer is still valid before accessing */
++        if (xmlIsNsPtrValid(node->ns)) {
++            ns = xmlSearchNs(doc, ret, node->ns->prefix);
++            if (ns == NULL) {
++                /*
++                 * Humm, we are copying an element whose namespace is defined
++                 * out of the new tree scope. Search it in the original tree
++                 * and add it at the top of the new tree
++                 */
++                ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++                if (ns != NULL) {
++                    xmlNodePtr root = ret;
+@@ -4215,11 +4217,15 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-		} else {
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
+-	    }
+-	} else {
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
+-	}
++                    while (root->parent != NULL) root = root->parent;
++                    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                } else {
++                    ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++                }
++            } else {
++                /*
++                 * reference the existing namespace definition in our own tree.
++                 */
++                ret->ns = ns;
++            }
++        } else {
++            /* Namespace pointer is invalid, set to NULL to prevent use-after-free */
++            ret->ns = NULL;
++        }
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..76152e89 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -422,2 +422,5 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++	/* Clear namespace references before freeing to prevent use-after-free */
++        cur->nsDef = NULL;
++        xmlFreeNsList(cur->nsDef);
++    }

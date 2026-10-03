@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..6396451be 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -528,9 +528,12 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    if (argc >= 15) {
+-      ci->stack[n+1] = mrb_ary_new_from_values(mrb, argc, argv);
+-      ci->stack[n+2] = blk;
+-      argc = 15;
+-    }
+-    else {
+-      if (argc > 0)
+-        stack_copy(ci->stack+n+1, argv, argc);
+-      ci->stack[n+argc+1] = blk;
++    {
++      mrb_callinfo *cur_ci = mrb->c->ci;
++      if (argc >= 15) {
++        cur_ci->stack[n+1] = mrb_ary_new_from_values(mrb, argc, argv);
++        cur_ci->stack[n+2] = blk;
++        argc = 15;
++      }
++      else {
++        if (argc > 0)
++          stack_copy(cur_ci->stack+n+1, argv, argc);
++        cur_ci->stack[n+argc+1] = blk;
++      }

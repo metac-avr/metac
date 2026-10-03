@@ -1,0 +1,58 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..60767ea6cf 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -196,5 +196,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-        ret = flashsv2_prime(s,
+-                             s->blocks[blk_idx].pos,
+-                             s->blocks[blk_idx].size);
+-        if (ret < 0)
+-            return ret;
++        if (s->keyframedata) {
++            ret = flashsv2_prime(s,
++                                 s->blocks[blk_idx].pos,
++                                 s->blocks[blk_idx].size);
++            if (ret < 0)
++                return ret;
++        }
+@@ -217 +219 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    if (s->is_keyframe) {
++    if (s->is_keyframe && s->keyframedata) {
+@@ -348,0 +351,34 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++                         AVPacket *avpkt)
++{
++    FlashSVContext *s = avctx->priv_data;
++    GetBitContext gb;
++    int ret;
++    int version;
++    int block_width, block_height;
++    int v_blocks, h_blocks, i, j, k, ypos, xpos, bv, bh;
++    int prev_block_width, prev_block_height;
++    int v_part, h_part;
++    uint8_t *tmp;
++
++    if (avpkt->size < 3) {
++        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    ret = init_get_bits8(&gb, avpkt->data, avpkt->size);
++    if (ret < 0)
++        return ret;
++
++    version = get_bits(&gb, 8);
++    if (version != 1 && version != 2) {
++        av_log(avctx, AV_LOG_ERROR, "Version %d is not supported\n", version);
++        return AVERROR_INVALIDDATA;
++    }
++    s->ver = version;
++
++    s->image_width  = get_bits(&gb, 16);
++    s->image_height = get_bits(&gb, 16);
++
++    if (s->image_width != avctx->width || s->image_height != avctx->height) {
++        av_log(avctx, AV_LOG_ERROR,
+@@ -370,0 +407,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++    return 0;
++}

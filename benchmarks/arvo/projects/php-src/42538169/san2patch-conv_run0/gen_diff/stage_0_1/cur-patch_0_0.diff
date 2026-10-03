@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..7cf69176a0c 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -44,4 +44,6 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
+-			gc_check_possible_root(ref);
++		if (ref && !(GC_FLAGS(ref) & GC_FREE)) {
++			if (!GC_DELREF(ref)) {
++				rc_dtor_func(ref);
++			} else {
++				gc_check_possible_root(ref);
++			}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..e5869bf6632 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -192,3 +192,6 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			if (GC_TYPE(object) != IS_NULL) {
++				GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++				GC_SET_REFCOUNT(object, 1);
++				object->handlers->free_obj(object);
++			}

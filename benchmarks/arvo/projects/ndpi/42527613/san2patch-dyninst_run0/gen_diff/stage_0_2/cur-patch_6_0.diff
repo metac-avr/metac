@@ -1,0 +1,16 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 41e4fb539..482be9406 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -3403 +3403 @@ int ndpi_match_custom_category(struct ndpi_detection_module_struct *ndpi_str,
+-  return(id != NDPI_PROTOCOL_UNKNOWN ? 0 : -1);
++   return(id != NDPI_PROTOCOL_UNKNOWN ? 0 : -1);
+@@ -3405 +3405,7 @@ int ndpi_match_custom_category(struct ndpi_detection_module_struct *ndpi_str,
+-  u_int16_t rc = ndpi_domain_classify_contains(ndpi_str->custom_categories.sc_hostnames, name);
++  /* Fix: Add bounds check to prevent out-of-bounds read in ndpi_domain_classify_contains */
++  if(name == NULL || name_len == 0 || name_len > 45) return(-1);
++  /* Ensure null termination within bounds */
++  char safe_name[46];
++  strncpy(safe_name, name, name_len);
++  safe_name[name_len] = '\0';
++  u_int16_t rc = ndpi_domain_classify_contains(ndpi_str->custom_categories.sc_hostnames, safe_name);

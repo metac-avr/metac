@@ -1,0 +1,46 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..72cdf2d3de7 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,9 +1209,2 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++static zend_always_inline uint32_t zval_delref_p(zval* pz)
++{
+@@ -1220,11 +1213 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-}
+-
+-#if SIZEOF_SIZE_T == 4
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++}#elif SIZEOF_SIZE_T == 8
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..3557d50cba2 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -862,0 +863,8 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Check for potential use-after-free condition before proceeding */
++			if (UNEXPECTED(EX(prev_execute_data) && 
++			    (EX(prev_execute_data)->prev == NULL || 
++			     EX(prev_execute_data)->prev->opline == NULL))) {
++				/* Skip execution if previous execute data appears to be invalid/freed */
++				continue;
++			}
++		}
+@@ -875 +883,2 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			execute_data = EG(current_execute_data);
++		}
++#endif			execute_data = EG(current_execute_data);

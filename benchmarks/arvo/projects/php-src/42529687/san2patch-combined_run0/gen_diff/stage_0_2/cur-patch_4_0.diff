@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..fd049b508cf 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3270 +3270,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				/* smart branch opcodes may not initialize result */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 				/* smart branch opcodes may not initialize result */
+@@ -3272 +3273,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *result_var = EX_VAR(throw_op->result.var);
++					if (result_var != NULL) {
++						if (Z_REFCOUNTED_P(result_var) && Z_COUNTED_P(result_var) != NULL) {
++							zval_ptr_dtor_nogc(result_var);
++						} else if (!Z_REFCOUNTED_P(result_var)) {
++							zval_ptr_dtor_nogc(result_var);
++						}
++					}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..a5fea959293 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -93 +93 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-		if (GC_DELREF(ref) == 0) {
++		if (ref != NULL && GC_DELREF(ref) == 0) {

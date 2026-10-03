@@ -1,0 +1,32 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..4f0d16c7 100644
+--- a/tree.c
++++ b/tree.c
+@@ -792,2 +792,9 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++    /* CWE-416: Use After Free - Clear pointers after freeing to prevent dangling references */
++    if (cur->href != NULL) {
++        xmlFree((char *) cur->href);
++        cur->href = NULL;  /* Prevent future use of freed memory */
++    }
++    if (cur->prefix != NULL) {
++        xmlFree((char *) cur->prefix);
++        cur->prefix = NULL;  /* Prevent future use of freed memory */
++    }
+@@ -804,2 +811 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;
+@@ -8452 +8458,2 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * Handle XML namespace.
++// FIXME: Crash CWE-416: Use After Free
++     * Handle XML namespace.
+@@ -8460,0 +8468,3 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
++	/* Additional safety check to ensure the namespace is valid */
++	if (*retNs && (*retNs)->href == NULL && (*retNs)->prefix == NULL)
++	    return (-1);
+@@ -8464,2 +8474 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * If the search should be done in ancestors only and no
+-    * @elem (the first ancestor) was specified, then skip the search.
++    * If the search should be done in ancestors only and no    * @elem (the first ancestor) was specified, then skip the search.

@@ -1,0 +1,21 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..e9337a89 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -425 +425,5 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     */
++// FIXME: Crash CWE-416: Use After Free
++      */
++    if (ctxt->input->cur < ctxt->input->base || ctxt->input->cur >= ctxt->input->end) {
++        ctxt->input->cur = ctxt->input->base + (ctxt->input->cur - ctxt->input->base);
++    }
+@@ -3457 +3461,3 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
+-	    (r != '-') || (q != '-'))) {
++// FIXME: Crash CWE-416: Use After Free
++ 	    (r != '-') || (q != '-'))) {
++	const xmlChar *old_cur = ctxt->input->cur;
+@@ -3478,0 +3485,4 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	    
++	    if (ctxt->input->cur != old_cur) {
++	        cur = CUR_CHAR(l);
++	    }

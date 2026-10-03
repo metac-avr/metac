@@ -1,0 +1,71 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..70c9d5fb 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346,3 +1346,8 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		if (tmp->ns != NULL && tmp->doc != NULL && tmp->doc->oldNs != NULL) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		} else if (tmp->ns == NULL) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		}
+diff --git a/tree.c b/tree.c
+index 314cf5d5..40d190c9 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// FIXME: patch CWE-416: Use After Free
++         xmlNsPtr ns;
+@@ -4272,6 +4273,8 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree.
++        if ((node->ns == NULL) || (node->ns == (xmlNsPtr) -1))
++            goto error;
++        ns = node->ns;
++        if (!xmlSearchNs(doc, ret, ns->prefix)) {
++            /*
++             * Humm, we are copying an element whose namespace is defined
++             * out of the new tree scope. Search it in the original tree
++             * and add it at the top of the new tree.
+@@ -4281,4 +4284,4 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
++             */
++            ns = xmlSearchNs(node->doc, node, ns->prefix);
++            if (ns != NULL) {
++                xmlNodePtr root = ret;
+@@ -4286,2 +4289,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                while (root->parent != NULL) root = root->parent;
++                ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+@@ -4289,2 +4292,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-                ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
+-	    }
++                ret->ns = xmlNewReconciledNs(doc, ret, ns);
++            }
+@@ -4293,6 +4296,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	} else {
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
+-	}
++        } else {
++            /*
++             * reference the existing namespace definition in our own tree.
++             */
++            ret->ns = xmlSearchNs(doc, ret, ns->prefix);
++        }

@@ -1,0 +1,50 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..217623cfc5 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2016,0 +2017,27 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
++#define WRITE_FRAME(depth, PIXEL)
++        static void write_frame_##depth##_##PIXEL(Jpeg2000DecoderContext *s, AVFrame *picture, int plane, int compno) \
++        {                                                                                         \
++            int     x, y, i, j;                                                                   \
++            int     pixelsize =  depth / 8;                                                       \
++            PIXEL  *line, *dst;                                                                   \
++            PIXEL  *i_datap;                                                                      \
++            int     cmptno = s->cdef[compno].compno;                                              \
++            int     step_x = s->image.components[cmptno].step_x;                                  \
++            int     step_y = s->image.components[cmptno].step_y;                                  \
++            int     y_cord = s->image.components[cmptno].coord.y;                                 \
++            int     x_cord = s->image.components[cmptno].coord.x;                                 \
++                                                                                                  \
++            i_datap = (PIXEL*)s->tile[0].comp[cmptno].i_data;                                     \
++            for (y = 0; y < s->image.components[cmptno].coord.h; y += step_y) {                   \
++                line = (PIXEL*)(picture->data[plane] + (y_cord + y) * picture->linesize[plane]); \
++                for (i = 0; i < step_y; i++) {                                                    \
++                    dst = line;                                                                   \
++                    for (x = 0; x < s->image.components[cmptno].coord.w; x += step_x) {          \
++                        for (j = 0; j < step_x * pixelsize; j++) {                                   \
++                            /* Fixed CWE-787: Out-of-bounds Write - Validate buffer boundaries before write */ \
++                            ptrdiff_t offset = (uint8_t*)dst - (uint8_t*)picture->data[plane];   \
++                            if (offset >= 0 && offset < picture->linesize[plane] * picture->height) { \
++                                *dst = *i_datap;                                                  \
++                            }                                                                     \
++                            dst++;                                                                \
++                        }                                                                         \
+@@ -2023,16 +2050 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++        }

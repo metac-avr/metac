@@ -1,0 +1,30 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..686b37b4a 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -506,0 +507,8 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
++			
++			// Comprehensive bounds checking to prevent out-of-bounds read
++			if (section_start >= sec->length || section_start + (sec->length - section_start) > sec->size) {
++				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Section bounds validation failed\n"));
++				gf_free(section);
++				return;
++			}
++
+@@ -509 +517,15 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
+-			memcpy(section->data, sec->section + section_start, sizeof(unsigned char)*section->data_size);
++			if (!section->data) {
++				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Failed to allocate section data\n"));
++				gf_free(section);
++				return;
++			}
++			
++			// Final bounds check before memcpy
++			if (section->data_size > 0 && sec->section + section_start + section->data_size <= sec->section + sec->size) {
++				memcpy(section->data, sec->section + section_start, sizeof(unsigned char)*section->data_size);
++			} else {
++				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Memory copy would exceed buffer bounds\n"));
++				gf_free(section->data);
++				gf_free(section);
++				return;
++			}

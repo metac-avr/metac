@@ -1,0 +1,24 @@
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index c9d23d11b7d..c23a177e3d2 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -1076 +1076 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-	if (op_array->last_literal) {
++	if (op_array->last_literal && op_array->last_literal <= INT_MAX / sizeof(zval)) {  // Add bounds check
+@@ -1080,2 +1080,4 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++		if (op_array->opcodes != NULL && op_array->literals != NULL) {  // Validate pointers before memcpy
++			memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
++				op_array->literals, sizeof(zval) * op_array->last_literal);
++		}
+@@ -1187 +1189 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-	if (op_array->last_literal) {
++	if (op_array->last_literal && op_array->last_literal <= INT_MAX / sizeof(zval)) {  // Add bounds check
+@@ -1191,2 +1193,4 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++		if (op_array->opcodes != NULL && op_array->literals != NULL) {  // Validate pointers before memcpy
++			memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
++				op_array->literals, sizeof(zval) * op_array->last_literal);
++		}

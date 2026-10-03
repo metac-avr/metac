@@ -1,0 +1,49 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..323bf05df37 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -19582,2 +19582,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-		len += ZSTR_LEN(rope[i]);
+-	}
++		if (rope[i] && ZSTR_LEN(rope[i]) > 0) {
++			len += ZSTR_LEN(rope[i]);
++		}
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	}
+@@ -19588,3 +19591,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-		memcpy(target, ZSTR_VAL(rope[i]), ZSTR_LEN(rope[i]));
+-		target += ZSTR_LEN(rope[i]);
+-		zend_string_release_ex(rope[i], 0);
++		if (rope[i] && ZSTR_LEN(rope[i]) > 0) {
++			memcpy(target, ZSTR_VAL(rope[i]), ZSTR_LEN(rope[i]));
++			target += ZSTR_LEN(rope[i]);
++			zend_string_release_ex(rope[i], 0);
++		}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..52d8d640ab0 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
+@@ -81,0 +82 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -84 +85,13 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	// Add validation check to prevent expired pointer dereference
++	if (zval_ptr == NULL) {
++		return;
++	}
++	
++	if (Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref != NULL && GC_DELREF(ref) == 0) {
++			i_zval_ptr_dtor(zval_ptr);
++		}
++	} else {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -94,2 +107 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

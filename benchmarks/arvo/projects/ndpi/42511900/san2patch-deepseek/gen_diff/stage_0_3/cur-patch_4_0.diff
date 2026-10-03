@@ -1,0 +1,17 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 9f1dd9cf5..efcbfd779 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -100 +100,8 @@ static int ndpi_search_http_tcp_again(struct ndpi_detection_module_struct *ndpi_
+-				      struct ndpi_flow_struct *flow) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 				      struct ndpi_flow_struct *flow) {
++  size_t host_len;
++
++  host_len = strnlen(flow->host_server_name, sizeof(flow->host_server_name));
++  if(host_len >= sizeof(flow->host_server_name)) {
++    flow->host_server_name[sizeof(flow->host_server_name) - 1] = '\0';
++  }
+@@ -108 +115 @@ static int ndpi_search_http_tcp_again(struct ndpi_detection_module_struct *ndpi_
+-  if((flow->host_server_name[0] != '\0')
++  if((host_len > 0)

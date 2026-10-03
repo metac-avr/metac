@@ -1,0 +1,66 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..fde039776 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -481,0 +482,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    // Validate stack bounds before writing
+@@ -485 +487,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if (&ci->stack[n+1] < mrb->c->stend) {
++        ci->stack[n+1] = args;
++      } else {
++        return mrb_nil_value(); // Safe fallback
++      }
+@@ -498 +504,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if (&ci->stack[n+1] < mrb->c->stend) {
++        ci->stack[n+1] = args;
++      } else {
++        return mrb_nil_value(); // Safe fallback
++      }
+@@ -513 +523,8 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    ci->stack[0] = self;
++    
++    // Ensure stack bounds are respected for all assignments
++    if (&ci->stack[0] < mrb->c->stend) {
++      ci->stack[0] = self;
++    } else {
++      return mrb_nil_value(); // Safe fallback
++    }
++    
+@@ -515,3 +532,12 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
+-      ci->stack[argc+1] = blk;
++      if (argc > 0) {
++        if (&ci->stack[1+argc] <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          return mrb_nil_value(); // Safe fallback
++        }
++      }
++      if (&ci->stack[argc+1] < mrb->c->stend) {
++        ci->stack[argc+1] = blk;
++      } else {
++        return mrb_nil_value(); // Safe fallback
++      }
+@@ -520 +546,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[2] = blk;
++      if (&ci->stack[2] < mrb->c->stend) {
++        ci->stack[2] = blk;
++      } else {
++        return mrb_nil_value(); // Safe fallback
++      }
+@@ -523 +553 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    if (MRB_METHOD_CFUNC_P(m)) {
++     if (MRB_METHOD_CFUNC_P(m)) {
+@@ -1611 +1641 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        }
++         }
+@@ -1636,0 +1667,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Bounds check with 8-byte safety margin */
++        if ((char*)(ci->stack + 1) > (char*)mrb->c->stend - 8) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow protection");
++          goto L_RAISE;
++        }

@@ -1,0 +1,35 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..094bddc7225 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7865 +7865 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
++if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+@@ -7873 +7873 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-		}
++ 		}
+@@ -7877,0 +7878,6 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
++	/* Add guard check for valid memory references before access */
++	if ((void*)t->opline == (void*)0xdeadbeef || (void*)EX(opline) == (void*)0xdeadbeef) {
++		/* Detected expired/dangling pointer - exit to VM */
++		return 1;
++	}
++
+@@ -7885,2 +7891 @@ static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++		case ZEND_CATCH:		case ZEND_FAST_CALL:
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..ba58d8a1034 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1184,0 +1186,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (GC_DELREF(p) && UNEXPECTED(GC_REF_GET_TYPE(p) == GC_REFERENCE)) {
++		return p->refcount; /* Prevent UAF by checking reference type */
++	}
+@@ -1193 +1196,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-

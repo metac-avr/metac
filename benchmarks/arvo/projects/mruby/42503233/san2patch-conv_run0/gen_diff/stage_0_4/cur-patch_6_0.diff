@@ -1,0 +1,44 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..2380057ec 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -179,0 +180,5 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Check for potential integer overflow before allocation */
++  if (size > MRB_STACK_MAX || size < oldsize) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
++
+@@ -2198,8 +2203,23 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-            mrb->c = c->prev;
+-            mrb->c->status = MRB_FIBER_RUNNING;
+-            c->prev = NULL;
+-            if (c->vmexec) {
+-              mrb_gc_arena_restore(mrb, ai);
+-              c->vmexec = FALSE;
+-              mrb->jmp = prev_jmp;
+-              return v;
++            
++            /* Validate context switch to prevent buffer overflow */
++            if (c->prev == NULL) {
++              mrb->c = c;
++              c->status = MRB_FIBER_RUNNING;
++              if (c->vmexec) {
++                mrb_gc_arena_restore(mrb, ai);
++                c->vmexec = FALSE;
++                mrb->jmp = prev_jmp;
++                return v;
++              }
++              ci = mrb->c->ci;
++            } else {
++              mrb->c = c->prev;
++              mrb->c->status = MRB_FIBER_RUNNING;
++              c->prev = NULL;
++              if (c->vmexec) {
++                mrb_gc_arena_restore(mrb, ai);
++                c->vmexec = FALSE;
++                mrb->jmp = prev_jmp;
++                return v;
++              }
++              ci = mrb->c->ci;
+@@ -2207 +2226,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-            ci = mrb->c->ci;

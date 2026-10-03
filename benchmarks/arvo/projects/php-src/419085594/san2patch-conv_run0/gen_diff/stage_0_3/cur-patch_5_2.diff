@@ -1,0 +1,130 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..bbbc0c12f35 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1518,45 +1518 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_not_function(zval *result, zval *op1)
+-	switch (Z_TYPE_P(op1)) {
+-		case IS_LONG:
+-			ZVAL_LONG(result, ~Z_LVAL_P(op1));
+-			return SUCCESS;
+-		case IS_DOUBLE: {
+-			zend_long lval = zend_dval_to_lval(Z_DVAL_P(op1));
+-			if (!zend_is_long_compatible(Z_DVAL_P(op1), lval)) {
+-				zend_incompatible_double_to_long_error(Z_DVAL_P(op1));
+-				if (EG(exception)) {
+-					if (result != op1) {
+-						ZVAL_UNDEF(result);
+-					}
+-					return FAILURE;
+-				}
+-			}
+-			ZVAL_LONG(result, ~lval);
+-			return SUCCESS;
+-		}
+-		case IS_STRING: {
+-			size_t i;
+-
+-			if (Z_STRLEN_P(op1) == 1) {
+-				zend_uchar not = (zend_uchar) ~*Z_STRVAL_P(op1);
+-				ZVAL_CHAR(result, not);
+-			} else {
+-				ZVAL_NEW_STR(result, zend_string_alloc(Z_STRLEN_P(op1), 0));
+-				for (i = 0; i < Z_STRLEN_P(op1); i++) {
+-					Z_STRVAL_P(result)[i] = ~Z_STRVAL_P(op1)[i];
+-				}
+-				Z_STRVAL_P(result)[i] = 0;
+-			}
+-			return SUCCESS;
+-		}
+-		case IS_REFERENCE:
+-			op1 = Z_REFVAL_P(op1);
+-			goto try_again;
+-		default:
+-			ZEND_TRY_UNARY_OBJECT_OPERATION(ZEND_BW_NOT);
+-
+-			if (result != op1) {
+-				ZVAL_UNDEF(result);
+-			}
+-			zend_type_error("Cannot perform bitwise not on %s", zend_zval_type_name(op1));
+-			return FAILURE;
+-	}
++	zend_bitwise_not_function
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..c749c54d420 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45973,73 +45973 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-	if (EXPECTED(Z_TYPE_P(container) == IS_ARRAY)) {
+-assign_dim_op_array:
+-		SEPARATE_ARRAY(container);
+-assign_dim_op_new_array:
+-		dim = NULL;
+-		if (IS_UNUSED == IS_UNUSED) {
+-			var_ptr = zend_hash_next_index_insert(Z_ARRVAL_P(container), &EG(uninitialized_zval));
+-			if (UNEXPECTED(!var_ptr)) {
+-				zend_cannot_add_element();
+-				goto assign_dim_op_ret_null;
+-			}
+-		} else {
+-			if (IS_UNUSED == IS_CONST) {
+-				var_ptr = zend_fetch_dimension_address_inner_RW_CONST(Z_ARRVAL_P(container), dim EXECUTE_DATA_CC);
+-			} else {
+-				var_ptr = zend_fetch_dimension_address_inner_RW(Z_ARRVAL_P(container), dim EXECUTE_DATA_CC);
+-			}
+-			if (UNEXPECTED(!var_ptr)) {
+-				goto assign_dim_op_ret_null;
+-			}
+-		}
+-
+-		value = get_op_data_zval_ptr_r((opline+1)->op1_type, (opline+1)->op1);
+-
+-		do {
+-			if (IS_UNUSED != IS_UNUSED && UNEXPECTED(Z_ISREF_P(var_ptr))) {
+-				zend_reference *ref = Z_REF_P(var_ptr);
+-				var_ptr = Z_REFVAL_P(var_ptr);
+-				if (UNEXPECTED(ZEND_REF_HAS_TYPE_SOURCES(ref))) {
+-					zend_binary_assign_op_typed_ref(ref, value OPLINE_CC EXECUTE_DATA_CC);
+-					break;
+-				}
+-			}
+-			zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
+-		} while (0);
+-
+-		if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
+-			ZVAL_COPY(EX_VAR(opline->result.var), var_ptr);
+-		}
+-		FREE_OP((opline+1)->op1_type, (opline+1)->op1.var);
+-	} else {
+-		if (EXPECTED(Z_ISREF_P(container))) {
+-			container = Z_REFVAL_P(container);
+-			if (EXPECTED(Z_TYPE_P(container) == IS_ARRAY)) {
+-				goto assign_dim_op_array;
+-			}
+-		}
+-
+-		if (EXPECTED(Z_TYPE_P(container) == IS_OBJECT)) {
+-			dim = NULL;
+-			if (IS_UNUSED == IS_CONST && Z_EXTRA_P(dim) == ZEND_EXTRA_VALUE) {
+-				dim++;
+-			}
+-			zend_binary_assign_op_obj_dim(container, dim OPLINE_CC EXECUTE_DATA_CC);
+-		} else if (EXPECTED(Z_TYPE_P(container) <= IS_FALSE)) {
+-			if (IS_CV == IS_CV && UNEXPECTED(Z_TYPE_INFO_P(container) == IS_UNDEF)) {
+-				ZVAL_UNDEFINED_OP1();
+-			}
+-			if (Z_TYPE_P(container) == IS_FALSE) {
+-				zend_false_to_array_deprecated();
+-			}
+-			ZVAL_ARR(container, zend_new_array(8));
+-			goto assign_dim_op_new_array;
+-		} else {
+-			dim = NULL;
+-			zend_binary_assign_op_dim_slow(container, dim OPLINE_CC EXECUTE_DATA_CC);
+-assign_dim_op_ret_null:
+-			FREE_OP((opline+1)->op1_type, (opline+1)->op1.var);
+-			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
+-				ZVAL_NULL(EX_VAR(opline->result.var));
+-			}
+-		}
+-	}
++	zend_assign_dim_op_function

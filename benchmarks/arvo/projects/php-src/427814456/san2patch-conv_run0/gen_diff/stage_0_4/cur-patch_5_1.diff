@@ -1,0 +1,99 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..ff2752ed9a8 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -19541 +19541 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_ADD_SPEC_TMP_CONST_HANDLE
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
++static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -19543,35 +19543,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-	USE_OPLINE
+-	zend_string **rope;
+-	zval *var, *ret;
+-	uint32_t i;
+-	size_t len = 0;
+-	char *target;
+-
+-	rope = (zend_string**)EX_VAR(opline->op1.var);
+-	if (IS_CONST == IS_CONST) {
+-		var = RT_CONSTANT(opline, opline->op2);
+-		rope[opline->extended_value] = Z_STR_P(var);
+-		if (UNEXPECTED(Z_REFCOUNTED_P(var))) {
+-			Z_ADDREF_P(var);
+-		}
+-	} else {
+-		var = RT_CONSTANT(opline, opline->op2);
+-		if (EXPECTED(Z_TYPE_P(var) == IS_STRING)) {
+-			if (IS_CONST == IS_CV) {
+-				rope[opline->extended_value] = zend_string_copy(Z_STR_P(var));
+-			} else {
+-				rope[opline->extended_value] = Z_STR_P(var);
+-			}
+-		} else {
+-			SAVE_OPLINE();
+-			if (IS_CONST == IS_CV && UNEXPECTED(Z_TYPE_P(var) == IS_UNDEF)) {
+-				ZVAL_UNDEFINED_OP2();
+-			}
+-			rope[opline->extended_value] = zval_get_string_func(var);
+-
+-			if (UNEXPECTED(EG(exception))) {
+-				for (i = 0; i <= opline->extended_value; i++) {
+-					zend_string_release_ex(rope[i], 0);
+-				}
+-				ZVAL_UNDEF(EX_VAR(opline->result.var));
+-				HANDLE_EXCEPTION();
++	// Implement reference counting check to prevent use-after-free
++	if (!zval_ptr) {
++		return;
++	}
++	
++	if (Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref) {
++			if (GC_DELREF(ref) > 0) {
++				// Object still has references, don't destroy
++				return;
+@@ -19581,15 +19557,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-	for (i = 0; i <= opline->extended_value; i++) {
+-		len += ZSTR_LEN(rope[i]);
+-	}
+-	ret = EX_VAR(opline->result.var);
+-	ZVAL_STR(ret, zend_string_alloc(len, 0));
+-	target = Z_STRVAL_P(ret);
+-	for (i = 0; i <= opline->extended_value; i++) {
+-		memcpy(target, ZSTR_VAL(rope[i]), ZSTR_LEN(rope[i]));
+-		target += ZSTR_LEN(rope[i]);
+-		zend_string_release_ex(rope[i], 0);
+-	}
+-	*target = '\0';
+-
+-	ZEND_VM_NEXT_OPCODE();
+-}
++	i_zval_ptr_dtor(zval_ptr);
++}/* }}} */
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..b107f634502 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
+@@ -81,0 +82 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -83,0 +85,13 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++	// Implement reference counting check to prevent use-after-free
++	if (!zval_ptr) {
++		i_zval_ptr_dtor(zval_ptr);
++		return;
++	}
++	
++	if (Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && GC_TRY_DELREF(ref) > 0) {
++			// Object still has references, don't destroy
++			return;
++		}
++	}
+@@ -94,2 +108 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

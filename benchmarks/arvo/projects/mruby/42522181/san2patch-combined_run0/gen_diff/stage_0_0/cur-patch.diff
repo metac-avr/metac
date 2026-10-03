@@ -1,0 +1,19 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..836a3ccc9 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1097,2 +1097,9 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    // Defensive check: ensure object is valid before marking
++    if (obj != NULL) {
++      // Additional validation to prevent use-after-free
++      volatile uintptr_t obj_check = (uintptr_t)obj;
++      if (obj_check != 0 && obj->tt != MRB_TT_FREE) {
++        gc_mark_children(mrb, gc, obj);
++        tried_marks += gc_gray_counts(mrb, gc, obj);
++      }
++    }
+@@ -1202,0 +1210,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Zero out page contents before freeing to prevent dangling references */
++      memset(page, 0, sizeof(mrb_heap_page));

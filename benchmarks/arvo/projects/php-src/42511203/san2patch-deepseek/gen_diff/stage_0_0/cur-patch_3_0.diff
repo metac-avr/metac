@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..480d0a0aa29 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2262,2 +2262,3 @@ static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht
+-			retval = zend_hash_find_ex(ht, offset_key, ZEND_CONST_COND(dim_type == IS_CONST, 0));
+-			if (!retval) {
++			zval *tmp_retval;
++			tmp_retval = zend_hash_find_ex(ht, offset_key, ZEND_CONST_COND(dim_type == IS_CONST, 0));
++			if (!tmp_retval) {
+@@ -2270 +2271 @@ static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht
+-						retval = &EG(uninitialized_zval);
++						tmp_retval = &EG(uninitialized_zval);
+@@ -2273 +2274 @@ static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht
+-						retval = zend_undefined_index_write(ht, offset_key);
++						tmp_retval = zend_undefined_index_write(ht, offset_key);
+@@ -2276,0 +2278,8 @@ static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht
++			if (EXPECTED(type != BP_VAR_R && type != BP_VAR_UNSET)) {
++				zval *verify_val = zend_hash_find_ex(ht, offset_key, ZEND_CONST_COND(dim_type == IS_CONST, 0));
++				if (verify_val && verify_val != tmp_retval) {
++					ZVAL_COPY(&EG(uninitialized_zval), verify_val);
++					tmp_retval = verify_val;
++				}
++			}
++			retval = tmp_retval;

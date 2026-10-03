@@ -1,0 +1,14 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..8abb24a0 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -425 +425,8 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     */
++// Patched CWE-416: Use After Free - ensure current pointer validity
++      */
++    if (ctxt->input->cur >= ctxt->input->end) {
++        /* Buffer may have been reallocated, refresh pointer */
++        ctxt->input->cur = ctxt->input->base + (ctxt->input->cur - ctxt->input->base);
++        if (ctxt->input->cur >= ctxt->input->end)
++            ctxt->input->cur = ctxt->input->end - 1;
++    }

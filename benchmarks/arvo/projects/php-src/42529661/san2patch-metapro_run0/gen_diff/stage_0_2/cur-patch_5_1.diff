@@ -1,0 +1,27 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..a181e587e8a 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1522 +1522,4 @@ static void ZEND_FASTCALL zend_jit_assign_dim_helper(zval *object_ptr, zval *dim
+-			zend_array_destroy(arr);
++			if (arr) {
++				zend_array_destroy(arr);
++				arr = NULL;  /* Ensure arr is nullified after free */
++			}
+@@ -2490,3 +2493,4 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	GC_REMOVE_FROM_BUFFER(ht);
+-	if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
+-		_zend_hash_iterators_remove(ht);
++	HashTable *temp_ht = ht;
++	GC_REMOVE_FROM_BUFFER(temp_ht);
++	if (UNEXPECTED(HT_HAS_ITERATORS(temp_ht))) {
++		_zend_hash_iterators_remove(temp_ht);
+@@ -2494,2 +2498,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
+-		efree(HT_GET_DATA_ADDR(ht));
++	if (!(EXPECTED(HT_FLAGS(temp_ht) & HASH_FLAG_UNINITIALIZED))) {
++		efree(HT_GET_DATA_ADDR(temp_ht));
+@@ -2497 +2501,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	FREE_HASHTABLE(ht);
++	FREE_HASHTABLE(temp_ht);
++	ht = NULL;

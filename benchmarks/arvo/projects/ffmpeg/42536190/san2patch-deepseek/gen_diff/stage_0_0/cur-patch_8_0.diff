@@ -1,0 +1,21 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..a575971da2 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -2357 +2357 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
+-                                         sps->max_transform_hierarchy_depth_intra + lc->cu.intra_split_flag :
++                                          sps->max_transform_hierarchy_depth_intra + lc->cu.intra_split_flag :
+@@ -2365,2 +2365,11 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
+-                if (!s->sh.disable_deblocking_filter_flag)
+-                    ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_cb_size);
++                if (!s->sh.disable_deblocking_filter_flag) {
++                    const RefPicList *rpl0 = &s->ref->refPicList[L0];
++                    const RefPicList *rpl1 = &s->ref->refPicList[L1];
++                    int valid = s->ref && s->sh.nb_refs[L0] > 0;
++                    for (int i = 0; valid && i < s->sh.nb_refs[L0]; i++)
++                        valid = rpl0[i].ref && rpl0[i].ref->frame;
++                    for (int i = 0; valid && i < s->sh.nb_refs[L1]; i++)
++                        valid = rpl1[i].ref && rpl1[i].ref->frame;
++                    if (valid)
++                        ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_cb_size);
++                }

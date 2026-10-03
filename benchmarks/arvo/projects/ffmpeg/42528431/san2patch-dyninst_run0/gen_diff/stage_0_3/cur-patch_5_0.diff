@@ -1,0 +1,34 @@
+diff --git a/libavcodec/cbs.c b/libavcodec/cbs.c
+index daf7f66427..967a65aced 100644
+--- a/libavcodec/cbs.c
++++ b/libavcodec/cbs.c
+@@ -395,0 +396,11 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
++    // Validate data_size to prevent integer overflow in memcpy
++    if (unit->data_size < 0) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Negative data size detected: %d\n", unit->data_size);
++        return AVERROR(EINVAL);
++    }
++    
++    if (unit->data_size > ctx->write_buffer_size) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Data size exceeds buffer size: %d > %d\n", unit->data_size, ctx->write_buffer_size);
++        return AVERROR(EINVAL);
++    }
++
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..bdd7ee31d0 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1214 +1214,2 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        // This happens normally for CABAC.
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         // This happens normally for CABAC.
+@@ -1216,2 +1217,7 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        memcpy(put_bits_ptr(pbc), pos, rest);
+-        skip_put_bytes(pbc, rest);
++        if (rest > 0) {
++            size_t remaining_space = put_bytes_left(pbc, 0);
++            if (rest <= remaining_space) {
++                memcpy(put_bits_ptr(pbc), pos, rest);
++                skip_put_bytes(pbc, rest);
++            }
++        }

@@ -1,0 +1,20 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..2673a19f5 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -430 +430,2 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-				if (ogg_stream_pagein(&os, &oggpage) >= 0 ) {
++// FIXME: Crash CWE-416: Use After Free
++ 				if (ogg_stream_pagein(&os, &oggpage) >= 0 ) {
+@@ -432 +433,3 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-					oggdmx_get_stream_info(&oggpacket, &info);
++					if (oggpacket.packet != NULL && os.body_data != NULL) { 
++						oggdmx_get_stream_info(&oggpacket, &info);
++					}
+@@ -712 +714,0 @@ static void oggdmx_parse_tags(GF_Filter *filter, GF_OGGStream *st, u8 *data, u32
+-
+@@ -719,0 +722,4 @@ GF_Err oggdmx_process(GF_Filter *filter)
++	// FIXME: Crash CWE-416: Use After Free
++ 
++	// Add safety check for freed stream data
++	if (ctx && ctx->streams_freed) return GF_BAD_PARAM;

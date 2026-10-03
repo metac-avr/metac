@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..0dc73397aad 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -64,4 +64,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
++ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
++ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
++efree(str);
+@@ -72,0 +73 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
++	if (ref == NULL) return;  // Prevent dereferencing null/expired pointers
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..800d8fae90d 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272,6 +3272,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+-				}
+-		}
+-	}
+-
+-	ZEND_VM_TAIL_CALL(zend_dispatch_try_catch_finally_helper_SPEC(current_try_catch_offset, throw_op_num ZEND_OPCODE_HANDLER_ARGS_PASSTHRU_CC));
++                    zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++                }
++        }
++// Clear compiled variable references before exception handling to prevent use-after-free
++        ZEND_VM_TAIL_CALL(zend_dispatch_try_catch_finally_helper_SPEC(current_try_catch_offset, throw_op_num ZEND_OPCODE_HANDLER_ARGS_PASSTHRU_CC));

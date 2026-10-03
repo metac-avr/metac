@@ -1,0 +1,28 @@
+diff --git a/libavcodec/cdgraphics.c b/libavcodec/cdgraphics.c
+index b851ec430b..c7a1517f19 100644
+--- a/libavcodec/cdgraphics.c
++++ b/libavcodec/cdgraphics.c
+@@ -239,5 +239,18 @@ static void cdg_scroll(CDGraphicsContext *cc, uint8_t *data,
+-
+-    for (y = FFMAX(0, vinc); y < FFMIN(CDG_FULL_HEIGHT + vinc, CDG_FULL_HEIGHT); y++)
+-        memcpy(out + FFMAX(0, hinc) + stride * y,
+-               in + FFMAX(0, hinc) - hinc + (y - vinc) * stride,
+-               FFMIN(stride + hinc, stride));
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
++    for (y = FFMAX(0, vinc); y < FFMIN(CDG_FULL_HEIGHT + vinc, CDG_FULL_HEIGHT); y++) {
++        int src_x = FFMAX(0, hinc) - hinc;
++        int dest_x = FFMAX(0, hinc);
++        int copy_width = FFMIN(stride + hinc, stride);
++        
++        // Ensure we don't copy beyond buffer boundaries
++        if (dest_x + copy_width > stride)
++            copy_width = stride - dest_x;
++        if (src_x + copy_width > stride)
++            copy_width = stride - src_x;
++            
++        if (copy_width > 0)
++            memcpy(out + dest_x + stride * y,
++                   in + src_x + (y - vinc) * stride,
++                   copy_width);
++    }

@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..7c77df389e5 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1051,0 +1052,8 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
++	// Validate zval pointers before use to prevent use-after-free scenarios
++	if (!op1 || !op2) {
++		if (result != op1) {
++			ZVAL_UNDEF(result);
++		}
++		return FAILURE;
++	}
++
+@@ -1054,2 +1062,9 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (add_function_fast(result, op1, op2) == SUCCESS) {
+-		return SUCCESS;
++	
++	// Additional safety check after dereferencing
++	if ((Z_TYPE_P(op1) >= IS_NULL && Z_TYPE_P(op1) <= _IS_NUMBER) && 
++	    (Z_TYPE_P(op2) >= IS_NULL && Z_TYPE_P(op2) <= _IS_NUMBER)) {
++		if (add_function_fast(result, op1, op2) == SUCCESS) {
++			return SUCCESS;
++		}
++	} else {
++		ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_ADD);
+@@ -1058,2 +1072,0 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_ADD);
+-

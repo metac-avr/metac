@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..6c3f43090e8 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -216 +216,6 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		return ZEND_HASH_APPLY_REMOVE;
++		/* Add safety check to prevent access to freed memory */
++		if (zv && !Z_IS_RECURSIVE_P(zv)) {
++			return ZEND_HASH_APPLY_REMOVE;
++		} else {
++			return ZEND_HASH_APPLY_KEEP;
++		}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..4e47cb69d9f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2167,0 +2168,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++			if (Z_TYPE(p->val) == IS_OBJECT) {
++				zend_object *obj = Z_OBJ(p->val);
++				if (!obj || !obj->handlers) continue;
++			}

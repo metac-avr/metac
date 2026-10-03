@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..66828ac664e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30063 +30063,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++// Fixed: Crash CWE-416: Use After Free - Added null check before accessing dim
++ 			if ((dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC)) != NULL) {
+@@ -30065,3 +30066,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
+-				ZVAL_NULL(EX_VAR(opline->result.var));
++				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++				if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++					ZVAL_NULL(EX_VAR(opline->result.var));
++				}
+@@ -49650 +49652,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
++// Fixed: Crash CWE-416: Use After Free - Added null check before accessing dim
++ 			if ((dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC)) != NULL) {
+@@ -49652,3 +49655,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
+-				ZVAL_NULL(EX_VAR(opline->result.var));
++				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
++				if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++					ZVAL_NULL(EX_VAR(opline->result.var));
++				}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..72a536445eb 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1183 +1184 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
++	ZEND_ASSERT(p != NULL && p->refcount > 0); // Added NULL check to prevent use-after-free
+@@ -1193 +1193,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-

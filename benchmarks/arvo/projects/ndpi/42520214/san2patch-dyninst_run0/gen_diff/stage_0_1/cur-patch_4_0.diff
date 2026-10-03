@@ -1,0 +1,28 @@
+diff --git a/src/lib/protocols/bittorrent.c b/src/lib/protocols/bittorrent.c
+index cdb62e8db..d1d3cbfa4 100644
+--- a/src/lib/protocols/bittorrent.c
++++ b/src/lib/protocols/bittorrent.c
+@@ -498,2 +498,2 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-	   (strncmp((const char*)packet->payload, bt_search, strlen(bt_search)) == 0)
+-	   || (strncmp((const char*)packet->payload, bt_search1, strlen(bt_search1)) == 0)
++	   (packet->payload_packet_len >= 22 && strncmp((const char*)packet->payload, bt_search, 22) == 0)
++	   || (packet->payload_packet_len >= 22 && strncmp((const char*)packet->payload, bt_search1, 22) == 0)
+@@ -504,0 +505 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
++	  if(packet->payload_packet_len < 19) return; /* Not enough data for v0_extension and v0_flags */
+@@ -508 +509,2 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-	  if(is_utpv1_pkt(packet->payload, packet->payload_packet_len)) {
++	  if(packet->payload_packet_len >= 20 && is_utpv1_pkt(packet->payload, packet->payload_packet_len)) {
++	    if(packet->payload_packet_len < 20 + strlen(BITTORRENT_PROTO_STRING)) return; /* Not enough data for strnstr */
+@@ -511 +513,2 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-	  } else if((packet->payload[0]== 0x60)
++	  } else if((packet->payload_packet_len >= 5) &&
++		    (packet->payload[0]== 0x60)
+@@ -516,0 +520 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
++	    if(packet->payload_packet_len < 20 + strlen(BITTORRENT_PROTO_STRING)) return; /* Not enough data for strnstr */
+@@ -520,0 +525 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
++	    if(packet->payload_packet_len < 8) return; /* Not enough data for timestamp */
+@@ -526,0 +532 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
++	      if(packet->payload_packet_len < 20 + strlen(BITTORRENT_PROTO_STRING)) return; /* Not enough data for strnstr */
+@@ -530 +536 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-	  } else if(ndpi_strnstr((const char *)&packet->payload[20], BITTORRENT_PROTO_STRING, packet->payload_packet_len-20)
++	  } else if(packet->payload_packet_len >= 20 && ndpi_strnstr((const char *)&packet->payload[20], BITTORRENT_PROTO_STRING, packet->payload_packet_len-20)

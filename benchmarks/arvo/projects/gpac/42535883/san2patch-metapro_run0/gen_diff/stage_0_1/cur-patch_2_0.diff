@@ -1,0 +1,26 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..160161c01 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1187 +1187,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-	u32 i, count;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	u32 i, count;
+@@ -1220,2 +1221,15 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				// Add explicit bounds check for buffer overflow prevention
++				if (cfg->num_constraint_info > 0 && cfg->num_constraint_info <= 64) {
++					if (cfg->num_constraint_info - 1 <= 63) { // Ensure we don't go beyond 64-byte buffer
++						gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
++						if (cfg->num_constraint_info - 1 < 64) { // Additional check for last element access
++							gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++						} else {
++							gf_bs_write_int(bs, 0, 6);
++						}
++					} else {
++						gf_bs_write_int(bs, 0, 6);
++					}
++				} else {
++					gf_bs_write_int(bs, 0, 6);
++				}

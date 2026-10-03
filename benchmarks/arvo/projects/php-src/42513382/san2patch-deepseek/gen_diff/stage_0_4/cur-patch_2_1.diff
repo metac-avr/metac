@@ -1,0 +1,29 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..6925470a82e 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6964 +6964 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
++if (zend_parse_parameters_none() == FAILURE) {
+@@ -6972,0 +6973,5 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
++	if (UNEXPECTED(!intern || !intern->ce || (intern->ce->ce_flags & ZEND_ACC_ENUM) == 0 || intern->ce->enum_backing_type == IS_UNDEF || Z_TYPE(ref->value) != IS_OBJECT || !Z_OBJ(ref->value))) {
++		zend_throw_error(NULL, "Cannot get backing value from invalid reflection object");
++		RETURN_THROWS();
++	}
++
+@@ -6986,0 +6992,15 @@ ZEND_METHOD(ReflectionFiber, __construct)
++	ZEND_PARSE_PARAMETERS_START(1, 1)
++		Z_PARAM_OBJECT_OF_CLASS(fiber, zend_ce_fiber)
++	ZEND_PARSE_PARAMETERS_END();
++
++	if (intern->ce) {
++		if (intern->ce != zend_ce_fiber) {
++			zend_throw_error(NULL, "ReflectionFiber object is already initialized");
++			RETURN_THROWS();
++		}
++	}
++	intern->ref_type = REF_TYPE_FIBER;
++	ZVAL_OBJ_COPY(&intern->obj, Z_OBJ_P(fiber));
++	intern->ce = zend_ce_fiber;
++}	object = ZEND_THIS;
++	intern = Z_REFLECTION_P(object);

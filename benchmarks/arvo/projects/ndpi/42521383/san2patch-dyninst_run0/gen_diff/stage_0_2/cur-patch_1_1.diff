@@ -1,0 +1,42 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index d66ebc786..3f9534d14 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -246 +246 @@ void ndpi_free(void *ptr) {
+-    if(ptr)
++    if(ptr && ((uintptr_t)ptr & (sizeof(void*)-1)) == 0) /* Basic alignment check */
+@@ -248,2 +248,2 @@ void ndpi_free(void *ptr) {
+-  } else {
+-    if(ptr)
++   } else {
++    if(ptr && ((uintptr_t)ptr & (sizeof(void*)-1)) == 0)
+@@ -8215,0 +8216 @@ int ndpi_match_impossible_bigram(const char *str) {
++// ****************************************************** //
+@@ -8217,8 +8218,2 @@ int ndpi_match_impossible_bigram(const char *str) {
+-int ndpi_match_trigram(const char *str) {
+-  return ndpi_match_xgram(trigrams_bitmap, 3, str);
+-}
+-
+-
+-/* ****************************************************** */
+-
+-void ndpi_free_flow(struct ndpi_flow_struct *flow) {
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ void ndpi_free_flow(struct ndpi_flow_struct *flow) {
+@@ -8226,2 +8221,5 @@ void ndpi_free_flow(struct ndpi_flow_struct *flow) {
+-    ndpi_free_flow_data(flow);
+-    ndpi_free(flow);
++    // Validate pointer before freeing
++    if(ndpi_validate_pointer(flow)) {
++      ndpi_free_flow_data(flow);
++      ndpi_free(flow);
++    }
+@@ -8231,7 +8229 @@ void ndpi_free_flow(struct ndpi_flow_struct *flow) {
+-/* ****************************************************** */
+-
+-char *ndpi_revision() {
+-  return(NDPI_GIT_RELEASE);
+-}
+-
+-/* ****************************************************** */
++// ****************************************************** ///* ****************************************************** */

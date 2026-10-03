@@ -1,0 +1,73 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..806f4a15a2f 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7865,8 +7865,9 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+-		if (zend_jit_trace_exit_is_bad(trace_num, exit_num)) {
+-			zend_jit_blacklist_trace_exit(trace_num, exit_num);
+-			if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_BLACKLIST) {
+-				fprintf(stderr, "---- EXIT %d/%d blacklisted\n",
+-					trace_num, exit_num);
+-			}
+-			return 0;
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	ZEND_ASSERT(p->refcount > 0);
++	ZEND_RC_MOD_CHECK(p);
++	if (p->refcount > 1) {
++		return --(p->refcount);
++	} else {
++		/* Handle last reference case to prevent UAF */
++		if (UNEXPECTED(ZEND_GC_TYPE(p) == GC_REFERENCE)) {
++			return p->refcount; /* Prevent destruction of reference objects */
+@@ -7874,2 +7875 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	} else if (JIT_G(hot_side_exit) && zend_jit_trace_exit_is_hot(trace_num, exit_num)) {
+-		return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
++		return --(p->refcount);
+@@ -7877,10 +7877 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-
+-	/* Return 1 to call original handler instead of the same JIT-ed trace */
+-	return (orig_opline == t->opline && EX(opline) == orig_opline);
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++}		case ZEND_FAST_CALL:
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..c5a799df462 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,2 +1172,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+@@ -1178 +1176,9 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-		--p->refcount;
++		if (p->refcount > 1) {
++			--p->refcount;
++		} else {
++			/* Avoid freeing reference types to prevent UAF */
++			if (UNEXPECTED(ZEND_GC_TYPE(p) == GC_REFERENCE)) {
++				return;
++			}
++			--p->refcount;
++		}
+@@ -1180,15 +1186 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
+-	ZEND_RC_MOD_CHECK(p);
+-	return --(p->refcount);
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {

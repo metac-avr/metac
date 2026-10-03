@@ -1,0 +1,138 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..06a569d7af 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2032,2 +2032,2 @@ WRITE_FRAME(16, uint16_t)
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
++static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
++                                 int *got_frame, AVPacket *avpkt)
+@@ -2035,3 +2035,2 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
++    Jpeg2000DecoderContext *s = avctx->priv_data;
++    int ret;
+@@ -2039 +2038,4 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-    tile_codeblocks(s, tile);
++    s->avctx     = avctx;
++    bytestream2_init(&s->g, avpkt->data, avpkt->size);
++    s->curtileno = -1;
++    memset(s->cdef, -1, sizeof(s->cdef));
+@@ -2041,3 +2043,4 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-    /* inverse MCT transformation */
+-    if (tile->codsty[0].mct)
+-        mct_decode(s, tile);
++    if (bytestream2_get_bytes_left(&s->g) < 2) {
++        ret = AVERROR_INVALIDDATA;
++        goto end;
++    }
+@@ -2045,2 +2048,11 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-    if (s->precision <= 8) {
+-        write_frame_8(s, tile, picture, 8);
++    // check if the image is in jp2 format
++    if (bytestream2_get_bytes_left(&s->g) >= 12 &&
++       (bytestream2_get_be32u(&s->g) == 12) &&
++       (bytestream2_get_be32u(&s->g) == JP2_SIG_TYPE) &&
++       (bytestream2_get_be32u(&s->g) == JP2_SIG_VALUE)) {
++        if (!jp2_find_codestream(s)) {
++            av_log(avctx, AV_LOG_ERROR,
++                   "Could not find Jpeg2000 codestream atom.\n");
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }
+@@ -2048,4 +2060,5 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-        int precision = picture->format == AV_PIX_FMT_XYZ12 ||
+-                        picture->format == AV_PIX_FMT_RGB48 ||
+-                        picture->format == AV_PIX_FMT_RGBA64 ||
+-                        picture->format == AV_PIX_FMT_GRAY16 ? 16 : s->precision;
++        bytestream2_seek(&s->g, 0, SEEK_SET);
++    }
++
++    while (bytestream2_get_bytes_left(&s->g) >= 3 && bytestream2_peek_be16(&s->g) != JPEG2000_SOC)
++        bytestream2_skip(&s->g, 1);
+@@ -2053 +2066,4 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-        write_frame_16(s, tile, picture, precision);
++    if (bytestream2_get_be16u(&s->g) != JPEG2000_SOC) {
++        av_log(avctx, AV_LOG_ERROR, "SOC marker not present\n");
++        ret = AVERROR_INVALIDDATA;
++        goto end;
+@@ -2054,0 +2071,2 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
++    if ((ret = jpeg2000_read_main_headers(s)))
++        goto end;
+@@ -2056 +2074,58 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-    return 0;
++    if (s->sar.num && s->sar.den)
++        avctx->sample_aspect_ratio = s->sar;
++    s->sar.num = s->sar.den = 0;
++
++    if (avctx->skip_frame >= AVDISCARD_ALL) {
++        jpeg2000_dec_cleanup(s);
++        return avpkt->size;
++    }
++
++    /* get picture buffer */
++    if ((ret = ff_thread_get_buffer(avctx, picture, 0)) < 0)
++        goto end;
++    picture->pict_type = AV_PICTURE_TYPE_I;
++    picture->flags |= AV_FRAME_FLAG_KEY;
++
++    if ((ret = jpeg2000_read_bitstream_packets(s)))
++        goto end;
++
++    for (int x = 0; x < s->ncomponents; x++) {
++        if (s->cdef[x] < 0) {
++            for (x = 0; x < s->ncomponents; x++) {
++                s->cdef[x] = x + 1;
++            }
++            if ((s->ncomponents & 1) == 0)
++                s->cdef[s->ncomponents-1] = 0;
++            break;
++        }
++    }
++
++    // Validate multiplication to prevent integer overflow
++    if (s->numXtiles > 0 && s->numYtiles > 0) {
++        if (s->numXtiles > INT_MAX / s->numYtiles) {
++            av_log(avctx, AV_LOG_ERROR, "Tile count overflow\n");
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }
++        int tile_count = s->numXtiles * s->numYtiles;
++        if (tile_count <= 0) {
++            av_log(avctx, AV_LOG_ERROR, "Invalid tile count\n");
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }
++    }
++
++    avctx->execute2(avctx, jpeg2000_decode_tile, picture, NULL, s->numXtiles * s->numYtiles);
++
++    jpeg2000_dec_cleanup(s);
++
++    *got_frame = 1;
++
++    if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
++        memcpy(picture->data[1], s->palette, 256 * sizeof(uint32_t));
++
++    return bytestream2_tell(&s->g);
++
++end:
++    jpeg2000_dec_cleanup(s);
++    return ret;
+@@ -2500,0 +2576,15 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
++    // Validate multiplication to prevent integer overflow
++    if (s->numXtiles > 0 && s->numYtiles > 0) {
++        if (s->numXtiles > INT_MAX / s->numYtiles) {
++            av_log(avctx, AV_LOG_ERROR, "Tile count overflow\n");
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }
++        int tile_count = s->numXtiles * s->numYtiles;
++        if (tile_count <= 0) {
++            av_log(avctx, AV_LOG_ERROR, "Invalid tile count\n");
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }
++    }
++

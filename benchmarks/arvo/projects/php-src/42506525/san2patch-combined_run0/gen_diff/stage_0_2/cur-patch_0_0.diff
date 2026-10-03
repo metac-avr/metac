@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..07253ad7684 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1433,5 +1433,7 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-
+-	_zend_hash_del_el_ex(ht, idx, p, prev);
+-	if (p->key) {
+-		zend_string_release(p->key);
+-		p->key = NULL;
++	// Validate pointer before use to prevent use-after-free
++	if (EXPECTED(p >= ht->arData && p < ht->arData + ht->nNumUsed)) {
++		_zend_hash_del_el_ex(ht, idx, p, prev);
++		if (p->key) {
++			zend_string_release(p->key);
++			p->key = NULL;
++		}
+@@ -2154 +2156,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (result & ZEND_HASH_APPLY_REMOVE) {
++// FIXME: Crash CWE-416: Use After Free
++ 			if (result & ZEND_HASH_APPLY_REMOVE) {
+@@ -2156 +2159,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				/* Re-validate pointer after potential hash table resize */
++				if (idx < ht->nNumUsed && ht->arData + idx == p) {
++					_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				}

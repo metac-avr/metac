@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index d13087a5b02..3cb38eccdc7 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -156,9 +156,11 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			zend_copy_to_variable(variable_ptr, value, value_type);
+-			if (GC_DELREF(garbage) == 0) {
+-				rc_dtor_func(garbage);
+-			} else { /* we need to split */
+-				/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
+-				if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
+-					gc_possible_root(garbage);
+-				}
+-			}
++// FIXME: Crash CWE-416: Use After Free
++                        zend_copy_to_variable(variable_ptr, value, value_type);
++                        if (GC_DELREF(garbage) == 0) {
++                                ZEND_GC_DELAYED_DESTRUCT(garbage);
++                                rc_dtor_func(garbage);
++                        } else { /* we need to split */
++                                /* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
++                                if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
++                                        gc_possible_root(garbage);
++                                }
++                        }
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..7c35563bb11 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -270 +270,2 @@ ZEND_API void ZEND_FASTCALL _zend_hash_init(HashTable *ht, uint32_t nSize, dtor_
+-ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
+@@ -272 +273 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
+-	HashTable *ht = emalloc(sizeof(HashTable));
++	HashTable *ht = ecalloc(1, sizeof(HashTable));
+@@ -279 +280 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
+-	HashTable *ht = emalloc(sizeof(HashTable));
++	HashTable *ht = ecalloc(1, sizeof(HashTable));
+@@ -283 +283,0 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
+-

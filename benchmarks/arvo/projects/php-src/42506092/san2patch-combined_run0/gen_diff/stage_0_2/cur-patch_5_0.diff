@@ -1,0 +1,12 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index acf98a2f74a..1abe8737cf9 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -23867 +23867,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_U
+-	value = zend_assign_to_variable(variable_ptr, value, IS_CONST, EX_USES_STRICT_TYPES());
++	/* Validate memory integrity before JIT access to prevent use-after-free */
++	if (variable_ptr && Z_REFCOUNTED_P(variable_ptr)) {
++		value = zend_assign_to_variable(variable_ptr, value, IS_CONST, EX_USES_STRICT_TYPES());
++	} else if (variable_ptr) {
++		value = zend_assign_to_variable(variable_ptr, value, IS_CONST, EX_USES_STRICT_TYPES());
++	}

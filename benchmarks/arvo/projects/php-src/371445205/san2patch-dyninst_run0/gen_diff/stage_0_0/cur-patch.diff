@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..5f36fb12099 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -275 +275,2 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-				zend_hash_add_new(named_params, attribute_data->args[i].name, &val);
++				zend_string *key = zend_string_copy(attribute_data->args[i].name);
++				zend_hash_add_new(named_params, key, &val);
+@@ -291 +292 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-
++ 
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..b95c5f1ae79 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,5 +6769,0 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
+@@ -6778,0 +6774 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	ZVAL_UNDEF(&obj);
+@@ -6784 +6780,10 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	RETURN_COPY_VALUE(&obj);
++	if (Z_TYPE(obj) == IS_OBJECT) {
++		zend_object *dup_obj = zend_object_dup(Z_OBJ(obj));
++		if (dup_obj) {
++			RETVAL_OBJ(dup_obj);
++			zval_ptr_dtor(&obj);
++			return;
++		}
++	}
++
++	RETURN_ZVAL(&obj, 1, 1);
+@@ -6790,2 +6795 @@ ZEND_METHOD(ReflectionEnum, __construct)
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++	if (EG(exception)) {		RETURN_THROWS();

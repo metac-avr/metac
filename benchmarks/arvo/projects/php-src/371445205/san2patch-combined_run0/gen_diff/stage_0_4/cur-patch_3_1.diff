@@ -1,0 +1,63 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..050870e390c 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,5 +6770,20 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
++
++static void reflection_attribute_get_constructor(INTERNAL_FUNCTION_PARAMETERS)
++{
++	zend_reflection_attribute *attr = NULL;
++	zend_class_entry *ce = NULL;
++
++	if (zend_parse_parameters_throw(ZEND_NUM_ARGS(), "O", &attr, reflection_attribute_ptr) == FAILURE) {
++		return;
++	}
++
++	ce = zend_lookup_class_ex(attr->data->name, NULL, ZEND_FETCH_CLASS_TRAIT);
++	if (!ce) {
++		zend_throw_error(NULL, "Class \"%s\" does not exist", ZSTR_VAL(attr->data->name));
++		RETURN_THROWS();
++	}
++
++	if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
++		if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
++			zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
++			RETURN_THROWS();
+@@ -6777,0 +6793 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -6780 +6796,4 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
++	// Clone the attribute data to prevent use-after-free
++	zend_attribute *cloned_attr = zend_attribute_clone(attr->data);
++	if (SUCCESS != zend_get_attribute_object(&obj, ce, cloned_attr, attr->scope, attr->filename)) {
++		zend_attribute_destroy(cloned_attr);
+@@ -6783,0 +6803,2 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	// Clean up the cloned attribute after use
++	zend_attribute_destroy(cloned_attr);
+@@ -6785,7 +6806 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-}
+-
+-ZEND_METHOD(ReflectionEnum, __construct)
+-{
+-	reflection_class_object_ctor(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++}		RETURN_THROWS();
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..9ed74570268 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -352,0 +353 @@ static zend_always_inline void zend_string_release(zend_string *s)
++
+@@ -356 +357 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-		if (GC_DELREF(s) == 0) {
++		if (s && GC_DELREF(s) == 0) {
+@@ -360 +361,2 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-			} else {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			} else {

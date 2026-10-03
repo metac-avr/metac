@@ -1,0 +1,32 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..dcdb321e367 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -862 +862,12 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		if (UNEXPECTED(execute_data != prev_execute_data)) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (UNEXPECTED(execute_data != prev_execute_data)) {
++			/* Prevent use-after-free by checking memory validity */
++			zval *var_ptr = EX_VAR(opline->op1.var);
++			if (UNEXPECTED(var_ptr && Z_REFCOUNTED_P(var_ptr))) {
++				if (UNEXPECTED(!zend_is_valid_pointer(var_ptr))) {
++					stop = ZEND_JIT_TRACE_STOP_ERROR;
++					halt = ZEND_JIT_TRACE_HALT;
++					break;
++				}
++			}
++		}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..d1ce671fc2d 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *ptr = EX_VAR(opline->op1.var);
++		if (ptr && Z_REFCOUNTED_P(ptr) && !Z_IS_RECURSIVE_P(ptr)) {
++			GC_PROTECT_RECURSION_P(ptr);
++			zval_ptr_dtor_nogc(ptr);
++			GC_UNPROTECT_RECURSION_P(ptr);
++		}
+@@ -29957 +29961,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));

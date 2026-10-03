@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..d2b99a6b933 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && !GC_DELREF(ref)) {
+@@ -46 +46,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-			gc_check_possible_root(ref);
++			if (ref && !(GC_FLAGS(ref) & GC_IMMUTABLE)) {
++				gc_check_possible_root(ref);
++			}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..bc80b9745ba 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352 +1352,2 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
++// FIXME: Crash CWE-416: Use After Free
++ 		ZVAL_COPY_VALUE(&tmp, &p->val);
+@@ -1354 +1355,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ht->pDestructor(&tmp);
++		if (Z_TYPE(tmp) != IS_UNDEF) {
++			ht->pDestructor(&tmp);
++		}

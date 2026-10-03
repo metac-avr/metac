@@ -1,0 +1,31 @@
+diff --git a/libavcodec/vqcdec.c b/libavcodec/vqcdec.c
+index 5d1a03158c..72c076a245 100644
+--- a/libavcodec/vqcdec.c
++++ b/libavcodec/vqcdec.c
+@@ -270,0 +271 @@ static void transform1(const int16_t * a, const int16_t * b, int16_t * dst, int
++    if (width <= 0 || width > 65535) return;
+@@ -273,0 +275 @@ static void transform1(const int16_t * a, const int16_t * b, int16_t * dst, int
++        if (i * 2 + 1 >= width) break;
+@@ -279,2 +281,5 @@ static void transform1(const int16_t * a, const int16_t * b, int16_t * dst, int
+-    dst[width - 2] = s0;
+-    dst[width - 1] = a[width / 2 - 1] + ((b[width / 2 - 2] - 2 * b[width / 2 - 1]) >> 2) - b[width / 2 - 1];
++    if (width >= 2) {
++        dst[width - 2] = s0;
++        if (width / 2 - 1 >= 0 && width / 2 - 2 >= 0)
++            dst[width - 1] = a[width / 2 - 1] + ((b[width / 2 - 2] - 2 * b[width / 2 - 1]) >> 2) - b[width / 2 - 1];
++    }
+@@ -307,0 +313,10 @@ static void decode_strip(VqcContext * s, uint8_t * dst, int stride, int width)
++    if (width <= 0) {
++        return;
++    }
++
++    // Ensure width does not exceed allocated buffer size
++    if (width > (s->buf_size / 2)) {
++        av_log(s->avctx, AV_LOG_ERROR, "Width exceeds buffer bounds\n");
++        return;
++    }
++
+@@ -315 +330,2 @@ static void decode_strip(VqcContext * s, uint8_t * dst, int stride, int width)
+-    coeff = s->coeff;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     coeff = s->coeff;

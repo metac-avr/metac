@@ -1,0 +1,32 @@
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..96d1ed43e 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -567,0 +568,2 @@ u32 gf_bs_read_int(GF_BitStream *bs, u32 nBits)
++	// Bounds checking to prevent buffer overflow
++	if (!bs || !bs->buffer || nBits == 0 || nBits > 32) return 0;
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..9afe4e716 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -1587,0 +1588 @@ static u64 gf_inspect_dump_obu_internal(FILE *dump, AV1State *av1, u8 *obu_ptr,
++			if (!bs) break;
+@@ -1595,2 +1596,8 @@ static u64 gf_inspect_dump_obu_internal(FILE *dump, AV1State *av1, u8 *obu_ptr,
+-					dump_clli(dump, bs);
+-					break;
++					{
++						u64 available = gf_bs_available(bs);
++						if (available >= sizeof(u32)*2) {
++							dump_clli(dump, bs);
++						}
++					}
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 					break;
+@@ -1598 +1605,6 @@ static u64 gf_inspect_dump_obu_internal(FILE *dump, AV1State *av1, u8 *obu_ptr,
+-					dump_mdcv(dump, bs, GF_FALSE);
++					{
++						u64 available = gf_bs_available(bs);
++						if (available >= 24) {
++							dump_mdcv(dump, bs, GF_FALSE);
++						}
++					}

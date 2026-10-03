@@ -1,0 +1,99 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..08b34c55d2 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -1404,10 +1403,0 @@ static int try_parse(AVCodecParserContext *s, AVCodecContext *avctx, JXLParseCon
+-            return ret;
+-        ctx->codestream_length += ctx->codestream.frame.total_length;
+-        if (ctx->codestream.frame.is_last)
+-            return ctx->codestream_length / 8;
+-        if (get_bits_left(&gb) <= ctx->codestream.frame.body_length)
+-            return AVERROR_BUFFER_TOO_SMALL;
+-        skip_bits_long(&gb, ctx->codestream.frame.body_length);
+-    }
+-}
+-
+@@ -1426,0 +1417,83 @@ static int jpegxl_parse(AVCodecParserContext *s, AVCodecContext *avctx,
++    if ((!ctx->container || !ctx->codestream_length) && !ctx->next) {
++        int ret = 0, frameheader_size = 1;
++        GetBitContext gb;
++
++        if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
++            return ret;
++
++        /* read first frame header */
++        if ((ret = jpegxl_read_frame_header(&gb, avctx,
++                                            &ctx->codestream.frame,
++                                            &frameheader_size)) < 0) {
++            if (ret == AVERROR_EXPERIMENTAL)
++                return ret;
++            else
++                goto flush;
++        }
++
++        if (ctx->container && ctx->codestream.frame.is_last) {
++            ctx->codestream_length = 0;
++            goto flush;
++        }
++
++        ctx->collected_size = 0;
++        ctx->container = 1;
++        ctx->next = frameheader_size;
++        next = frameheader_size;
++    }
++
++    if (ctx->container && ctx->next >= 0) {
++        int body_length = 0;
++        GetBitContext gb;
++        int ret;
++
++        if ((ret = get_bits_left(&gb)) < 0)
++            return ret;
++
++        if (ctx->next >= 0) {
++            ret = init_get_bits8(&gb, buf + ctx->next, buf_size - ctx->next);
++            if (ret < 0)
++                return ret;
++        }
++
++        while (get_bits_left(&gb) >= 8) {
++            int frame_len;
++            ret = jpegxl_read_frame_header(&gb, avctx,
++                                            &ctx->codestream.frame,
++                                            &frame_len);
++            if (ret < 0)
++                return ret;
++            else if (ret == 0) {
++                body_length = frame_len;
++                skip_bits_long(&gb, ctx->codestream.frame.body_length);
++                ctx->codestream_length += ctx->codestream.frame.total_length;
++                if (ctx->codestream.frame.is_last)
++                    return ctx->codestream_length;
++                if (get_bits_left(&gb) <= ctx->codestream.frame.body_length)
++                    return AVERROR_BUFFER_TOO_SMALL;
++                skip_bits_long(&gb, ctx->codestream.frame.body_length);
++            }
++        }
++        // FIXME: Crash CWE-125: Out-of-bounds Read
++        if (get_bits_left(&gb) < 8)
++            return AVERROR_BUFFER_TOO_SMALL;
++    }
++
++flush:
++    if (next > buf_size)
++        next = buf_size;
++
++    ret = ff_combine_frame(&ctx->pc, next, &buf, &buf_size);
++    if (ret < 0)
++        return ret;
++
++    *poutbuf      = buf;
++    *poutbuf_size = buf_size;
++
++    ctx->codestream_length = 0;
++    ctx->collected_size = 0;
++    ctx->container = 0;
++
++    return next;
++}        goto flush;
++

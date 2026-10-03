@@ -1,0 +1,40 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..b494a4db3 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -185 +185 @@ int is_version_with_ietf_long_header(uint32_t version)
+-int quic_len(const uint8_t *buf, uint64_t *value)
++ int quic_len(const uint8_t *buf, uint64_t packet_len, uint64_t *value)
+@@ -186,0 +187,2 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  int len_available;
++  if(packet_len == 0) return 0;
+@@ -188,0 +191,17 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  case 0:
++    len_available = 1;
++    break;
++  case 1:
++    len_available = 2;
++    break;
++  case 2:
++    len_available = 4;
++    break;
++  case 3:
++    len_available = 8;
++    break;
++  default:
++    return 0;
++  }
++  if(packet_len < (uint64_t)len_available) return 0;
++  switch((*value) >> 6) {
+@@ -191 +210 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    return 1;
++    return len_available;
+@@ -194 +213 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    return 2;
++    return len_available;
+@@ -197 +216 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    return 4;
++    return len_available;
+@@ -200 +219 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    return 8;
++    return len_available;

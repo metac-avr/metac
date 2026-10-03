@@ -1,0 +1,47 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..ea1ffea2 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -417,22 +417 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     * From rfc2044: encoding of the Unicode values on UTF-8:
+-     *
+-     * UCS-4 range (hex.)           UTF-8 octet sequence (binary)
+-     * 0000 0000-0000 007F   0xxxxxxx
+-     * 0000 0080-0000 07FF   110xxxxx 10xxxxxx
+-     * 0000 0800-0000 FFFF   1110xxxx 10xxxxxx 10xxxxxx
+-     *
+-     * Check for the 0x110000 limit too
+-     */
+-    cur = ctxt->input->cur;
+-    c = *cur;
+-    if (c & 0x80) {
+-        size_t avail;
+-
+-        if ((c & 0x40) == 0)
+-            goto encoding_error;
+-
+-        avail = ctxt->input->end - ctxt->input->cur;
+-
+-        if ((avail < 2) || ((cur[1] & 0xc0) != 0x80))
+-            goto encoding_error;
+-        if ((c & 0xe0) == 0xe0) {
++htmlParseComment        if ((c & 0xe0) == 0xe0) {
+@@ -3457,0 +3437,3 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	const xmlChar* old_cur = ctxt->input->cur;
++	ptrdiff_t offset = ctxt->input->cur - ctxt->input->base;
++	
+@@ -3458,0 +3441,7 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	
++	if (offset >= (ptrdiff_t)ctxt->input->length) {
++	    htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++			 "Buffer overflow in htmlParseComment", NULL, NULL);
++	    return;
++	}
++	
+@@ -3478,0 +3468,6 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	    
++	    if (ctxt->input->cur < ctxt->input->base || ctxt->input->cur >= ctxt->input->base + ctxt->input->length) {
++	        htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++			     "Invalid buffer state after realloc in htmlParseComment", NULL, NULL);
++	        return;
++	    }

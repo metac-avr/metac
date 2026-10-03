@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..40e2967316a 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	/* Move iterator removal before data freeing to prevent dangling references */
+@@ -1685,0 +1685,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	efree(HT_GET_DATA_ADDR(ht));
++ free_ht:
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..a8d55e5a021 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p != NULL) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+@@ -67,2 +69 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
+-}
++	efree(str);}

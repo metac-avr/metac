@@ -1,0 +1,34 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..b5efff3f67e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40398 +40398,13 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZVAL_COPY(&ref->val, get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R));
++				zval *op2_val = get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R);
++				if (op2_val && Z_REFCOUNTED_P(op2_val)) {
++					zend_refcounted *rc = Z_COUNTED_P(op2_val);
++					if (GC_REFCOUNT(rc) > 0) {
++						ZVAL_COPY(&ref->val, op2_val);
++						GC_ADDREF(rc);
++					} else {
++						/* Reference count is zero, object likely freed */
++						ZVAL_NULL(&ref->val);
++					}
++				} else {
++					ZVAL_COPY(&ref->val, op2_val);
++				}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..ec65833c9f1 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,3 +202,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++		/* Add safety check to prevent use-after-free */
++		if (EG(objects_store).object_buckets[handle] == SET_OBJ_INVALID(object)) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++		}

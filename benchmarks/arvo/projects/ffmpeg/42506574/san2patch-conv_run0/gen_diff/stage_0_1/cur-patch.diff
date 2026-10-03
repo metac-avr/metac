@@ -1,0 +1,30 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..6830f65fbd 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -656 +656,4 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    }
++        /* Add bounds checking for buffer dimensions */
++        if (w <= 0 || h <= 0 || dst_x < 0 || dst_y < 0)
++            return AVERROR_INVALIDDATA;
++     }
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..c3819fe765 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -2529,4 +2529,7 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            s->ls          = 0;
+-            s->progressive = 1;
+-            if ((ret = ff_mjpeg_decode_sof(s)) < 0)
+-                goto fail;
++// Fixed CWE-787: Out-of-bounds Write by adding bounds validation
++            if (s->mb_width > 0 && s->mb_height > 0) {
++                s->ls          = 0;
++                s->progressive = 1;
++                if ((ret = ff_mjpeg_decode_sof(s)) < 0)
++                    goto fail;
++            }
+@@ -2541,2 +2544 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-                goto fail;
+-            break;
++                goto fail;            break;

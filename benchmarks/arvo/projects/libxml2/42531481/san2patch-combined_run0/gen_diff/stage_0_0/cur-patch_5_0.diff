@@ -1,0 +1,26 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..5d583096 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -402,3 +402,6 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	 (cur->type == XML_XINCLUDE_END)) &&
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++// FIXME: Crash CWE-416: Use After Free
++ 	 (cur->type == XML_XINCLUDE_END)) &&
++	(cur->nsDef != NULL)) {
++        xmlFreeNsList(cur->nsDef);
++        cur->nsDef = NULL;  /* Prevent use-after-free */
++    }
+diff --git a/parser.c b/parser.c
+index cae2b7fd..67444c64 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7399 +7399,6 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    cur = cur->next;
++		    /* Check for valid pointer before advancing */
++		    if ((cur != NULL) && (cur->next != cur)) {
++		        cur = cur->next;
++		    } else {
++		        cur = NULL;
++		    }

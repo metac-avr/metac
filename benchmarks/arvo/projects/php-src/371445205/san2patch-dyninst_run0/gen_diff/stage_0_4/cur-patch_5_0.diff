@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..994810fd931 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -155 +155,4 @@ static zend_attribute *get_attribute(HashTable *attributes, zend_string *lcname,
+-			if (attr->offset == offset && zend_string_equals(attr->lcname, lcname)) {
++			if (attr->offset == offset && attr->lcname == lcname) {
++				return attr;
++			}
++			if (attr->offset == offset && lcname && attr->lcname && zend_string_equals(attr->lcname, lcname)) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..108511f09c0 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1838 +1838,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++// FIXME: Crash CWE-416: Use After Free
++ 					i_zval_ptr_dtor(&p->val);
+@@ -1840 +1841,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						zend_string_release_ex(p->key, 0);
++						zend_string *tmp_key = p->key;
++						p->key = NULL; /* Prevent double free */
++						zend_string_release_ex(tmp_key, 0);
+@@ -1848 +1851,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-							zend_string_release_ex(p->key, 0);
++							zend_string *tmp_key = p->key;
++							p->key = NULL; /* Prevent double free */
++							zend_string_release_ex(tmp_key, 0);

@@ -1,0 +1,39 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..58bb8b4d8 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348,10 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
++    void *new_cibase = mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    if (new_cibase != c->cibase) {
++      ptrdiff_t ci_offset = ci - c->cibase;
++      c->cibase = (mrb_callinfo*)new_cibase;
++      ci = c->cibase + size;
++    } else {
++      c->cibase = (mrb_callinfo*)new_cibase;
+@@ -350,2 +359 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
+-    c->ci = ci = c->cibase + size;
++    c->ci = ci;
+@@ -2710,2 +2718,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
++      mrb_value splat = mrb_nil_value();
++      if (mrb != NULL) {  // Validate mrb state before use
++        splat = mrb_ary_splat(mrb, regs[a+1]);
++      }
+@@ -2717 +2729,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-        mrb_ary_concat(mrb, regs[a], splat);
++        if (mrb != NULL) {  // Additional safety check
++          mrb_ary_concat(mrb, regs[a], splat);
++        }
+@@ -2721,3 +2735 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    }
+-
+-    CASE(OP_ARYPUSH, BB) {
++    }    CASE(OP_ARYPUSH, BB) {

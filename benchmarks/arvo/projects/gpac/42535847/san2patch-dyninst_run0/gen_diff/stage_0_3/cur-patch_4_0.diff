@@ -1,0 +1,30 @@
+diff --git a/src/isomedia/meta.c b/src/isomedia/meta.c
+index 65660dcba..97b00f5e2 100644
+--- a/src/isomedia/meta.c
++++ b/src/isomedia/meta.c
+@@ -372,3 +372,9 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-					hvcc->config->write_annex_b = GF_TRUE;
+-					gf_odf_hevc_cfg_write_bs(hvcc->config, item_bs);
+-					hvcc->config->write_annex_b = GF_FALSE;
++					// Check if config is still valid before accessing
++					if (hvcc->config && hvcc->config->write_annex_b != 0xFF) { // Additional validity check
++						hvcc->config->write_annex_b = GF_TRUE;
++						gf_odf_hevc_cfg_write_bs(hvcc->config, item_bs);
++						hvcc->config->write_annex_b = GF_FALSE;
++					} else {
++						GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("HEVC config pointer expired or invalid\n"));
++						return GF_BAD_PARAM;
++					}
+@@ -383,3 +389,9 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-					avcc->config->write_annex_b = GF_TRUE;
+-					gf_odf_avc_cfg_write_bs(avcc->config, item_bs);
+-					avcc->config->write_annex_b = GF_FALSE;
++					// Check if config is still valid before accessing
++					if (avcc->config && avcc->config->write_annex_b != 0xFF) { // Additional validity check
++						avcc->config->write_annex_b = GF_TRUE;
++						gf_odf_avc_cfg_write_bs(avcc->config, item_bs);
++						avcc->config->write_annex_b = GF_FALSE;
++					} else {
++						GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("AVC config pointer expired or invalid\n"));
++						return GF_BAD_PARAM;
++					}

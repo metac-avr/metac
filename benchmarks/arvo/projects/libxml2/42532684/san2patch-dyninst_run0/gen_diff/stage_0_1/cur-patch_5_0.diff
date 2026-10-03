@@ -1,0 +1,38 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..4f38e581 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2499,4 +2499,11 @@ xmlFreeID(xmlIDPtr id) {
+-    if (id->value != NULL)
+-	DICT_FREE(id->value)
+-    if (id->name != NULL)
+-	DICT_FREE(id->name)
++    /* Process value first with null check */
++    if (id->value != NULL) {
++	xmlChar *val_ptr = id->value;
++	id->value = NULL;  /* Prevent reuse */
++	DICT_FREE(val_ptr)
++    }
++    if (id->name != NULL) {
++	xmlChar *name_ptr = id->name;
++	id->name = NULL;   /* Prevent reuse */
++	DICT_FREE(name_ptr)
++    }
+@@ -2736,0 +2744 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    int ret;
+@@ -2743,4 +2751 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
+-
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++         return(-1);
+@@ -2747,0 +2753 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    /* Clear the attr references first to avoid UAF */
+@@ -2749,0 +2756,7 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    
++    ret = xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry);
++    if (ret < 0) {
++        /* Restore the attr state on failure */
++        attr->atype = XML_ATTRIBUTE_ID;
++        return(-1);
++    }

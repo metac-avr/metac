@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..3da580eb635 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1291,6 +1290,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount -= rc;
+-	return p->refcount;
+-}
+-
+@@ -1300,0 +1295 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
++	if (!Z_REFCOUNTED_P(pz)) return 0;
+@@ -1312 +1307 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-}
++}}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..1df8b91e890 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Fixed CWE-416: Use After Free by marking object as invalid before freeing */
++		GC_TYPE(object) = IS_NULL;
++		GC_SET_REFCOUNT(object, 0);

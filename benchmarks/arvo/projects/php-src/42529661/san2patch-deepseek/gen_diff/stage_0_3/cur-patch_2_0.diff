@@ -1,0 +1,28 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..557a22de651 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -8988,0 +8989,5 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
++// FIXME: Crash CWE-416: Use After Free
++	if (trace_buffer && trace_buffer->op_array && trace_buffer->op_array->reserved) {
++		zend_jit_array_free(trace_buffer->op_array);
++		trace_buffer->op_array = NULL;
++	}
+@@ -9001,2 +9006 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-			const zend_op_array *op_array = trace_buffer[0].op_array;
+-			const zend_op *opline = trace_buffer[1].opline;
++			const zend_op_array *op_array = trace_buffer[0].op_array;			const zend_op *opline = trace_buffer[1].opline;
+@@ -9338,0 +9343,4 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
++			if (regs) {
++				memset(regs, 0, sizeof(*regs));
++				zend_jit_array_free(regs);
++			}
+@@ -9347,7 +9355 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++} 		case ZEND_FAST_CALL:

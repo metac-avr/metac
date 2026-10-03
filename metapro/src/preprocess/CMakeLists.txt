@@ -1,0 +1,1 @@
+target_sources(metapro PUBLIC preprocessor.cpp macro_collector.cpp)

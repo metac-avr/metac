@@ -1,0 +1,26 @@
+diff --git a/libavcodec/cbs.c b/libavcodec/cbs.c
+index daf7f66427..b309cb8f99 100644
+--- a/libavcodec/cbs.c
++++ b/libavcodec/cbs.c
+@@ -395,0 +396,6 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
++    // Check for valid size before memcpy to prevent integer overflow
++    if (unit->data_size > ctx->write_buffer_size || unit->data_size < 0) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid data size for memcpy: %d\n", unit->data_size);
++        return AVERROR(EINVAL);
++    }
++
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..a21bfaf796 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1214 +1214,2 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        // This happens normally for CABAC.
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         // This happens normally for CABAC.
+@@ -1216,2 +1217,4 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        memcpy(put_bits_ptr(pbc), pos, rest);
+-        skip_put_bytes(pbc, rest);
++        if (rest > 0) {
++            memcpy(put_bits_ptr(pbc), pos, rest);
++            skip_put_bytes(pbc, rest);
++        }

@@ -1,0 +1,31 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..772e026e 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2499,4 +2499,12 @@ xmlFreeID(xmlIDPtr id) {
+-    if (id->value != NULL)
+-	DICT_FREE(id->value)
+-    if (id->name != NULL)
+-	DICT_FREE(id->name)
++    /* Create defensive copies before freeing */
++    xmlChar *value_copy = id->value;
++    xmlChar *name_copy = id->name;
++    
++    /* Nullify pointers to prevent accidental reuse */
++    id->value = NULL;
++    id->name = NULL;
++    
++    if (value_copy != NULL)
++	DICT_FREE(value_copy)
++    if (name_copy != NULL)
++	DICT_FREE(name_copy)
+@@ -2736,0 +2745 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    xmlIDPtr id;
+@@ -2743 +2752 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2744,0 +2754,2 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    /* Make a copy of the ID pointer before removing/freeing */
++    id = attr->id;
+@@ -2747,0 +2759 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    /* Only clear the attr fields if the ID was successfully removed */

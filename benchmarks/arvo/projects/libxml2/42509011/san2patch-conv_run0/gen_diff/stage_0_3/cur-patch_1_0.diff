@@ -1,0 +1,46 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..1f6c3cf2 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1251 +1251 @@ xmlFreeDoc(xmlDocPtr cur) {
+-    }
++     }
+@@ -1256,4 +1256,15 @@ xmlFreeDoc(xmlDocPtr cur) {
+-    DICT_FREE(cur->version)
+-    DICT_FREE(cur->name)
+-    DICT_FREE(cur->encoding)
+-    DICT_FREE(cur->URL)
++    if (dict != NULL) {
++        if ((cur->version != NULL) && (!xmlDictOwns(dict, cur->version)))
++            xmlFree((char *)cur->version);
++        if ((cur->name != NULL) && (!xmlDictOwns(dict, cur->name)))
++            xmlFree((char *)cur->name);
++        if ((cur->encoding != NULL) && (!xmlDictOwns(dict, cur->encoding)))
++            xmlFree((char *)cur->encoding);
++        if ((cur->URL != NULL) && (!xmlDictOwns(dict, cur->URL)))
++            xmlFree((char *)cur->URL);
++    } else {
++        if (cur->version != NULL) xmlFree((char *)cur->version);
++        if (cur->name != NULL) xmlFree((char *)cur->name);
++        if (cur->encoding != NULL) xmlFree((char *)cur->encoding);
++        if (cur->URL != NULL) xmlFree((char *)cur->URL);
++    }
+@@ -3724 +3735,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		 (cur->type == XML_XINCLUDE_END)) &&
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ 		 (cur->type == XML_XINCLUDE_END)) &&
+@@ -3737 +3749,4 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		DICT_FREE(cur->content)
++		if ((cur->doc == NULL) || (cur->doc->dict == NULL) || 
++		    (!xmlDictOwns(cur->doc->dict, cur->content))) {
++		    DICT_FREE(cur->content)
++		}
+@@ -3753,2 +3768,6 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
++		(cur->type != XML_COMMENT_NODE)) {
++		if ((cur->doc == NULL) || (cur->doc->dict == NULL) || 
++		    (!xmlDictOwns(cur->doc->dict, cur->name))) {
++		    DICT_FREE(cur->name)
++		}
++	    }

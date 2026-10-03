@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..bb387b5f7 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -108,2 +108,2 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
+-  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE, sizeof(mrb_value));
++  /* Allocate stack with safety margin to prevent overflow */
++  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE + 1, sizeof(mrb_value));
+@@ -111,3 +111,3 @@ stack_init(mrb_state *mrb)
+-
+-  /* mrb_assert(ci == NULL); */
+-  c->cibase = (mrb_callinfo *)mrb_calloc(mrb, CALLINFO_INIT_SIZE, sizeof(mrb_callinfo));
++  
++  /* Allocate callinfo with safety margin */
++  c->cibase = (mrb_callinfo *)mrb_calloc(mrb, CALLINFO_INIT_SIZE + 1, sizeof(mrb_callinfo));
+@@ -515,2 +515,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++      if (argc > 0) {
++        if (ci->stack + argc + 1 <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++        }
++      }

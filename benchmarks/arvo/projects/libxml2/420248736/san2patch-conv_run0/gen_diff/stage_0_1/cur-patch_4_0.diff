@@ -1,0 +1,34 @@
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..7b3078ff 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1066,7 +1066,8 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem == NULL) return;
+-    xmlUnlinkNode((xmlNodePtr) elem);
+-    xmlFreeDocElementContent(elem->doc, elem->content);
+-    if (elem->name != NULL)
+-	xmlFree((xmlChar *) elem->name);
+-    if (elem->prefix != NULL)
+-	xmlFree((xmlChar *) elem->prefix);
++    xmlElementPtr temp = elem;
++    if (temp == NULL) return;
++    xmlUnlinkNode((xmlNodePtr) temp);
++    xmlFreeDocElementContent(temp->doc, temp->content);
++    if (temp->name != NULL)
++	xmlFree((xmlChar *) temp->name);
++    if (temp->prefix != NULL)
++	xmlFree((xmlChar *) temp->prefix);
+@@ -1074,2 +1075,2 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem->contModel != NULL)
+-	xmlRegFreeRegexp(elem->contModel);
++    if (temp->contModel != NULL)
++	xmlRegFreeRegexp(temp->contModel);
+@@ -1077 +1078 @@ xmlFreeElement(xmlElementPtr elem) {
+-    xmlFree(elem);
++    xmlFree(temp);
+@@ -1173 +1174,2 @@ xmlAddElementDecl(xmlValidCtxt *ctxt,
+-        int res;
++// FIXME: Crash CWE-416: Use After Free
++         int res;
+@@ -1198,0 +1201 @@ xmlAddElementDecl(xmlValidCtxt *ctxt,
++	    ret = NULL;  // Prevent use-after-free by nullifying the pointer

@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..56dedb85b1b 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -250 +250,6 @@ static zend_always_inline uint32_t zend_vm_calc_used_stack(uint32_t num_args, ze
+-		used_stack += func->op_array.last_var + func->op_array.T - MIN(func->op_array.num_args, num_args);
++		used_stack += func->op_array.last_var + func->op_array.T;
++		if (func->op_array.num_args > num_args) {
++			used_stack -= num_args;
++		} else {
++			used_stack -= func->op_array.num_args;
++		}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..862820ce458 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2262,2 +2262,2 @@ static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht
+-			retval = zend_hash_find_ex(ht, offset_key, ZEND_CONST_COND(dim_type == IS_CONST, 0));
+-			if (!retval) {
++			zval *lookup_result = zend_hash_find_ex(ht, offset_key, ZEND_CONST_COND(dim_type == IS_CONST, 0));
++			if (!lookup_result) {
+@@ -2270 +2270 @@ static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht
+-						retval = &EG(uninitialized_zval);
++						lookup_result = &EG(uninitialized_zval);
+@@ -2273 +2273 @@ static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht
+-						retval = zend_undefined_index_write(ht, offset_key);
++						lookup_result = zend_undefined_index_write(ht, offset_key);
+@@ -2276,0 +2277,4 @@ static zend_always_inline zval *zend_fetch_dimension_address_inner(HashTable *ht
++			if (lookup_result) {
++				ZVAL_DEREF(lookup_result);
++			}
++			retval = lookup_result;

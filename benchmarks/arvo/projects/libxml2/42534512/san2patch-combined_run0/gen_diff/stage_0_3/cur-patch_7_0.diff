@@ -1,0 +1,38 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..f0799615 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6857,2 +6857,12 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr ret = xmlSetNsProp(node, ns, localname, value);
++            /* Validate returned attribute pointer */
++            if (ret != NULL) {
++                /* Clear any potentially stale references */
++                if (ret->children != NULL && ret->children->type == XML_TEXT_NODE) {
++                    /* Force revalidation of text content */
++                    xmlNodeGetContent(ret->children);
++                }
++            }
++            return(ret);
++        }
+@@ -6861 +6871,10 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr ret = xmlSetNsProp(node, NULL, name, value);
++    /* Validate returned attribute pointer */
++    if (ret != NULL) {
++        /* Clear any potentially stale references */
++        if (ret->children != NULL && ret->children->type == XML_TEXT_NODE) {
++            /* Force revalidation of text content */
++            xmlNodeGetContent(ret->children);
++        }
++    }
++    return(ret);
+@@ -6904 +6923 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6906 +6925,2 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	prop->children = NULL;
++	}
++	prop->children = NULL; /* Ensure children is always NULL after freeing */

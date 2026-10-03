@@ -1,0 +1,38 @@
+diff --git a/valid.c b/valid.c
+index 897a368d..8e2d2ecb 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5299 +5299 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
+-	    char list[5000];
++	    xmlBufferPtr list = xmlBufferCreate();
+@@ -5303 +5303 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
+-	    list[0] = 0;
++	    xmlBufferEmpty(list);
+@@ -5306,2 +5306,3 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
+-		xmlSnprintfElements(&list[0], 5000, repl, 1);
+-	    else
++		xmlSnprintfElements((char *) xmlBufferContent(list), xmlBufferLength(list), repl, 1);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 	    else
+@@ -5309 +5310 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
+-		xmlSnprintfElements(&list[0], 5000, child, 1);
++		xmlSnprintfElements((char *) xmlBufferContent(list), xmlBufferLength(list), child, 1);
+@@ -5314 +5315 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
+-		       name, BAD_CAST expr, BAD_CAST list);
++		       name, BAD_CAST expr, BAD_CAST xmlBufferContent(list));
+@@ -5318 +5319 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
+-		       BAD_CAST expr, BAD_CAST list, NULL);
++		       BAD_CAST expr, BAD_CAST xmlBufferContent(list), NULL);
+@@ -5319,0 +5321 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
++	    xmlBufferFree(list);
+@@ -5321,10 +5322,0 @@ xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr child,
+-	    if (name != NULL) {
+-		xmlErrValidNode(ctxt, parent, XML_DTD_CONTENT_MODEL,
+-		       "Element %s content does not follow the DTD\n",
+-		       name, NULL, NULL);
+-	    } else {
+-		xmlErrValidNode(ctxt, parent, XML_DTD_CONTENT_MODEL,
+-		       "Element content does not follow the DTD\n",
+-		                NULL, NULL, NULL);
+-	    }
+-	}

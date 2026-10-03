@@ -1,0 +1,20 @@
+diff --git a/libavutil/aes.c b/libavutil/aes.c
+index 029d738f87..602adc2679 100644
+--- a/libavutil/aes.c
++++ b/libavutil/aes.c
+@@ -234,0 +235,4 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
++    // Validate KC to prevent buffer overflow
++    if (KC < 4 || KC > 8)
++        return AVERROR(EINVAL);
++
+@@ -252 +256 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
+-        }
++         }
+@@ -254 +258,6 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
+-        memcpy(a->round_key[0].u8 + t, tk, KC * 4);
++        // Bounds check to prevent out-of-bounds access
++        if (t + KC * 4 <= sizeof(a->round_key[0].u8)) {
++            memcpy(a->round_key[0].u8 + t, tk, KC * 4);
++        } else {
++            return AVERROR(EINVAL);
++        }

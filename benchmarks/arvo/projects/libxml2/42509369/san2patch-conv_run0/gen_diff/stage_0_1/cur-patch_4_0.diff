@@ -1,0 +1,33 @@
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 7b44bf60..f4206d5d 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -10637 +10637,3 @@ xmlSchemaAddSchemaDoc(xmlSchemaParserCtxtPtr pctxt,
+-	if (schemaLocation != NULL) {
++	/* Store original dictionary reference to prevent invalid frees */
++	xmlDictPtr orig_dict = parserCtxt->dict;
++  	if (schemaLocation != NULL) {
+@@ -10683,0 +10686,4 @@ xmlSchemaAddSchemaDoc(xmlSchemaParserCtxtPtr pctxt,
++	/* Reset dictionary before freeing to avoid invalid pointer releases */
++	if (orig_dict != NULL && parserCtxt->dict == orig_dict) {
++	    parserCtxt->dict = NULL;
++	}
+@@ -21453,5 +21459,5 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-	ctxt->constructor = xmlSchemaConstructionCtxtCreate(ctxt->dict);
+-	if (ctxt->constructor == NULL)
+-	    return(NULL);
+-	/* Take ownership of the constructor to be able to free it. */
+-	ctxt->ownsConstructor = 1;
++    ctxt->constructor = xmlSchemaConstructionCtxtCreate(ctxt->dict);
++    if (ctxt->constructor == NULL)
++	return(NULL);
++    /* Take ownership of the constructor to be able to free it. */
++    ctxt->ownsConstructor = 1;
+@@ -21461 +21467,2 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-    * Locate and add the schema document.
++     * Locate and add the schema document.
++     * Ensure proper memory management for dictionary-allocated nodes.
+@@ -21473,2 +21480 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-	if (ctxt->URL)
+-	    xmlSchemaCustomErr(ACTXT_CAST ctxt, XML_SCHEMAP_FAILED_LOAD,
++	if (ctxt->URL)	    xmlSchemaCustomErr(ACTXT_CAST ctxt, XML_SCHEMAP_FAILED_LOAD,

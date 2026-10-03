@@ -1,0 +1,16 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..486ca27fe 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -428 +428,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  ulshift(mrb,&y,yy,ns);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++   ulshift(mrb,&y,yy,ns);
+@@ -430 +431,6 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  mpz_realloc(mrb,&q,xd);
++  size_t qn = xd - yd + 1;
++  if (qn < 1 || qn > MRB_INT_MAX / sizeof(mp_limb)) {
++    mpz_clear(mrb,&x); mpz_clear(mrb,&y); mpz_clear(mrb,&q);
++    return;
++  }
++  mpz_realloc(mrb,&q,qn);

@@ -1,0 +1,20 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..26af6339d 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -302,0 +303,7 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
++	// Set the elementary stream pointer to NULL in the demuxer array before freeing
++	// This prevents the demuxer cleanup from accessing freed memory
++	if (ts && es->pid < GF_M2TS_MAX_STREAMS) {
++		if (ts->ess[es->pid] == es) {
++			ts->ess[es->pid] = NULL;
++		}
++	}
+@@ -3113 +3120,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++  	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3118,0 +3127,3 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
++	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++		ts->ess[i] = NULL;
++	}

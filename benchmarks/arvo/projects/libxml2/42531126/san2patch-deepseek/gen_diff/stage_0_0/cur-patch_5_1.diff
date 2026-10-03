@@ -1,0 +1,29 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..7d9e2905 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -417 +417 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     * From rfc2044: encoding of the Unicode values on UTF-8:
++             * From rfc2044: encoding of the Unicode values on UTF-8:
+@@ -437,0 +438,21 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++
++        if ((c & 0xe0) == 0xe0) {
++            if ((avail < 3) || ((cur[2] & 0xc0) != 0x80))
++                goto encoding_error;
++            if ((c & 0xf0) == 0xf0) {
++                if ((avail < 4) || ((cur[3] & 0xc0) != 0x80))
++                    goto encoding_error;
++            }
++        }
++    } else {
++        if (c == 0) {
++            if ((ctxt->input->flags & XML_INPUT_HAS_ENCODING) == 0)
++                *len = 1;
++            return(*ctxt->input->cur);
++        }
++    }
++    return(c);
++encoding_error:
++    htmlParseErr(ctxt, XML_ERR_INVALID_ENCODING,
++                 "Invalid UTF-8 encoding\n", NULL, NULL);
++    return(0);

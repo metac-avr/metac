@@ -1,0 +1,25 @@
+diff --git a/libavcodec/mpegvideo_dec.c b/libavcodec/mpegvideo_dec.c
+index 765ccd0ba4..70d1b1471f 100644
+--- a/libavcodec/mpegvideo_dec.c
++++ b/libavcodec/mpegvideo_dec.c
+@@ -1022,0 +1023,6 @@ void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
++    // Validate macroblock position before reconstruction
++    if (s->mb_x < 0 || s->mb_y < 0 || s->mb_x >= s->mb_width || s->mb_y >= s->mb_height) {
++        av_log(s->avctx, AV_LOG_WARNING, "Invalid macroblock position (%d,%d)\n", s->mb_x, s->mb_y);
++        return;
++    }
++
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..1761914cd5 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -280,0 +281 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++            int max_w = 16 >> (hsub + lowres);
+@@ -282 +283 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
++                for (int w = 0, idx = 0; w < max_w && w < linesize[i]/2; w++, idx += step)
+@@ -298,0 +300 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++            int max_w = 16 >> (hsub + lowres);
+@@ -300 +302 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
++                for (int w = max_w - 1, idx = 0; w >= 0 && w < linesize[i]/2; w--, idx += step)

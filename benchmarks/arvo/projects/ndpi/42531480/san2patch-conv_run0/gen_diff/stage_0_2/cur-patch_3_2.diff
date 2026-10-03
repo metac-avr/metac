@@ -1,0 +1,60 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..4a517992f 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,3 +2381,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
++static void ndpi_int_tls_dissect_certificate_signature_algorithms(struct ndpi_detection_module_struct *ndpi_struct, struct ndpi_flow_struct *flow, u_int16_t certificate_len) {
++  struct ndpi_packet_struct *packet = &ndpi_struct->packet;
++  u_int16_t d;
+@@ -2385 +2385,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++  if((packet->payload_packet_len < certificate_len) || (packet->payload_packet_len < 8))
++    return;
+@@ -2387,5 +2388,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++  if(packet->payload[0] == 0x30 /* ASN.1 SEQUENCE */) {
++    u_int16_t sequence_len = (packet->payload[1] == 0x81) ? packet->payload[2] + 2 : (packet->payload[1] == 0x82) ? (packet->payload[2] << 8) | packet->payload[3] + 3 : packet->payload[1];
++    u_int16_t next_seq_start = 1 + ((packet->payload[1] <= 0x80) ? 1 : (packet->payload[1] == 0x81) ? 2 : 3);
+@@ -2393,2 +2392,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
+-		}
++    if((sequence_len + next_seq_start >= certificate_len)
++       || (sequence_len + next_seq_start >= packet->payload_packet_len))
++      return;
+@@ -2396,2 +2396,7 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++    d = next_seq_start + 1;
++    if(packet->payload[d] == 0x80)
++      d++;
++    else if(packet->payload[d] == 0x81)
++      d += 2;
++    else if(packet->payload[d] == 0x82)
++      d += 3;
+@@ -2399,4 +2404,11 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++    if((d + 2 >= packet->payload_packet_len) || (d + 2 >= certificate_len))
++      return;
++
++    if((packet->payload[d] == 0x06 /* OID */)
++       && (packet->payload[d+1] == 0x09 /* len */)
++       && (packet->payload[d+2] == 0x2a /* 1.2.840.113549.1.1.11 SHA256 with RSA */)) {
++      NDPI_LOG_INFO(ndpi_struct, "found SHA256 with RSA signature\n");
++      flow->protos.tls_quic.sha256_with_rsa = 1;
++    }
++  }
++}		    continue;
+@@ -2883,0 +2896,3 @@ static void ndpi_search_tls_wrapper(struct ndpi_detection_module_struct *ndpi_st
++  if(packet->payload_packet_len < 5)
++    return;
++

@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..e3781d2b3d4 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -371,2 +371,3 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
+-					lval = zend_dval_to_lval_cap(dval);
+-					if (!zend_is_long_compatible(dval, lval)) {
++// FIXME: Crash CWE-416: Use After Free
++ 					lval = zend_dval_to_lval_cap(dval);
++					if (!zend_is_long_compatible(dval, lval) && Z_STR_P(op) != NULL) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..f93b8db4e29 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -689 +689,6 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_bw_and_helpe
+-		op_2 = ZVAL_UNDEFINED_OP2();
++		/* Prevent use-after-free by checking string validity */
++		if (!(op_2 && Z_TYPE_P(op_2) == IS_STRING && Z_STR_P(op_2) && GC_REFCOUNT(Z_STR_P(op_2)) > 0)) {
++			op_2 = ZVAL_UNDEFINED_OP2();
++		} else {
++			op_2 = NULL; /* Avoid using potentially freed string */
++		}

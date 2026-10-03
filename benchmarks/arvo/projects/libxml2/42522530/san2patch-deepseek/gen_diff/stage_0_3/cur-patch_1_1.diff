@@ -1,0 +1,104 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index e9084950..191f8395 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3360,0 +3361,3 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
++static void
++htmlParsePI(htmlParserCtxtPtr ctxt)
++{
+@@ -3371,8 +3374,9 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
+-    if ((RAW == '<') && (NXT(1) == '?')) {
+-	state = ctxt->instate;
+-        ctxt->instate = XML_PARSER_PI;
+-	/*
+-	 * this is a Processing Instruction.
+-	 */
+-	SKIP(2);
+-	SHRINK;
++    if ((ctxt->input->cur + 1) < ctxt->input->end) {
++        if ((RAW == '<') && (NXT(1) == '?')) {
++	    state = ctxt->instate;
++            ctxt->instate = XML_PARSER_PI;
++	    /*
++	     * this is a Processing Instruction.
++	     */
++	    SKIP(2);
++	    SHRINK;
+@@ -3380,3 +3384,74 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
+-	/*
+-	 * Parse the target name and check for special support like
+-	 * namespace.
++	    /*
++	     * Parse the target name and check for special support like
++	     */
++	    target = ctxt->input->cur;
++	    while ((ctxt->input->cur < ctxt->input->end) &&
++	           (IS_BLANK_CH(*ctxt->input->cur)))
++	        NEXT;
++	    if ((ctxt->input->cur < ctxt->input->end) &&
++	        (*ctxt->input->cur == '?'))
++	        goto done;
++
++	    while ((ctxt->input->cur < ctxt->input->end) &&
++	           (*ctxt->input->cur != ' ') &&
++	           (*ctxt->input->cur != '\t') &&
++	           (*ctxt->input->cur != '\n') &&
++	           (*ctxt->input->cur != '\r'))
++	        NEXT;
++	    if (ctxt->input->cur < ctxt->input->end)
++	        cur = *ctxt->input->cur;
++	    else
++	        cur = 0;
++	    if ((cur == '?') || (cur == '>') ||
++	        (!IS_BLANK_CH(cur))) {
++	        htmlParseErr(ctxt, XML_ERR_SPACE_REQUIRED,
++	                     "ParsePI: no space before ?\n", NULL, NULL);
++	    }
++	    if (ctxt->input->cur < ctxt->input->end) {
++	        len = ctxt->input->cur - target;
++	    }
++
++	    if ((len > 3) &&
++	        ((xmlStrncmp(target, BAD_CAST "xml", 3) == 0) ||
++	         (xmlStrncmp(target, BAD_CAST "XML", 3) == 0))) {
++	        htmlParseErr(ctxt, XML_ERR_RESERVED_XML_NAME,
++	                     "ParsePI: xml namespace not allowed\n",
++	                     NULL, NULL);
++	    }
++
++	    if (ctxt->input->cur < ctxt->input->end) {
++	        while ((ctxt->input->cur < ctxt->input->end) &&
++	               (IS_BLANK_CH(*ctxt->input->cur)))
++	            NEXT;
++	    }
++
++	    if ((ctxt->input->end - ctxt->input->cur) >= 2) {
++	        if ((*ctxt->input->cur == '?') &&
++	            (*(ctxt->input->cur + 1) == '>')) {
++	            SKIP(2);
++	            goto done;
++	        }
++	    }
++
++	    while (ctxt->input->cur < ctxt->input->end) {
++	        if ((*ctxt->input->cur == '?') &&
++	            (ctxt->input->cur + 1 < ctxt->input->end) &&
++	            (*(ctxt->input->cur + 1) == '>')) {
++	            SKIP(2);
++	            goto done;
++	        }
++	        if (*ctxt->input->cur == '>') {
++	            htmlParseErr(ctxt, XML_ERR_PI_NOT_ENDED,
++	                         "ParsePI: PI ended with > instead of ?>\n",
++	                         NULL, NULL);
++	            NEXT;
++	            goto done;
++	        }
++	        NEXT;
++	    }
++
++done:
++	    ctxt->instate = state;
++        }
++    }
++}	 * namespace.

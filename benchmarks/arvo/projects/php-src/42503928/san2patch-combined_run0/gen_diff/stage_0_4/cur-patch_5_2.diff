@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..a1302209a6e 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -391 +391,10 @@ void shutdown_executor(void) /* {{{ */
+-	zend_shutdown_executor_values(fast_shutdown);
++	/* Check if garbage collection is in progress to avoid accessing freed memory */
++	zend_bool skip_executor_cleanup = 0;
++#ifdef GC_G
++	#if defined(GC_RUNNING_FLAG) || defined(gc_running)
++	skip_executor_cleanup = GC_G(gc_running);
++	#endif
++#endif
++	if (!skip_executor_cleanup) {
++		zend_shutdown_executor_values(fast_shutdown);
++	}
+@@ -401,2 +410 @@ void shutdown_executor(void) /* {{{ */
+-		/* Fast Request Shutdown
+-		 * =====================
++		/* Fast Request Shutdown		 * =====================

@@ -1,0 +1,20 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 239492add..e8020f4fe 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1670 +1670,6 @@ int_add(mrb_state *mrb, mrb_value self)
+-    return mrb_bint_add(mrb, self, other);
++    /* Add safety check for valid other parameter */
++    if (mrb_type(other) == MRB_TT_BIGINT || mrb_fixnum_p(other)) {
++      return mrb_bint_add(mrb, self, other);
++    }
++    /* For incompatible types, convert appropriately or raise error */
++    return mrb_raisef(mrb, E_TYPE_ERROR, "cannot add %v to BigInt", other);
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..3475f2a87 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -186,0 +187 @@ ucmp(mpz_t *y, mpz_t *x)
++  if (!y || !x) return 0;
+@@ -189,0 +191 @@ ucmp(mpz_t *y, mpz_t *x)
++    if (i >= y->sz || i >= x->sz) break;

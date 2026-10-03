@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index d13087a5b02..f46da04e5bc 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -156,7 +156,11 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			zend_copy_to_variable(variable_ptr, value, value_type);
+-			if (GC_DELREF(garbage) == 0) {
+-				rc_dtor_func(garbage);
+-			} else { /* we need to split */
+-				/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
+-				if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
+-					gc_possible_root(garbage);
++// FIXME: Crash CWE-416: Use After Free
++			/* Validate pointer before use to prevent use-after-free */
++			if (garbage != NULL) {
++				zend_copy_to_variable(variable_ptr, value, value_type);
++				if (GC_DELREF(garbage) == 0) {
++					rc_dtor_func(garbage);
++				} else { /* we need to split */
++					/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
++					if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
++						gc_possible_root(garbage);
++					}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index acf98a2f74a..6d01d299f90 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -23866,0 +23867,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_U
++	/* Defensive check for valid memory reference before assignment */
++	if (UNEXPECTED(!variable_ptr)) {
++		ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++	}
++

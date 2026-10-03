@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..6b7ce89c387 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45993 +45993,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-		}
++// FIXME: Crash CWE-416: Use After Free
++ 		}
++		zval *saved_container = container;
++		zval *saved_var_ptr = var_ptr;
+@@ -45996,0 +46000,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++		container = saved_container;
++		if (IS_UNUSED == IS_UNUSED && IS_CV == IS_CV) {
++			container = EX_VAR(opline->op1.var);
++			if (UNEXPECTED(container != saved_container)) {
++				var_ptr = NULL;
++				goto assign_dim_op_slow;
++			}
++		}
++		var_ptr = saved_var_ptr;
++
+@@ -46036,0 +46050 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++assign_dim_op_slow:

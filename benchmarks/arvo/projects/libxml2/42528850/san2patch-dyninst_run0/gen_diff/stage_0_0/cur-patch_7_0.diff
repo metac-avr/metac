@@ -1,0 +1,59 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..b008d642 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4367 +4367 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4375 +4375 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++     xmlNodePtr ret;
+@@ -4376,0 +4377,4 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (node == NULL)
++        return(NULL);
++    
++    xmlThrDefIndentTreeOutput(1);
+@@ -4377,0 +4382 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    xmlThrDefIndentTreeOutput(0);
+@@ -4387,2 +4392 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
++ * * Returns: a new #xmlNodePtr, or NULL in case of error.
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..e8031746 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -420,0 +421 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
++// FIXME: Crash CWE-416: Use After Free - Fixed by reference counting
+@@ -422,2 +423,29 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Reference count check before freeing namespace definitions */
++        xmlNsPtr nsDef = cur->nsDef;
++        int canFree = 1;
++        
++        /* Check if namespace is referenced elsewhere before freeing */
++        xmlNsPtr ns = nsDef;
++        while (ns != NULL) {
++            if (ns->_private != NULL) {
++                /* Namespace has active references, defer freeing */
++                canFree = 0;
++                break;
++            }
++            ns = ns->next;
++        }
++        
++        if (canFree) {
++            xmlFreeNsList(cur->nsDef);
++        } else {
++            /* Mark for later cleanup when references are gone */
++            if ((reader != NULL) && (reader->ctxt != NULL)) {
++                ns = nsDef;
++                while (ns != NULL) {
++                    ns->_private = reader->ctxt; /* Mark for deferred cleanup */
++                    ns = ns->next;
++                }
++            }
++        }
++    }

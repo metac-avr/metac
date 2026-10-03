@@ -1,0 +1,54 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..86c8d8950 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -297,4 +297,11 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    flow->http.filename = ndpi_malloc(filename_len);
+-	    if(flow->http.filename != NULL) {
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++// FIXME: Crash CWE-131: Incorrect Calculation of Buffer Size
++	    size_t alloc_len = 0;
++	    if(filename_len > 0) {
++	      alloc_len = (size_t)filename_len;
++	    }
++	    if(alloc_len > 0) {
++	      flow->http.filename = ndpi_malloc(alloc_len);
++	      if(flow->http.filename != NULL) {
++	        strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, alloc_len-1);
++	        flow->http.filename[alloc_len-1] = '\0';
++	      }
+@@ -305 +312,6 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    flow->http.filename = ndpi_malloc(filename_len-1);
++	    size_t alloc_len = 0;
++	    if(filename_len > 1) {
++	      alloc_len = (size_t)filename_len - 1;
++	    }
++	    if(alloc_len > 0) {
++	      flow->http.filename = ndpi_malloc(alloc_len);
+@@ -307,4 +319,5 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    if(flow->http.filename != NULL) {
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++	      if(flow->http.filename != NULL) {
++	        strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
++		      alloc_len-1);
++	        flow->http.filename[alloc_len-1] = '\0';
++	      }
+@@ -316 +329,6 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	  flow->http.filename = ndpi_malloc(filename_len+1);
++	  size_t alloc_len = 0;
++	  if(filename_len >= 0) {
++	    alloc_len = (size_t)filename_len + 1;
++	  }
++	  if(alloc_len > 0) {
++	    flow->http.filename = ndpi_malloc(alloc_len);
+@@ -318,3 +336,4 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	  if(flow->http.filename != NULL) {
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    if(flow->http.filename != NULL) {
++	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, alloc_len-1);
++	      flow->http.filename[alloc_len-1] = '\0';
++	    }

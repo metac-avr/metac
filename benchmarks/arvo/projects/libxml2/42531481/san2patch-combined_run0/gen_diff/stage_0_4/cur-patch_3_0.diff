@@ -1,0 +1,25 @@
+diff --git a/parser.c b/parser.c
+index cae2b7fd..7be5f623 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7372,0 +7373,5 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++		    if (cur->type == XML_NAMESPACE_DECL && cur->nsDef == NULL) {
++		        /* Skip freed namespace nodes to prevent use-after-free */
++		        cur = cur->next;
++		        continue;
++		    }
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..fd78259a 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -401,0 +402 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -403,2 +404,6 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Clear nsDef before freeing to prevent dangling pointer access */
++        xmlNsPtr nsDef = cur->nsDef;
++        cur->nsDef = NULL;
++        xmlFreeNsList(nsDef);
++    }

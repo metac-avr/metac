@@ -1,0 +1,22 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..db577c335a 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -299,3 +299,11 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++// Prevent out-of-bounds writes by validating pointer arithmetic
++            ptrdiff_t offset = dest_pcm[i] - ((uint16_t*)(i == 0 ? dest_y : (i == 1 ? dest_cb : dest_cr)));
++            int max_width = 16 >> (hsub + lowres);
++            int max_height = 16 >> (vsub + lowres);
++            if (offset < 0 || offset > 524800/sizeof(uint16_t)) continue;
++             for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
++                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step) {
++                    if (w >= 0 && w < max_width) {
++                        dest_pcm[i][w] = src[idx];
++                    }
++                }
+@@ -303,0 +312,2 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++                offset -= linesize[i] / sizeof(uint16_t);
++                if (offset < 0) break;

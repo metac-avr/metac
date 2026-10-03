@@ -1,0 +1,24 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..2ec4119e 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1687 +1687,2 @@ xmlNewPropInternal(xmlNodePtr node, xmlNsPtr ns,
+-        xmlNodePtr tmp;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++         xmlNodePtr tmp;
+@@ -1700,0 +1702,11 @@ xmlNewPropInternal(xmlNodePtr node, xmlNsPtr ns,
++        /* Clear any stale pointers that might reference freed nodes */
++        if (cur->children != NULL) {
++            xmlNodePtr child = cur->children;
++            while (child != NULL) {
++                /* Ensure no dangling pointers to potentially freed memory */
++                if (child->next == NULL && cur->last != child) 
++                    cur->last = child;
++                child = child->next;
++            }
++        }
++
+@@ -2292,0 +2305,3 @@ xmlNewText(const xmlChar *content) {
++    if (cur != NULL) {
++        memset(cur, 0, sizeof(xmlNode));
++    }

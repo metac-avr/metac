@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..d3e4513b6b7 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -1486 +1485,0 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
+@@ -1494 +1493,8 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
++		
++		/* Initialize stack with bounds checking */
++		if (!stack.elements || stack.max_size == 0) {
++			GC_TRACE("Invalid stack initialization");
++			GC_G(gc_active) = 0;
++			return 0;
++		}
++ 
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..911b5d889a3 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -215,0 +216 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -217,3 +218,5 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		for (zend_long i = 0; i < intern->array.size; i++) {
+-			zend_hash_index_update(ht, i, &intern->array.elements[i]);
+-			Z_TRY_ADDREF(intern->array.elements[i]);
++		for (zend_long i = 0; i < intern->array.size && i < j; i++) {
++			if (i < intern->array.size) {
++				zend_hash_index_update(ht, i, &intern->array.elements[i]);
++				Z_TRY_ADDREF(intern->array.elements[i]);
++			}

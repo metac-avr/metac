@@ -1,0 +1,70 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..9d70493e8 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -141,9 +141,19 @@ str_new_static(mrb_state *mrb, const char *p, mrb_int len)
+-static struct RString*
+-str_new(mrb_state *mrb, const char *p, mrb_int len)
+-{
+-  str_check_length(mrb, len);
+-  if (RSTR_EMBEDDABLE_P(len)) {
+-    return str_init_embed(mrb_obj_alloc_string(mrb), p, len);
+-  }
+-  if (p && mrb_ro_data_p(p)) {
+-    return str_init_nofree(mrb_obj_alloc_string(mrb), p, len);
++else {                        /* split_type == string */
++  mrb_int str_len = RSTRING_LEN(str);
++  mrb_int pat_len = RSTRING_LEN(spat);
++  mrb_int idx = 0;
++  int ai = mrb_gc_arena_save(mrb);
++
++  while (idx < str_len) {
++    if (pat_len > 0) {
++      if (idx + pat_len > str_len) break;
++      end = mrb_memsearch(RSTRING_PTR(spat), pat_len, RSTRING_PTR(str)+idx, str_len - idx);
++      if (end < 0) break;
++    }
++    else {
++      end = chars2bytes(str, idx, 1);
++    }
++    mrb_ary_push(mrb, result, mrb_str_byte_subseq(mrb, str, idx, end));
++    mrb_gc_arena_restore(mrb, ai);
++    idx += end + pat_len;
++    if (lim_p && lim <= ++i) break;
+@@ -151 +161 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-  return str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++  beg = idx;
+@@ -2347,20 +2357,10 @@ mrb_str_split_m(mrb_state *mrb, mrb_value str)
+-  else {                        /* split_type == string */
+-    mrb_int str_len = RSTRING_LEN(str);
+-    mrb_int pat_len = RSTRING_LEN(spat);
+-    mrb_int idx = 0;
+-    int ai = mrb_gc_arena_save(mrb);
+-
+-    while (idx < str_len) {
+-      if (pat_len > 0) {
+-        end = mrb_memsearch(RSTRING_PTR(spat), pat_len, RSTRING_PTR(str)+idx, str_len - idx);
+-        if (end < 0) break;
+-      }
+-      else {
+-        end = chars2bytes(str, idx, 1);
+-      }
+-      mrb_ary_push(mrb, result, mrb_str_byte_subseq(mrb, str, idx, end));
+-      mrb_gc_arena_restore(mrb, ai);
+-      idx += end + pat_len;
+-      if (lim_p && lim <= ++i) break;
+-    }
+-    beg = idx;
++  static struct RString*
++str_new(mrb_state *mrb, const char *p, mrb_int len)
++{
++  str_check_length(mrb, len);
++  if (len < 0 || len > MRB_INT_MAX) return NULL;
++  if (RSTR_EMBEDDABLE_P(len)) {
++    return str_init_embed(mrb_obj_alloc_string(mrb), p, len);
++  }
++  if (p && mrb_ro_data_p(p)) {
++    return str_init_nofree(mrb_obj_alloc_string(mrb), p, len);
+@@ -2367,0 +2368,2 @@ mrb_str_split_m(mrb_state *mrb, mrb_value str)
++  return str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++}

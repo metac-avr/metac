@@ -1,0 +1,17 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..2bd054824d7 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		/* Prevent GC from accessing freed object */
++		GC_TYPE(object) = IS_NULL;
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 9efe205abe0..76b58a26b3b 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -215,0 +216,5 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++		/* Check if object is already being destroyed to prevent use-after-free */
++		zend_object *obj = Z_OBJ_P(zv);
++		if (obj->gc.u flags & GC_MARKED) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}

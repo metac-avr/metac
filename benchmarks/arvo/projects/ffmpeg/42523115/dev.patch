@@ -1,0 +1,39 @@
+diff --git a/libavcodec/error_resilience.c b/libavcodec/error_resilience.c
+index bd7050062c..2aa6f1d864 100644
+--- a/libavcodec/error_resilience.c
++++ b/libavcodec/error_resilience.c
+@@ -805,7 +805,8 @@ void ff_er_frame_start(ERContext *s)
+ static int er_supported(ERContext *s)
+ {
+     if(s->avctx->hwaccel && s->avctx->hwaccel->decode_slice           ||
+-       !s->cur_pic.f
++       !s->cur_pic.f                                                  ||
++       s->cur_pic.field_picture
+     )
+         return 0;
+     return 1;
+@@ -907,12 +908,6 @@ void ff_er_frame_end(ERContext *s)
+                           (s->avctx->skip_top + s->avctx->skip_bottom)) {
+         return;
+     }
+-
+-    if (!s->warned_fields && (s->cur_pic.field_picture || s->cur_pic.f->interlaced_frame)) {
+-        av_log(s->avctx, AV_LOG_WARNING, "Error concealment is not fully implemented for field pictures.\n");
+-        s->warned_fields = 1;
+-    }
+-
+     linesize = s->cur_pic.f->linesize;
+ 
+     if (   s->avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO
+diff --git a/libavcodec/error_resilience.h b/libavcodec/error_resilience.h
+index 55efacaccc..47cc8a4fc6 100644
+--- a/libavcodec/error_resilience.h
++++ b/libavcodec/error_resilience.h
+@@ -87,7 +87,6 @@ typedef struct ERContext {
+                       int (*mv)[2][4][2],
+                       int mb_x, int mb_y, int mb_intra, int mb_skipped);
+     void *opaque;
+-    int warned_fields;
+ } ERContext;
+ 
+ void ff_er_frame_start(ERContext *s);

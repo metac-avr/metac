@@ -1,0 +1,61 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..2bfce0635 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1317,0 +1318 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++       packet->line[0].len <= packet->payload_len &&  // Validate line length against payload
+@@ -1322,0 +1324 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++       packet->payload_len >= filename_start + 9 &&
+@@ -1329,2 +1331,11 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    packet->http_url_name.ptr = &packet->payload[filename_start];
+-    packet->http_url_name.len = packet->line[0].len - (filename_start + 9);
++    // Ensure safe pointer arithmetic with explicit bounds checking
++    if (filename_start < packet->payload_len && 
++        (filename_start + 9) <= packet->line[0].len) {
++      packet->http_url_name.ptr = &packet->payload[filename_start];
++      packet->http_url_name.len = packet->line[0].len - (filename_start + 9);
++      
++      // Validate that the calculated URL name doesn't exceed payload bounds
++      if (packet->http_url_name.len > (packet->payload_len - filename_start)) {
++        packet->http_url_name.len = packet->payload_len - filename_start;
++      }
++    }
+@@ -1332,2 +1343,9 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    packet->http_method.ptr = packet->line[0].ptr;
+-    packet->http_method.len = filename_start - 1;
++    if (filename_start > 0 && filename_start <= packet->line[0].len) {
++      packet->http_method.ptr = packet->line[0].ptr;
++      packet->http_method.len = filename_start - 1;
++      
++      // Validate method length doesn't exceed line bounds
++      if (packet->http_method.len > packet->line[0].len) {
++        packet->http_method.len = packet->line[0].len;
++      }
++    }
+@@ -1336 +1354,3 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    if(memcmp(&packet->line[0].ptr[packet->line[0].len - 1], "1", 1) == 0)
++    if(packet->line[0].len > 0 && 
++       (packet->line[0].len - 1) < packet->line[0].len &&  // Prevent underflow
++       memcmp(&packet->line[0].ptr[packet->line[0].len - 1], "1", 1) == 0)
+@@ -1341,0 +1362,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++       packet->http_url_name.ptr != NULL &&
++       (packet->http_url_name.len + filename_start) <= packet->payload_len &&  // Validate combined bounds
+@@ -1345,0 +1368 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++       packet->payload_len >= 8 &&
+@@ -1349 +1372,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-  }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   }
+@@ -1467 +1491,2 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    NDPI_LOG_DBG2(ndpi_struct, "Request where expected\n");
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     NDPI_LOG_DBG2(ndpi_struct, "Request where expected\n");
+@@ -1469 +1494,7 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    process_request(ndpi_struct, flow, filename_start);
++    if(packet->payload != NULL && packet->payload_packet_len > 0) {
++      process_request(ndpi_struct, flow, filename_start);
++    } else {
++      NDPI_LOG_DBG2(ndpi_struct, "Empty payload - skipping process_request\n");
++      NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++      return;
++    }

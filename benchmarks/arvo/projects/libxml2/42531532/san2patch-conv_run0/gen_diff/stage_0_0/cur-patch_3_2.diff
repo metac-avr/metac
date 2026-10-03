@@ -1,0 +1,34 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..5a501546 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2636,8 +2635,0 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
+-        }
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+@@ -2646,12 +2638,8 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    
++    /* Clear the pointer to prevent use-after-free */
++    if (idPtr != NULL) {
++        /* Ensure no dangling references exist before freeing */
++        xmlFreeID(idPtr);
++    }
++}    xmlHashFree(table, xmlFreeIDTableEntry);

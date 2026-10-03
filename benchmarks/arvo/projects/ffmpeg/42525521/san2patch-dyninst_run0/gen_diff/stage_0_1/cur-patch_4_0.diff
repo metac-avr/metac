@@ -1,0 +1,50 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..30d8169404 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -252,0 +253,4 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++    // Validate input parameters to prevent buffer overflows
++    if (!dest_y || !dest_cb || !dest_cr || block_size <= 0 || uvlinesize <= 0 || dct_linesize <= 0)
++        return;
++
+@@ -281,5 +285,8 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = 0; h < (16 >> (vsub + lowres)); h++){
+-                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
+-                    dest_pcm[i][w] = src[idx];
+-                dest_pcm[i] += linesize[i] / 2;
+-                src         += (16 >> hsub) * step;
++            // Ensure valid buffer dimensions
++            if ((16 >> (vsub + lowres)) > 0 && (16 >> (hsub + lowres)) > 0) {
++                for (int h = 0; h < (16 >> (vsub + lowres)); h++){
++                    for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
++                        dest_pcm[i][w] = src[idx];
++                    dest_pcm[i] += linesize[i] / 2;
++                    src         += (16 >> hsub) * step;
++                }
+@@ -298,6 +305,9 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub) - 1);
+-            for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+-                    dest_pcm[i][w] = src[idx];
+-                src += step * (16 >> hsub);
+-                dest_pcm[i] -= linesize[i] / 2;
++            // Validate buffer dimensions to prevent overflow
++            if ((linesize[i] / 2) > 0 && (16 >> (vsub + lowres)) > 0 && (16 >> (hsub + lowres)) > 0) {
++                dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub) - 1);
++                for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
++                    for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
++                        dest_pcm[i][w] = src[idx];
++                    src += step * (16 >> hsub);
++                    dest_pcm[i] -= linesize[i] / 2;
++                }
+diff --git a/libavcodec/h263dec.c b/libavcodec/h263dec.c
+index f4e7048a5f..41eb16ac80 100644
+--- a/libavcodec/h263dec.c
++++ b/libavcodec/h263dec.c
+@@ -608,2 +608,4 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
+-        if (s->msmpeg4_version < 4 && s->h263_pred)
+-            ff_mpeg4_clean_buffers(s);
++        if (s->msmpeg4_version < 4 && s->h263_pred) {
++            if (s->mb_x < s->mb_width && s->mb_y < s->mb_height)
++                ff_mpeg4_clean_buffers(s);
++        }

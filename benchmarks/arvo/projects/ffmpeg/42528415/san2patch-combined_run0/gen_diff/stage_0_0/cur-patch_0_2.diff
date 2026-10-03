@@ -1,0 +1,68 @@
+diff --git a/libavcodec/cbs_h266_syntax_template.c b/libavcodec/cbs_h266_syntax_template.c
+index e2246cfc1b..5e383e95f9 100644
+--- a/libavcodec/cbs_h266_syntax_template.c
++++ b/libavcodec/cbs_h266_syntax_template.c
+@@ -1899,4 +1899,20 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
+-                    else
+-                        infer(pps_slice_height_in_tiles_minus1[i],
+-                              current->pps_slice_height_in_tiles_minus1[i - 1]);
+-                }
++static int cbs_h266_read_pps_extra_bit_info(CodedBitstreamContext *ctx,
++                             H266RawPictureHeader *current)
++{
++    int i, j;
++    int tile_x, tile_y;
++    int ctu_x, ctu_y;
++    int slice_address;
++
++    for (i = 0; i <= current->num_tiles_in_pic_minus1; i++) {
++        tile_x = i % (current->num_tile_columns_minus1 + 1);
++        tile_y = i / (current->num_tile_columns_minus1 + 1);
++
++        if (i > 0) {
++            if (current->pps_slice_width_in_tiles_minus1[i] == 0)
++                infer(pps_slice_width_in_tiles_minus1[i],
++                      current->pps_slice_width_in_tiles_minus1[i - 1]);
++            else
++                infer(pps_slice_height_in_tiles_minus1[i],
++                      current->pps_slice_height_in_tiles_minus1[i - 1]);
++        }
+@@ -1904,17 +1920,21 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
+-                ctu_x = ctu_y = 0;
+-                for (j = 0; j < tile_x; j++) {
+-                    ctu_x += current->col_width_val[j];
+-                }
+-                for (j = 0; j < tile_y; j++) {
+-                    ctu_y += current->row_height_val[j];
+-                }
+-                if (current->pps_slice_width_in_tiles_minus1[i] == 0 &&
+-                    current->pps_slice_height_in_tiles_minus1[i] == 0 &&
+-                    current->row_height_val[tile_y] > 1) {
+-                    int num_slices_in_tile,
+-                        uniform_slice_height, remaining_height_in_ctbs_y;
+-                    remaining_height_in_ctbs_y =
+-                        current->row_height_val[tile_y];
+-                    ues(pps_num_exp_slices_in_tile[i],
+-                        0, current->row_height_val[tile_y] - 1, 1, i);
+-                    if (current->pps_num_exp_slices_in_tile[i] == 0) {
++        ctu_x = ctu_y = 0;
++        for (j = 0; j < tile_x; j++) {
++            ctu_x += current->col_width_val[j];
++        }
++        for (j = 0; j < tile_y && j < VVC_MAX_TILE_ROWS; j++) {
++            ctu_y += current->row_height_val[j];
++        }
++        if (current->pps_slice_width_in_tiles_minus1[i] == 0 &&
++            current->pps_slice_height_in_tiles_minus1[i] == 0 &&
++            tile_y < VVC_MAX_TILE_ROWS &&
++            current->row_height_val[tile_y] > 1) {
++            int num_slices_in_tile,
++                uniform_slice_height, remaining_height_in_ctbs_y;
++            remaining_height_in_ctbs_y =
++                current->row_height_val[tile_y];
++            ues(pps_num_exp_slices_in_tile[i],
++                0, current->row_height_val[tile_y] - 1, 1, i);
++        }
++    }
++    return 0;
++}                    if (current->pps_num_exp_slices_in_tile[i] == 0) {

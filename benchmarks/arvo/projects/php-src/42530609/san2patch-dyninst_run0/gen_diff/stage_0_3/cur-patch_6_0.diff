@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..77fd72923b7 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -1120,0 +1121,2 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_leave_helper
++		/* Clear compiled variables to prevent use-after-free */
++		memset(EX_VAR_NUM(0), 0, EX(func)->op_array.last_var * sizeof(zval));
+@@ -3275 +3277,9 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-	}
++		// Clear compiled variables to prevent use-after-free
++		for (uint32_t i = 0; i < EX_NUM_VARS(); i++) {
++			zval *cv = EX_VAR_NUM(i);
++			if (Z_TYPE_P(cv) == IS_UNDEF) continue;
++			if (Z_COUNTED_P(cv)) {
++				ZVAL_UNDEF(cv);
++			}
++		}
++  	}
+@@ -3282,0 +3293 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_USER_OPCODE_SPEC_HANDLER(ZEND_
++

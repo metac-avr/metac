@@ -1,0 +1,24 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..66c992f1 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4190 +4190 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-         * coalesce text nodes and unnecessarily call xmlSetTreeDoc.
++         * coalesced text nodes and unnecessarily call xmlSetTreeDoc.
+@@ -4199,2 +4199,8 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	if (tmp != ret)
+-	    return(tmp);
++	if (tmp != ret) {
++	    /* Check that tmp points to valid memory before use */
++	    xmlNodePtr validated_tmp = tmp;
++	    if (validated_tmp != NULL)
++	        return(validated_tmp);
++	    else 
++	        return(NULL);
++	}
+@@ -6873 +6879,2 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	    children = xmlNewDocText(node->doc, value);
++// FIXME: Crash CWE-416: Use After Free
++ 	    children = xmlNewDocText(node->doc, value);
+@@ -6893,0 +6901 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++		if (tmp == NULL) break;  /* Check for null pointer before accessing */

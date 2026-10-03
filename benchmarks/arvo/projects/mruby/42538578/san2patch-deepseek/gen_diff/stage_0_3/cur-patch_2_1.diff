@@ -1,0 +1,51 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..959618f73 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -339,0 +340 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  ptrdiff_t size = ci - c->cibase;
+@@ -345,2 +345,0 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    ptrdiff_t size = ci - c->cibase;
+-
+@@ -351 +350,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    ci = c->cibase + size;
++    c->ci = ci;
+@@ -353,0 +354 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++
+@@ -2702,22 +2703,13 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      NEXT;
+-    }
+-    CASE(OP_ARRAY2, BBB) {
+-      regs[a] = ary_new_from_regs(mrb, c, b);
+-      mrb_gc_arena_restore(mrb, ai);
+-      NEXT;
+-    }
+-
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
+-      if (mrb_nil_p(regs[a])) {
+-        regs[a] = splat;
+-      }
+-      else {
+-        mrb_assert(mrb_array_p(regs[a]));
+-        mrb_ary_concat(mrb, regs[a], splat);
+-      }
+-      mrb_gc_arena_restore(mrb, ai);
+-      NEXT;
+-    }
+-
+-    CASE(OP_ARYPUSH, BB) {
++      CASE(OP_ARYCAT, B) {
++        mrb_int ai = mrb_gc_arena_save(mrb);
++        mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
++        if (mrb_nil_p(regs[a])) {
++          regs[a] = splat;
++        }
++        else {
++          mrb_assert(mrb_array_p(regs[a]));
++          mrb_ary_concat(mrb, regs[a], splat);
++        }
++        mrb_gc_arena_restore(mrb, ai);
++        NEXT;
++      }    CASE(OP_ARYPUSH, BB) {

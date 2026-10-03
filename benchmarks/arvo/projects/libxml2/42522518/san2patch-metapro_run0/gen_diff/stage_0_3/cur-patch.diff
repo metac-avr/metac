@@ -1,0 +1,25 @@
+diff --git a/parser.c b/parser.c
+index f69231d5..a8fb303b 100644
+--- a/parser.c
++++ b/parser.c
+@@ -5362,0 +5363,5 @@ xmlParseEntityDecl(xmlParserCtxtPtr ctxt) {
++	if (ctxt->input->cur < ctxt->input->base) {
++	    xmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR,
++			   "Buffer underflow detected\n");
++	    return;
++	}
+@@ -5372,2 +5377 @@ xmlParseEntityDecl(xmlParserCtxtPtr ctxt) {
+-			       "Space required after '%%'\n");
+-	    }
++			       "Space required after '%'\n");	    }
+@@ -8331 +8335,9 @@ xmlParseInternalSubset(xmlParserCtxtPtr ctxt) {
+-                xmlParseConditionalSections(ctxt);
++                 if ((ctxt->input->cur + 3 < ctxt->input->end) && 
++                     (ctxt->input->cur >= ctxt->input->base)) {
++                     xmlParseConditionalSections(ctxt);
++                 } else {
++                     xmlFatalErr(ctxt, XML_ERR_ENTITY_BOUNDARY,
++                               "xmlParseInternalSubset: entity boundary violation\n");
++                     xmlHaltParser(ctxt);
++                     return;
++                 }

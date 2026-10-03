@@ -1,0 +1,28 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..aa6c8cf6d 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -268,0 +269,10 @@ char *ndpi_strdup(const char *s) {
++  // Additional check for expired pointer - validate memory accessibility
++  // This is a simplified approach - in practice, full validation would require 
++  // more sophisticated memory tracking mechanisms
++  volatile const char *test_ptr = s;
++  volatile char test_val;
++  
++  // Attempt to read first byte to trigger potential segfault early
++  // This helps catch some cases of expired pointers
++  if(s[0] == '\0') return ndpi_strdup("");
++  
+diff --git a/example/reader_util.c b/example/reader_util.c
+index c3c18764d..afe4e53d9 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1160 +1160 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-  else if((is_ndpi_proto(flow, NDPI_PROTOCOL_TLS))
++  else     if((is_ndpi_proto(flow, NDPI_PROTOCOL_TLS))
+@@ -1186,2 +1186,3 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-
+-    if(flow->ndpi_flow->protos.tls_quic.alpn) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
++    if(flow->ndpi_flow->protos.tls_quic.alpn && strlen(flow->ndpi_flow->protos.tls_quic.alpn) > 0) {

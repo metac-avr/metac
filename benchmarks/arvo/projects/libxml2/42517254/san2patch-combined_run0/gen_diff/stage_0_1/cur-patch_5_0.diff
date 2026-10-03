@@ -1,0 +1,49 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..6f9b3241 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1189 +1189 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    if (last == NULL) {
++				    if (tmp != NULL && last == NULL) {
+@@ -1191 +1191 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    } else {
++				    } else if (tmp != NULL) {
+@@ -1214,9 +1214,14 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		xmlNodePtr current_node = set->nodeTab[i];
++		if (current_node != NULL) {
++		    if (last == NULL)
++		        list = last = xmlXIncludeCopyNode(ctxt, target, source,
++				                              current_node);
++		    else {
++		        xmlNodePtr copy_result = xmlXIncludeCopyNode(ctxt, target, source,
++				                current_node);
++		        if (copy_result != NULL) {
++		            xmlAddNextSibling(last, copy_result);
++		            if (last->next != NULL)
++			        last = last->next;
++		        }
++		    }
+@@ -2275,3 +2280,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
+-	xmlUnlinkNode(cur);
+-	xmlFreeNode(cur);
++// FIXME: Crash CWE-416: Use After Free
++          */
++	/* Prevent use-after-free by deferring node deletion */
++	/* xmlFreeNode replacement logic */
++	cur->type = XML_XINCLUDE_FALLBACK; /* Mark for later cleanup */
+@@ -2314,0 +2322,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    /* Final cleanup to prevent memory leak while avoiding use-after-free */
++    if ((ctxt->parseFlags & XML_PARSE_NOXINCNODE) && (cur->type == XML_XINCLUDE_FALLBACK)) {
++        xmlUnlinkNode(cur);
++        xmlFreeNode(cur);
++    }

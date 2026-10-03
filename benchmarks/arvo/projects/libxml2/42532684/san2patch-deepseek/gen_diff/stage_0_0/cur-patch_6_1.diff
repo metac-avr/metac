@@ -1,0 +1,38 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..52c1d78f 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2636,8 +2635,0 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
+-        }
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+@@ -2646,2 +2638 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
++    xmlIDPtr idPtr = (xmlIDPtr) id;
+@@ -2649,9 +2640,11 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++    if (idPtr == NULL)
++        return;
++
++    /*
++     * Don't try to manipulate the document or hash table here.
++     * xmlFreeIDTableEntry is used while the ID table is being
++     * destroyed, so removing entries from the table inside the
++     * hash scanner callback is unsafe and can lead to use-after-free.
++     */
++    xmlFreeID(idPtr);
++}    xmlHashFree(table, xmlFreeIDTableEntry);

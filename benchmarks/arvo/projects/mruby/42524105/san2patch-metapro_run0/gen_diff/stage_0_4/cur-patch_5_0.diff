@@ -1,0 +1,23 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..96fc42c02 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1683,0 +1684,2 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
++    /* Check for valid pointer before dereferencing to prevent use-after-free */
++    if (s >= send) break;
+@@ -1713 +1715,2 @@ static mrb_value
+-mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++// FIXME: Crash CWE-416: Use After Free
++ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+@@ -1715 +1718,6 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+-  mrb_int key = mrb_str_hash(mrb, self);
++  mrb_int key;
++  if (mrb_type(self) == MRB_TT_STRING && mrb_string_p(self)) {
++    key = mrb_str_hash(mrb, self);
++  } else {
++    key = mrb_int_hash(mrb, mrb_obj_id(self));
++  }
+@@ -1725,2 +1733 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+- *  Returns <code>true</code> if <i>str</i> contains the given string or
+- *  character.
++ *  Returns <code>true</code> if <i>str</i> contains the given string or *  character.

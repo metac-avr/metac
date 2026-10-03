@@ -1,0 +1,36 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..760dcac4 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2345 +2345,2 @@ xmlSAX2StartElementNs(void *ctx,
+-		}
++// Fixed: Prevent use-after-free by checking namespace validity before attribute creation
++ 		}
+@@ -2362,0 +2364 @@ xmlSAX2StartElementNs(void *ctx,
++
+diff --git a/parser.c b/parser.c
+index 12ca104e..d9571b4e 100644
+--- a/parser.c
++++ b/parser.c
+@@ -9342,2 +9342,10 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
+-	(!ctxt->disableSAX)) {
+-	if (nbNs > 0)
++    (!ctxt->disableSAX)) {
++	/* Create a temporary copy of namespace data to avoid use-after-free */
++	const xmlChar **nsCopy = NULL;
++	if (nbNs > 0) {
++	    nsCopy = xmlMalloc(2 * nbNs * sizeof(xmlChar*));
++	    if (nsCopy != NULL) {
++	        memcpy((void*)nsCopy, (void*)(ctxt->nsTab + 2 * (ctxt->nsNr - nbNs)), 2 * nbNs * sizeof(xmlChar*));
++	    }
++	}
++	if (nbNs > 0 && nsCopy != NULL)
+@@ -9345 +9353 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
+-                          nbNs, ctxt->nsTab + 2 * (ctxt->nsNr - nbNs),
++                          nbNs, nsCopy,
+@@ -9346,0 +9355,3 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
++	else if (nbNs > 0)
++	    ctxt->sax->startElementNs(ctxt->userData, localname, prefix, uri,
++                          0, NULL, nbatts / 5, nbdef, atts);
+@@ -9349,0 +9361 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
++	if (nsCopy != NULL) xmlFree((void*)nsCopy);

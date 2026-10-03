@@ -1,0 +1,25 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..cf42da9babb 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -757,0 +758,9 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
++	/* Safety check for freed array access - CVE-2023-XXXX */
++	if (UNEXPECTED(!ht || !(ht->gc.u.v.type_flag & IS_ARRAY))) {
++		return NULL;
++	}
++	if (UNEXPECTED(GC_DELREF(ht) < 0)) {
++		GC_ADDREF(ht);
++		return NULL;
++	}
++	GC_ADDREF(ht);
+@@ -759 +768,2 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -763,5 +773 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
+-{
+-	zend_long offset;
++}	zend_long offset;

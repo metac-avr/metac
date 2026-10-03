@@ -1,0 +1,47 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index dcdde6966..5396525dd 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -7133,3 +7133,7 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", kind);
+-
+-		  if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp)))
++		  int remaining_space = sizeof(options_fp) - options_fp_len;
++		  if(remaining_space > 0) {
++		    rc = snprintf(&options_fp[options_fp_len], remaining_space, "%02x", kind);
++		    if((rc < 0) || (rc >= remaining_space))
++		      break;
++		    options_fp_len += rc;
++		  } else {
+@@ -7137,2 +7141 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-
+-		  options_fp_len += rc;
++		  }
+@@ -7140,3 +7143,7 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&fingerprint[fp_idx], sizeof(fingerprint)-fp_idx, "%s%u", (i > 0) ? "-" : "", kind);
+-
+-		  if((rc < 0) || ((int)(fp_idx + rc) == sizeof(fingerprint)))
++		  int remaining_space = sizeof(fingerprint) - fp_idx;
++		  if(remaining_space > 0) {
++		    rc = snprintf(&fingerprint[fp_idx], remaining_space, "%s%u", (i > 0) ? "-" : "", kind);
++		    if((rc < 0) || (rc >= remaining_space))
++		      break;
++		    fp_idx += rc;
++		  } else {
+@@ -7144,2 +7151 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-
+-		  fp_idx += rc;
++		  }
+@@ -7196,4 +7202,8 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-			rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", options[j]);
+-			if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp))) break;
+-
+-			options_fp_len += rc;
++			remaining_space = sizeof(options_fp) - options_fp_len;
++			if(remaining_space > 0) {
++			  rc = snprintf(&options_fp[options_fp_len], remaining_space, "%02x", options[j]);
++			  if((rc < 0) || (rc >= remaining_space)) break;
++			  options_fp_len += rc;
++			} else {
++			  break;
++			}

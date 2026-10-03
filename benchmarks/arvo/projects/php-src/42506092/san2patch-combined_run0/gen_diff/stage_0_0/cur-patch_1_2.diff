@@ -1,0 +1,59 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..69d995de7ca 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756 +756,40 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
++static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
++{
++	zend_ulong hval;
++	zend_string *key;
++	zend_string *offset_key;
++	HashTable *ht;
++	zend_long retval = 0;
++
++	try_again:
++	switch(Z_TYPE_P(dim)) {
++		case IS_LONG:
++			hval = Z_LVAL_P(dim);
++			goto num_index;
++		case IS_DOUBLE:
++			hval = zend_dval_to_lval(Z_DVAL_P(dim));
++			goto num_index;
++		case IS_STRING:
++			key = Z_STR_P(dim);
++			if (ZEND_HANDLE_NUMERIC(key, hval)) {
++				goto num_index;
++			}
++			offset_key = key;
++			ht = Z_ARRVAL_P(dim);
++			if (ht) {
++				zval *result = zend_hash_lookup(ht, offset_key);
++				if (result) {
++					retval = Z_LVAL_P(result);
++				}
++				return retval;
++			} else {
++				return 0;
++			}
++		case IS_OBJECT:
++			if (UNEXPECTED(!Z_OBJ_HT_P(dim)->get_gc)) {
++				zend_error(E_WARNING, "Cannot access offset on object of type %s", ZSTR_VAL(Z_OBJ_P(dim)->ce->name));
++				return 0;
++			}
++			/* break missing intentionally */
++		default:
++			return zval_get_long_func(dim, /* is_strict */ false);
+@@ -758 +796,0 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	return zend_hash_lookup(ht, offset_key);
+@@ -761,7 +799,3 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
+-{
+-	zend_long offset;
++	/* For numeric indices, we need to return the numeric value, not look it up */
++	return (zend_long)hval;
++}	zend_long offset;

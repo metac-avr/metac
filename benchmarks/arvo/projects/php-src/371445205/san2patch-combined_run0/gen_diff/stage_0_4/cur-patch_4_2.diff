@@ -1,0 +1,54 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..f9164535ca8 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,5 +6770,8 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
++static void reflection_attribute_get_constructor_attribute(zend_object *obj, zend_class_entry *ce, zend_attribute *attr)
++{
++	zend_ulong flags = 0; // Initialize flags since it's used in condition
++
++	if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
++		if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
++			zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
++			RETURN_THROWS();
+@@ -6777,0 +6781 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -6779,0 +6784,4 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	// Increment reference count to prevent premature deallocation
++	if (attr->data) {
++		zend_string_addref(attr->data->name);
++	}
+@@ -6780,0 +6789,3 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++		if (attr->data) {
++			zend_string_release(attr->data->name);
++		}
+@@ -6783 +6794,3 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-
++	if (attr->data) {
++		zend_string_release(attr->data->name);
++	}
+@@ -6785,7 +6798 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-}
+-
+-ZEND_METHOD(ReflectionEnum, __construct)
+-{
+-	reflection_class_object_ctor(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++}		RETURN_THROWS();
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..57555d9d5ae 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -352,0 +353 @@ static zend_always_inline void zend_string_release(zend_string *s)
++
+@@ -355 +356 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-	if (!ZSTR_IS_INTERNED(s)) {
++	if (!ZSTR_IS_INTERNED(s) && s != NULL) {
+@@ -359,0 +361 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
++// FIXME: Crash CWE-825: Expired Pointer Dereference

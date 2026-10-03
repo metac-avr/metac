@@ -1,0 +1,38 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..e9267d60a 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++ {
+@@ -791,0 +791,3 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  // Additional safety check to prevent accessing freed memory
++  if (mrb == NULL) return;
+@@ -799,2 +801 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1202,0 +1204,20 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Remove page objects from GC marking structures before deallocation */
++      RVALUE *scan_obj = objects(page);
++      RVALUE *scan_end = scan_obj + MRB_HEAP_PAGE_SIZE;
++      while (scan_obj < scan_end) {
++        if (scan_obj->as.basic.tt != MRB_TT_FREE) {
++          /* Clean up references in gray list */
++          struct RBasic **gray_ptr = &gc->gray_list;
++          while (*gray_ptr) {
++            if (*gray_ptr == &scan_obj->as.basic) {
++              *gray_ptr = (*gray_ptr)->gcnext;
++              scan_obj->as.basic.gcnext = NULL;
++              break;
++            } else {
++              gray_ptr = &(*gray_ptr)->gcnext;
++            }
++          }
++        }
++        scan_obj++;
++      }
++

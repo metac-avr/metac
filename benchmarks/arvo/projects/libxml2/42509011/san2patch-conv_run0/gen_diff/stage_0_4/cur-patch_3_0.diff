@@ -1,0 +1,18 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..d2ae328d 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2094 +2094,12 @@ xmlFreePropList(xmlAttrPtr cur) {
+-        xmlFreeProp(cur);
++        /* Check if the property is dictionary managed before freeing */
++        if (cur->atype != XML_ATTRIBUTE_ID) {
++            xmlFreeProp(cur);
++        } else {
++            /* For dictionary-managed properties, only free non-dictionary strings */
++            if (cur->name && !xmlDictOwns(cur->doc->dict, cur->name))
++                xmlFree((char *)cur->name);
++            if (cur->children && cur->children->content && 
++                !xmlDictOwns(cur->doc->dict, cur->children->content))
++                xmlFree((char *)cur->children->content);
++            xmlFree(cur);
++        }

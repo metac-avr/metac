@@ -1,0 +1,51 @@
+diff --git a/src/filters/isoffin_load.c b/src/filters/isoffin_load.c
+index 31f8c8458..d7ab6e44c 100644
+--- a/src/filters/isoffin_load.c
++++ b/src/filters/isoffin_load.c
+@@ -1831,6 +1831 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-	case GF_ISOM_CBCS_SCHEME:
+-	case GF_ISOM_CENC_SCHEME:
+-	case GF_ISOM_PIFF_SCHEME:
+-	case 0:
+-		break;
+-	default:
++default:
+@@ -1839,2 +1833,0 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-
+-
+@@ -1852 +1845,34 @@ Bool isor_declare_item_properties(ISOMReader *read, ISOMChannel *ch, u32 item_id
+-	} else {
++	} else if (!esd->decoderConfig || !esd->decoderConfig->decoderSpecificInfo) {
++		// Reject malformed ESDConfig structures to avoid downstream NULL dereference
++		return GF_FALSE;
++	}
++
++	GF_FilterPid *pid = gf_filter_pid_new(read->filter);
++	if (!pid) {
++		gf_filter_remove_filter(read->filter, NULL);
++		return GF_FALSE;
++	}
++	gf_filter_pid_set_name(pid, gf_isom_meta_item_get_name(read->mov, item_id));
++	gf_filter_pid_set_property(pid, GF_PROP_PID_STREAM_TYPE, &PROP_UINT(GF_STREAM_VISUAL));
++	gf_filter_pid_set_property(pid, GF_PROP_PID_CODECID, &PROP_UINT(item_codecid));
++	gf_filter_pid_set_property(pid, GF_PROP_PID_TIMESCALE, &PROP_UINT(1000));
++	if (esd) {
++		gf_filter_pid_set_property(pid, GF_PROP_PID_DECODER_CONFIG, &PROP_DATA(esd->decoderConfig->decoderSpecificInfo->data, esd->decoderConfig->decoderSpecificInfo->dataLength));
++		gf_filter_pid_set_property(pid, GF_PROP_PID_CODEC_CONFIG, &PROP_DATA(esd->decoderConfig->decoderSpecificInfo->data, esd->decoderConfig->decoderSpecificInfo->dataLength));
++	}
++	if (props.width && props.height) {
++		gf_filter_pid_set_property(pid, GF_PROP_PID_WIDTH, &PROP_UINT(props.width));
++		gf_filter_pid_set_property(pid, GF_PROP_PID_HEIGHT, &PROP_UINT(props.height));
++	}
++	gf_filter_pid_set_property(pid, GF_PROP_PID_HIDDEN, props.hidden ? &PROP_BOOL(GF_TRUE) : NULL);
++	gf_filter_pid_set_property(pid, GF_PROP_PID_ALPHA, props.alpha ? &PROP_BOOL(GF_TRUE) : NULL);
++	gf_filter_pid_set_property(pid, GF_PROP_PID_MIRROR, props.mirror ? &PROP_UINT(props.mirror) : NULL);
++	gf_filter_pid_set_property(pid, GF_PROP_PID_ROTATE, props.alpha ? &PROP_UINT(props.angle) : NULL);
++	gf_filter_pid_set_property(pid, GF_PROP_PID_ITEM_ID, &PROP_UINT(item_id));
++	gf_filter_pid_set_property(pid, GF_PROP_PID_ITEM_NAME, &PROP_STRING(item_name));
++	if (read->itemid) {
++		gf_filter_pid_set_property(pid, GF_PROP_PID_ITEM_ID, &PROP_UINT(read->itemid));
++	}
++	if ((item_codecid==GF_CODECID_HEVC) && gf_isom_meta_item_has_ref(read->mov, GF_TRUE, 0, item_id, GF_ISOM_REF_TBAS)) {
++		gf_filter_pid_set_property(pid, GF_PROP_PID_HEVC_TILE_BASE, &PROP_BOOL(GF_TRUE));
++	}	} else {

@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..47d7976ee4f 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -984 +984,2 @@ static void gc_mark_roots(gc_stack *stack)
+-			if (GC_REF_CHECK_COLOR(current->ref, GC_PURPLE)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++			if (GC_REF_CHECK_COLOR(current->ref, GC_PURPLE) && current->ref >= GC_IDX2PTR(GC_FIRST_ROOT) && current->ref < GC_IDX2PTR(GC_G(first_unused))) {
+@@ -1486 +1486,0 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
+@@ -1494 +1494 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
++ 
+@@ -1496 +1496,7 @@ ZEND_API int zend_gc_collect_cycles(void)
+-		gc_mark_roots(&stack);
++		if (stack.stack && stack.top < stack.max_size) {
++			gc_mark_roots(&stack);
++		} else {
++			GC_TRACE("Invalid stack state");
++			GC_G(gc_active) = 0;
++			return 0;
++		}

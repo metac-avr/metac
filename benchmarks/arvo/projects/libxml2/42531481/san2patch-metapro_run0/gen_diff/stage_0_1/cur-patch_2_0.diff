@@ -1,0 +1,63 @@
+diff --git a/parser.c b/parser.c
+index cae2b7fd..257291f2 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7373,2 +7373,3 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw == NULL) {
++		    if (cur != NULL && cur->ns != NULL && cur->ns->href != NULL) { 
++		        nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		        if (nw == NULL) {
+@@ -7400 +7401 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		}
++		}}
+diff --git a/tree.c b/tree.c
+index 314cf5d5..4b7fd202 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// Prevent expired pointer dereference by validating namespace
++         xmlNsPtr ns;
+@@ -4272,2 +4273,4 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
++	 // Validate both node->ns and node->ns->prefix to avoid use-after-free
++	 if (node->ns != NULL) { 
++	   ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	   if (ns == NULL) {
+@@ -4282,8 +4285,17 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
+-
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-            } else {
+-                ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	    if (node->ns->prefix != NULL) {
++	      ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	      if (ns != NULL) {
++	          xmlNodePtr root = ret;
++
++		  while (root->parent != NULL) root = root->parent;
++		  ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++              } else {
++                  ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	      }
++              if (ret->ns == NULL)
++                  goto error;
++	    } else {
++	      // Handle case where prefix is NULL
++	      ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	      if (ret->ns == NULL)
++	        goto error;
+@@ -4291,3 +4303 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-            if (ret->ns == NULL)
+-                goto error;
+-	} else {
++	   } else {
+@@ -4298 +4308,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	}
++	   }
++	 }

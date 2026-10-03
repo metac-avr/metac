@@ -1,0 +1,53 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..918262091 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -103,16 +103,7 @@ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+-static void
+-stack_init(mrb_state *mrb)
+-{
+-  struct mrb_context *c = mrb->c;
+-
+-  /* mrb_assert(mrb->stack == NULL); */
+-  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE, sizeof(mrb_value));
+-  c->stend = c->stbase + STACK_INIT_SIZE;
+-
+-  /* mrb_assert(ci == NULL); */
+-  c->cibase = (mrb_callinfo *)mrb_calloc(mrb, CALLINFO_INIT_SIZE, sizeof(mrb_callinfo));
+-  c->ciend = c->cibase + CALLINFO_INIT_SIZE;
+-  c->ci = c->cibase;
+-  c->ci->u.target_class = mrb->object_class;
+-  c->ci->stack = c->stbase;
+-}
++CASE(OP_SETCONST, BB) {
++      if (b < 0 || b >= irep->slen) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid symbol index");
++      }
++      mrb_vm_const_set(mrb, syms[b], regs[a]);
++      NEXT;
++    }
+@@ -1372,7 +1363 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-    CASE(OP_SETIDX, B) {
+-      c = 2;
+-      mid = MRB_OPSYM(aset);
+-      goto L_SEND_SYM;
+-    }
+-
+-    CASE(OP_GETCONST, BB) {
++CASE(OP_GETCONST, BB) {
+@@ -1381,0 +1367,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      if (b < 0 || b >= irep->slen) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid symbol index");
++      }
++
+@@ -1385,9 +1374 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-    }
+-
+-    CASE(OP_SETCONST, BB) {
+-      mrb_vm_const_set(mrb, syms[b], regs[a]);
+-      NEXT;
+-    }
+-
+-    CASE(OP_GETMCNST, BB) {
+-      mrb_value val;
++    }      mrb_value val;

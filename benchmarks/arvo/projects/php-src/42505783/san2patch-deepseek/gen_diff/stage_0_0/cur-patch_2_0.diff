@@ -1,0 +1,19 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..cef3342071c 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1212,0 +1213,10 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
++	if (UNEXPECTED(GC_REFCOUNT(op1_str) > 1)) {
++		GC_DELREF(op1_str);
++		result_str = zend_string_alloc(result_len, 0);
++		memcpy(ZSTR_VAL(result_str), ZSTR_VAL(op1_str), op1_len);
++		ZVAL_NEW_STR(result, result_str);
++		memcpy(ZSTR_VAL(result_str) + op1_len, Z_STRVAL_P(op2), op2_len);
++		ZSTR_VAL(result_str)[result_len] = '\0';
++		return;
++	}
++
+@@ -2011,0 +2022 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
++	Z_TRY_ADDREF_P(value);
+@@ -2021,0 +2033 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
++	zval_ptr_dtor(value);

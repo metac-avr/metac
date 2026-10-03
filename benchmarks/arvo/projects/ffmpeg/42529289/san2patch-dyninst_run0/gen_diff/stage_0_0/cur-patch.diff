@@ -1,0 +1,51 @@
+diff --git a/libavcodec/bitstream_template.h b/libavcodec/bitstream_template.h
+index 0308e3a924..e6df37e122 100644
+--- a/libavcodec/bitstream_template.h
++++ b/libavcodec/bitstream_template.h
+@@ -529 +529,7 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-    int ret, nb_bits, code, n = Jtable[idx].len;
++     int ret, nb_bits, code, n = Jtable[idx].len;
++    // Early bounds check to prevent any out-of-bounds access
++    if (dst >= bc->buffer_end) {
++        BS_FUNC(priv_skip_remaining)(bc, n);
++        return 0; // Return early if already at buffer end
++    }
++    
+@@ -531 +537,9 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-        AV_COPY64U(dst, Jtable[idx].val);
++        // Ensure we have enough space for 8-byte copy
++        if (dst + 8 <= bc->buffer_end) {
++            AV_COPY64U(dst, Jtable[idx].val);
++        } else {
++            // Fallback to byte-by-byte copy for safety
++            for (int i = 0; i < 8 && dst + i < bc->buffer_end; i++) {
++                dst[i] = ((uint8_t*)&Jtable[idx].val)[i];
++            }
++        }
+@@ -544 +558,7 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-        AV_WN16(dst, code);
++        // Ensure we have space for 2-byte write
++        if (dst + 2 <= bc->buffer_end) {
++            AV_WN16(dst, code);
++        } else if (dst + 1 < bc->buffer_end) {
++            // Write only 1 byte if 2 won't fit
++            *dst = (uint8_t)code;
++        }
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..fa5fb76248 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -634 +634 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-        return AVERROR_INVALIDDATA;
++    return AVERROR_INVALIDDATA;
+@@ -641,0 +642 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
++// FIXME: Crash CWE-787: Out-of-bounds Write
+@@ -650,0 +652,4 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
++    // Bounds checking before accessing pixel formats
++    if (!avctx->pix_fmt || avctx->pix_fmt >= AV_PIX_FMT_NB)
++        return AVERROR_INVALIDDATA;
++    
+@@ -654,2 +659 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-        avctx->pix_fmt == AV_PIX_FMT_GBRAP10||
+-        avctx->pix_fmt == AV_PIX_FMT_GBRAP12||
++        avctx->pix_fmt == AV_PIX_FMT_GBRAP10||        avctx->pix_fmt == AV_PIX_FMT_GBRAP12||

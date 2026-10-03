@@ -1,0 +1,56 @@
+diff --git a/libavformat/jpegxl_probe.c b/libavformat/jpegxl_probe.c
+index a3845b037d..063702026a 100644
+--- a/libavformat/jpegxl_probe.c
++++ b/libavformat/jpegxl_probe.c
+@@ -376,2 +376,7 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-        if (xyb_encoded && !jxl_bits(1))
+-            jxl_bits_skip(16 * 16);
++        if (xyb_encoded && !jxl_bits(1)) {
++            int bits_needed = 16 * 16;
++            if (get_bits_count() + bits_needed <= headsize * 8)
++                jxl_bits_skip(bits_needed);
++            else
++                return -1;
++        }
+@@ -379,6 +384,21 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-        if (jxl_bits(1))
+-            jxl_bits_skip(16 * 15);
+-        if (jxl_bits(1))
+-            jxl_bits_skip(16 * 55);
+-        if (jxl_bits(1))
+-            jxl_bits_skip(16 * 210);
++        if (jxl_bits(1)) {
++            int bits_needed = 16 * 15;
++            if (get_bits_count() + bits_needed <= headsize * 8)
++                jxl_bits_skip(bits_needed);
++            else
++                return -1;
++        }
++        if (jxl_bits(1)) {
++            int bits_needed = 16 * 55;
++            if (get_bits_count() + bits_needed <= headsize * 8)
++                jxl_bits_skip(bits_needed);
++            else
++                return -1;
++        }
++        if (jxl_bits(1)) {
++            int bits_needed = 16 * 210;
++            if (get_bits_count() + bits_needed <= headsize * 8)
++                jxl_bits_skip(bits_needed);
++            else
++                return -1;
++        }
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index 6ea6c46d8f..d9ed3d9c47 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -187 +187,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     }
+@@ -201,0 +203,5 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    // Bounds checking before get_bits operations
++    if (get_bits_count(gb) + 32 > headsize * 8) // Ensure we won't read beyond buffer
++        return AVERROR_INVALIDDATA;
++        

@@ -1,0 +1,40 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..abe92c673b6 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,2 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+@@ -1153 +1151,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1155 +1154 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	return (p != NULL) ? p->refcount : 0;
+@@ -1159,2 +1158,5 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
+-	p->refcount = rc;
+-	return p->refcount;
++	if (p != NULL) {
++		p->refcount = rc;
++		return p->refcount;
++	}
++	return 0;
+@@ -1165,2 +1167,4 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
+-}
++	if (p != NULL) {
++		return ++(p->refcount);
++	}
++	return 0;}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..11ef4cb292a 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16731 +16731,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-			value = zend_fetch_dimension_address_inner(Z_ARRVAL_P(container), dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);
++			zend_array *arr = Z_ARRVAL_P(container);
++			if (UNEXPECTED(arr == NULL || GC_IS_RECURSIVE(arr))) {
++				goto fetch_dim_r_slow;
++			}
++			value = zend_fetch_dimension_address_inner(arr, dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);

@@ -1,0 +1,48 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..5bd0d330068 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -333,5 +332,0 @@ static zval* ZEND_FASTCALL zend_jit_symtable_lookup_w(HashTable *ht, zend_string
+-	} while (0);
+-
+-	return zend_hash_lookup(ht, str);
+-}
+-
+@@ -341 +336,8 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++	zend_string *cv = NULL;
++	
++	if (execute_data && execute_data->func && execute_data->func->op_array.vars) {
++		uint32_t var_num = EX_VAR_TO_NUM(var);
++		if (var_num < execute_data->func->op_array.num_vars) {
++			cv = execute_data->func->op_array.vars[var_num];
++		}
++	}
+@@ -343 +345,5 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++	if (cv) {
++		zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++	} else {
++		zend_error(E_WARNING, "Undefined variable");
++	}
+@@ -345,10 +351 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-}
+-
+-static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint32_t var)
+-{
+-	const zend_execute_data *execute_data = EG(current_execute_data);
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+-
+-	/* The array may be destroyed while throwing the notice.
+-	 * Temporarily increase the refcount to detect this situation. */
+-	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
++}	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 46da1ebd21e..1ea43436af8 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1596,2 +1596,2 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
+-	zend_string *filename;
+-	uint32_t lineno;
++	zend_string *filename = NULL;
++	uint32_t lineno = 0;

@@ -1,0 +1,43 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..acd78d7f6 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -190,9 +190 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+-  if (size > MRB_STACK_MAX) {
+-    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+-  }
+-}
+-
+-MRB_API void
+-mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++ {
+@@ -199,0 +192,4 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    /* Prevent stack extension during deep recursion to avoid overflow */
++    if (mrb->c->ci->depth > 1000) {
++      mrb_raise(mrb, E_SYSTEM_STACK_ERROR, "stack level too deep");
++    }
+@@ -202,10 +198 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-}
+-
+-static inline struct REnv*
+-uvenv(mrb_state *mrb, mrb_int up)
+-{
+-  const struct RProc *proc = mrb->c->ci->proc;
+-  struct REnv *e;
+-
+-  while (up--) {
+-    proc = proc->upper;
++}    proc = proc->upper;
+@@ -478,0 +466,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    static int recursion_depth = 0;
++    if (++recursion_depth > 1000) {
++      recursion_depth--;
++      mrb_raise(mrb, E_RUNTIME_ERROR, "too much recursion");
++    }
++    
+@@ -531,0 +526,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    recursion_depth--;

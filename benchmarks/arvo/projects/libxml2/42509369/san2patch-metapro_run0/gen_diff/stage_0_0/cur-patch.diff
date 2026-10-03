@@ -1,0 +1,65 @@
+diff --git a/parser.c b/parser.c
+index c3068cad..eb7c67aa 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7178,0 +7179 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++	    xmlNodePtr saved_list = NULL;
+@@ -7183,0 +7185,6 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++	    if (ret == XML_ERR_OK) {
++	        saved_list = list;
++	    } else if (list != NULL) {
++	        xmlFreeNodeList(list);
++	        list = NULL;
++	    }
+@@ -7184,0 +7192 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++	    xmlNodePtr saved_list = NULL;
+@@ -7188 +7196 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-					   ent->ExternalID, &list);
++				   ent->ExternalID, &list);
+@@ -7189,0 +7198,7 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++
++	    if (ret == XML_ERR_OK) {
++	        saved_list = list;
++	    } else if (list != NULL) {
++	        xmlFreeNodeList(list);
++	        list = NULL;
++	    }
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 7b44bf60..5f74d0ba 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -21453,5 +21453,5 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-	ctxt->constructor = xmlSchemaConstructionCtxtCreate(ctxt->dict);
+-	if (ctxt->constructor == NULL)
+-	    return(NULL);
+-	/* Take ownership of the constructor to be able to free it. */
+-	ctxt->ownsConstructor = 1;
++    ctxt->constructor = xmlSchemaConstructionCtxtCreate(ctxt->dict);
++    if (ctxt->constructor == NULL)
++	return(NULL);
++    /* Take ownership of the constructor to be able to free it. */
++    ctxt->ownsConstructor = 1;
+@@ -21461,2 +21461,2 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-    * Locate and add the schema document.
+-    */
++     * Locate and add the schema document.
++     */
+@@ -21465,0 +21466,14 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
++    
++    /* Validate bucket node list to prevent freeing invalid pointers */
++    if (bucket != NULL && bucket->doc != NULL) {
++        xmlNodePtr cur = bucket->doc->children;
++        while (cur != NULL) {
++            /* Check for invalid pointer pattern that would cause the crash */
++            if (((char*)cur >= (char*)bucket->doc && (char*)cur < (char*)bucket->doc + sizeof(xmlDoc))) {
++                cur = NULL;
++                break;
++            }
++            cur = cur->next;
++        }
++    }
++    
+@@ -21473,2 +21487 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-	if (ctxt->URL)
+-	    xmlSchemaCustomErr(ACTXT_CAST ctxt, XML_SCHEMAP_FAILED_LOAD,
++	if (ctxt->URL)	    xmlSchemaCustomErr(ACTXT_CAST ctxt, XML_SCHEMAP_FAILED_LOAD,

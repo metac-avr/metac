@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..cbfdb5c627c 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -260 +260,3 @@ void shutdown_destructors(void) /* {{{ */
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			if (EG(symbol_table).nNumOfElements > 0) {
++				zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..88f30027ffd 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,11 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// Fixed CWE-416: Use After Free by preventing access to potentially freed object
++		if (handle < EG(objects_store).top &&
++		    EG(objects_store).object_buckets &&
++		    IS_OBJ_VALID(EG(objects_store).object_buckets[handle])) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		} else {
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}

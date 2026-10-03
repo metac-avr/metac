@@ -1,0 +1,25 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..5d0c34e1c 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -240 +240,6 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (mrb_immediate_p(v) || (mrb_fixnum_p(v) && mrb_float_p(v))) {
++    return 0;
++  }
++  if (mrb_type(v) < MRB_TT_MAXDEFINE && !mrb_nil_p(v)) {
++    mrb_gc_mark_value(mrb, v);
++  }
+@@ -245 +250,2 @@ static void
+-mark_tbl(mrb_state *mrb, iv_tbl *t)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mark_tbl(mrb_state *mrb, iv_tbl *t)
+@@ -247 +253,3 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
+-  iv_foreach(mrb, t, iv_mark_i, 0);
++  if (t != NULL) {
++    iv_foreach(mrb, t, iv_mark_i, 0);
++  }
+@@ -257,2 +265 @@ void
+-mrb_gc_free_gv(mrb_state *mrb)
+-{
++mrb_gc_free_gv(mrb_state *mrb){

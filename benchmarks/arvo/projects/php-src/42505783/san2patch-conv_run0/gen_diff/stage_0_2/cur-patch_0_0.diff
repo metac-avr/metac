@@ -1,0 +1,27 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..5b2224235b7 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1201 +1201,2 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -1212,0 +1214,6 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
++	// Check if op1_str is valid before accessing it
++	if (op1_str == NULL || (GC_REFCOUNT(op1_str) == 0 && !ZSTR_IS_INTERNED(op1_str))) {
++		zend_throw_error(NULL, "Invalid string reference");
++		return;
++	}
++
+@@ -2022 +2029,10 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
+-	value = zend_assign_to_variable(property_val, &tmp, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++	/* Validate that tmp string is still valid before assignment */
++	if (Z_TYPE(tmp) == IS_STRING && Z_STR(tmp) != NULL) {
++		value = zend_assign_to_variable(property_val, &tmp, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++	} else {
++		zval_ptr_dtor(&tmp);
++		if (result) {
++			ZVAL_NULL(result);
++		}
++		return;
++	}

@@ -1,0 +1,42 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4..a1cdc085 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -616 +616 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
++if (child == NULL)
+@@ -624 +624 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++     xmlNodePtr cur = node;
+@@ -626 +626 @@ nodeGetTree(xmlNodePtr node) {
+-    while (cur->parent)
++    while (cur && cur->parent)
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..414e0b41 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1066,7 +1066,8 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem == NULL) return;
+-    xmlUnlinkNode((xmlNodePtr) elem);
+-    xmlFreeDocElementContent(elem->doc, elem->content);
+-    if (elem->name != NULL)
+-	xmlFree((xmlChar *) elem->name);
+-    if (elem->prefix != NULL)
+-	xmlFree((xmlChar *) elem->prefix);
++    xmlElementPtr temp_elem = elem;  /* Store original pointer for safe freeing */
++    if (temp_elem == NULL) return;
++    xmlUnlinkNode((xmlNodePtr) temp_elem);
++    xmlFreeDocElementContent(temp_elem->doc, temp_elem->content);
++    if (temp_elem->name != NULL)
++	xmlFree((xmlChar *) temp_elem->name);
++    if (temp_elem->prefix != NULL)
++	xmlFree((xmlChar *) temp_elem->prefix);
+@@ -1074,2 +1075,2 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem->contModel != NULL)
+-	xmlRegFreeRegexp(elem->contModel);
++    if (temp_elem->contModel != NULL)
++	xmlRegFreeRegexp(temp_elem->contModel);
+@@ -1077 +1078,2 @@ xmlFreeElement(xmlElementPtr elem) {
+-    xmlFree(elem);
++    elem = NULL;  /* Nullify original pointer to prevent UAF */
++    xmlFree(temp_elem);

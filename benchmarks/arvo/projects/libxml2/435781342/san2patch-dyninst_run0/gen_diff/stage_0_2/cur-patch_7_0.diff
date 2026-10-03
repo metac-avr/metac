@@ -1,0 +1,23 @@
+diff --git a/tree.c b/tree.c
+index a93f2e31..5a7cc6d4 100644
+--- a/tree.c
++++ b/tree.c
+@@ -599,3 +599,5 @@ xmlFreeNs(xmlNs *cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
+-    xmlFree(cur);
++    /* Store freed namespace in a deferred cleanup list */
++    /* Add to global deferred namespace cleanup queue */
++    xmlAddDeferredNamespaceCleanup(cur);
++    /* Return immediately - actual cleanup happens later */
++    return;
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..828a06ee 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2089 +2089,4 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-	    xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);
++// Fixed CWE-416: Use After Free by adding null check before accessing freed memory
++ 	    if (ret != NULL) {
++                xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);
++            }

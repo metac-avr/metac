@@ -1,0 +1,36 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..be0ccf2b 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2050 +2050 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	return(-1);
++ 	return(-1);
+@@ -2095 +2095 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	xmlFreeNode(cur);
++	if (cur != NULL) xmlFreeNode(cur);
+@@ -2110 +2110 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-            xmlFreeNode(child);
++            if (child != NULL) xmlFreeNode(child);
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..da1bd98d 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1364,3 +1364,15 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Validate node pointer before unlinking/freeing */
++		if (tmp != NULL) {
++		    xmlUnlinkNode(tmp);
++		    /* Delay actual freeing if XInclude might reference this node */
++		    #ifdef LIBXML_XINCLUDE_ENABLED
++		    if (reader->in_xinclude > 0) {
++		        tmp->extra |= NODE_IS_PRESERVED;
++		    } else {
++		        xmlTextReaderFreeNode(reader, tmp);
++		    }
++		    #else
++		    xmlTextReaderFreeNode(reader, tmp);
++		    #endif
++		}

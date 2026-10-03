@@ -1,0 +1,36 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 6a6476b2ce5..d82b132a418 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -20636,0 +20637 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
++// FIXME: Crash CWE-416: Use After Free
+@@ -20643,0 +20645,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
++		/* Register with JIT reference manager */
++		zend_jit_register_array(Z_ARRVAL_P(array));
+@@ -20646,0 +20650,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
++		/* Register with JIT reference manager */
++		zend_jit_register_array(Z_ARRVAL_P(array));
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..444b0490b63 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1780,6 +1780,10 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	}
+-	SET_INCONSISTENT(HT_DESTROYED);
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
+-	zend_hash_iterators_remove(ht);
+-	FREE_HASHTABLE(ht);
++    }
++    SET_INCONSISTENT(HT_DESTROYED);
++    /* Ensure no active JIT references before deallocation */
++    if (ht->u.v.flags & (HASH_FLAG_PACKED | HASH_FLAG_UNPACKED)) {
++        zend_jit_release_array_references(ht);
++    }
++    efree(HT_GET_DATA_ADDR(ht));
++ free_ht:
++    zend_hash_iterators_remove(ht);
++    FREE_HASHTABLE(ht);
+@@ -1790 +1794 @@ ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-	IS_CONSISTENT(ht);
++    IS_CONSISTENT(ht);

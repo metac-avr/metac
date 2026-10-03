@@ -1,0 +1,26 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..e50bd4af2 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -238 +238,2 @@ static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++// FIXME: Crash CWE-416: Use After Free
++ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+@@ -239,0 +241 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++  if (mrb_nil_p(v)) return 0;
+@@ -246,0 +249 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
++  if (!t) return;
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..d1952b5ad 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1203,3 +1203,6 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Add safety check to prevent use-after-free during concurrent GC operations */
++      if (!gc->state_changed) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }

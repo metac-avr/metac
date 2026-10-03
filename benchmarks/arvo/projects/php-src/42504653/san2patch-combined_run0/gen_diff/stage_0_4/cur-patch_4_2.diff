@@ -1,0 +1,59 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..04f4fbb7c18 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7616,2 +7616,11 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+-			} else if (!zend_jit_traces[parent_num].polymorphism) {
++static int zend_jit_trace_side_exit(zend_execute_data *execute_data, zend_op *opline, uint32_t parent_num, uint32_t exit_num, zend_jit_trace_rec *trace_buffer, int is_megamorphic)
++{
++	int ret = 0;
++	int stop;
++	int polymorphism = 0;
++
++	if (exit_flags & (ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM)) {
++		if (exit_flags & ZEND_JIT_EXIT_INNER_LOOP) {
++			polymorphism = 2;
++		} else if (exit_flags & (ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM)) {
++			if (!zend_jit_traces[parent_num].polymorphism) {
+@@ -7626 +7635,7 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
++	// Check for null execute_data to prevent use-after-free
++	if (execute_data && execute_data->func) {
++		stop = zend_jit_trace_execute(execute_data, opline, trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
++	} else {
++		ret = -1;
++		stop = 0;
++	}
+@@ -7636,2 +7651 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-			const zend_op_array *op_array = trace_buffer[0].op_array;
+-			const zend_op *opline = trace_buffer[1].opline;
++			const zend_op_array *op_array = trace_buffer[0].op_array;			const zend_op *opline = trace_buffer[1].opline;
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..aa0fc9b11d0 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -24,8 +23,0 @@
+-#include "zend_types.h"
+-#include "zend_gc.h"
+-
+-BEGIN_EXTERN_C()
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p);
+-ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-
+@@ -34 +26,2 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++	// Check for null pointer to prevent use-after-free
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+@@ -37,9 +30 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-}
+-
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
++}		} else {

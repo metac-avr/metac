@@ -1,0 +1,64 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..71a57ae11c 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,9 +2017,41 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
++#define WRITE_FRAME(D, PIXEL) \
++static inline void write_frame_##D(const Jpeg2000DecoderContext *s, Jpeg2000Tile *tile, \
++                                 uint8_t *datap, int compno,                       \
++                                 AVFrame *picture, int plane)                      \
++{                                                                                     \
++    int x, y, *src = NULL;                                                            \
++    int *src_mem, src_size;                                                           \
++    PIXEL *dst;                                                                       \
++    PIXEL *line;                                                                      \
++    int pixelsize = s->image.pixelprec[compno].w * s->image.pixelprec[compno].h;      \
++    int datalen = tile->comp[compno].coordinate[1][0] - tile->comp[compno].coordinate[0][0];\
++    int *i_datap = (int *)datap;                                                      \
++    int w = (tile->comp[compno].coord[0][1] - tile->comp[compno].coord[0][0]) /       \
++            s->image.pixelprec[compno].w;                                              \
++    int h = (tile->comp[compno].coord[1][1] - tile->comp[compno].coord[1][0]) /      \
++            s->image.pixelprec[compno].h;                                             \
++                                                                                      \
++    src_mem = av_malloc_array(datalen, sizeof(*src_mem));                             \
++    if (!src_mem)                                                                     \
++        return;                                                                       \
++    src = src_mem;                                                                    \
++    src_size = datalen;                                                               \
++                                                                                      \
++    if (s->codec_type == FF_CODEC_JPEG2000) {                                         \
++        for (y = 0; y < h; y++) {                                                     \
++            line = (PIXEL *)picture->data[plane] +                                    \
++                   (tile->comp[compno].coord[1][0] / s->image.pixelprec[compno].h + y)* \
++                   (picture->linesize[plane] / sizeof(PIXEL)) +                        \
++                   tile->comp[compno].coordinate[0][0] / s->image.pixelprec[compno].w; \
++            for (x = 0; x < w; x++) {                                                 \
++                dst = line + x;                                                       \
++                if (i_datap >= (int *)(datap + s->image.precints[y].coord[0][1] - s->image.precints[y].coord[0][0])) \
++                    break;                                                            \
++                *dst = *i_datap;                                                      \
++                i_datap++;                                                            \
++                dst += pixelsize;                                                     \
++            }                                                                         \
++            line += picture->linesize[plane] / sizeof(PIXEL);                        \
++        }                                                                             \
++    }                                                                                 \
++}
+@@ -2031,8 +2062,0 @@ WRITE_FRAME(16, uint16_t)
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-

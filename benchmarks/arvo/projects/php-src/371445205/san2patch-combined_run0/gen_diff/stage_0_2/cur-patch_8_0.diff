@@ -1,0 +1,17 @@
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..4cf8365ee2a 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -356 +356,2 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-		if (GC_DELREF(s) == 0) {
++		int32_t refcount = GC_DELREF(s);
++		if (refcount <= 0) {
+@@ -360 +361 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-			} else {
++ 			} else {
+@@ -362 +363,4 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-				efree(s);
++				/* Prevent use-after-free by checking if still in use */
++				if (refcount == 0) {
++					efree(s);
++				}

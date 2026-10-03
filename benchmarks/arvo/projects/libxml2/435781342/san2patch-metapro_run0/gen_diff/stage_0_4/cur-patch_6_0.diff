@@ -1,0 +1,23 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..7d641fbf 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2265 +2265,2 @@ xmlSAX2StartElementNs(void *ctx,
+-        xmlFreeNode(ret);
++        /* Delay freeing to prevent use-after-free when namespaces are accessed later */
++        ctxt->inSubset = 1;  /* Mark node for delayed cleanup */
+@@ -2275 +2275,0 @@ xmlSAX2StartElementNs(void *ctx,
+-
+diff --git a/tree.c b/tree.c
+index a93f2e31..329e2e21 100644
+--- a/tree.c
++++ b/tree.c
+@@ -599 +599,7 @@ xmlFreeNs(xmlNs *cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
++    /* Check if namespace is referenced elsewhere before freeing */
++    if (cur->_private != NULL) {
++        /* Mark as pending free instead of immediate free */
++        ((xmlNsPtr)cur)->_private = (void*)0x1;
++        return;
++    }
++     if (cur->href != NULL) xmlFree((char *) cur->href);

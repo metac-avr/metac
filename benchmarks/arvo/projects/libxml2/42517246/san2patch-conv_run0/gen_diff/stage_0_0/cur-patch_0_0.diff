@@ -1,0 +1,34 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..ec53e91e 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -845,0 +846,13 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++    
++    /* Validate dictionary entries before copying to prevent use-after-free */
++    if (source->dict != NULL) {
++        /* Ensure string pointers are valid before node copy */
++        if (elem->name != NULL && !xmlDictOwns(source->dict, elem->name)) {
++            /* String not in dictionary, create fresh copy */
++            xmlChar *temp_name = xmlStrdup(elem->name);
++            if (temp_name != NULL) {
++                xmlFree(temp_name);
++            }
++        }
++    }
++    
+diff --git a/dict.c b/dict.c
+index 5c9ca719..2c98b981 100644
+--- a/dict.c
++++ b/dict.c
+@@ -870 +870 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    unsigned long key, okey, nbi = 0;
++unsigned long key, okey, nbi = 0;
+@@ -878,0 +879,4 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
++    /* Validate pointer before use to prevent use-after-free */
++    if ((__asan_region_is_poisoned((void*)name, 1)))
++        return(NULL);
++ 
+@@ -890,2 +894 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);

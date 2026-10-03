@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..909ccba0ace 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1831 +1831,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		/* Add safety check to prevent accessing freed memory */
++		if ((char*)p >= (char*)ht->arData && (char*)p < (char*)(ht->arData + ht->nNumUsed)) {
++			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..d5d3bf4de45 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1182,0 +1184 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p == NULL) return 0;
+@@ -1193 +1194,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-

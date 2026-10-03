@@ -1,0 +1,37 @@
+diff --git a/parser.c b/parser.c
+index cae2b7fd..90aa8f55 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7373,2 +7373,5 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw == NULL) {
++		    if (cur->ns != NULL) { 
++		        xmlNsPtr ns = cur->ns;
++		        if (ns->type != XML_LOCAL_NAMESPACE) {
++		            nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		            if (nw == NULL) {
+@@ -7400 +7403 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		}
++		}}}
+diff --git a/tree.c b/tree.c
+index 314cf5d5..5f7b9b4d 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// Validate namespace pointer to prevent use-after-free
++         xmlNsPtr ns;
+@@ -4272,2 +4273,4 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
++	 // Add validation to ensure node->ns is not a dangling pointer
++	 if (node->ns != NULL && node->ns->prefix != NULL) { 
++	   ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	   if (ns == NULL) {
+@@ -4293 +4296 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	} else {
++	   } else {
+@@ -4298 +4301,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	}
++	   }
++	 }

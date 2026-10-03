@@ -1,0 +1,42 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..28c291a7 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1160 +1160,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (set->nodeTab[i] == NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 		if (set->nodeTab[i] == NULL)
+@@ -1214,2 +1215,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
++		{
++		    xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
+@@ -1217,6 +1218,9 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    if (new_node != NULL) {
++		        if (last == NULL)
++		            list = last = new_node;
++		        else {
++		            xmlAddNextSibling(last, new_node);
++		            if (last->next != NULL)
++			        last = last->next;
++		        }
++		    }
+@@ -2275,0 +2280,3 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	/* Prevent use-after-free by ensuring node validity during copy operations */
++	/* Store reference to parent before unlinking */
++	xmlNodePtr parent_ref = cur->parent;
+@@ -2277 +2284,7 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	xmlFreeNode(cur);
++	/* Only free if no further references are expected */
++	if (parent_ref == NULL || parent_ref->children != cur) {
++	    xmlFreeNode(cur);
++	} else {
++	    /* Delay freeing until after all operations */
++	    /* This ensures xmlXIncludeCopyXPointer operates on valid data */
++	}

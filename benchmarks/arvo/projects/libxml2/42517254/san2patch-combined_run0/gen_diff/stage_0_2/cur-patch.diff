@@ -1,0 +1,56 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..47b318c2 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1189,4 +1189,8 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
++				    if (tmp != NULL) {
++				        if (last == NULL) {
++					    list = last = tmp;
++				        } else {
++					    xmlNodePtr new_last = xmlAddNextSibling(last, tmp);
++					    if (new_last != NULL)
++					        last = new_last;
++				        }
+@@ -1214,9 +1218,12 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		{
++		    xmlNodePtr tmp = xmlXIncludeCopyNode(ctxt, target, source,
++							set->nodeTab[i]);
++		    if (tmp != NULL) {
++		        if (last == NULL)
++			    list = last = tmp;
++		        else {
++			    xmlNodePtr new_last = xmlAddNextSibling(last, tmp);
++			    if (new_last != NULL)
++			        last = new_last;
++		        }
++		    }
+@@ -2601 +2608,2 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
+-int
++// FIXME: Crash CWE-416: Use After Free
++ int
+@@ -2603 +2611,7 @@ xmlXIncludeProcessFlags(xmlDocPtr doc, int flags) {
+-    return xmlXIncludeProcessFlagsData(doc, flags, NULL);
++    /* Validate document before XInclude processing to prevent dangling pointers */
++    if (doc == NULL) return -1;
++    xmlNodePtr root = xmlDocGetRootElement(doc);
++    if (root == NULL) return -1;
++    
++    /* Process with node validation to avoid accessing freed memory */
++    return xmlXIncludeProcessFlagsData(doc, flags & (~XML_PARSE_DTDVALID));
+@@ -2613,2 +2627 @@ xmlXIncludeProcessFlags(xmlDocPtr doc, int flags) {
+- *    or the number of substitutions done.
+- */
++ *    or the number of substitutions done. */

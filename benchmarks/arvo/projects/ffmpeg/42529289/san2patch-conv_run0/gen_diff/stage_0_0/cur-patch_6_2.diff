@@ -1,0 +1,24 @@
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..008afcf87f 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -638,0 +639,8 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
++static int magy_decode_frame(AVCodecContext *avctx, void *data,
++                 AVPacket *avpkt)
++{
++    MagicYUVContext *s = avctx->priv_data;
++    AVFrame *p = data;
++    int ret;
++
++    if ((ret = init_buffers(s, avctx)) < 0)
+@@ -649 +657,5 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-    avctx->execute2(avctx, s->magy_decode_slice, NULL, NULL, s->nb_slices);
++    
++    // Add bounds checking before executing slice decoding
++    if (s->nb_slices > 0 && s->nb_slices <= avctx->height) {
++        avctx->execute2(avctx, s->magy_decode_slice, NULL, NULL, s->nb_slices);
++    }
+@@ -659,2 +671 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-    } else {
+-        switch (s->color_matrix) {
++    } else {        switch (s->color_matrix) {

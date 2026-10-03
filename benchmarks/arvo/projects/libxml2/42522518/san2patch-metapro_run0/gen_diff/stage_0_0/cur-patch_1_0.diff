@@ -1,0 +1,26 @@
+diff --git a/parser.c b/parser.c
+index f69231d5..d870b1fc 100644
+--- a/parser.c
++++ b/parser.c
+@@ -5360 +5360,2 @@ xmlParseEntityDecl(xmlParserCtxtPtr ctxt) {
+-	int inputid = ctxt->input->id;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++        int inputid = ctxt->input->id;
+@@ -5362,4 +5363,10 @@ xmlParseEntityDecl(xmlParserCtxtPtr ctxt) {
+-	SKIP(6);
+-	if (SKIP_BLANKS == 0) {
+-	    xmlFatalErrMsg(ctxt, XML_ERR_SPACE_REQUIRED,
+-			   "Space required after '<!ENTITY'\n");
++	if (ctxt->input->cur + 6 <= ctxt->input->end) {
++	    SKIP(6);
++	    if (SKIP_BLANKS == 0) {
++	        xmlFatalErrMsg(ctxt, XML_ERR_SPACE_REQUIRED,
++			       "Space required after '<!ENTITY'\n");
++	    }
++	} else {
++	    xmlFatalErrMsg(ctxt, XML_ERR_ENTITY_PROCESSING_FAILED,
++			   "Buffer boundary exceeded in entity declaration\n");
++	    return;
+@@ -5372 +5379 @@ xmlParseEntityDecl(xmlParserCtxtPtr ctxt) {
+-			       "Space required after '%%'\n");
++			       "Space required after '%'\n");

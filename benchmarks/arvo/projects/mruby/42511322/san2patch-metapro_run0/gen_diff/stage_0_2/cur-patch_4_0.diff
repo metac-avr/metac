@@ -1,0 +1,29 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..91fe5854c 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -109 +109 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Allocate stack memory safely */
+@@ -113 +113 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  /* Allocate callinfo memory safely */
+@@ -199 +199,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -200,0 +202,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    mrb_callinfo *old_ci = mrb->c->ci;
++    mrb_value *old_stack = mrb->c->stack;
+@@ -201,0 +205,11 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    /* Recalculate ci->stack pointers after stack reallocation */
++    if (old_stack != mrb->c->stack) {
++      mrb_callinfo *ci = mrb->c->cibase;
++      while (ci <= mrb->c->ci) {
++        if (ci->stack) {
++          ptrdiff_t offset = ci->stack - old_stack;
++          ci->stack = mrb->c->stack + offset;
++        }
++        ci++;
++      }
++    }

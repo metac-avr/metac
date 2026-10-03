@@ -1,0 +1,56 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..4f1852ca4 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1669 +1669 @@ uint32_t
+-mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
++mrb_byte_hash(const uint8_t *s, mrb_int len)
+@@ -1671,12 +1671,2 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-  const uint8_t *send = s + len;
+-
+-  /*
+-   * FNV-1 hash each octet in the buffer
+-   */
+-  while (s < send) {
+-    /* multiply by the 32 bit FNV magic prime mod 2^32 */
+-#if defined(NO_FNV_GCC_OPTIMIZATION)
+-    hval *= FNV_32_PRIME;
+-#else
+-    hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
+-#endif
++  return mrb_byte_hash_step(s, len, FNV1_32_INIT);
++}
+@@ -1684,3 +1674,7 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-    /* xor the bottom with the current octet */
+-    hval ^= (uint32_t)*s++;
+-  }
++uint32_t
++mrb_str_hash(mrb_state *mrb, mrb_value str)
++ {
++  struct RString *s = mrb_str_ptr(str);
++  mrb_gc_protect(mrb, str);
++  return mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
++}
+@@ -1688,2 +1682,11 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-  /* return our new hash value */
+-  return hval;
++/* 15.2.10.5.20 */
++/*
++ * call-seq:
++ *    str.hash   => int
++ *
++ * Return a hash based on the string's length and content.
++ */
++static mrb_valuemrb_str_hash_m(mrb_state *mrb, mrb_value self)
++{
++  mrb_value key = mrb_str_hash(mrb, self);
++  return mrb_int_value(mrb, key);
+@@ -1700 +1703 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-{
++ {
+@@ -1701,0 +1705 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
++  mrb_gc_protect(mrb, str);
+@@ -1712,2 +1716 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-static mrb_value
+-mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++static mrb_valuemrb_str_hash_m(mrb_state *mrb, mrb_value self)

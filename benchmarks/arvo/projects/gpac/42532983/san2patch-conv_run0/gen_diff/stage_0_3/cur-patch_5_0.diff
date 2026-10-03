@@ -1,0 +1,61 @@
+diff --git a/src/filter_core/filter_session.c b/src/filter_core/filter_session.c
+index 01e4bcf92..428cf0421 100644
+--- a/src/filter_core/filter_session.c
++++ b/src/filter_core/filter_session.c
+@@ -2095,22 +2095,29 @@ static u32 gf_fs_thread_proc(GF_SessionThread *sess_thread)
+-		safe_int_inc(& fsess->tasks_in_process );
+-		assert( task->run_task );
+-		task_time = gf_sys_clock_high_res();
+-		//remember the last time we scheduled this filter
+-		if (task->filter)
+-			task->filter->last_schedule_task_time = task_time;
+-
+-		task->can_swap = 0;
+-		task->requeue_request = GF_FALSE;
+-		task->thid = 1+thid;
+-		task->run_task(task);
+-		task->thid = 0;
+-		requeue = task->requeue_request;
+-
+-		task_time = gf_sys_clock_high_res() - task_time;
+-		safe_int_dec(& fsess->tasks_in_process );
+-
+-		//may now be NULL if task was a filter destruction task
+-		current_filter = task->filter;
+-
+-#ifdef CHECK_TASK_LIST_INTEGRITY
+-		prev_current_filter = task->filter;
++        safe_int_inc(& fsess->tasks_in_process );
++        assert( task->run_task );
++        task_time = gf_sys_clock_high_res();
++        //remember the last time we scheduled this filter
++        if (task->filter)
++            task->filter->last_schedule_task_time = task_time;
++
++        task->can_swap = 0;
++// FIXME: Crash CWE-416: Use After Free
++        task->requeue_request = GF_FALSE;
++        task->thid = 1+thid;
++        
++        // Add null check before calling run_task to prevent use-after-free
++        if (task != NULL && task->run_task != NULL) {
++            task->run_task(task);
++        } else {
++            // Handle null task or run_task gracefully
++            requeue = GF_FALSE;
++        }
++        task->thid = 0;
++        requeue = task->requeue_request;
++
++        task_time = gf_sys_clock_high_res() - task_time;
++        safe_int_dec(& fsess->tasks_in_process );
++
++        //may now be NULL if task was a filter destruction task
++        current_filter = task ? task->filter : NULL;
++
++#ifdef CHECK_TASK_LIST_INTEGRITY		prev_current_filter = task->filter;
+@@ -2402 +2409,3 @@ GF_Err gf_fs_run(GF_FilterSession *fsess)
+-	if (!fsess->pending_threads)
++	if (fsess && !fsess->pending_threads)
++#else
++	if (fsess)

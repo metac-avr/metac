@@ -1,0 +1,38 @@
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index 6ea6c46d8f..db7ef6aa47 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -187 +187,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     }
+@@ -195,0 +197,4 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    // Ensure sufficient data remains for the subsequent get_bits operations
++    if ((offset + 32) > headsize * 8)  // Check if at least 4 bytes remain
++        return AVERROR_INVALIDDATA;
++
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index 65dc080ddb..e20bfdbe93 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -328,8 +328,12 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
+-    OPEN_READER(re, s);
+-    av_assert2(n>0 && n<=25);
+-    UPDATE_CACHE(re, s);
+-    tmp = SHOW_UBITS(re, s, n);
+-    LAST_SKIP_BITS(re, s, n);
+-    CLOSE_READER(re, s);
+-    av_assert2(tmp < UINT64_C(1) << n);
+-    return tmp;
++    if (n > 0 && n <= 25) {
++        if (s->buffer_end - s->buffer >= (s->index + n + 7) / 8) {
++            OPEN_READER(re, s);
++            UPDATE_CACHE(re, s);
++            tmp = SHOW_UBITS(re, s, n);
++            LAST_SKIP_BITS(re, s, n);
++            CLOSE_READER(re, s);
++            av_assert2(tmp < UINT64_C(1) << n);
++            return tmp;
++        }
++    }
++    return 0;

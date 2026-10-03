@@ -1,0 +1,30 @@
+diff --git a/libavcodec/speexdec.c b/libavcodec/speexdec.c
+index 35270e6723..1114c2e2cb 100644
+--- a/libavcodec/speexdec.c
++++ b/libavcodec/speexdec.c
+@@ -586,0 +587 @@ static void iir_mem(const float *x, const float *den,
++    if (ord <= 0) return;
+@@ -1555 +1556,8 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
+-    dst = (float *)frame->extended_data[0];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     dst = (float *)frame->extended_data[0];
++    
++    // Add bounds checking before processing frames
++    if (s->frames_per_packet <= 0 || s->frame_size <= 0) {
++        return AVERROR_INVALIDDATA;
++    }
++    
+@@ -1556,0 +1565,4 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
++        // Validate buffer access before writing
++        if (dst + i * s->frame_size < dst) {
++            return AVERROR_INVALIDDATA;
++        }
+@@ -1560 +1572,5 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
+-        if (avctx->channels == 2)
++        if (avctx->channels == 2) {
++            // Validate stereo buffer access
++            if (dst + i * s->frame_size < dst) {
++                return AVERROR_INVALIDDATA;
++            }
+@@ -1561,0 +1578 @@ static int speex_decode_frame(AVCodecContext *avctx, void *data,
++        }

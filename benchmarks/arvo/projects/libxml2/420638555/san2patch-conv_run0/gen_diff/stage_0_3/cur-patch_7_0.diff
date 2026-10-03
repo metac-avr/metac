@@ -1,0 +1,23 @@
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..fc4bffab 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1076,0 +1077,2 @@ xmlFreeElement(xmlElementPtr elem) {
++    /* Zero out the element structure to prevent use-after-free */
++    memset(elem, 0, sizeof(xmlElement));
+diff --git a/tree.c b/tree.c
+index e2357131..b33b5c6c 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1172 +1172 @@ xmlNodeParseContentInternal(const xmlDoc *doc, xmlNodePtr parent,
+-	if (xmlBufAdd(buf, q, cur - q))
++	if (doc == NULL || buf == NULL) {
+@@ -1173,0 +1174,4 @@ xmlNodeParseContentInternal(const xmlDoc *doc, xmlNodePtr parent,
++	}
++	if (xmlBufAdd(buf, q, cur - q))
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	    goto out;
+@@ -1185,2 +1189 @@ xmlNodeParseContentInternal(const xmlDoc *doc, xmlNodePtr parent,
+-	} else {
+-            last->next = node;
++	} else {            last->next = node;

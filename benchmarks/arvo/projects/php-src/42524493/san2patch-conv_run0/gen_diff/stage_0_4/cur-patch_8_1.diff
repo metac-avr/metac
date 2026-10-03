@@ -1,0 +1,36 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..748ce28368f 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1242,9 +1241,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+-#endif
+-
+@@ -1251,0 +1243 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (!p || (uintptr_t)p == 0xfeeefeee) return 0;
+@@ -1253,11 +1245 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-}
+-
+-static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc) {
+-	p->refcount = rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	ZEND_RC_MOD_CHECK(p);
+-	return ++(p->refcount);
+-}
++}}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..2c7c9244d13 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -215 +215 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
++	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1 && !Z_OBJ_P(zv)->handlers) {

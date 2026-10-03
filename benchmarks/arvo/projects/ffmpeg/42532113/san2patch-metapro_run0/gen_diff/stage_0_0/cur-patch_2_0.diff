@@ -1,0 +1,57 @@
+diff --git a/libavcodec/vvc/vvcdec.c b/libavcodec/vvc/vvcdec.c
+index 608d497cb7..6f95311f56 100644
+--- a/libavcodec/vvc/vvcdec.c
++++ b/libavcodec/vvc/vvcdec.c
+@@ -811,0 +812,21 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
++    
++    /* Pre-validate frame structure to prevent buffer overflows during decoding */
++    if (frame->nb_units > 0) {
++        /* Ensure we don't have too many units which could cause integer overflow */
++        if (frame->nb_units > (INT_MAX / sizeof(CodedBitstreamUnit))) {
++            av_log(s->avctx, AV_LOG_ERROR, "Too many NAL units, potential overflow.\n");
++            ret = AVERROR_INVALIDDATA;
++            goto fail;
++        }
++        
++        /* Validate each unit's data size */
++        for (int check_idx = 0; check_idx < frame->nb_units; check_idx++) {
++            const CodedBitstreamUnit *check_unit = frame->units + check_idx;
++            if (check_unit->data_size > frame->data_size) {
++                av_log(s->avctx, AV_LOG_ERROR, "Unit data size exceeds frame size.\n");
++                ret = AVERROR_INVALIDDATA;
++                goto fail;
++            }
++        }
++    }
++    
+@@ -821 +842 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-                s->eos = 1;
++                 s->eos = 1;
+@@ -822,0 +844,15 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
++            /* Additional bounds checking for each unit */
++            if (!unit->data || unit->data_size == 0) {
++                av_log(s->avctx, AV_LOG_WARNING, "Null or zero-sized NAL unit.\n");
++                ret = AVERROR_INVALIDDATA;
++                goto fail;
++            }
++            
++            /* Ensure unit data is within frame bounds */
++            ptrdiff_t unit_offset = (const uint8_t*)unit->data - frame->data;
++            if (unit_offset < 0 || unit_offset + unit->data_size > frame->data_size) {
++                av_log(s->avctx, AV_LOG_ERROR, "NAL unit data outside frame bounds.\n");
++                ret = AVERROR_INVALIDDATA;
++                goto fail;
++            }
++            
+diff --git a/libavcodec/refstruct.c b/libavcodec/refstruct.c
+index 7597f6d0ee..84f7ab067e 100644
+--- a/libavcodec/refstruct.c
++++ b/libavcodec/refstruct.c
+@@ -161 +161 @@ void ff_refstruct_replace(void *dstp, const void *src)
+-{
++ {
+@@ -162,0 +163 @@ void ff_refstruct_replace(void *dstp, const void *src)
++    if (!dstp) return;
+@@ -168 +169 @@ void ff_refstruct_replace(void *dstp, const void *src)
+-    if (src) {
++    if (src && dstp) {

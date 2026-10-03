@@ -1,0 +1,34 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index feeff659bd5..a2a5aa225fc 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -649 +649,5 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return ex->func->op_array.opcodes[0].lineno;
++			if (ex->func != NULL && ex->func->op_array.opcodes != NULL) {
++				return ex->func->op_array.opcodes[0].lineno;
++			} else {
++				return 0;
++			}
+@@ -653 +657,6 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return EG(opline_before_exception)->lineno;
++			/* Validate pointer before dereferencing to prevent expired pointer dereference */
++			if (EG(opline_before_exception) != NULL) {
++				return EG(opline_before_exception)->lineno;
++			} else {
++				return 0;
++			}
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 46da1ebd21e..8f7d8e8b76a 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1564,2 +1564,8 @@ static ZEND_COLD void get_filename_lineno(int type, zend_string **filename, uint
+-				*filename = zend_get_executed_filename_ex();
+-				*lineno = zend_get_executed_lineno();
++				zend_execute_data *ex = EG(current_execute_data);
++				if (ex && ex->func && ex->func->type == ZEND_USER_FUNCTION) {
++					*filename = zend_get_executed_filename_ex();
++					*lineno = zend_get_executed_lineno();
++				} else {
++					*filename = NULL;
++					*lineno = 0;
++				}

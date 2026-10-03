@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..a13255065a8 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1251 +1251 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
++#		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+@@ -1259 +1259,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1261 +1262,4 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	/* Prevent use-after-free by validating pointer */
++	zend_refcounted_h *tmp = (zend_refcounted_h*)p;
++	if (tmp == NULL) return 0;
++	return tmp->refcount;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..050d9211de0 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// Fixed: Reorder operations to remove object from GC tracking before memory deallocation
+@@ -203,0 +204 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		ptr = ((char*)object) - object->handlers->offset;

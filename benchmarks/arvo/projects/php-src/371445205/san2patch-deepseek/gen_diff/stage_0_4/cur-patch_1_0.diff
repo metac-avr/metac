@@ -1,0 +1,26 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..4b1ef9fb488 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6778 +6778,2 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	zval obj;
++// FIXME: Crash CWE-416: Use After Free
++ 	zval obj;
+@@ -6783,0 +6785,2 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	zend_string_copy(attr->data->name);
++
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..5c0c54f953c 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -350,2 +350,4 @@ static void attr_free(zval *v)
+-	zend_string_release(attr->name);
+-	zend_string_release(attr->lcname);
++	if (!(attr->flags & ZEND_ATTRIBUTE_IS_ALIAS)) {
++		zend_string_release(attr->name);
++		zend_string_release(attr->lcname);
++	}
+@@ -353 +355,2 @@ static void attr_free(zval *v)
+-	for (uint32_t i = 0; i < attr->argc; i++) {
++// FIXME: Crash CWE-416: Use After Free
++ 	for (uint32_t i = 0; i < attr->argc; i++) {

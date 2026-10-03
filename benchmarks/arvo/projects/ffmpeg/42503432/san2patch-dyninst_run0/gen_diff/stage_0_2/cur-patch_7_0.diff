@@ -1,0 +1,19 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..5b497d54cb 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -110 +110,2 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
+-    // subframe type
++    // subframe type - ensure we have sufficient buffer before reading
++    if (get_bits_left(&gb) < 6) return 0;
+@@ -116 +117,2 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
+-    // 01xxxx : reserved
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     // 01xxxx : reserved
+@@ -243,0 +246 @@ static int find_headers_search(FLACParseContext *fpc, uint8_t *buf,
++        if (i + 3 >= buf_size) continue;  // Prevent reading beyond buffer bounds
+@@ -246 +249,3 @@ static int find_headers_search(FLACParseContext *fpc, uint8_t *buf,
+-            for (j = 0; j < 4; j++) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             for (j = 0; j < 4; j++) {
++                if (i + j + 1 >= buf_size) continue;  // Ensure enough bytes for AV_RB16

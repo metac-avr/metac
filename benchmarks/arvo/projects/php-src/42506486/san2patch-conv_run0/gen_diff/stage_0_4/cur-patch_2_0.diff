@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..66460a83aa7 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1354 +1354,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ht->pDestructor(&tmp);
++		if (Z_TYPE(tmp) != IS_UNDEF) { // Additional safety check before destructor call
++			ht->pDestructor(&tmp);
++		}
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..0240e811090 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -44,0 +45,2 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++			// Zero out the refcounted structure to prevent dangling references
++			if (ref) memset(ref, 0, sizeof(zend_refcounted));

@@ -1,0 +1,17 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..370f3fc54 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -1366,3 +1366,9 @@ mrb_bint_to_s(mrb_state *mrb, mrb_value x, mrb_int base)
+-  mrb_int len = mpz_sizeinbase(&b->mp, (int)base);
+-  mrb_value str = mrb_str_new(mrb, NULL, len+2);
+-  mpz_get_str(mrb, RSTRING_PTR(str), len, base, &b->mp);
++  if (b->mp._mp_d == NULL || b->mp._mp_alloc <= 0) {
++    mrb_raise(mrb, E_RANGE_ERROR, "invalid big integer");
++  }
++  mrb_int size = mpz_sizeinbase(&b->mp, (int)base);
++  if (size < 0 || size > b->mp._mp_alloc * (mrb_int)sizeof(mp_limb_t) * 8 + 2) {
++    mrb_raise(mrb, E_RANGE_ERROR, "invalid big integer");
++  }
++  mrb_value str = mrb_str_new(mrb, NULL, size+2);
++  mpz_get_str(mrb, RSTRING_PTR(str), size, base, &b->mp);

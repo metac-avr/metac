@@ -1,0 +1,105 @@
+diff --git a/parser.c b/parser.c
+index c3068cad..defa6e52 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7178,17 +7178 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-	if (ent->etype == XML_INTERNAL_GENERAL_ENTITY) {
+-	    ctxt->depth++;
+-	    ret = xmlParseBalancedChunkMemoryInternal(ctxt, ent->content,
+-	                                              user_data, &list);
+-	    ctxt->depth--;
+-
+-	} else if (ent->etype == XML_EXTERNAL_GENERAL_PARSED_ENTITY) {
+-	    ctxt->depth++;
+-	    ret = xmlParseExternalEntityPrivate(ctxt->myDoc, ctxt, ctxt->sax,
+-	                                   user_data, ctxt->depth, ent->URI,
+-					   ent->ExternalID, &list);
+-	    ctxt->depth--;
+-	} else {
+-	    ret = XML_ERR_ENTITY_PE_INTERNAL;
+-	    xmlErrMsgStr(ctxt, XML_ERR_INTERNAL_ERROR,
+-			 "invalid entity type found\n", NULL);
+-	}
++	xmlParseBalancedChunkMemoryInternal
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 7b44bf60..157c8503 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -10619,76 +10619 @@ xmlSchemaAddSchemaDoc(xmlSchemaParserCtxtPtr pctxt,
+-    } else if ((schemaLocation != NULL) || (schemaBuffer != NULL)) {
+-	xmlParserCtxtPtr parserCtxt;
+-
+-	parserCtxt = xmlNewParserCtxt();
+-	if (parserCtxt == NULL) {
+-	    xmlSchemaPErrMemory(NULL, "xmlSchemaGetDoc, "
+-		"allocating a parser context", NULL);
+-	    goto exit_failure;
+-	}
+-	if ((pctxt->dict != NULL) && (parserCtxt->dict != NULL)) {
+-	    /*
+-	    * TODO: Do we have to burden the schema parser dict with all
+-	    * the content of the schema doc?
+-	    */
+-	    xmlDictFree(parserCtxt->dict);
+-	    parserCtxt->dict = pctxt->dict;
+-	    xmlDictReference(parserCtxt->dict);
+-	}
+-	if (schemaLocation != NULL) {
+-	    /* Parse from file. */
+-	    doc = xmlCtxtReadFile(parserCtxt, (const char *) schemaLocation,
+-		NULL, SCHEMAS_PARSE_OPTIONS);
+-	} else if (schemaBuffer != NULL) {
+-	    /* Parse from memory buffer. */
+-	    doc = xmlCtxtReadMemory(parserCtxt, schemaBuffer, schemaBufferLen,
+-		NULL, NULL, SCHEMAS_PARSE_OPTIONS);
+-	    schemaLocation = BAD_CAST "in_memory_buffer";
+-	    if (doc != NULL)
+-		doc->URL = xmlStrdup(schemaLocation);
+-	}
+-	/*
+-	* For <import>:
+-	* 2.1 The referent is (a fragment of) a resource which is an
+-	* XML document (see clause 1.1), which in turn corresponds to
+-	* a <schema> element information item in a well-formed information
+-	* set, which in turn corresponds to a valid schema.
+-	* TODO: (2.1) fragments of XML documents are not supported.
+-	*
+-	* 2.2 The referent is a <schema> element information item in
+-	* a well-formed information set, which in turn corresponds
+-	* to a valid schema.
+-	* TODO: (2.2) is not supported.
+-	*/
+-	if (doc == NULL) {
+-	    xmlErrorPtr lerr;
+-	    lerr = xmlGetLastError();
+-	    /*
+-	    * Check if this a parser error, or if the document could
+-	    * just not be located.
+-	    * TODO: Try to find specific error codes to react only on
+-	    * localisation failures.
+-	    */
+-	    if ((lerr == NULL) || (lerr->domain != XML_FROM_IO)) {
+-		/*
+-		* We assume a parser error here.
+-		*/
+-		located = 1;
+-		/* TODO: Error code ?? */
+-		res = XML_SCHEMAP_SRC_IMPORT_2_1;
+-		xmlSchemaCustomErr(ACTXT_CAST pctxt, res,
+-		    invokingNode, NULL,
+-		    "Failed to parse the XML resource '%s'",
+-		    schemaLocation, NULL);
+-	    }
+-	}
+-	xmlFreeParserCtxt(parserCtxt);
+-	if ((doc == NULL) && located)
+-	    goto exit_error;
+-    } else {
+-	xmlSchemaPErr(pctxt, NULL,
+-	    XML_SCHEMAP_NOTHING_TO_PARSE,
+-	    "No information for parsing was provided with the "
+-	    "given schema parser context.\n",
+-	    NULL, NULL);
+-	goto exit_failure;
+-    }
++    } else xmlSchemaPreprocess

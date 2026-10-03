@@ -1,0 +1,35 @@
+diff --git a/ext/opcache/jit/zend_jit.c b/ext/opcache/jit/zend_jit.c
+index 5143b977ed9..ff41e0cf520 100644
+--- a/ext/opcache/jit/zend_jit.c
++++ b/ext/opcache/jit/zend_jit.c
+@@ -426,11 +426,19 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
+-						return 1;
+-					}
+-					return 0;
+-			}
+-			opline++;
+-			ssa_op++;
+-		}
+-
+-		return 1;
+-	} else {
+-		const zend_op *end = call_info->caller_call_opline;
++                        return 1;
++                    }
++                    return 0;
++// Mitigated CWE-416: Use After Free - Validate pointer before dereference
++                    if (call_info == NULL || call_info->caller_call_opline == NULL) {
++                        return 0;
++                    }
++                    // Additional safety check for freed memory
++                    if ((uintptr_t)call_info->caller_call_opline & 0x1) {
++                        return 0;
++                    }
++                }
++                opline++;
++                ssa_op++;
++            }
++
++            return 1;
++        } else {
++            const zend_op *end = call_info->caller_call_opline;

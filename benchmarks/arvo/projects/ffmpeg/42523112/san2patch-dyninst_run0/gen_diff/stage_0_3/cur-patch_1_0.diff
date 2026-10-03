@@ -1,0 +1,42 @@
+diff --git a/libavcodec/mpv_reconstruct_mb_template.c b/libavcodec/mpv_reconstruct_mb_template.c
+index 6f7a5fb1b4..abe1565968 100644
+--- a/libavcodec/mpv_reconstruct_mb_template.c
++++ b/libavcodec/mpv_reconstruct_mb_template.c
+@@ -201 +201,3 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
+-                add_dct(s, block[0], 0, dest_y                          , dct_linesize);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                 if (dct_linesize > 0) {
++                 add_dct(s, block[0], 0, dest_y                          , dct_linesize);
+@@ -204,0 +207 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
++                }
+@@ -207,0 +211 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
++                        if (uvlinesize > 0) {
+@@ -209,0 +214 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
++                        }
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 7216afb094..bff2c821f0 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -148 +148 @@ void ff_add_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-                             ptrdiff_t line_size)
++                              ptrdiff_t line_size)
+@@ -154,8 +154,11 @@ void ff_add_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-        pixels[0] = av_clip_uint8(pixels[0] + block[0]);
+-        pixels[1] = av_clip_uint8(pixels[1] + block[1]);
+-        pixels[2] = av_clip_uint8(pixels[2] + block[2]);
+-        pixels[3] = av_clip_uint8(pixels[3] + block[3]);
+-        pixels[4] = av_clip_uint8(pixels[4] + block[4]);
+-        pixels[5] = av_clip_uint8(pixels[5] + block[5]);
+-        pixels[6] = av_clip_uint8(pixels[6] + block[6]);
+-        pixels[7] = av_clip_uint8(pixels[7] + block[7]);
++        // Bounds check to prevent out-of-bounds read
++        if ((uintptr_t)pixels <= (uintptr_t)pixels + 7) {
++            pixels[0] = av_clip_uint8(pixels[0] + block[0]);
++            pixels[1] = av_clip_uint8(pixels[1] + block[1]);
++            pixels[2] = av_clip_uint8(pixels[2] + block[2]);
++            pixels[3] = av_clip_uint8(pixels[3] + block[3]);
++            pixels[4] = av_clip_uint8(pixels[4] + block[4]);
++            pixels[5] = av_clip_uint8(pixels[5] + block[5]);
++            pixels[6] = av_clip_uint8(pixels[6] + block[6]);
++            pixels[7] = av_clip_uint8(pixels[7] + block[7]);
++        }

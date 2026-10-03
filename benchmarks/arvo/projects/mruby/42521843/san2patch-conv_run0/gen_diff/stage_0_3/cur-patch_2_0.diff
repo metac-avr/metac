@@ -1,0 +1,38 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..783cf6c37 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -148,0 +150 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  if (t->ptr == NULL) return 0;  /* Add null check for t->ptr */
+@@ -155 +157 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-  if (pos < t->alloc) {
++  if (pos < t->alloc && pos >= 0) {  /* Add boundary check */
+@@ -167,3 +169,4 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-    mrb_sym key = keys[pos];
+-    if (MT_KEY_SYM(key) == sym) {
+-      *pp = vals[pos];
++    if (pos >= 0 && pos < t->alloc) {  /* Add boundary check */
++      mrb_sym key = keys[pos];
++      if (MT_KEY_SYM(key) == sym) {
++        *pp = vals[pos];
+@@ -171,3 +174,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      if (pos < 0x100) {
+-        mt_cache[cpos] = pos;
+-      }
++        if (pos < 0x100) {
++          mt_cache[cpos] = pos;
++        }
+@@ -175,3 +178,6 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      return key;
+-    }
+-    else if (key == MT_EMPTY) {
++        return key;
++      }
++      else if (key == MT_EMPTY) {
++        return 0;
++      }
++    } else {

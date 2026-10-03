@@ -1,0 +1,58 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..b4f986635c0 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -628,6 +628,11 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		 && opline->opcode != ZEND_ROPE_ADD
+-		 && opline->opcode != ZEND_ROPE_END
+-		 && opline->opcode != ZEND_NEW
+-		 && opline->opcode != ZEND_FETCH_CLASS_CONSTANT
+-		 && opline->opcode != ZEND_INIT_STATIC_METHOD_CALL) {
+-			zval *zv = EX_VAR(opline->op1.var);
++	 && opline->opcode != ZEND_ROPE_ADD
++	 && opline->opcode != ZEND_ROPE_END
++	 && opline->opcode != ZEND_NEW
++	 && opline->opcode != ZEND_FETCH_CLASS_CONSTANT
++	 && opline->opcode != ZEND_INIT_STATIC_METHOD_CALL) {
++		zval *zv = EX_VAR(opline->op1.var);
++		op1_type = Z_TYPE_P(zv);
++		uint8_t flags = 0;
++
++		if (op1_type == IS_INDIRECT) {
++			zv = Z_INDIRECT_P(zv);
+@@ -635,18 +640,12 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			uint8_t flags = 0;
+-
+-			if (op1_type == IS_INDIRECT) {
+-				zv = Z_INDIRECT_P(zv);
+-				op1_type = Z_TYPE_P(zv);
+-				flags |= IS_TRACE_INDIRECT;
+-			}
+-			if (op1_type == IS_REFERENCE) {
+-				zv = Z_REFVAL_P(zv);
+-				op1_type = Z_TYPE_P(zv);
+-				flags |= IS_TRACE_REFERENCE;
+-			}
+-			if (Z_TYPE_P(zv) == IS_OBJECT) {
+-				ce1 = Z_OBJCE_P(zv);
+-			} else if (Z_TYPE_P(zv) == IS_ARRAY) {
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
+-				}
++			flags |= IS_TRACE_INDIRECT;
++		}
++		if (op1_type == IS_REFERENCE) {
++			zv = Z_REFVAL_P(zv);
++			op1_type = Z_TYPE_P(zv);
++			flags |= IS_TRACE_REFERENCE;
++		}
++		if (Z_TYPE_P(zv) == IS_OBJECT) {
++			ce1 = Z_OBJCE_P(zv);
++		} else if (Z_TYPE_P(zv) == IS_ARRAY && !(Z_ARRVAL_P(zv)->u.flags & IS_ARRAY_IMMUTABLE)) {
++			if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
++				flags |= IS_TRACE_PACKED;
+@@ -654 +652,0 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			op1_type |= flags;
+@@ -655,0 +654,2 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++		op1_type |= flags;
++	}

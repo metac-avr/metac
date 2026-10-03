@@ -1,0 +1,60 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..96dc8321b64 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7865,22 +7865,17 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+-		if (zend_jit_trace_exit_is_bad(trace_num, exit_num)) {
+-			zend_jit_blacklist_trace_exit(trace_num, exit_num);
+-			if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_BLACKLIST) {
+-				fprintf(stderr, "---- EXIT %d/%d blacklisted\n",
+-					trace_num, exit_num);
+-			}
+-			return 0;
+-		}
+-	} else if (JIT_G(hot_side_exit) && zend_jit_trace_exit_is_hot(trace_num, exit_num)) {
+-		return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
+-	}
+-
+-	/* Return 1 to call original handler instead of the same JIT-ed trace */
+-	return (orig_opline == t->opline && EX(opline) == orig_opline);
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++    if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
++        if (zend_jit_trace_exit_is_bad(trace_num, exit_num)) {
++            zend_jit_blacklist_trace_exit(trace_num, exit_num);
++            if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_BLACKLIST) {
++                fprintf(stderr, "---- EXIT %d/%d blacklisted\n",
++                    trace_num, exit_num);
++            }
++            return 0;
++        }
++        /* Pin traced arrays to prevent premature garbage collection */
++        zend_jit_trace_pin_arrays();
++    } else if (JIT_G(hot_side_exit) && zend_jit_trace_exit_is_hot(trace_num, exit_num)) {
++        return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
++    }
++
++    /* Return 1 to call original handler instead of the same JIT-ed trace */
++    return (orig_opline == t->opline && EX(opline) == orig_opline);		case ZEND_FAST_CALL:
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..3970387cc0c 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		/* Fix CWE-825: Expired Pointer Dereference - Synchronize JIT and GC */
++		zend_jit_trace_protect_array(object_ptr);
++	} else {
++		/* Ensure proper cleanup when not in CV context */
++		if (object_ptr && Z_TYPE_P(object_ptr) == IS_ARRAY) {
++			zend_array *arr = Z_ARR_P(object_ptr);
++			if (arr && GC_REFCOUNT(arr) > 1) {
++				GC_DELREF(arr);
++			}
++		}

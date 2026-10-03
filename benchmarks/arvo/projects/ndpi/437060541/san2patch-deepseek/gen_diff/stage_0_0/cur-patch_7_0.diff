@@ -1,0 +1,25 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 42d0fa67d..590f93cf0 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -3247 +3247,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  p = hostname;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   p = hostname;
+@@ -3249 +3250 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  while (p[idx] && (idx < len)) {
++  while (idx < len) {
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 535a0c5bd..24add7777 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1830 +1830,5 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
+-  ndpi_check_http_tcp(ndpi_struct, flow);
++  if(flow->host_server_name[0] == '\0' ||
++     ndpi_is_valid_hostname(flow->host_server_name,
++			    sizeof(flow->host_server_name))) {
++    ndpi_check_http_tcp(ndpi_struct, flow);
++  }
+@@ -1837 +1841 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
+-       flow->http.response_status_code != 0)) ||
++        flow->http.response_status_code != 0)) ||

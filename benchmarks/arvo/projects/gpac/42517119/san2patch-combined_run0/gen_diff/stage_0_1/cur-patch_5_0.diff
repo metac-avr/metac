@@ -1,0 +1,46 @@
+diff --git a/src/isomedia/box_funcs.c b/src/isomedia/box_funcs.c
+index 98ef3c904..915160296 100644
+--- a/src/isomedia/box_funcs.c
++++ b/src/isomedia/box_funcs.c
+@@ -355 +355 @@ void gf_isom_box_array_reset(GF_List *boxlist)
+-	for (i = 0; i < count; i++) {
++	for (i = 0; i < count; ) {
+@@ -357 +357,7 @@ void gf_isom_box_array_reset(GF_List *boxlist)
+-		if (a) gf_isom_box_del(a);
++		if (a) {
++			gf_isom_box_del(a);
++			gf_list_rem(boxlist, i);
++			count = gf_list_count(boxlist);
++		} else {
++			i++;
++		}
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index d7f39328b..ec318a1d2 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -43 +43,2 @@ GF_Err co64_box_read(GF_Box *s,GF_BitStream *bs)
+-	u32 entries;
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++  u32 entries;
+@@ -54,5 +55,10 @@ GF_Err co64_box_read(GF_Box *s,GF_BitStream *bs)
+-	ptr->offsets = (u64 *) gf_malloc(ptr->nb_entries * sizeof(u64) );
+-	if (ptr->offsets == NULL) return GF_OUT_OF_MEM;
+-	ptr->alloc_size = ptr->nb_entries;
+-	for (entries = 0; entries < ptr->nb_entries; entries++) {
+-		ptr->offsets[entries] = gf_bs_read_u64(bs);
++	if (ptr->nb_entries > 0) {
++		ptr->offsets = (u64 *) gf_malloc(ptr->nb_entries * sizeof(u64) );
++		if (ptr->offsets == NULL) return GF_OUT_OF_MEM;
++		ptr->alloc_size = ptr->nb_entries;
++		for (entries = 0; entries < ptr->nb_entries; entries++) {
++			ptr->offsets[entries] = gf_bs_read_u64(bs);
++		}
++	} else {
++		ptr->offsets = NULL;
++		ptr->alloc_size = 0;
+@@ -59,0 +66,5 @@ GF_Err co64_box_read(GF_Box *s,GF_BitStream *bs)
++	
++	if (ptr->offsets == NULL && ptr->nb_entries > 0) {
++		return GF_OUT_OF_MEM;
++	}
++	

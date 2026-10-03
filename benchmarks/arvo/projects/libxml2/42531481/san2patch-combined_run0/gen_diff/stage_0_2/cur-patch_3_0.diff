@@ -1,0 +1,27 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..15d6f3c2 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// FIXME: Crash CWE-416: Use After Free
++         xmlNsPtr ns;
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..e197b773 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346 +1346,13 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++		/* Clear namespace references before freeing */
++		if (tmp->nsDef != NULL) {
++		    xmlNsPtr ns = tmp->nsDef;
++		    while (ns != NULL) {
++		        if (ns->href != NULL) ns->href = NULL;
++		        if (ns->prefix != NULL) ns->prefix = NULL;
++		        ns = ns->next;
++		    }
++		}
++		if (tmp->ns != NULL) {
++		    tmp->ns = NULL;
++		}

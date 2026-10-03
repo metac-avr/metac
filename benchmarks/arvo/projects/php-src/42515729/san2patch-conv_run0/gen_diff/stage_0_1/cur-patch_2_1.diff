@@ -1,0 +1,58 @@
+diff --git a/ext/date/lib/timelib.c b/ext/date/lib/timelib.c
+index d42c69bbd6f..839ce2b941d 100644
+--- a/ext/date/lib/timelib.c
++++ b/ext/date/lib/timelib.c
+@@ -162,0 +163 @@ void timelib_error_container_dtor(timelib_error_container *errors)
++	errors->warning_messages = NULL;
+@@ -166,0 +168 @@ void timelib_error_container_dtor(timelib_error_container *errors)
++	errors->error_messages = NULL;
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..a472eb74838 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2323,5 +2323,7 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = timelib_parse_from_format(format, time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
+-	} else {
+-		if (time_str_len == 0) {
+-			time_str = "now";
+-			time_str_len = sizeof("now") - 1;
++			dateobj->time = timelib_parse_from_format(format, time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
++		} else {
++			if (time_str_len == 0) {
++				time_str = "now";
++				time_str_len = sizeof("now") - 1;
++			}
++			dateobj->time = timelib_strtotime(time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
+@@ -2329,2 +2330,0 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = timelib_strtotime(time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
+-	}
+@@ -2332,13 +2332,16 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	/* update last errors and warnings */
+-	update_errors_warnings(&err);
+-
+-	/* If called from a constructor throw an exception */
+-	if ((flags & PHP_DATE_INIT_CTOR) && err && err->error_count) {
+-		/* spit out the first library error message, at least */
+-		zend_throw_exception_ex(NULL, 0, "Failed to parse time string (%s) at position %d (%c): %s", time_str,
+-			err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
+-	}
+-	if (err && err->error_count) {
+-		timelib_time_dtor(dateobj->time);
+-		dateobj->time = 0;
+-		return 0;
++		/* update last errors and warnings */
++		update_errors_warnings(&err);
++
++		/* If called from a constructor throw an exception */
++		if ((flags & PHP_DATE_INIT_CTOR) && err && err->error_count) {
++			/* spit out the first library error message, at least */
++			zend_throw_exception_ex(NULL, 0, "Failed to parse time string (%s) at position %d (%c): %s", time_str,
++				err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
++			timelib_error_container_dtor(err);
++		} else if (err) {
++			if (err->error_count) {
++				timelib_time_dtor(dateobj->time);
++				dateobj->time = 0;
++			}
++			timelib_error_container_dtor(err);
++		}		return 0;

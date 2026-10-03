@@ -1,0 +1,25 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..b6363a04 100644
+--- a/tree.c
++++ b/tree.c
+@@ -723,0 +724,2 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
++    /* Mark as valid namespace */
++    *((char*)&cur->type + sizeof(cur->type)) = 1; /* zombie flag byte */
+@@ -758,0 +761,2 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
++    /* Mark as invalid before freeing */
++    *((char*)&cur->type + sizeof(cur->type)) = 0;
+@@ -3698,3 +3702,11 @@ xmlFreeNode(xmlNodePtr cur) {
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
+-            xmlFreeNsList(cur->nsDef);
++             xmlFreePropList(cur->properties);
++        if (cur->nsDef != NULL) {
++            xmlNsPtr ns = cur->nsDef;
++            while (ns != NULL) {
++                xmlNsPtr next = ns->next;
++                ns->next = NULL;
++                xmlFreeNs(ns);
++                ns = next;
++            }
++            cur->nsDef = NULL;
++        }

@@ -1,0 +1,42 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..f50666d22e1 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,7 +46,0 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+-	[IS_OBJECT] =       (zend_rc_dtor_func_t)zend_objects_store_del,
+-	[IS_RESOURCE] =     (zend_rc_dtor_func_t)zend_list_free,
+-	[IS_REFERENCE] =    (zend_rc_dtor_func_t)zend_reference_destroy,
+-	[IS_CONSTANT_AST] = (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+-
+@@ -56,13 +49,5 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-{
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++	if (p && !(GC_FLAGS(p) & (GC_MARKED_FLAG|GC_IMMEDIATE_DTOR_FLAG))) {
++		ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
++}}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index fbad44d2f2c..194eff0380b 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3880 +3880,5 @@ static zend_always_inline void i_free_compiled_variables(zend_execute_data *exec
+-		i_zval_ptr_dtor(cv);
++		if (Z_TYPE_P(cv) == IS_REFERENCE && Z_REF_P(cv) && !(GC_FLAGS(Z_REF_P(cv)) & GC_FREE_FLAG)) {
++			i_zval_ptr_dtor(cv);
++		} else if (Z_TYPE_P(cv) != IS_REFERENCE) {
++			i_zval_ptr_dtor(cv);
++		}

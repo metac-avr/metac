@@ -1,0 +1,36 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..f0635260 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2292,0 +2293,6 @@ xmlNewText(const xmlChar *content) {
++    if (cur != NULL) {
++        cur->parent = NULL;
++        cur->children = NULL;
++        cur->next = NULL;
++        cur->prev = NULL;
++    }
+@@ -6926 +6932,11 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	return(prop);
++    return(prop);
++    }
++    /*
++     * Clear pointers before freeing to prevent use-after-free
++     */
++    if (prop != NULL) {
++        prop->children = NULL;
++        prop->last = NULL;
++        prop->parent = NULL;
++        prop->next = NULL;
++        prop->prev = NULL;
+@@ -6929 +6945 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-    * No equal attr found; create a new one.
++     * No equal attr found; create a new one.
+@@ -6931,7 +6947 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-    return(xmlNewPropInternal(node, ns, name, value, 0));
+-}
+-
+-#endif /* LIBXML_TREE_ENABLED */
+-
+-/**
+- * xmlNodeIsText:
++    return(xmlNewPropInternal(node, ns, name, value, 0)); * xmlNodeIsText:

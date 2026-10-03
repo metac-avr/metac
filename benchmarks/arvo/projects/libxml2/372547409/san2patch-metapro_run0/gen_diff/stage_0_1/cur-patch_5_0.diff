@@ -1,0 +1,43 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..c1463922 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1866 +1865,0 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-
+@@ -1874 +1873,2 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-static void
++// Fixed CWE-416: Use After Free - Validate before freeing
++ static void
+@@ -1876 +1876,5 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeAttribute((xmlAttributePtr) attr);
++    xmlAttributePtr attrPtr = (xmlAttributePtr) attr;
++    if (attrPtr != NULL) {
++        xmlFreeAttribute(attrPtr);
++        // Mark as freed by setting internal state if possible
++    }
+@@ -1886,2 +1890 @@ void
+-xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++xmlFreeAttributeTable(xmlAttributeTablePtr table) {    xmlHashFree(table, xmlFreeAttributeTableEntry);
+@@ -6220,7 +6223,14 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                value = xmlNodeListGetString(doc, attr->children, 0);
+-                if (value == NULL) {
+-                    xmlVErrMemory(ctxt);
+-                    ret = 0;
+-                } else {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
+-                    xmlFree((char *)value);
++                /* Add null check for attribute and its declaration */
++                if (attr != NULL) {
++                    xmlAttributePtr attrDecl = attr->decl;
++                    /* Verify attribute declaration is still valid */
++                    if (attrDecl == NULL || attrDecl->_private != NULL) {
++                        value = xmlNodeListGetString(doc, attr->children, 0);
++                        if (value == NULL) {
++                            xmlVErrMemory(ctxt);
++                            ret = 0;
++                        } else {
++                            ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                            xmlFree((char *)value);
++                        }
++                    }

@@ -1,0 +1,76 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..ffe310a7 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4272,18 +4272,28 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree.
+-             *
+-             * TODO: Searching the original tree seems unnecessary. We
+-             * already have a namespace URI.
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
+-
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-            } else {
+-                ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++        /* Prevent use-after-free by checking namespace validity before access */
++        if (node->ns != NULL && node->ns->type == XML_LOCAL_NAMESPACE) {
++	    ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	    if (ns == NULL) {
++	        /*
++	         * Humm, we are copying an element whose namespace is defined
++	         * out of the new tree scope. Search it in the original tree
++	         * and add it at the top of the new tree.
++                 *
++                 * TODO: Searching the original tree seems unnecessary. We
++                 * already have a namespace URI.
++	         */
++	        ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	        if (ns != NULL) {
++	            xmlNodePtr root = ret;
++
++		    while (root->parent != NULL) root = root->parent;
++		    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                } else {
++                    ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	        }
++                if (ret->ns == NULL)
++                    goto error;
++	    } else {
++	        /*
++	         * reference the existing namespace definition in our own tree.
++	         */
++	        ret->ns = ns;
+@@ -4291,8 +4301,3 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-            if (ret->ns == NULL)
+-                goto error;
+-	} else {
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
+-	}
++        } else {
++            ret->ns = NULL;
++        }
+diff --git a/parser.c b/parser.c
+index cae2b7fd..354eb15c 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7372,0 +7373,8 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++		    /* Check for valid namespace before node copy to prevent use-after-free */
++		    if (cur->ns != NULL && (cur->ns->href == NULL || cur->ns->prefix == NULL)) {
++		        /* Verify namespace structure integrity */
++		        if (cur->ns->href != NULL || cur->ns->prefix != NULL) {
++		            cur = cur->next;
++		            continue;
++		        }
++		    }

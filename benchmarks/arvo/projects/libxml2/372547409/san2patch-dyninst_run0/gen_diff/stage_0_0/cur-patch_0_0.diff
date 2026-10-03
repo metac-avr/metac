@@ -1,0 +1,58 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..1dce4971 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1866 +1865,0 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-
+@@ -1874 +1873,2 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-static void
++// FIXME: Crash CWE-416: Use After Free
++ static void
+@@ -1876 +1876,4 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeAttribute((xmlAttributePtr) attr);
++    xmlAttributePtr attribute = (xmlAttributePtr) attr;
++    if (attribute != NULL) {
++        xmlFreeAttribute(attribute);
++    }
+@@ -1886,2 +1889 @@ void
+-xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++xmlFreeAttributeTable(xmlAttributeTablePtr table) {    xmlHashFree(table, xmlFreeAttributeTableEntry);
+@@ -5982,7 +5983,0 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
+-
+@@ -5990,14 +5985,15 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    attr = elemDecl->attributes;
+-    while (attr != NULL) {
+-	if (attr->def == XML_ATTRIBUTE_REQUIRED) {
+-	    int qualified = -1;
+-
+-	    if ((attr->prefix == NULL) &&
+-		(xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
+-		xmlNsPtr ns;
+-
+-		ns = elem->nsDef;
+-		while (ns != NULL) {
+-		    if (ns->prefix == NULL)
+-			goto found;
+-		    ns = ns->next;
++// FIXME: Crash CWE-416: Use After Free
++    if (elemDecl != NULL) {
++	attr = elemDecl->attributes;
++	while (attr != NULL) {
++	    if (attr->def == XML_ATTRIBUTE_REQUIRED) {
++		int qualified = -1;
++
++		if ((attr->prefix == NULL) &&
++		    (xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
++		    xmlNsPtr ns;
++
++		    ns = elem->nsDef;
++		    while (ns != NULL) {
++			if (ns->prefix == NULL)
++			    goto found;		    ns = ns->next;

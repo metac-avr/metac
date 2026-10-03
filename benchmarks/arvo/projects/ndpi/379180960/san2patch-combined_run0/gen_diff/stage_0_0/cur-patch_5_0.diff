@@ -1,0 +1,83 @@
+diff --git a/src/lib/protocols/mikrotik.c b/src/lib/protocols/mikrotik.c
+index b1d315581..13a8efe04 100644
+--- a/src/lib/protocols/mikrotik.c
++++ b/src/lib/protocols/mikrotik.c
+@@ -59,2 +59,6 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    if(m_len == 6)
+-	      memcpy(flow->protos.mikrotik.mac_addr, &payload[offset+4], m_len);
++	    if(m_len == 6) {
++	      if(payload_len >= offset+4+m_len)
++	        memcpy(flow->protos.mikrotik.mac_addr, &payload[offset+4], m_len);
++	      else
++	        return;
++	    }
+@@ -63,2 +67,5 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    snprintf(flow->protos.mikrotik.identity, sizeof(flow->protos.mikrotik.identity), 
+-		     "%.*s", m_len, &payload[offset+4]);
++	    if(payload_len >= offset+4+m_len)
++	      snprintf(flow->protos.mikrotik.identity, sizeof(flow->protos.mikrotik.identity), 
++		       "%.*s", m_len, &payload[offset+4]);
++	    else
++	      return;
+@@ -67,2 +74,5 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    snprintf(flow->protos.mikrotik.version, sizeof(flow->protos.mikrotik.version), 
+-		     "%.*s", m_len, &payload[offset+4]);
++	    if(payload_len >= offset+4+m_len)
++	      snprintf(flow->protos.mikrotik.version, sizeof(flow->protos.mikrotik.version), 
++		       "%.*s", m_len, &payload[offset+4]);
++	    else
++	      return;
+@@ -71,2 +81,6 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    if(m_len == 4)
+-	      flow->protos.mikrotik.uptime = ntohl(*((u_int32_t*)&payload[offset+4]));
++	    if(m_len == 4) {
++	      if(payload_len >= offset+4+m_len)
++	        flow->protos.mikrotik.uptime = ntohl(*((u_int32_t*)&payload[offset+4]));
++	      else
++	        return;
++	    }
+@@ -75,2 +89,5 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    snprintf(flow->protos.mikrotik.sw_id, sizeof(flow->protos.mikrotik.sw_id), 
+-		     "%.*s", m_len, &payload[offset+4]);
++	    if(payload_len >= offset+4+m_len)
++	      snprintf(flow->protos.mikrotik.sw_id, sizeof(flow->protos.mikrotik.sw_id), 
++		       "%.*s", m_len, &payload[offset+4]);
++	    else
++	      return;
+@@ -79,2 +96,5 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    snprintf(flow->protos.mikrotik.board, sizeof(flow->protos.mikrotik.board), 
+-		     "%.*s", m_len, &payload[offset+4]);
++	    if(payload_len >= offset+4+m_len)
++	      snprintf(flow->protos.mikrotik.board, sizeof(flow->protos.mikrotik.board), 
++		       "%.*s", m_len, &payload[offset+4]);
++	    else
++	      return;
+@@ -82,3 +102,8 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	  case 15: /* IPv6 */
+-	    if(m_len == 16)
+-	      memcpy(&flow->protos.mikrotik.ipv6_addr, &payload[offset+4], m_len);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	  case 15: /* IPv6 */
++	    if(m_len == 16) {
++	      if(payload_len >= offset+4+m_len)
++	        memcpy(&flow->protos.mikrotik.ipv6_addr, &payload[offset+4], m_len);
++	      else
++	        return;
++	    }
+@@ -87,2 +112,5 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    snprintf(flow->protos.mikrotik.iface_name, sizeof(flow->protos.mikrotik.iface_name), 
+-		     "%.*s", m_len, &payload[offset+4]);
++	    if(payload_len >= offset+4+m_len)
++	      snprintf(flow->protos.mikrotik.iface_name, sizeof(flow->protos.mikrotik.iface_name), 
++		       "%.*s", m_len, &payload[offset+4]);
++	    else
++	      return;
+@@ -91,2 +119,6 @@ static void ndpi_search_mikrotik(struct ndpi_detection_module_struct *ndpi_struc
+-	    if(m_len == 4)
+-	      flow->protos.mikrotik.ipv4_addr = ntohl(*((u_int32_t*)&payload[offset+4]));
++	    if(m_len == 4) {
++	      if(payload_len >= offset+4+m_len)
++	        flow->protos.mikrotik.ipv4_addr = ntohl(*((u_int32_t*)&payload[offset+4]));
++	      else
++	        return;
++	    }

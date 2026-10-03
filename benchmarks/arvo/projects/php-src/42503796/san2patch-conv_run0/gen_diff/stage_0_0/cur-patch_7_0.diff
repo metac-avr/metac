@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..0c36ad2f4f6 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,2 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+@@ -1153 +1151,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1155 +1154,5 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	zend_gc_refcount_result = 0;
++	if (p) {
++		zend_gc_refcount_result = p->refcount;
++	}
++	return zend_gc_refcount_result;
+@@ -1165,2 +1168 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
+-}
++	return ++(p->refcount);}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..1e1615e8952 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16730,0 +16731,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
++			if (UNEXPECTED(GC_DELREF(Z_ARRVAL_P(container)) == 0)) {
++				GC_ADDREF(Z_ARRVAL_P(container));
++				goto fetch_dim_r_slow;
++			}

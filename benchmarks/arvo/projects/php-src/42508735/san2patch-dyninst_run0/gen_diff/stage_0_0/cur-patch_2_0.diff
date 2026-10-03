@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..fb5780ed1bc 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++		// Fix use-after-free vulnerability by reordering operations
+@@ -203,0 +204 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		ptr = ((char*)object) - object->handlers->offset;
+diff --git a/Zend/zend.c b/Zend/zend.c
+index c37cd9ed974..8746b694821 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1215 +1215 @@ ZEND_API void zend_activate(void) /* {{{ */
+-	if (CG(map_ptr_last)) {
++if (CG(map_ptr_last)) {
+@@ -1225 +1225,3 @@ void zend_call_destructors(void) /* {{{ */
+-		shutdown_destructors();
++		if (EG(objects_store).object_buckets) {
++			shutdown_destructors();
++		}
+@@ -1236 +1237,0 @@ ZEND_API void zend_deactivate(void) /* {{{ */
+-

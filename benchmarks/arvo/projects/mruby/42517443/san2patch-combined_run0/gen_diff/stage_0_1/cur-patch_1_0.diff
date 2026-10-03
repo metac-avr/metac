@@ -1,0 +1,20 @@
+diff --git a/src/string.c b/src/string.c
+index 7cc9c4ff3..aaed95530 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -52,5 +52,8 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-{
+-  if (p) memcpy(RSTR_EMBED_PTR(s), p, len);
+-  RSTR_EMBED_PTR(s)[len] = '\0';
+-  RSTR_SET_TYPE_FLAG(s, EMBED);
+-  RSTR_SET_EMBED_LEN(s, len);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
++  if (len >= 0 && len < 28) {
++    if (p) memcpy(RSTR_EMBED_PTR(s), p, len);
++    RSTR_EMBED_PTR(s)[len] = '\0';
++    RSTR_SET_TYPE_FLAG(s, EMBED);
++    RSTR_SET_EMBED_LEN(s, len);
++  }
+@@ -64,0 +68 @@ str_init_nofree(struct RString *s, const char *p, mrb_int len)
++

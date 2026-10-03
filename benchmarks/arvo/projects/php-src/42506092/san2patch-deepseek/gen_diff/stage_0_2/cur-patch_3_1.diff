@@ -1,0 +1,36 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..fa07a48b8c2 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -758 +758,4 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	return zend_hash_lookup(ht, offset_key);
++	Z_TRY_ADDREF_P(dim);
++	retval = zend_hash_lookup(ht, offset_key);
++	zval_ptr_dtor(dim);
++	return retval;
+@@ -767 +770,24 @@ static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int typ
+-	zend_long offset;
++try_again:
++	switch(Z_TYPE_P(dim)) {
++		case IS_UNDEF:
++		case IS_NULL:
++			return 0;
++		case IS_LONG:
++			return Z_LVAL_P(dim);
++		case IS_DOUBLE:
++			return zend_dval_to_lval_safe(Z_DVAL_P(dim));
++		case IS_STRING: {
++			zend_long retval;
++			if (!is_numeric_str_function(Z_STRVAL_P(dim), Z_STRLEN_P(dim), &retval, NULL)) {
++				if (Z_STRLEN_P(dim) == 0) {
++					return 0;
++				}
++				retval = ZEND_STRTOL(Z_STRVAL_P(dim), NULL, 10);
++			}
++			return retval;
++		}
++		default:
++			zval_ptr_dtor(dim);
++			return 0;
++	}
++}	zend_long offset;

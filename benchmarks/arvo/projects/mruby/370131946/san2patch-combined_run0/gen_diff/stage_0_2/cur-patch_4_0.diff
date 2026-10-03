@@ -1,0 +1,26 @@
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..e68b8eb75 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2876,0 +2877,5 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
++  /* Validate alignment before accessing struct members */
++  if ((uintptr_t)mrb_str_ptr(str2) & 0x7) {
++    /* Misaligned pointer detected - prevent unsafe access */
++    mrb_raisef(mrb, E_ARGUMENT_ERROR, "String pointer 0x%x is not 8-byte aligned", (unsigned int)(uintptr_t)mrb_str_ptr(str2));
++  }
+@@ -2878 +2883 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-    mrb_str_modify(mrb, mrb_str_ptr(str));
++     mrb_str_modify(mrb, mrb_str_ptr(str));
+diff --git a/src/error.c b/src/error.c
+index c622df789..303ac8592 100644
+--- a/src/error.c
++++ b/src/error.c
+@@ -515 +514,0 @@ frozen_error(mrb_state *mrb, mrb_value v)
+-
+@@ -523 +522,2 @@ MRB_API void
+-mrb_check_frozen(mrb_state *mrb, void *o)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mrb_check_frozen(mrb_state *mrb, void *o)
+@@ -525 +525 @@ mrb_check_frozen(mrb_state *mrb, void *o)
+-  if (mrb_frozen_p((struct RBasic*)o)) {
++  if (o != NULL && ((uintptr_t)o & 7) == 0 && mrb_frozen_p((struct RBasic*)o)) {

@@ -1,0 +1,46 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..1884e84f4b0 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,8 +1208,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+@@ -1219,12 +1211,4 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	return GC_DELREF(Z_COUNTED_P(pz));
+-}
+-
+-#if SIZEOF_SIZE_T == 4
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++	zend_refcounted *ref = Z_COUNTED_P(pz);
++	if (UNEXPECTED(!ref || GC_REF_COUNT(ref) == 0)) return 0;
++	return GC_DELREF(ref);
++}#elif SIZEOF_SIZE_T == 8
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..6bd01c048ac 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-416: Use After Free
+@@ -862,0 +864,7 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Prevent use-after-free by checking memory validity */
++			if (UNEXPECTED(prev_execute_data && 
++			    !zend_is_valid_memory_address(prev_execute_data))) {
++				/* Exit early to avoid accessing freed memory */
++				goto skip_execution;
++			}
++		}
+@@ -874,0 +883 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++skip_execution:

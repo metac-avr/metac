@@ -1,0 +1,33 @@
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 846ed0b0f8..889e11bd4c 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -87,0 +88,11 @@ void ff_put_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
++    /* Bounds check to prevent buffer overflow - ensure sufficient space */
++    if (line_size < 8) {
++        /* Handle error case gracefully */
++        return;
++    }
++    
++    /* Additional safety check for null pointers */
++    if (!block || !pixels) {
++        return;
++    }
++
+diff --git a/libavcodec/jrevdct.c b/libavcodec/jrevdct.c
+index a1a0f571ad..7f43ee73ac 100644
+--- a/libavcodec/jrevdct.c
++++ b/libavcodec/jrevdct.c
+@@ -1161 +1161,2 @@ void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
+@@ -1163 +1164,3 @@ void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-    ff_put_pixels_clamped_c(block, dest, line_size);
++    if (dest && line_size >= 8) { // Ensure sufficient buffer size before writing
++        ff_put_pixels_clamped_c(block, dest, line_size);
++    }
+@@ -1170 +1173 @@ void ff_jref_idct_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-}
++}
+\ No newline at end of file

@@ -1,0 +1,45 @@
+diff --git a/src/media_tools/dash_client.c b/src/media_tools/dash_client.c
+index 6b1f874df..14b104f5c 100644
+--- a/src/media_tools/dash_client.c
++++ b/src/media_tools/dash_client.c
+@@ -4904,0 +4905 @@ static GF_Err gf_dash_download_init_segment(GF_DashClient *dash, GF_DASH_Group *
++		/* Check return value and validate allocated pointer */
+@@ -4906,2 +4907,7 @@ static GF_Err gf_dash_download_init_segment(GF_DashClient *dash, GF_DASH_Group *
+-		if (e) {
+-			GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[DASH] Unable to resolve media URL: %s\n", gf_error_to_string(e) ));
++		if (e || !base_init_url) {
++			if (e) {
++				GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[DASH] Unable to resolve media URL: %s\n", gf_error_to_string(e) ));
++			} else {
++				GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[DASH] Resolved URL is NULL\n"));
++				e = GF_BAD_PARAM;
++			}
+@@ -4914,0 +4921 @@ static GF_Err gf_dash_download_init_segment(GF_DashClient *dash, GF_DASH_Group *
++		/* Validate all parameters before calling */
+@@ -4916 +4923,3 @@ static GF_Err gf_dash_download_init_segment(GF_DashClient *dash, GF_DASH_Group *
+-		if (tmp_url) gf_free(tmp_url);
++		if (tmp_url) {
++			gf_free(tmp_url);
++		}
+diff --git a/src/utils/error.c b/src/utils/error.c
+index 23c5105d6..b8d33f7e8 100644
+--- a/src/utils/error.c
++++ b/src/utils/error.c
+@@ -2172,5 +2172,12 @@ GF_Err gf_dynstrcat(char **str, const char *to_append, const char *sep)
+-	if (l1) (*str) = gf_realloc((*str), sizeof(char)*(l1+l2+lsep+1));
+-	else (*str) = gf_realloc((*str), sizeof(char)*(l2+lsep+1));
+-
+-	if (! (*str) )
+-		return GF_OUT_OF_MEM;
++	
++	// Validate reallocation success before proceeding
++	if (l1) {
++		char *temp = gf_realloc((*str), sizeof(char)*(l1+l2+lsep+1));
++		if (!temp) return GF_OUT_OF_MEM;
++		(*str) = temp;
++	} else {
++		char *temp = gf_realloc(NULL, sizeof(char)*(l2+lsep+1));
++		if (!temp) return GF_OUT_OF_MEM;
++		(*str) = temp;
++		l1 = 0;
++	}

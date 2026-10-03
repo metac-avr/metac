@@ -1,0 +1,33 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 8d2f4dd7f..bc3c19b68 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -3274 +3274,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		char buf[256], *tmp, *item;
++// FIXME: Crash CWE-416: Use After Free
++ 		char buf[256], *tmp, *item;
+@@ -3276 +3277,4 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
++		/* Validate pointer before use to prevent use-after-free */
++		volatile char* alpn_ptr = flow->protos.tls_quic.advertised_alpns;
++		if(alpn_ptr != NULL) { 
++		  snprintf(buf, sizeof(buf), "%s", (char*)alpn_ptr);
+@@ -3278 +3282 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		item = strtok_r(buf, ",", &tmp);
++		  item = strtok_r(buf, ",", &tmp);
+@@ -3280,7 +3284,8 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		while(item != NULL) {
+-		  if(item[0] == 'h') {
+-		    /* Example 'h2' */
+-		    ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_ALPN_SNI_MISMATCH, item);
+-		    break;
+-		  } else
+-		    item = strtok_r(NULL, ",", &tmp);
++		  while(item != NULL) {
++		    if(item[0] == 'h') {
++		      /* Example 'h2' */
++		      ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_ALPN_SNI_MISMATCH, item);
++		      break;
++		    } else
++		      item = strtok_r(NULL, ",", &tmp);
++		  }

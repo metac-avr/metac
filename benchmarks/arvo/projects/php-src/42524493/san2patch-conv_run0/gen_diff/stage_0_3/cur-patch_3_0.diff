@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..d2c2e1f6875 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -258 +258,2 @@ void shutdown_destructors(void) /* {{{ */
+-		do {
++// FIXME: Crash CWE-416: Use After Free
++ 		do {
+@@ -260,2 +261,4 @@ void shutdown_destructors(void) /* {{{ */
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
+-		} while (symbols != zend_hash_num_elements(&EG(symbol_table)));
++			if (symbols > 0) {  /* Check if there are elements to process */
++				zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			}
++		} while (symbols != zend_hash_num_elements(&EG(symbol_table)) && symbols > 0);
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..b3c1c05ac9f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2167 +2167,3 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++// FIXME: Crash CWE-416: Use After Free
++ 			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++                        if (UNEXPECTED(!Z_REFCOUNTED(p->val))) continue;

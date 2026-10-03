@@ -1,0 +1,39 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 95ea29ea9..777110660 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -1467 +1467,2 @@ void process_chlo(struct ndpi_detection_module_struct *ndpi_struct,
+-                          flow->host_server_name, 1, 0, 0);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                           flow->host_server_name, 1, 0, 0);
+@@ -1469 +1470 @@ void process_chlo(struct ndpi_detection_module_struct *ndpi_struct,
+-      if(ndpi_is_valid_hostname((char *)&crypto_data[tag_offset_start + prev_offset],
++      if(len > 0 && len <= crypto_data_len && (tag_offset_start + prev_offset + len) <= crypto_data_len && ndpi_is_valid_hostname((char *)&crypto_data[tag_offset_start + prev_offset],
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 42d0fa67d..3b4f06d03 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -3240 +3240 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  if(!hostname || *hostname == '\0')
++  if(!hostname || *hostname == '\0' || len == 0)
+@@ -3247 +3247,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  p = hostname;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   p = hostname;
+@@ -3249,2 +3250,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  while (p[idx] && (idx < len)) {
+-    if(*p == '.') {
++  while (idx < len) {
++    if(p[idx] == '.') {
+@@ -3261 +3262,4 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-    if(!(isalnum((unsigned char)*p) || *p == '-'))
++    if(p[idx] == '\0')
++      break;
++
++    if(!(isalnum((unsigned char)p[idx]) || p[idx] == '-'))
+@@ -3266 +3270 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-      if(!isalnum((unsigned char)*p))
++      if(!isalnum((unsigned char)p[idx]))
+@@ -3281 +3285 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  if(!isalnum(p[idx-1]))
++  if(idx > 0 && p[idx-1] != '\0' && !isalnum(p[idx-1]))

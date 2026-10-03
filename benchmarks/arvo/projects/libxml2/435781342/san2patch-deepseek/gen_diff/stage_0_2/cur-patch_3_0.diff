@@ -1,0 +1,34 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..9fc14bb4 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2091 +2091,11 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-            int res = xmlIsID(ctxt->myDoc, ctxt->node, ret);
++            xmlNsPtr ns = ret->ns;
++            xmlNsPtr cur = ctxt->node->nsDef;
++            int ns_still_linked = 0;
++
++            while (cur != NULL) {
++                if (cur == ns) {
++                    ns_still_linked = 1;
++                    break;
++                }
++                cur = cur->next;
++            }
+@@ -2093,6 +2103,10 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-            if (res < 0)
+-                xmlCtxtErrMemory(ctxt);
+-            else if (res > 0)
+-                xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);
+-            else if (xmlIsRef(ctxt->myDoc, ctxt->node, ret))
+-                xmlAddRef(&ctxt->vctxt, ctxt->myDoc, content, ret);
++            if (ns_still_linked) {
++                int res = xmlIsID(ctxt->myDoc, ctxt->node, ret);
++
++                if (res < 0)
++                    xmlCtxtErrMemory(ctxt);
++                else if (res > 0)
++                    xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);
++                else if (xmlIsRef(ctxt->myDoc, ctxt->node, ret))
++                    xmlAddRef(&ctxt->vctxt, ctxt->myDoc, content, ret);
++            }

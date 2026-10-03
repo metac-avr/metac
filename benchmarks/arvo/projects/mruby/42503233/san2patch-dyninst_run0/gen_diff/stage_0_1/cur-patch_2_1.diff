@@ -1,0 +1,24 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..25147f283 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -198 +198 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++ {
+@@ -199,0 +200,6 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    if (mrb->c->ci->stack && room > (mrb->c->stend - mrb->c->ci->stack)) {
++      if (room > MRB_STACK_MAX) {
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++        return;
++      }
++    }
+@@ -515,2 +521,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++       if (argc > 0) {
++         if (ci->stack >= mrb->c->stbase && (ci->stack + argc + 1) <= mrb->c->stend) {
++           stack_copy(ci->stack+1, argv, argc);
++         } else {
++           goto missing;
++         }
++       }

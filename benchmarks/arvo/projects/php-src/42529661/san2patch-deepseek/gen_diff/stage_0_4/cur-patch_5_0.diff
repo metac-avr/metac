@@ -1,0 +1,28 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..85f4f1722f5 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -8989 +8989,5 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-
++	if (UNEXPECTED(EX(opline)->op1_type != IS_UNUSED && !Z_ISREF(EX(opline)->op1))) {
++		JIT_G(tracing) = 0;
++		return zend_jit_trace_hot_root(execute_data, EX(opline));
++	}
++ 
+@@ -9333 +9337 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-		if (zend_jit_trace_exit_is_bad(trace_num, exit_num)) {
++		if (zend_jit_trace_exit_is_bad(trace_num, exit_num) || !zend_jit_trace_hot_side(execute_data, trace_num, exit_num)) {
+@@ -9340,0 +9345 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
++		return 1;
+@@ -9342 +9347 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-		return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
++		return 1;
+@@ -9347,7 +9352 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++}		case ZEND_FAST_CALL:

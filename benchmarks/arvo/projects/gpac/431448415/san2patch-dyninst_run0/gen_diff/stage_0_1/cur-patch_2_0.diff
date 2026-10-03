@@ -1,0 +1,22 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index e71cdca50..1a6bfaaf3 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -2417 +2417,2 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-		for (j = 0; pres && j < gf_list_count(pres->substream_groups); j++) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		for (j = 0; pres && j < gf_list_count(pres->substream_groups); j++) {
+@@ -2431 +2432,4 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-			gf_list_del(group->substreams);
++			if (group->substreams) { // Fix: Defensive check before accessing
++				gf_list_del(group->substreams);
++				group->substreams = NULL; // Fix: Nullify after deletion
++			}
+@@ -2432,0 +2437,5 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
++			group = NULL; // Fix: Prevent use-after-free by nullifying
++		}
++		if (pres->substream_groups) { // Fix: Defensive check before accessing
++			gf_list_del(pres->substream_groups);
++			pres->substream_groups = NULL; // Fix: Nullify after deletion
+@@ -2434 +2442,0 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-		gf_list_del(pres->substream_groups);

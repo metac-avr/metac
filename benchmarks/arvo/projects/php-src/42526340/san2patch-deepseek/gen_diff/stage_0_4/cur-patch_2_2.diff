@@ -1,0 +1,55 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..79967b605fd 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1300,22 +1300,16 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount -= rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-#if ZEND_DEBUG
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz) || Z_TYPE_P(pz) == IS_ARRAY);
+-#endif
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
+-}
+-
+-static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
++static int zval_call_destructor(zval *zv) /* {{{ */
++{
++	if (Z_TYPE_P(zv) == IS_INDIRECT) {
++		zend_object *obj = Z_OBJ_P(Z_INDIRECT_P(zv));
++		if (obj && !IS_OBJ_FREED(obj)) {
++			zv = Z_INDIRECT_P(zv);
++		} else {
++			return ZEND_HASH_APPLY_KEEP;
++		}
++	}
++	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
++		return ZEND_HASH_APPLY_REMOVE;
++	} else {
++		return ZEND_HASH_APPLY_KEEP;
++	}
++}}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 9efe205abe0..6cfa0b31cf8 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -213 +213,6 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		zv = Z_INDIRECT_P(zv);
++		zend_object *obj = Z_OBJ_P(Z_INDIRECT_P(zv));
++		if (obj && !IS_OBJ_FREED(obj)) {
++			zv = Z_INDIRECT_P(zv);
++		} else {
++			return ZEND_HASH_APPLY_KEEP;
++		}

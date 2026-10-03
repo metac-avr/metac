@@ -1,0 +1,82 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index fd79a63e1..c504127de 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -6750,21 +6750,36 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-       flow_is_proto(flow, NDPI_PROTOCOL_FTPS)) {
+-      if(flow->protos.tls_quic.server_names)
+-	ndpi_free(flow->protos.tls_quic.server_names);
+-
+-      if(flow->protos.tls_quic.advertised_alpns)
+-	ndpi_free(flow->protos.tls_quic.advertised_alpns);
+-
+-      if(flow->protos.tls_quic.negotiated_alpn)
+-	ndpi_free(flow->protos.tls_quic.negotiated_alpn);
+-
+-      if(flow->protos.tls_quic.tls_supported_versions)
+-	ndpi_free(flow->protos.tls_quic.tls_supported_versions);
+-
+-      if(flow->protos.tls_quic.issuerDN)
+-	ndpi_free(flow->protos.tls_quic.issuerDN);
+-
+-      if(flow->protos.tls_quic.subjectDN)
+-	ndpi_free(flow->protos.tls_quic.subjectDN);
+-
+-      if(flow->protos.tls_quic.ja4_client_raw)
+-	ndpi_free(flow->protos.tls_quic.ja4_client_raw);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++        flow_is_proto(flow, NDPI_PROTOCOL_FTPS)) {
++      if(flow->protos.tls_quic.server_names) {
++        ndpi_free(flow->protos.tls_quic.server_names);
++        flow->protos.tls_quic.server_names = NULL;
++      } else flow->protos.tls_quic.server_names = NULL;
++
++      if(flow->protos.tls_quic.advertised_alpns) {
++        ndpi_free(flow->protos.tls_quic.advertised_alpns);
++        flow->protos.tls_quic.advertised_alpns = NULL;
++      } else flow->protos.tls_quic.advertised_alpns = NULL;
++
++      if(flow->protos.tls_quic.negotiated_alpn) {
++        ndpi_free(flow->protos.tls_quic.negotiated_alpn);
++        flow->protos.tls_quic.negotiated_alpn = NULL;
++      } else flow->protos.tls_quic.negotiated_alpn = NULL;
++
++      if(flow->protos.tls_quic.tls_supported_versions) {
++        ndpi_free(flow->protos.tls_quic.tls_supported_versions);
++        flow->protos.tls_quic.tls_supported_versions = NULL;
++      } else flow->protos.tls_quic.tls_supported_versions = NULL;
++
++      if(flow->protos.tls_quic.issuerDN) {
++        ndpi_free(flow->protos.tls_quic.issuerDN);
++        flow->protos.tls_quic.issuerDN = NULL;
++      } else flow->protos.tls_quic.issuerDN = NULL;
++
++      if(flow->protos.tls_quic.subjectDN) {
++        ndpi_free(flow->protos.tls_quic.subjectDN);
++        flow->protos.tls_quic.subjectDN = NULL;
++      } else flow->protos.tls_quic.subjectDN = NULL;
++
++      if(flow->protos.tls_quic.ja4_client_raw) {
++        ndpi_free(flow->protos.tls_quic.ja4_client_raw);
++        flow->protos.tls_quic.ja4_client_raw = NULL;
++      } else flow->protos.tls_quic.ja4_client_raw = NULL;
+diff --git a/src/lib/ndpi_memory.c b/src/lib/ndpi_memory.c
+index f9df7acc6..d2f0084ba 100644
+--- a/src/lib/ndpi_memory.c
++++ b/src/lib/ndpi_memory.c
+@@ -79,0 +80,3 @@ void ndpi_free(void *ptr) {
++  // Validate pointer before deallocation to prevent CWE-763
++  if(ptr == NULL) return;
++  
+@@ -81,5 +84,4 @@ void ndpi_free(void *ptr) {
+-    if(ptr)
+-      _ndpi_free(ptr);
+-  } else {
+-    if(ptr)
+-      free(ptr);
++    _ndpi_free(ptr);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++   } else {
++    free(ptr);
+@@ -86,0 +89 @@ void ndpi_free(void *ptr) {
++  // Note: In a real implementation, ptr should be set to NULL by caller

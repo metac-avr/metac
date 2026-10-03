@@ -1,0 +1,81 @@
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index 0f2f5aa8d..dacacda29 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -7538,2 +7538,3 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-	s32 poc_lt_curr[16];
+-	for (i=0; i < rps->num_negative_pics; i++) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	s32 poc_lt_curr[16];
++	for (i=0; i < rps->num_negative_pics && i < 16; i++) {
+@@ -7541,2 +7542,4 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		poc_st_curr0[nb_poc_st_curr0] = si->poc + rps->delta_poc[i];
+-		nb_poc_st_curr0++;
++		if (nb_poc_st_curr0 < 16) {
++			poc_st_curr0[nb_poc_st_curr0] = si->poc + rps->delta_poc[i];
++			nb_poc_st_curr0++;
++		}
+@@ -7545 +7548 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-	for (; i < rps->num_negative_pics+rps->num_positive_pics; i++) {
++	for (; i < rps->num_negative_pics+rps->num_positive_pics && i < 16; i++) {
+@@ -7547,2 +7550,4 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		poc_st_curr1[nb_poc_st_curr1] = si->poc + rps->delta_poc[i];
+-		nb_poc_st_curr1++;
++		if (nb_poc_st_curr1 < 16) {
++			poc_st_curr1[nb_poc_st_curr1] = si->poc + rps->delta_poc[i];
++			nb_poc_st_curr1++;
++		}
+@@ -7553 +7558 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-	for (i = rps->num_negative_pics + rps->num_positive_pics + num_long_term_pictures - 1; i >rps->num_negative_pics + rps->num_positive_pics-1 ; i--) {
++	for (i = rps->num_negative_pics + rps->num_positive_pics + num_long_term_pictures - 1; i >rps->num_negative_pics + rps->num_positive_pics-1 && i < 16; i--) {
+@@ -7555,2 +7560,4 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		poc_lt_curr[nb_poc_lt_curr] = 0; //todo, get LT from SH
+-		nb_poc_lt_curr++;
++		if (nb_poc_lt_curr < 16) {
++			poc_lt_curr[nb_poc_lt_curr] = 0; //todo, get LT from SH
++			nb_poc_lt_curr++;
++		}
+@@ -7563,2 +7570,3 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-	for (i=0; i<nb_poc_st_curr0; i++, nb_poc_l0++) {
+-		ref_pocs_l0[nb_poc_l0] = poc_st_curr0[i];
++	for (i=0; i<nb_poc_st_curr0 && i < 16; i++, nb_poc_l0++) {
++		if (nb_poc_l0 < 32)
++			ref_pocs_l0[nb_poc_l0] = poc_st_curr0[i];
+@@ -7566,2 +7574,3 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-	for ( i=0; i<nb_poc_st_curr1; i++, nb_poc_l0++) {
+-		ref_pocs_l0[nb_poc_l0] = poc_st_curr1[i];
++	for ( i=0; i<nb_poc_st_curr1 && i < 16; i++, nb_poc_l0++) {
++		if (nb_poc_l0 < 32)
++			ref_pocs_l0[nb_poc_l0] = poc_st_curr1[i];
+@@ -7569,2 +7578,3 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-	for (i=0; i<nb_poc_lt_curr;  i++, nb_poc_l0++) {
+-		ref_pocs_l0[nb_poc_l0] = poc_lt_curr[i];
++	for (i=0; i<nb_poc_lt_curr && i < 16; i++, nb_poc_l0++) {
++		if (nb_poc_l0 < 32)
++			ref_pocs_l0[nb_poc_l0] = poc_lt_curr[i];
+@@ -7578,2 +7588,3 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		for ( i=0; i<nb_poc_st_curr1; i++, nb_poc_l1++) {
+-			ref_pocs_l1[nb_poc_l1] = poc_st_curr1[i];
++		for ( i=0; i<nb_poc_st_curr1 && i < 16; i++, nb_poc_l1++) {
++			if (nb_poc_l1 < 32)
++				ref_pocs_l1[nb_poc_l1] = poc_st_curr1[i];
+@@ -7581,2 +7592,3 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		for ( i=0; i<nb_poc_st_curr0; i++, nb_poc_l1++) {
+-			ref_pocs_l1[nb_poc_l1] = poc_st_curr0[i];
++		for ( i=0; i<nb_poc_st_curr0 && i < 16; i++, nb_poc_l1++) {
++			if (nb_poc_l1 < 32)
++				ref_pocs_l1[nb_poc_l1] = poc_st_curr0[i];
+@@ -7584,2 +7596,3 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		for ( i=0; i<nb_poc_lt_curr;  i++, nb_poc_l1++) {
+-			ref_pocs_l1[nb_poc_l1] = poc_lt_curr[i];
++		for ( i=0; i<nb_poc_lt_curr && i < 16; i++, nb_poc_l1++) {
++			if (nb_poc_l1 < 32)
++				ref_pocs_l1[nb_poc_l1] = poc_lt_curr[i];
+@@ -7591 +7604,2 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		gf_hevc_push_ref_poc(si, ref_pocs_l0[idx]);
++		if (idx < 32)
++			gf_hevc_push_ref_poc(si, ref_pocs_l0[idx]);
+@@ -7595 +7609,2 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		gf_hevc_push_ref_poc(si, ref_pocs_l1[idx]);
++		if (idx < 32)
++			gf_hevc_push_ref_poc(si, ref_pocs_l1[idx]);

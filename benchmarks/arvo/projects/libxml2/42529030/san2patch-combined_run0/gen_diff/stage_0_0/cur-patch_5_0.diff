@@ -1,0 +1,26 @@
+diff --git a/error.c b/error.c
+index 1b4fe767..0cbb20ef 100644
+--- a/error.c
++++ b/error.c
+@@ -420 +420,3 @@ xmlReportError(xmlErrorPtr err, xmlParserCtxtPtr ctxt, const char *str,
+-        xmlParserPrintFileContextInternal(input, channel, data);
++        if (input != NULL && input->base != NULL && input->length > 0) {
++            xmlParserPrintFileContextInternal(input, channel, data);
++        }
+@@ -426 +428,3 @@ xmlReportError(xmlErrorPtr err, xmlParserCtxtPtr ctxt, const char *str,
+-            xmlParserPrintFileContextInternal(cur, channel, data);
++            if (cur->base != NULL && cur->length > 0) {
++                xmlParserPrintFileContextInternal(cur, channel, data);
++            }
+diff --git a/parser.c b/parser.c
+index 19f2e615..61116ea0 100644
+--- a/parser.c
++++ b/parser.c
+@@ -8261 +8260,0 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
+-        }
+@@ -8269 +8268,4 @@ xmlLoadEntityContent(xmlParserCtxtPtr ctxt, xmlEntityPtr entity) {
+-    xmlSaturatedAdd(&ctxt->sizeentities, length);
++    // Fixed CWE-825: Expired Pointer Dereference by checking buffer integrity
++    if (length >= 0 && input->base != NULL) {
++        xmlSaturatedAdd(&ctxt->sizeentities, length);
++    }

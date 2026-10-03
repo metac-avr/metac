@@ -1,0 +1,17 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..928e476d 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1161,0 +1162,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		/* Additional safety check to prevent use-after-free */
++		if (set->nodeTab[i] == NULL || xmlIsNodeDead(set->nodeTab[i]))
++		    continue;
+@@ -2557 +2560,7 @@ xmlXIncludeProcessTreeFlagsData(xmlNodePtr tree, int flags, void *data) {
+-    ctxt->base = xmlStrdup((xmlChar *)tree->doc->URL);
++// FIXME: Crash CWE-416: Use After Free
++    if (tree->doc->URL != NULL) {
++        xmlChar *url_copy = xmlStrdup((xmlChar *)tree->doc->URL);
++        ctxt->base = url_copy;
++    } else {
++        ctxt->base = NULL;
++    }

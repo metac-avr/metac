@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..763ebff9fe9 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -195,0 +196,5 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		
++		/* Prevent use-after-free by capturing pointer before any object manipulation */
++		ptr = ((char*)object) - object->handlers->offset;
++		
++		/* Ensure object bucket is invalidated after pointer capture */
+@@ -202,2 +207,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
++// FIXME: Crash CWE-416: Use After Free
++ 		GC_REMOVE_FROM_BUFFER(object);
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..d2b396cc285 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,2 +56,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	ZEND_ASSERT(p && GC_TYPE(p) <= IS_CONSTANT_AST);
++	if (p) zend_rc_dtor_func[GC_TYPE(p)](p);

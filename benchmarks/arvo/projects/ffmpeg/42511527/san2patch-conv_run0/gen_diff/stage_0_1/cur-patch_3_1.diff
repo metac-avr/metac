@@ -1,0 +1,32 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..56554f7626 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -194 +194,2 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
++// FIXME: Crash CWE-416: Use After Free
++     }
+@@ -195,0 +197,4 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        if (!s->keyframedata) {
++            av_log(avctx, AV_LOG_ERROR, "keyframedata is NULL\n");
++            return AVERROR_INVALIDDATA;
++        }
+@@ -217,0 +223,4 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        if (!s->keyframedata) {
++            av_log(avctx, AV_LOG_ERROR, "keyframedata is NULL during keyframe processing\n");
++            return AVERROR_INVALIDDATA;
++        }
+@@ -349 +358 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
++        "Frame width or height differs from first frame!\n");
+@@ -357 +366,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -361 +371,3 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        // Only copy if reallocation succeeded and pointer is valid
++        if (s->keyframedata) 
++            memcpy(s->keyframedata, avpkt->data, avpkt->size);
+@@ -370 +381,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-

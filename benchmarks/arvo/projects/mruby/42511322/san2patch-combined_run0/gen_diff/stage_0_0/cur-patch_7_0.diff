@@ -1,0 +1,27 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..d9a5e536c 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -109 +109 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Ensure clean initialization to prevent expired pointer dereference */
+@@ -111,0 +112,3 @@ stack_init(mrb_state *mrb)
++  
++  /* Zero out memory to prevent any stale pointer references */
++  memset(c->stbase, 0, STACK_INIT_SIZE * sizeof(mrb_value));
+@@ -113 +115,0 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
+@@ -191 +193 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
++ to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+@@ -199,0 +202 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++  mrb_value *old_stack = mrb->c->ci->stack;  /* Store old stack pointer */
+@@ -201,0 +205,4 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    /* Reset stack pointer if it was invalidated by reallocation */
++    if (old_stack && (old_stack < mrb->c->stbase || old_stack >= mrb->c->stend)) {
++      mrb->c->ci->stack = mrb->c->stbase;
++    }
+@@ -211,2 +218 @@ uvenv(mrb_state *mrb, mrb_int up)
+-  while (up--) {
+-    proc = proc->upper;
++  while (up--) {    proc = proc->upper;

@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..083fb209997 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -42 +42 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
+@@ -44 +44 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && GC_DELREF(ref) == 0) {
+@@ -46 +46 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref && GC_DELREF(ref) > 0) {
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 733ce54dc24..f4cd58f2f20 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -5176 +5176 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-	if (iter->funcs->rewind) {
++	if (iter->funcs != NULL && iter->funcs->rewind) {
+@@ -5185 +5185 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-	is_empty = iter->funcs->valid(iter) != SUCCESS;
++	is_empty = (iter->funcs != NULL) ? (iter->funcs->valid(iter) != SUCCESS) : 1;

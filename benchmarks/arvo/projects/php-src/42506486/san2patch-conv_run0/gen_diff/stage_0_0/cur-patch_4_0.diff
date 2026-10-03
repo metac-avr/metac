@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..79c36a0d767 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1829 +1829,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		p--;
++// FIXME: Crash CWE-416: Use After Free
++ 		p--;
+@@ -1831 +1832,6 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		if (Z_TYPE(p->val) == IS_STRING && Z_COUNTED(p->val)) {
++			GC_DELREF(Z_COUNTED(p->val));
++			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		} else {
++			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..60a461c60ed 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -275 +274,2 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
++	/* Perform garbage collection cleanup before hash table destruction to prevent use-after-free */
++	zend_gc_collect_cycles();
+@@ -282,2 +282 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-		} else {
+-			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {
++		} else {			ZEND_HASH_REVERSE_FOREACH_STR_KEY_VAL(EG(zend_constants), key, zv) {

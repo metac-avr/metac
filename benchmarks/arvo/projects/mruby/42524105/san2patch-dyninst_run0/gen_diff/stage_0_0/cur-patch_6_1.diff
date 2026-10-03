@@ -1,0 +1,38 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..d831878ca 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -139,0 +140,2 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
++  struct RString *s;
++  
+@@ -141 +143 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-    return str_init_embed(mrb_obj_alloc_string(mrb), p, len);
++    s = str_init_embed(mrb_obj_alloc_string(mrb), p, len);
+@@ -143,2 +145,2 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-  if (p && mrb_ro_data_p(p)) {
+-    return str_init_nofree(mrb_obj_alloc_string(mrb), p, len);
++  else if (p && mrb_ro_data_p(p)) {
++    s = str_init_nofree(mrb_obj_alloc_string(mrb), p, len);
+@@ -146 +148,6 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-  return str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++  else {
++    s = str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++  }
++  
++  mrb_field_write_barrier_value(mrb, (struct RBasic*)s, (mrb_value)s);
++  return s;
+@@ -212,4 +219,8 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-  shared->refcnt--;
+-  if (shared->refcnt == 0) {
+-    mrb_free(mrb, shared->ptr);
+-    mrb_free(mrb, shared);
++  if (shared) {
++    shared->refcnt--;
++    if (shared->refcnt == 0) {
++      if (shared->ptr) {
++        mrb_free(mrb, shared->ptr);
++      }
++      mrb_free(mrb, shared);
++    }
+@@ -224 +234,0 @@ str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
+-

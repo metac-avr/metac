@@ -1,0 +1,44 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..5de81aa4d 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -531,7 +530,0 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
+-  }
+-  mrb_gc_arena_restore(mrb, ai);
+-  mrb_gc_protect(mrb, val);
+-  return val;
+-}
+-
+@@ -540,0 +534,5 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
++  /* Validate stack bounds before constant lookup operations */
++  mrb_int required_stack = argc + 8; /* Account for 8-byte write requirement */
++  if (mrb->c->ci->stack + required_stack > mrb->c->stend) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "insufficient stack space");
++  }
+@@ -542,11 +540 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
+-}
+-
+-static mrb_value
+-exec_irep(mrb_state *mrb, mrb_value self, struct RProc *p)
+-{
+-  mrb_callinfo *ci = mrb->c->ci;
+-  int keep, nregs;
+-
+-  ci->stack[0] = self;
+-  mrb_vm_ci_proc_set(ci, p);
+-  if (MRB_PROC_CFUNC_P(p)) {
++}  if (MRB_PROC_CFUNC_P(p)) {
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..c620ab6a5 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -775,0 +776,8 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  /* Validate stack space before performing constant lookup */
++  if (mrb->c->stack && mrb->c->stend) {
++    ptrdiff_t stack_space = (char*)mrb->c->stend - (char*)mrb->c->stack;
++    if (stack_space < (ptrdiff_t)sizeof(mrb_value)) {
++      mrb_raise(mrb, E_RUNTIME_ERROR, "insufficient stack space for constant lookup");
++    }
++  }
++

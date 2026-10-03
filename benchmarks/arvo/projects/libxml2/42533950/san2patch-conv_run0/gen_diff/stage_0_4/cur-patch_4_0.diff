@@ -1,0 +1,58 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..2d5e6cd2 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3936 +3936,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      int res;
++// FIXME: Crash CWE-416: Use After Free
++       int res;
+@@ -3938,3 +3939,10 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      res = xmlSearchNsSafe(target, cur->ns->prefix, &ns);
+-      if (res < 0)
+-          goto error;
++      /* Check if namespace pointer is valid before accessing prefix */
++      if (cur->ns != NULL) {
++        res = xmlSearchNsSafe(target, cur->ns->prefix, &ns);
++        if (res < 0)
++            goto error;
++      } else {
++        ns = NULL;
++        res = -1;
++        goto error;
++      }
+@@ -3947,2 +3955,5 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-        res = xmlSearchNsSafe(cur->parent, cur->ns->prefix, &ns);
+-        if (res < 0)
++        if (cur->ns != NULL && cur->parent != NULL) {
++          res = xmlSearchNsSafe(cur->parent, cur->ns->prefix, &ns);
++          if (res < 0)
++            goto error;
++        } else {
+@@ -3949,0 +3961 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
++        }
+@@ -3972,3 +3984,13 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-        if (xmlStrEqual(ns->href, cur->ns->href)) {
+-          /* this is the nice case */
+-          ret->ns = ns;
++        if (cur->ns != NULL && ns != NULL) {
++          if (xmlStrEqual(ns->href, cur->ns->href)) {
++            /* this is the nice case */
++            ret->ns = ns;
++          } else {
++            /*
++             * we are in trouble: we need a new reconciled namespace.
++             * This is expensive
++             */
++            ret->ns = xmlNewReconciledNs(target, cur->ns);
++            if (ret->ns == NULL)
++                goto error;
++          }
+@@ -3976,7 +3998 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          /*
+-           * we are in trouble: we need a new reconciled namespace.
+-           * This is expensive
+-           */
+-          ret->ns = xmlNewReconciledNs(target, cur->ns);
+-          if (ret->ns == NULL)
+-              goto error;
++          goto error;

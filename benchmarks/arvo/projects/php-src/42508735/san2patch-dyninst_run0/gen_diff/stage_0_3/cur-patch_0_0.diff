@@ -1,0 +1,17 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 6e809c87341..2bf4fae039d 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2150 +2150,3 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++// FIXME: Crash CWE-416: Use After Free
++ 			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++			if (UNEXPECTED(GC_FLAGS(Z_COUNTED(p->val)) & GC_IMM destruct)) continue;
+diff --git a/Zend/zend_generators.c b/Zend/zend_generators.c
+index a5fcad31dfe..45282273f57 100644
+--- a/Zend/zend_generators.c
++++ b/Zend/zend_generators.c
+@@ -425,0 +426,3 @@ static zend_object *zend_generator_create(zend_class_entry *class_type) /* {{{ *
++	/* Initialize reference count tracking to prevent use-after-free */
++	GC_ADD_FLAGS(&generator->std, GC_IMMUTABLE);
++

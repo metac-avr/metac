@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..1a1eae2d661 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++// Fixed: Validate object state before accessing freed memory to prevent use-after-free
++		if (EG(objects_store).object_buckets[handle] != SET_OBJ_INVALID(object)) {
++			return;
++		}
+diff --git a/Zend/zend.c b/Zend/zend.c
+index e42fc648a4d..f9a48adb1a7 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1519,0 +1520 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
++	zend_object *backup_obj = NULL;
+@@ -1521,0 +1523,4 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
++	if (EG(current_execute_data) && Z_OBJ(EG(current_execute_data)->This)) {
++		backup_obj = Z_OBJ(EG(current_execute_data)->This);
++		GC_ADDREF(backup_obj);
++	}
+@@ -1524,0 +1530,3 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
++	if (backup_obj) {
++		GC_DELREF(backup_obj);
++	}

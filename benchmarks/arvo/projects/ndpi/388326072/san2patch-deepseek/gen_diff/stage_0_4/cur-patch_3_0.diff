@@ -1,0 +1,29 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 7e1a08ac1..bce768ae7 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -251 +251,2 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    return 1;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     return 1;
+@@ -253 +254,5 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ntohs(*(uint16_t *)buf) & 0x3FFF;
++    {
++      uint16_t tmp;
++      memcpy(&tmp, buf, sizeof(tmp));
++      *value = ntohs(tmp) & 0x3FFF;
++    }
+@@ -256 +261,5 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ntohl(*(uint32_t *)buf) & 0x3FFFFFFF;
++    {
++      uint32_t tmp;
++      memcpy(&tmp, buf, sizeof(tmp));
++      *value = ntohl(tmp) & 0x3FFFFFFF;
++    }
+@@ -259 +268,5 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ndpi_ntohll(get_u_int64_t(buf, 0)) & 0x3FFFFFFFFFFFFFFF;
++    {
++      uint64_t tmp;
++      memcpy(&tmp, buf, sizeof(tmp));
++      *value = ndpi_ntohll(tmp) & 0x3FFFFFFFFFFFFFFF;
++    }

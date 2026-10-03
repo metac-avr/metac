@@ -1,0 +1,29 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..27a04774d17 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -854 +854 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-#ifdef HAVE_GCC_GLOBAL_REGS
++        #ifdef HAVE_GCC_GLOBAL_REGS
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..10723ef21d6 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29947 +29947 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-assign_dim_error:
++        assign_dim_error:
+@@ -29955 +29955,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval old_value;
++		zval *variable_ptr = EX_VAR(opline->op1.var);
++		ZVAL_COPY_VALUE(&old_value, variable_ptr);
++		if (Z_REFCOUNTED(old_value)) {
++			if (Z_REFCOUNT(old_value) == 1) {
++				zval_ptr_dtor_nogc(&old_value);
++			} else {
++				zval_ptr_dtor(&old_value);
++			}
++		}
+@@ -29957,2 +29965,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+-	/* assign_dim has two opcodes! */

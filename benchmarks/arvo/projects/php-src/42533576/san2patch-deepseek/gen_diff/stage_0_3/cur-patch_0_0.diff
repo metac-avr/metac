@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..ca71b3f4a7a 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -300,5 +300,9 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-
+-		do {
+-			zval_ptr_dtor_nogc(p);
+-			p++;
+-		} while (--num_args);
++		if (call->func && ZEND_CALL_INFO(call) & ZEND_CALL_RELEASE_THIS) {
++			zend_object *object = Z_OBJ(call->This);
++			if (object && !(GC_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
++				do {
++					zval_ptr_dtor_nogc(p);
++					p++;
++				} while (--num_args);
++			}
++		}
+@@ -307,0 +312 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
++
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 4714ab37101..96d8ed0c6bf 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3229 +3229,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-	cleanup_unfinished_calls(execute_data, throw_op_num);
++	if (EXPECTED(EX(call) && EX(call)->func && EX(call)->func->type == ZEND_USER_FUNCTION)) {
++		cleanup_unfinished_calls(execute_data, throw_op_num);
++	}

@@ -1,0 +1,25 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..65027470 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2279,4 +2279,7 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            if ((ctxt->incTab[i]->inc != NULL) ||
+-                (ctxt->incTab[i]->emptyFb != 0)) {	/* (empty fallback) */
+-                xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
+-                ctxt->incTab[i]->replace = 0;
++// FIXME: Crash CWE-416: Use After Free
++             if ((ctxt->incTab[i]->inc != NULL) ||
++                (ctxt->incTab[i]->emptyFb != 0)) {    /* (empty fallback) */
++                if (ctxt->incTab[i]->inc != NULL) {
++                    xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++                    ctxt->incTab[i]->replace = 0;
++                }
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..ef02ae64 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1364 +1364,3 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++		/* Invalidate node before freeing to prevent XInclude use-after-free */
++		tmp->_private = NULL;

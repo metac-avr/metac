@@ -1,0 +1,37 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..7369175e 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2345 +2345,2 @@ xmlSAX2StartElementNs(void *ctx,
+-		}
++// Patched: Added namespace validity check
++ 		}
+@@ -2352,0 +2354,9 @@ xmlSAX2StartElementNs(void *ctx,
++            /* Ensure namespace is valid before proceeding */
++            if (attr->ns != NULL) {
++                xmlNsPtr ns = attr->ns;
++                /* Check if namespace points to valid memory */
++                if (ns->type != XML_LOCAL_NAMESPACE && ns->type != XML_GLOBAL_NAMESPACE) {
++                    attr->ns = NULL; /* Clear invalid reference */
++                }
++            }
++
+diff --git a/valid.c b/valid.c
+index e11d2c95..1287a4e9 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
+@@ -2373,0 +2374,5 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
++	if (aprefix != NULL && attr->ns != NULL) {
++	    if (attr->ns->href == NULL)
++	        return(0);
++	}
++
+@@ -2376 +2381 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);
+@@ -2379 +2384 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-					      attr->name, aprefix);
++		                      attr->name, aprefix);

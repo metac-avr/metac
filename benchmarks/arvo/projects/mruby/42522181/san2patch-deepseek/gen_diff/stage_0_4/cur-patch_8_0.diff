@@ -1,0 +1,22 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..6b0f9b4e5 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1203,4 +1203,13 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++      /* CWE-416 mitigation (MEM30-C): only free a dead page after ensuring
++         that stale references from GC-managed structures cannot point into
++         it later. If verification detects pending references, retain the page. */
++      if (gc_page_safe_to_free(mrb, gc, page)) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      }
++      else {
++        page->old = FALSE;
++        page = page->next;
++      }

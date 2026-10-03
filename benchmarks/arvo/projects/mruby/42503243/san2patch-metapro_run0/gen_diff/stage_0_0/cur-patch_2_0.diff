@@ -1,0 +1,14 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..d8979cad9 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515,2 +515,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++       if (argc > 0) {
++        if ((size_t)(argc + 1) <= (size_t)(mrb->c->stend - ci->stack)) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_raisef(mrb, E_ARGUMENT_ERROR, "argument count %i exceeds stack capacity", argc);
++        }
++      }

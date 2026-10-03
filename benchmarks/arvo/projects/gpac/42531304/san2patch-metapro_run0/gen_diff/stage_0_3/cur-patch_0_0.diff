@@ -1,0 +1,18 @@
+diff --git a/src/utils/xml_parser.c b/src/utils/xml_parser.c
+index 30f4e3e69..f9bdae34c 100644
+--- a/src/utils/xml_parser.c
++++ b/src/utils/xml_parser.c
+@@ -1885 +1885,8 @@ GF_Err gf_xml_dom_parse_string(GF_DOMParser *dom, char *string)
+-	dom->stack = gf_list_new();
++	if (!string) return GF_BAD_PARAM;
++	// Validate string length and ensure null termination to prevent out-of-bounds read
++	size_t len = strlen(string);
++	char *safe_string = gf_malloc(len + 1);
++	if (!safe_string) return GF_OUT_OF_MEM;
++	memcpy(safe_string, string, len);
++	safe_string[len] = '\0';
++ 	dom->stack = gf_list_new();
+@@ -1887 +1894,2 @@ GF_Err gf_xml_dom_parse_string(GF_DOMParser *dom, char *string)
+-	e = gf_xml_sax_init(dom->parser, (unsigned char *) string);
++	e = gf_xml_sax_init(dom->parser, (unsigned char *) safe_string);
++	gf_free(safe_string);

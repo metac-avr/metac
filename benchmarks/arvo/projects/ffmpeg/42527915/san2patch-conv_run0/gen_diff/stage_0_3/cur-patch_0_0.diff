@@ -1,0 +1,24 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..1f4050fdca 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -427 +427,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-416: Use After Free
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
++
++    // Validate pointers before use to prevent use-after-free
++    if (!table || !single || !buf || !single->table)
++        return AVERROR(EINVAL);
+@@ -460,0 +466 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    int vlc_initialized = 0;
+@@ -495 +501 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -497,0 +504 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    vlc_initialized = 1;
+@@ -503,0 +511,4 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    if (!vlc_initialized && multi->table) {
++        av_free(multi->table);
++        multi->table = NULL;
++    }

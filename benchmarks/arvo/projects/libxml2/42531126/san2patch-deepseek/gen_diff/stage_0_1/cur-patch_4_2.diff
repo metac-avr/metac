@@ -1,0 +1,50 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..cd778017 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -417,8 +417,11 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     * From rfc2044: encoding of the Unicode values on UTF-8:
+-     *
+-     * UCS-4 range (hex.)           UTF-8 octet sequence (binary)
+-     * 0000 0000-0000 007F   0xxxxxxx
+-     * 0000 0080-0000 07FF   110xxxxx 10xxxxxx
+-     * 0000 0800-0000 FFFF   1110xxxx 10xxxxxx 10xxxxxx
+-     *
+-     * Check for the 0x110000 limit too
++static int
++htmlCheckEncoding(htmlParserCtxtPtr ctxt, const xmlChar *encoding) {
++    const xmlChar *cur;
++    unsigned char c;
++    int ret;
++
++    if (ctxt == NULL)
++        return(-1);
++
++    /*
++     * Check the input stream for an encoding attribute first.
+@@ -425,0 +429,7 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++    ret = xmlSwitchInputEncoding(ctxt, encoding);
++    if (ret < 0) {
++        htmlParseErr(ctxt, XML_ERR_UNSUPPORTED_ENCODING,
++                     "unsupported encoding %s\n", encoding);
++        return(-1);
++    }
++
+@@ -426,0 +437,3 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++    if (cur == NULL)
++        return(-1);
++
+@@ -438 +451,12 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        if ((c & 0xe0) == 0xe0) {
++    }
++
++    return(0);
++
++encoding_error:
++    {
++        if ((ctxt->input->flags & XML_INPUT_HAS_ENCODING) == 0)
++            ctxt->input->flags |= XML_INPUT_HAS_ENCODING;
++        ctxt->input->encoding[0] = 0;
++        return(-1);
++    }
++}        if ((c & 0xe0) == 0xe0) {

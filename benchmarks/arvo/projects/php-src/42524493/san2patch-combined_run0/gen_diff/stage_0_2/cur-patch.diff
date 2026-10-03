@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..facc5a3b228 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1301 +1301,8 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	if (!pz) return 0;
++	if (Z_REFCOUNTED_P(pz)) {
++		zend_refcounted_h *counted = Z_COUNTED_P(pz);
++		if (counted) {
++			return GC_REFCOUNT(counted);
++		}
++	}
++	return 0;
+@@ -1312 +1319 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-}
++}}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..599eb7ee057 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2167 +2167,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++
++			if (Z_REFCOUNTED(p->val) && GC_IS_RECURSIVE(&(p->val))) continue;

@@ -1,0 +1,45 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..93035ca54 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -247 +247,3 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
+-  iv_foreach(mrb, t, iv_mark_i, 0);
++  if (t) {
++    iv_foreach(mrb, t, iv_mark_i, 0);
++  }
+@@ -257,2 +259 @@ void
+-mrb_gc_free_gv(mrb_state *mrb)
+-{
++mrb_gc_free_gv(mrb_state *mrb){
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..651439e37 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -690 +690 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -694 +694,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super && !mrb_object_dead_p(mrb, (struct RBasic*)c->super)) {
++        mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      }
+@@ -698 +700,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-416: Use After Free
++   case MRB_TT_OBJECT:
+@@ -700 +703,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (obj && !mrb_object_dead_p(mrb, obj)) {
++      mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    }
+@@ -707,2 +712,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper && !mrb_object_dead_p(mrb, (struct RBasic*)p->upper)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++      }
++      if (p->e.env && !mrb_object_dead_p(mrb, (struct RBasic*)p->e.env)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      }
+@@ -711 +719,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-

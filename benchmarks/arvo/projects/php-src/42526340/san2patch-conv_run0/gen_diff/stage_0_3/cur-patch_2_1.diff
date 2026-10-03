@@ -1,0 +1,34 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 54e9a85808c..30b02dfbc4e 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1254,7 +1253,0 @@ ZEND_API void zend_activate(void) /* {{{ */
+-		memset(CG(map_ptr_real_base), 0, CG(map_ptr_last) * sizeof(void*));
+-	}
+-	zend_init_internal_run_time_cache();
+-	zend_observer_activate();
+-}
+-/* }}} */
+-
+@@ -1266,10 +1259,5 @@ void zend_call_destructors(void) /* {{{ */
+-}
+-/* }}} */
+-
+-ZEND_API void zend_deactivate(void) /* {{{ */
+-{
+-	/* we're no longer executing anything */
+-	EG(current_execute_data) = NULL;
+-
+-	zend_try {
+-		shutdown_scanner();
++	/* Cleanup to prevent use-after-free on exception */
++	if (EG(objects_store).object_buckets) {
++		zend_hash_clean(EG(objects_store).object_buckets);
++	}
++}		shutdown_scanner();
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..2858fa03a2b 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -196,0 +197 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		

@@ -1,0 +1,23 @@
+diff --git a/tree.c b/tree.c
+index a93f2e31..c2a87dfa 100644
+--- a/tree.c
++++ b/tree.c
+@@ -599,3 +599,4 @@ xmlFreeNs(xmlNs *cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
+-    xmlFree(cur);
++    /* Delay freeing namespace until after attribute validation is complete */
++    /* Mark namespace as pending deletion instead of immediate free */
++    cur->type = XML_NAMESPACE_DECL_PENDING_DELETE;
++    /* Actual freeing will be handled by the parser cleanup phase */
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..ec164ae2 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2089 +2089,5 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-	    xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);
++// Fixed CWE-416: Use After Free by ensuring namespace validation occurs before any potential freeing
++            xmlAttrPtr temp_attr = ret; 
++            if (temp_attr != NULL) {
++                xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, temp_attr);
++            }

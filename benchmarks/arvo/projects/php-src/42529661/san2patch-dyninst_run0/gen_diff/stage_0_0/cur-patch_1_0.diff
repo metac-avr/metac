@@ -1,0 +1,23 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..41b6645db24 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -647 +647,5 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			if (Z_TYPE_P(zv) == IS_OBJECT) {
++			/* Validate zv before accessing to prevent use-after-free */
++			if (zv && Z_REFCOUNTED_P(zv) && GC_IS_REFCOUNT_ZERO(Z_COUNTED_P(zv))) {
++				zv = NULL; /* Clear zv if it points to freed memory */
++			}
++			if (zv && Z_TYPE_P(zv) == IS_OBJECT) {
+@@ -649 +653 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			} else if (Z_TYPE_P(zv) == IS_ARRAY) {
++			} else if (zv && Z_TYPE_P(zv) == IS_ARRAY) {
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..81eb6eca7ba 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2494,0 +2495,4 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Add reference count check to prevent premature freeing */
++		if (GC_REFCOUNT(ht) > 1) {
++			return; /* Don't free if still referenced */
++		}

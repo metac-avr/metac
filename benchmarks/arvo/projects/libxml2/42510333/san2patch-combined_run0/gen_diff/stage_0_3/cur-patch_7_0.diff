@@ -1,0 +1,37 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..fec0132e 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2520,0 +2521,18 @@ xmlXIncludeProcessTreeFlagsData(xmlNodePtr tree, int flags, void *data) {
++    /* Ensure no dangling references remain after processing */
++    if (tree != NULL) {
++        xmlNodePtr node = tree;
++        while (node != NULL) {
++            /* Nullify parent references in children */
++            if (node->children) {
++                xmlNodePtr child = node->children;
++                while (child) {
++                    if (child->parent == node) {
++                        child->parent = NULL;
++                    }
++                    child = child->next;
++                }
++            }
++            node = node->next;
++        }
++    }
++
+diff --git a/tree.c b/tree.c
+index 8077348a..69f12bbd 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3750 +3750,8 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		DICT_FREE(cur->name)
++		DICT_FREE(cur->name);
++	    
++	    /* Clear pointers to prevent use-after-free before freeing */
++	    cur->parent = NULL;
++	    cur->children = NULL;
++	    cur->next = NULL;
++	    cur->prev = NULL;
++	    

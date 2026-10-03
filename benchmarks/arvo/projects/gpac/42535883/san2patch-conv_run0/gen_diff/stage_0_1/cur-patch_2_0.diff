@@ -1,0 +1,47 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..0394a4338 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1220,2 +1220,10 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				// Prevent out-of-bounds access to general_constraint_info array
++				u32 constraint_info_count = cfg->num_constraint_info;
++				if (constraint_info_count > 64) constraint_info_count = 64; // Cap at reasonable limit
++				
++				if (constraint_info_count > 1 && cfg->general_constraint_info) {
++					gf_bs_write_data(bs, cfg->general_constraint_info, constraint_info_count - 1);
++				}
++				if (constraint_info_count > 0 && cfg->general_constraint_info) {
++					gf_bs_write_int(bs, cfg->general_constraint_info[constraint_info_count - 1], 6);
++				}
+@@ -1234,2 +1242,6 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				if (cfg->ptl_sublayer_present_mask & (1<<idx))
+-					gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++				if ((cfg->ptl_sublayer_present_mask & (1<<idx)) && idx < 8) {
++					// Safe access to sublayer_level_idc with bounds checking
++					if (cfg->sublayer_level_idc) {
++						gf_bs_write_u8(bs, cfg->sublayer_level_idc[idx]);
++					}
++				}
+@@ -1239,2 +1251,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			for (idx=0; idx<cfg->num_sub_profiles; idx++) {
+-				gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++			for (idx=0; idx<cfg->num_sub_profiles && idx < 16; idx++) { // Limit iterations to prevent overflow
++				if (cfg->sub_profiles_idc) {
++					gf_bs_write_u32(bs, cfg->sub_profiles_idc[idx]);
++				}
+@@ -1254,0 +1269,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++		if (!ar || !ar->nalus) continue; // Check both array and nalus list
++
+@@ -1267 +1283 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-		for (j=0; j<nalucount; j++) {
++		for (j=0; j<nalucount && j < 1024; j++) { // Limit iterations to prevent excessive looping
+@@ -1268,0 +1285,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			if (!sl || !sl->data) continue;
++			
+@@ -1274 +1292,3 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			gf_bs_write_data(bs, sl->data, sl->size);
++			if (sl->size > 0 && sl->size <= 0x7FFFFFFF) { // Validate size range
++				gf_bs_write_data(bs, sl->data, sl->size);
++			}

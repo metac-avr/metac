@@ -1,0 +1,26 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..ef205cd3e 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -904 +904,2 @@ static int processTLSBlock(struct ndpi_detection_module_struct *ndpi_struct,
+-  case 0x01: /* Client Hello */
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   case 0x01: /* Client Hello */
+@@ -906 +907,3 @@ static int processTLSBlock(struct ndpi_detection_module_struct *ndpi_struct,
+-    processClientServerHello(ndpi_struct, flow, 0);
++    if(packet != NULL && packet->payload != NULL) { 
++      processClientServerHello(ndpi_struct, flow, 0);
++    }
+@@ -2381 +2384 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
++                        &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+@@ -2389,3 +2392,6 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 				 sizeof(ja.client.signature_algorithms_str)-i*2,
++				 "%02X", packet->payload[s_offset+i]);
++		  if (packet->payload_packet_len > s_offset + i*2 + 1) {
++		    ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++		  }

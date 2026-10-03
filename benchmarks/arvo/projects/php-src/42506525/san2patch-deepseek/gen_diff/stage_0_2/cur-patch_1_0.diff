@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..e2c686651ee 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1421,0 +1422 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++	zend_string *key_backup = NULL;
+@@ -1423,2 +1424,7 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	nIndex = p->h | ht->nTableMask;
+-	i = HT_HASH(ht, nIndex);
++	if (p->key) {
++		key_backup = zend_string_copy(p->key);
++	}
++
++	if (GC_REFCOUNT(ht) > 0 && (ht->u.flags & HASH_FLAG_INITIALIZED)) {
++		nIndex = p->h | ht->nTableMask;
++		i = HT_HASH(ht, nIndex);
+@@ -1426,4 +1432 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	if (i != idx) {
+-		prev = HT_HASH_TO_BUCKET(ht, i);
+-		while (Z_NEXT(prev->val) != idx) {
+-			i = Z_NEXT(prev->val);
++		if (i != idx) {
+@@ -1430,0 +1434,4 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++			while (Z_NEXT(prev->val) != idx) {
++				i = Z_NEXT(prev->val);
++				prev = HT_HASH_TO_BUCKET(ht, i);
++			}
+@@ -1431,0 +1439,2 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++
++		_zend_hash_del_el_ex(ht, idx, p, prev);
+@@ -1434 +1443,3 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	_zend_hash_del_el_ex(ht, idx, p, prev);
++	if (key_backup) {
++		zend_string_release(key_backup);
++	}

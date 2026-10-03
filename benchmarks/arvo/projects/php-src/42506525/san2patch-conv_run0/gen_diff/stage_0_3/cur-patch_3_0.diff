@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..d8f5ee6d463 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1237 +1237,2 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
+-		HT_SET_DATA_ADDR(ht, new_data);
++// FIXME: Crash CWE-416: Use After Free
++ 		HT_SET_DATA_ADDR(ht, new_data);
+@@ -1409,3 +1410,6 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
+-		ZVAL_UNDEF(&p->val);
+-		ht->pDestructor(&tmp);
++// FIXME: Crash CWE-416: Use After Free
++		if (p >= ht->arData && p < ht->arData + ht->nTableSize) { 
++			ZVAL_COPY_VALUE(&tmp, &p->val);
++			ZVAL_UNDEF(&p->val);
++			ht->pDestructor(&tmp);
++		}

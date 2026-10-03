@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 6e809c87341..694f9e14161 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -296 +296 @@ ZEND_API HashTable* ZEND_FASTCALL zend_new_pair(zval *val1, zval *val2)
+-	return ht;
++return ht;
+@@ -304,0 +305 @@ ZEND_API void ZEND_FASTCALL zend_hash_packed_grow(HashTable *ht)
++	uint32_t old_size = ht->nTableSize;
+@@ -306 +307,10 @@ ZEND_API void ZEND_FASTCALL zend_hash_packed_grow(HashTable *ht)
+-	HT_SET_DATA_ADDR(ht, perealloc2(HT_GET_DATA_ADDR(ht), HT_PACKED_SIZE_EX(ht->nTableSize, HT_MIN_MASK), HT_PACKED_USED_SIZE(ht), GC_FLAGS(ht) & IS_ARRAY_PERSISTENT));
++	if (ht->nTableSize < old_size) {
++		zend_error_noreturn(E_ERROR, "Integer overflow detected in hash table growth");
++	}
++	void *old_data = HT_GET_DATA_ADDR(ht);
++	size_t new_size = HT_PACKED_SIZE_EX(ht->nTableSize, HT_MIN_MASK);
++	size_t used_size = HT_PACKED_USED_SIZE(ht);
++	if (new_size < used_size) {
++		zend_error_noreturn(E_ERROR, "Invalid size calculation in hash table growth");
++	}
++	HT_SET_DATA_ADDR(ht, perealloc2(old_data, new_size, used_size, GC_FLAGS(ht) & IS_ARRAY_PERSISTENT));
+@@ -316 +325,0 @@ ZEND_API void ZEND_FASTCALL zend_hash_real_init(HashTable *ht, bool packed)
+-

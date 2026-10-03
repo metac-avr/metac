@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..ecaf4579446 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1446 +1446,2 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
+-						ZVAL_COPY_VALUE(&tmp, data);
++// Clear the pointer reference immediately after copying to prevent use-after-free
++ 						ZVAL_COPY_VALUE(&tmp, data);
+@@ -1447,0 +1449 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
++						data = NULL;  // Prevent dangling pointer usage
+@@ -1450,0 +1453 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
++						data = NULL;  // Prevent dangling pointer usage
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..4d3d86231bc 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -66,0 +67,2 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Clear pointer to prevent use-after-free */
++	str = NULL;
+@@ -77 +78,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

@@ -1,0 +1,29 @@
+diff --git a/libavcodec/dfpwmdec.c b/libavcodec/dfpwmdec.c
+index 27b60a4ea4..d32ce161b1 100644
+--- a/libavcodec/dfpwmdec.c
++++ b/libavcodec/dfpwmdec.c
+@@ -71 +71 @@ static void au_decompress(DFPWMState *state, int fs, int len, uint8_t *outbuf, u
+-            state->fq += ((fs*(ov-state->fq) + 0x80)>>8);
++            state->fq += ((fs*(ov-state->q) + 0x80)>>8);
+@@ -73 +73,2 @@ static void au_decompress(DFPWMState *state, int fs, int len, uint8_t *outbuf, u
+-
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
+@@ -75 +76,4 @@ static void au_decompress(DFPWMState *state, int fs, int len, uint8_t *outbuf, u
+-            *(outbuf++) = ov + 128;
++            if (len > 0) {  // Check if there's space left in the buffer
++                *(outbuf++) = ov + 128;
++                len--;  // Decrement remaining length
++            }
+@@ -116 +120,2 @@ static int dfpwm_dec_frame(struct AVCodecContext *ctx, void *data,
+-        return ret;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         return ret;
+@@ -118 +123,6 @@ static int dfpwm_dec_frame(struct AVCodecContext *ctx, void *data,
+-    au_decompress(state, 140, packet->size, frame->data[0], packet->data);
++    if (frame->linesize[0] >= frame->nb_samples) {
++        au_decompress(state, 140, packet->size, frame->data[0], packet->data);
++    } else {
++        av_log(ctx, AV_LOG_ERROR, "output buffer too small\n");
++        return AVERROR_INVALIDDATA;
++    }

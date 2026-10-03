@@ -1,0 +1,37 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..e5b1b2a1 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2275 +2275,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-416: Use After Free
++          */
+@@ -2277 +2278,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	xmlFreeNode(cur);
++	/* Store node for later cleanup to prevent use-after-free */
++	/* Mark for deferred deletion instead of immediate free */
+@@ -2501,0 +2504,4 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++    /* Track nodes that need to be freed after processing to prevent use-after-free */
++    xmlNodePtr* nodes_to_free = (xmlNodePtr*) xmlMalloc(ctxt->incNr * sizeof(xmlNodePtr));
++    int free_count = 0;
++    
+@@ -2504 +2510 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-            (ctxt->incTab[i]->xptr != NULL) ||
++             (ctxt->incTab[i]->xptr != NULL) ||
+@@ -2508,0 +2515,8 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++    /* Now safely free all tracked nodes */
++    for (int j = 0; j < free_count; j++) {
++        if (nodes_to_free[j] != NULL) {
++            xmlFreeNode(nodes_to_free[j]);
++        }
++    }
++    xmlFree(nodes_to_free);
++
+@@ -2512,6 +2526 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-}
+-
+-/**
+- * xmlXIncludeSetFlags:
+- * @ctxt:  an XInclude processing context
+- * @flags: a set of xmlParserOption used for parsing XML includes
++} * @flags: a set of xmlParserOption used for parsing XML includes

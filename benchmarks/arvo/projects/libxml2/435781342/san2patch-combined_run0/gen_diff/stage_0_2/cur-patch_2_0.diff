@@ -1,0 +1,29 @@
+diff --git a/valid.c b/valid.c
+index e11d2c95..4f699544 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
+@@ -2366 +2366 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-	fullelemname = (elem->ns != NULL && elem->ns->prefix != NULL) ?
++	fullelemname = ((elem->ns != NULL) && (elem->ns->prefix != NULL)) ?
+@@ -2376 +2376 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..fe9c0539 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2088,0 +2089 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
++// FIXME: Crash CWE-416: Use After Free
+@@ -2091 +2092,8 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-            int res = xmlIsID(ctxt->myDoc, ctxt->node, ret);
++            int res;
++            
++            /* Add defensive null checks to prevent accessing freed memory */
++            if (ctxt->node == NULL || (ctxt->node->ns == NULL)) {
++                res = 0;
++            } else {
++                res = xmlIsID(ctxt->myDoc, ctxt->node, ret);
++            }

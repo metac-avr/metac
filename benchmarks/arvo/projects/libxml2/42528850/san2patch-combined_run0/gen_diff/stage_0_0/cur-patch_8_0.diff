@@ -1,0 +1,30 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..6ba4ab8b 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+@@ -4216,3 +4216,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-		} else {
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++		if (root != NULL)
++		    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		else
++		    ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	    } else {
++		ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..2d472400 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -422,2 +422,6 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Prevent use-after-free by nullifying nsDef before freeing */
++        xmlNsPtr ns_to_free = cur->nsDef;
++        cur->nsDef = NULL;
++        xmlFreeNsList(ns_to_free);
++    }

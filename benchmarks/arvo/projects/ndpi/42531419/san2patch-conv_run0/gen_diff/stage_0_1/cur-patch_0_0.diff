@@ -1,0 +1,48 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..314da3f52 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,5 +2381 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
+-
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++        ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+@@ -2387,5 +2383,6 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++        for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i*2+1<total_len; i++) {
++          int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++// FIXME: Crash CWE-125: Out-of-bounds Read
++			 sizeof(ja.client.signature_algorithms_str)-i*2,
++			 "%02X", packet->payload[s_offset+i]);
++          ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
+@@ -2393,2 +2390,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
+-		}
++          if(rc < 0) break;
++        }
+@@ -2396,2 +2393,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++        for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
++          u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+@@ -2399,3 +2396,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
++          if(last_signature == signature_algo) {
++            /* Consecutive duplication */
++            duplicate_found = 1;
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 0b8674f38..bb3b34c2d 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -1379 +1379,2 @@ void process_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-  packet->payload_packet_len = crypto_data_len;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   packet->payload_packet_len = crypto_data_len;

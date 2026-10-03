@@ -1,0 +1,20 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..abb5fafb4 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -109 +109 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Allocate and initialize stack with boundary tracking */
+@@ -113 +113 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  /* Allocate and initialize callinfo with stack pointer synchronization */
+@@ -118 +118 @@ stack_init(mrb_state *mrb)
+-  c->ci->stack = c->stbase;
++  c->ci->stack = c->stbase; /* Synchronize stack pointer to prevent use-after-free */
+@@ -1128,2 +1128,4 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-  stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
+-  c->ci->stack[0] = self;
++  if (c->ci && c->ci->stack) {
++    stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++    c->ci->stack[0] = self;
++  }

@@ -1,0 +1,24 @@
+diff --git a/libavcodec/cbs.c b/libavcodec/cbs.c
+index daf7f66427..9ba0c48337 100644
+--- a/libavcodec/cbs.c
++++ b/libavcodec/cbs.c
+@@ -396 +396,7 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
+-    memcpy(unit->data, ctx->write_buffer, unit->data_size);
++    // Fix: Use memmove with size validation to prevent negative size issues
++    if (unit->data_size >= 0 && (size_t)unit->data_size <= ctx->write_buffer_size) {
++        memmove(unit->data, ctx->write_buffer, unit->data_size);
++    } else {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid data size for memcpy: %d\n", unit->data_size);
++        return AVERROR(EINVAL);
++    }
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..5f43e28ea6 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -706 +706,5 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
+-        // Annex B, or later MP4 with already-known parameters.
++// Validate input parameters to prevent integer overflow
++        if (!frag->data || frag->data_size <= 0) {
++            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid fragment data or size\n");
++            return AVERROR_INVALIDDATA;
++        }

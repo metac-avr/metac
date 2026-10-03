@@ -1,0 +1,33 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..b11b6033 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2226 +2226,2 @@ xmlSAX2StartElementNs(void *ctx,
+-        pref = namespaces[i++];
++// FIXME: Crash CWE-416: Use After Free
++	 pref = namespaces[i++];
+@@ -2248,2 +2249,6 @@ xmlSAX2StartElementNs(void *ctx,
+-	    ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
+-	                                           ret, prefix, ns, uri);
++	    /* Validate namespace only if it's still allocated */
++	    void* ns_check = (void*)ns;
++	    if (ns_check != NULL) {
++	        ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
++	                                               ret, prefix, ns, uri);
++	    }
+diff --git a/tree.c b/tree.c
+index a93f2e31..f9823bd0 100644
+--- a/tree.c
++++ b/tree.c
+@@ -599,2 +599,9 @@ xmlFreeNs(xmlNs *cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++    // Prevent use-after-free by nullifying pointers before deallocation
++    if (cur->href != NULL) {
++        xmlFree((char *) cur->href);
++        cur->href = NULL;
++    }
++    if (cur->prefix != NULL) {
++        xmlFree((char *) cur->prefix);
++        cur->prefix = NULL;
++    }

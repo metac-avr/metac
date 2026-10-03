@@ -1,0 +1,18 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..a647de69c 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -988 +988,2 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
+@@ -990 +991,8 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  mpz_init_set_str(mrb, &b->mp, x, len, base);
++  char *tmp = (char *)mrb_malloc(mrb, len + 1);
++  if (tmp == NULL) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "memory allocation failed");
++  }
++  memcpy(tmp, x, len);
++  tmp[len] = '\0';
++  mpz_init_set_str(mrb, &b->mp, tmp, len, base);
++  mrb_free(mrb, tmp);

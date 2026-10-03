@@ -1,0 +1,57 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..1a287b03 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2636,9 +2636,2 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
+-        }
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+-static void
++// FIXME: Crash CWE-416: Use After Free
++ static void
+@@ -2646,12 +2639,9 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    
++    /* Validate the ID pointer before freeing */
++    if (idPtr != NULL) {
++        /* Ensure node reference is cleared before deallocation */
++        idPtr->attr = NULL;
++        xmlFreeID(idPtr);
++    }
++}    xmlHashFree(table, xmlFreeIDTableEntry);
+diff --git a/tree.c b/tree.c
+index 8e0b346a..52dface5 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3757 +3757,13 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->children != NULL) &&
++
++    /* 
++     * Fix for use-after-free vulnerability: Clear ID table references before node deallocation
++     * Check if this node has an ID and remove it from document's ID table
++     */
++    if ((cur->type == XML_ELEMENT_NODE) && (cur->doc != NULL) && (cur->name != NULL)) {
++        xmlChar* id_name = xmlGetID(cur->doc, cur->name);
++        if (id_name != NULL) {
++            xmlRemoveID(cur->doc, cur);
++        }
++    }
++
++     if ((cur->children != NULL) &&

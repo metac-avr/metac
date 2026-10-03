@@ -1,0 +1,90 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..cc2c6a1a000 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -160 +160 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+-ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
++ZEND_API void ZEND_FASTCALL zend_fe_reset_iterator(zval *array_ptr, int by_ref OPLINE_DC EXECUTE_DATA_DC) /* {{{ */
+@@ -162 +162,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
++	zend_class_entry *ce = Z_OBJCE_P(array_ptr);
++	zend_object_iterator *iter = ce->get_iterator(ce, array_ptr, by_ref);
++	bool is_empty;
+@@ -164,3 +166,9 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	/* GC might have released this object already. */
+-	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
+-		return;
++	if (UNEXPECTED(!iter) || UNEXPECTED(EG(exception))) {
++		if (iter) {
++			OBJ_RELEASE(&iter->std);
++		}
++		if (!EG(exception)) {
++			zend_throw_exception_ex(NULL, 0, "Object of type %s did not create an Iterator", ZSTR_VAL(ce->name));
++		}
++		ZVAL_UNDEF(EX_VAR(opline->result.var));
++		return 1;
+@@ -169,12 +177,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	/*	Make sure we hold a reference count during the destructor call
+-		otherwise, when the destructor ends the storage might be freed
+-		when the refcount reaches 0 a second time
+-	 */
+-	if (!(OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
+-		GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
+-
+-		if (object->handlers->dtor_obj != zend_objects_destroy_object
+-				|| object->ce->destructor) {
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->dtor_obj(object);
+-			GC_DELREF(object);
++	iter->index = 0;
++	if (iter->funcs->rewind) {
++		iter->funcs->rewind(iter);
++		if (UNEXPECTED(EG(exception) != NULL)) {
++			OBJ_RELEASE(&iter->std);
++			ZVAL_UNDEF(EX_VAR(opline->result.var));
++			return 1;
+@@ -184,16 +187,6 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	if (GC_REFCOUNT(object) == 0) {
+-		uint32_t handle = object->handle;
+-		void *ptr;
+-
+-		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+-		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+-		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
+-		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
+-		}
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++	is_empty = iter->funcs->valid(iter) != SUCCESS;
++
++	if (UNEXPECTED(EG(exception) != NULL)) {
++		OBJ_RELEASE(&iter->std);
++		ZVAL_UNDEF(EX_VAR(opline->result.var));
++		return 1;
+@@ -200,0 +194,6 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++	iter->index = -1; /* will be set to 0 before using next handler */
++
++	ZVAL_OBJ(EX_VAR(opline->result.var), &iter->std);
++	Z_FE_ITER_P(EX_VAR(opline->result.var)) = (uint32_t)-1;
++
++	return is_empty;
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 733ce54dc24..0c364499b5d 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -5164 +5164,2 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-	if (UNEXPECTED(!iter) || UNEXPECTED(EG(exception))) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	if (UNEXPECTED(!iter) || UNEXPECTED(EG(exception))) {
+@@ -5166 +5167,5 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			if (iter->funcs && iter->funcs->dtor && iter->internal_data.ptr) {
++				iter->funcs->dtor(iter);
++			} else {
++				OBJ_RELEASE(&iter->std);
++			}

@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..ca95ad2d1c7 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74,13 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++	zval tmp;
++	ZVAL_COPY_VALUE(&tmp, &ref->val);
++	ZVAL_UNDEF(&ref->val);
++	if (Z_TYPE(tmp) == IS_OBJECT && Z_REFCOUNTED(tmp)) {
++		if (Z_REFCOUNT(tmp) == 1) {
++			GC_DELREF(Z_OBJ(tmp));
++			zend_objects_store_del(Z_OBJ(tmp));
++		} else {
++			Z_TRY_DELREF(tmp);
++		}
++	} else {
++		i_zval_ptr_dtor(&tmp);
++	}
+@@ -76,10 +88 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-}
+-
+-static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-{
+-}
+-
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-{
+-	i_zval_ptr_dtor(zval_ptr);
+-}
++}}

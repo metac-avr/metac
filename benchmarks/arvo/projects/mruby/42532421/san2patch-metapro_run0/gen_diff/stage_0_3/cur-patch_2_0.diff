@@ -1,0 +1,18 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..31c15245a 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -626,2 +626,5 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-        if (memcmp(substr, xs + 1, m - 2) == 0) {
+-          return i + j;
++        // Prevent out-of-bounds access
++        if ((j + 1 < sizeof(bitint)) && (substr + m - 2 <= (char*)ys + n) && (m - 2 <= n)) {
++          if (memcmp(substr, xs + 1, m - 2) == 0) {
++            return i + j;
++          }
+@@ -637,0 +641,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++    // Early termination if remaining bytes are less than bitint size
++    if (n - i <= sizeof(bitint)) break;
+@@ -1208 +1213 @@ str_convert_range(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen,
+-
++ 

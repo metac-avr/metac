@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..d863ab97c08 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1184,0 +1186,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p == NULL || (GC_FLAGS(p) & GC_HAS been marked as freed)) {
++		return 0;  // Avoid dereferencing freed/invalid pointers
++	}
+@@ -1193 +1196,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..9d2d0f17116 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1831 +1831,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		/* Null check before accessing potentially freed memory */
++		if (p != NULL) {
++			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		}

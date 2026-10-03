@@ -1,0 +1,22 @@
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index 6ea6c46d8f..fd7ea6b243 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -187 +187,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     }
+@@ -201,0 +203,4 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    // Check that there are enough bits remaining before reading
++    if (get_bits_left(gb) < 32)
++        return AVERROR_INVALIDDATA;
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index 65dc080ddb..8bfdb6e270 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -327,0 +328,4 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++    // Check bounds before reading bits to prevent out-of-bounds access
++    if (n <= 0 || n > 25 || s->index + n > s->buffer_end - s->buffer) {
++        return 0;  // Return safe default on invalid input or out-of-bounds
++    }

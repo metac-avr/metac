@@ -1,0 +1,74 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..bcd1860e650 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1750,4 +1750,9 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-			do {
+-				i_zval_ptr_dtor(zv);
+-			} while (++zv != end);
++// FIXME: Crash CWE-416: Use After Free
++ 
++			if (zv < end) {
++				do {
++					if (Z_TYPE_P(zv) != IS_UNDEF) {
++						i_zval_ptr_dtor(zv);
++					}
++				} while (++zv != end);
++			}
+@@ -1759,3 +1764,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
+-					i_zval_ptr_dtor(&p->val);
+-				} while (++p != end);
++				if (p < end) {
++					do {
++						if (Z_TYPE(p->val) != IS_UNDEF) {
++							i_zval_ptr_dtor(&p->val);
++						}
++					} while (++p != end);
++				}
+@@ -1763,10 +1772,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
+-					i_zval_ptr_dtor(&p->val);
+-					if (EXPECTED(p->key)) {
+-						zend_string_release_ex(p->key, 0);
+-					}
+-				} while (++p != end);
+-			} else {
+-				do {
+-					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
+-						i_zval_ptr_dtor(&p->val);
++				if (p < end) {
++					do {
++						if (Z_TYPE(p->val) != IS_UNDEF) {
++							i_zval_ptr_dtor(&p->val);
++						}
+@@ -1776,2 +1780,13 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					}
+-				} while (++p != end);
++					} while (++p != end);
++				}
++			} else {
++				if (p < end) {
++					do {
++						if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
++							i_zval_ptr_dtor(&p->val);
++							if (EXPECTED(p->key)) {
++								zend_string_release_ex(p->key, 0);
++							}
++						}
++					} while (++p != end);
++				}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..89c12967442 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,2 +56,6 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (EXPECTED(p != NULL)) {
++		ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++		if (GC_REFCOUNT(p) > 0) {
++			zend_rc_dtor_func[GC_TYPE(p)](p);
++		}
++	}

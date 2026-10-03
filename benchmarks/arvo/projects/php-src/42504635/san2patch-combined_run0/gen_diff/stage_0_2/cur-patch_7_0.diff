@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..55953415806 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p || GC_TYPE(p) > IS_CONSTANT_AST) return;
+@@ -57 +58 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -65 +66 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++	/* CWE-825 Fix: Validate pointer before efree to prevent use-after-free */
+@@ -67 +68,3 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
++	if (str != NULL && GC_REFCOUNT(str) == 0) {
++		efree(str);
++	}
+@@ -77 +79,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

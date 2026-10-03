@@ -1,0 +1,29 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..1b6987c5350 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-416: Use After Free
+@@ -862,0 +864,8 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Add safety check for freed memory access */
++			if (UNEXPECTED(ZEND_GC_TYPE((zend_refcounted*)execute_data) == IS_UNDEF)) {
++				stop = ZEND_JIT_TRACE_STOP_ERROR;
++				opline = NULL;
++				halt = ZEND_JIT_TRACE_HALT;
++				break;
++			}
++		}
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..8eb67331ce6 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -32 +32,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35 +36,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && GC_TYPE(ref) != 0) {
++			rc_dtor_func(ref);
++		}

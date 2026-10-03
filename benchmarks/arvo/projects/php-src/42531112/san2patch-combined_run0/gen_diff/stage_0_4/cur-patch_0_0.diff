@@ -1,0 +1,22 @@
+diff --git a/ext/pcre/php_pcre.c b/ext/pcre/php_pcre.c
+index 075d9fc5263..de8a67223db 100644
+--- a/ext/pcre/php_pcre.c
++++ b/ext/pcre/php_pcre.c
+@@ -649 +649 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-		if (key != regex) {
++        if (key != regex) {
+@@ -657,3 +657,7 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-	start_delimiter = delimiter;
+-	if ((pp = strchr("([{< )]}>", delimiter)))
+-		delimiter = pp[5];
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	start_delimiter = delimiter;
++	const char *delimiters = "([{< )]}>";
++	if ((pp = strchr(delimiters, delimiter))) {
++		if (pp + 5 < delimiters + strlen(delimiters))
++			delimiter = pp[5];
++	}
+@@ -669,2 +673 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-			if (*pp == '\\' && pp + 1 < end_p) pp++;
+-			else if (*pp == delimiter)
++			if (*pp == '\\' && pp + 1 < end_p) pp++;			else if (*pp == delimiter)

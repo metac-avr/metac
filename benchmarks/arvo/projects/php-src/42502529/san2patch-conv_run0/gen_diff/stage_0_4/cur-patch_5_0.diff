@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..3c4760515ae 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,2 +1172,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+@@ -1181 +1179,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1185 +1184,4 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	return --(p->refcount);
++	if (__builtin_expect(!!(p), 1) && p->refcount > 0) {  // Null check and refcount validation
++		return --(p->refcount);
++	}
++	return 0;
+@@ -1192,3 +1194 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..339b02ccf86 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1829 +1829 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		p--;
++ 		p--;
+@@ -1830,0 +1831,3 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++		if (UNEXPECTED(Z_TYPE(p->val) == IS_OBJECT || Z_TYPE(p->val) == IS_RESOURCE)) {
++			if (UNEXPECTED(GC_IS_DTOR_CALLED(Z_COUNTED(p->val)))) continue;
++		}

@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..b0d4d504338 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -195,0 +196,5 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		
++		/* Ensure object is removed from GC tracking before any free operation */
++		if (object->gc.ref < GC_NUM_ADDITIONAL_ENTRIES) {
++			GC_REMOVE_FROM_BUFFER(object);
++		}
+@@ -203 +207,0 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		GC_REMOVE_FROM_BUFFER(object);
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..a5323aa230e 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,0 +57,5 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	/* Ensure object is properly removed from GC tracking before destruction */
++	if (GC_TYPE(p) == IS_OBJECT && !(GC_FLAGS(p) & GC_IMMUTABLE)) {
++		zend_object *obj = (zend_object*)p;
++		GC_REMOVE_FROM_BUFFER(obj); /* Remove from GC buffer early to prevent UAF */
++	}

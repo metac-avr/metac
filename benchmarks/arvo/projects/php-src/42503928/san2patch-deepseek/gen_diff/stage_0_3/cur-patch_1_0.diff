@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..a5cfa2fcfa3 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -82 +82,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +85,9 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++
++		if (GC_DELREF(ref) == 0) {
++			ZVAL_UNDEF(zval_ptr);
++			return;
++		}
++	}
++	ZVAL_UNDEF(zval_ptr);
+@@ -94,0 +104 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
++

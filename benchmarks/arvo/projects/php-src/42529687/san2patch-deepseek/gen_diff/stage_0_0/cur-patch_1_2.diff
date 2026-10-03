@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..7d41e74ab1e 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1368,13 +1367,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_DELREF(Z_COUNTED_P(pz));
+-}
+-
+@@ -1398,0 +1386,14 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++	ZEND_ASSERT(pz != NULL);
++	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
++	return GC_DELREF(Z_COUNTED_P(pz));
++}#elif SIZEOF_SIZE_T == 8
++# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
++	do {												\
++		Z_COUNTED_P(z) = gc;							\
++		Z_TYPE_INFO_P(z) = t;							\
++	} while (0)
++#else
++# error "Unknown SIZEOF_SIZE_T"
++#endif
++

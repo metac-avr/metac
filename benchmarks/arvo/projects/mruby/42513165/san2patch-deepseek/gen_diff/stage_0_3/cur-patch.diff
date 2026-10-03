@@ -1,0 +1,18 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..c62b08695 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -990 +990,10 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  mpz_init_set_str(mrb, &b->mp, x, len, base);
++  if (len <= 0) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid string for number");
++  }
++  {
++    char *buf = (char *)mrb_malloc(mrb, len + 1);
++    memcpy(buf, x, len);
++    buf[len] = '\0';
++    mpz_init_set_str(mrb, &b->mp, buf, len, base);
++    mrb_free(mrb, buf);
++  }
+@@ -1000,0 +1010 @@ bint_norm(mrb_state *mrb, struct RBigint *b)
++

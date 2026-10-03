@@ -1,0 +1,121 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..ce3854a7 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1865,0 +1866,6 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
++while (1) {
++        if (elem && elem->psvi) {
++            ret &= xmlValidateOneElement(ctxt, doc, elem);
++        } else {
++            ret &= 0;
++        }
+@@ -1867,6 +1873,13 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-mem_error:
+-    xmlVErrMemory(ctxt);
+-    xmlFreeEnumeration(tree);
+-    xmlFreeAttribute(ret);
+-    return(NULL);
+-}
++        if (elem && elem->type == XML_ELEMENT_NODE) {
++            attr = elem->properties;
++            while (attr != NULL) {
++                value = xmlNodeListGetString(doc, attr->children, 0);
++                if (value == NULL) {
++                    xmlVErrMemory(ctxt);
++                    ret = 0;
++                } else {
++                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                    xmlFree((char *)value);
++                }
++                attr= attr->next;
++            }
+@@ -1874,4 +1887,11 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-static void
+-xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeAttribute((xmlAttributePtr) attr);
+-}
++            ns = elem->nsDef;
++            while (ns != NULL) {
++                if (elem->ns == NULL)
++                    ret &= xmlValidateOneNamespace(ctxt, doc, elem, NULL,
++                                                   ns, ns->href);
++                else
++                    ret &= xmlValidateOneNamespace(ctxt, doc, elem,
++                                                   elem->ns->prefix, ns,
++                                                   ns->href);
++                ns = ns->next;
++            }
+@@ -1879,9 +1899,15 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-/**
+- * xmlFreeAttributeTable:
+- * @table:  An attribute table
+- *
+- * Deallocate the memory used by an entities hash table.
+- */
+-void
+-xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++            if (elem->children != NULL) {
++                elem = elem->children;
++                continue;
++            }
++        }
++
++        while (1) {
++            if (elem == root)
++                goto done;
++            if (elem->next != NULL)
++                break;
++            elem = elem->parent;
++        }
++        elem = elem->next;
++    }    xmlHashFree(table, xmlFreeAttributeTableEntry);
+@@ -6214,44 +6240,4 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-    while (1) {
+-        ret &= xmlValidateOneElement(ctxt, doc, elem);
+-
+-        if (elem->type == XML_ELEMENT_NODE) {
+-            attr = elem->properties;
+-            while (attr != NULL) {
+-                value = xmlNodeListGetString(doc, attr->children, 0);
+-                if (value == NULL) {
+-                    xmlVErrMemory(ctxt);
+-                    ret = 0;
+-                } else {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
+-                    xmlFree((char *)value);
+-                }
+-                attr= attr->next;
+-            }
+-
+-            ns = elem->nsDef;
+-            while (ns != NULL) {
+-                if (elem->ns == NULL)
+-                    ret &= xmlValidateOneNamespace(ctxt, doc, elem, NULL,
+-                                                   ns, ns->href);
+-                else
+-                    ret &= xmlValidateOneNamespace(ctxt, doc, elem,
+-                                                   elem->ns->prefix, ns,
+-                                                   ns->href);
+-                ns = ns->next;
+-            }
+-
+-            if (elem->children != NULL) {
+-                elem = elem->children;
+-                continue;
+-            }
+-        }
+-
+-        while (1) {
+-            if (elem == root)
+-                goto done;
+-            if (elem->next != NULL)
+-                break;
+-            elem = elem->parent;
+-        }
+-        elem = elem->next;
+-    }
++    static void
++xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
++    xmlFreeAttribute((xmlAttributePtr) attr);
++}

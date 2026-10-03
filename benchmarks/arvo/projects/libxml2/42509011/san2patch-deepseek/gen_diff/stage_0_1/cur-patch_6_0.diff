@@ -1,0 +1,42 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..8b3f8f93 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1232,0 +1233,2 @@ xmlFreeDoc(xmlDocPtr cur) {
++     * and before walking the tree so that stale pointers are not
++     * followed while investigating attributes.
+@@ -1237,0 +1240,34 @@ xmlFreeDoc(xmlDocPtr cur) {
++
++    /*
++     * Walk the document tree before releasing children.  For every
++     * attribute, detach dictionary-owned atom strings from the
++     * attribute so that xmlFreeProp does not call free() on memory
++     * that belongs to the document dictionary.  The dictionary will
++     * release those strings when xmlDictFree is called below.
++     */
++    if ((dict != NULL) && (cur->children != NULL)) {
++        xmlNodePtr child;
++        for (child = cur->children; child != NULL; child = child->next) {
++            xmlAttrPtr attr;
++            if (child->type == XML_ELEMENT_NODE) {
++                for (attr = child->properties; attr != NULL; attr = attr->next) {
++                    const xmlChar *nameValue = xmlDictLookup(dict, attr->name, -1);
++                    const xmlChar *childrenValue = NULL;
++                    xmlNodePtr textChild;
++                    for (textChild = attr->children; textChild != NULL; textChild = textChild->next) {
++                        if (textChild->type == XML_TEXT_NODE) {
++                            childrenValue = xmlDictLookup(dict, textChild->content, -1);
++                            break;
++                        }
++                    }
++                    if (nameValue != NULL) {
++                        attr->name = nameValue;
++                    }
++                    if (childrenValue != NULL) {
++                        xmlFree(textChild);
++                    }
++                }
++            }
++        }
++    }
++

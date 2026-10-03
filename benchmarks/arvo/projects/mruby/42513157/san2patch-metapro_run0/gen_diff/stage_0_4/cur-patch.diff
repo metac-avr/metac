@@ -1,0 +1,14 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..6fb8c9b8d 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -500,2 +500,7 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    if (j%2)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
++    if (j%2) {
++      /* Safe arithmetic operation with overflow detection */
++      if (__builtin_add_overflow(q.p[j/2], (qhat << HALFDIGITBITS), &q.p[j/2])) {
++        /* Handle overflow by capping the value */
++        q.p[j/2] = UINT32_MAX;
++      }
++    }

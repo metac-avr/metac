@@ -1,0 +1,41 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index dcdde6966..704b679bf 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -7133 +7133,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", kind);
++		  if(sizeof(options_fp)-options_fp_len > 2) { /* Check buffer space before write */
++		    rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", kind);
+@@ -7135,2 +7136,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp)))
+-		    break;
++		    if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp)))
++		      break;
+@@ -7138 +7139,3 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  options_fp_len += rc;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		  options_fp_len += rc;
++		  } else break; /* Not enough space, exit loop */
+@@ -7140 +7143,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&fingerprint[fp_idx], sizeof(fingerprint)-fp_idx, "%s%u", (i > 0) ? "-" : "", kind);
++		  if(sizeof(fingerprint)-fp_idx > 10) { /* Check buffer space before write */
++		    rc = snprintf(&fingerprint[fp_idx], sizeof(fingerprint)-fp_idx, "%s%u", (i > 0) ? "-" : "", kind);
+@@ -7142,2 +7146,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(fp_idx + rc) == sizeof(fingerprint)))
+-		    break;
++		    if((rc < 0) || ((int)(fp_idx + rc) == sizeof(fingerprint)))
++		      break;
+@@ -7145 +7149,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  fp_idx += rc;
++		    fp_idx += rc;
++		  } else break; /* Not enough space, exit loop */
+@@ -7196,2 +7201,3 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-			rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", options[j]);
+-			if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp))) break;
++			if(sizeof(options_fp)-options_fp_len > 2) { /* Check buffer space before write */
++			  rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", options[j]);
++			  if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp))) break;
+@@ -7199 +7205,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-			options_fp_len += rc;
++			  options_fp_len += rc;
++			} else break; /* Not enough space, exit loop */

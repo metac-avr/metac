@@ -1,0 +1,28 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..ea98d77dc 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -164,0 +165,6 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  
++  /* Defensive programming: validate inputs before use */
++  if (room < 0) {
++    return; /* or handle error appropriately */
++  }
++  
+@@ -179,0 +186,6 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Prevent integer overflow that could lead to buffer overflow */
++  if (size > MRB_STACK_MAX || size < oldsize) {
++    mrb->c->stbase = oldbase; /* restore original base */
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
++
+@@ -515,2 +527,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++      if (argc > 0) {
++        if ((size_t)(argc) <= (size_t)(mrb->c->stend - (ci->stack + 1))) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "insufficient stack space");
++        }
++      }

@@ -1,0 +1,50 @@
+diff --git a/Zend/Optimizer/dfa_pass.c b/Zend/Optimizer/dfa_pass.c
+index 9eddbde3b71..e20d316392b 100644
+--- a/Zend/Optimizer/dfa_pass.c
++++ b/Zend/Optimizer/dfa_pass.c
+@@ -242 +242 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
+-			ZEND_ASSERT(op_array == &ctx->script->main_op_array);
++ 			ZEND_ASSERT(op_array == &ctx->script->main_op_array);
+@@ -244,2 +244,6 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
+-				*opline_num -= shiftlist[*opline_num];
+-				opline_num = &op_array->opcodes[*opline_num].result.opline_num;
++				if (*opline_num != (uint32_t)-1 && *opline_num < op_array->last) {
++					*opline_num -= shiftlist[*opline_num];
++					opline_num = &op_array->opcodes[*opline_num].result.opline_num;
++				} else {
++					break;
++				}
+@@ -1634 +1638 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
+-				opline->result.var = opline->op1.var;
++                opline->result.var = opline->op1.var;
+@@ -1636,2 +1640,2 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
+-			}
+-		}
++            }
++        }
+@@ -1640 +1644 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
+-		ssa_verify_integrity(op_array, ssa, "after dfa");
++        ssa_verify_integrity(op_array, ssa, "after dfa");
+@@ -1642,3 +1646,4 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
+-
+-		if (remove_nops) {
+-			zend_ssa_remove_nops(op_array, ssa, ctx);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
++        if (remove_nops && ssa && op_array) {
++            zend_ssa_remove_nops(op_array, ssa, ctx);
+@@ -1646 +1651 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
+-			ssa_verify_integrity(op_array, ssa, "after nop");
++            ssa_verify_integrity(op_array, ssa, "after nop");
+@@ -1648,2 +1653,2 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
+-		}
+-	}
++        }
++    }
+@@ -1651,3 +1656,3 @@ void zend_dfa_optimize_op_array(zend_op_array *op_array, zend_optimizer_ctx *ctx
+-	if (ctx->debug_level & ZEND_DUMP_AFTER_DFA_PASS) {
+-		zend_dump_op_array(op_array, ZEND_DUMP_SSA, "after dfa pass", ssa);
+-	}
++    if (ctx->debug_level & ZEND_DUMP_AFTER_DFA_PASS) {
++        zend_dump_op_array(op_array, ZEND_DUMP_SSA, "after dfa pass", ssa);
++    }

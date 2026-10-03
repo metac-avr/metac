@@ -1,0 +1,75 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..3ed4d565ee 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -280,0 +281 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++            int width_limit = linesize[i] / 2;
+@@ -282,2 +283,4 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step) {
++                    if (dest_pcm[i] + w < (uint16_t*)((uint8_t*)dest_pcm[i] + width_limit * sizeof(uint16_t)))
++                        dest_pcm[i][w] = src[idx];
++                }
+@@ -297,0 +301 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++            int width_limit = linesize[i] / 2;
+@@ -300,2 +304,4 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step) {
++                    if (dest_pcm[i] + w < (uint16_t*)((uint8_t*)dest_pcm[i] + width_limit * sizeof(uint16_t)))
++                        dest_pcm[i][w] = src[idx];
++                }
+diff --git a/libavcodec/h263dec.c b/libavcodec/h263dec.c
+index f4e7048a5f..6536b89d13 100644
+--- a/libavcodec/h263dec.c
++++ b/libavcodec/h263dec.c
+@@ -256,14 +256,22 @@ static int decode_slice(MpegEncContext *s)
+-                    ff_mpv_reconstruct_mb(s, s->block);
+-                    if (s->loop_filter)
+-                        ff_h263_loop_filter(s);
+-
+-                    ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
+-                                    s->mb_x, s->mb_y, ER_MB_END & part_mask);
+-
+-                    s->padding_bug_score--;
+-
+-                    if (++s->mb_x >= s->mb_width) {
+-                        s->mb_x = 0;
+-                        ff_mpeg_draw_horiz_band(s, s->mb_y * mb_size, mb_size);
+-                        ff_mpv_report_decode_progress(s);
+-                        s->mb_y++;
++                    // Ensure macroblock coordinates are within valid range before reconstruction
++                    if (s->mb_x >= 0 && s->mb_x < s->mb_width && 
++                        s->mb_y >= 0 && s->mb_y < ((s->avctx->height + 15) >> 4)) {
++                        ff_mpv_reconstruct_mb(s, s->block);
++                        if (s->loop_filter)
++                            ff_h263_loop_filter(s);
++
++                        ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
++                                        s->mb_x, s->mb_y, ER_MB_END & part_mask);
++
++                        s->padding_bug_score--;
++
++                        if (++s->mb_x >= s->mb_width) {
++                            s->mb_x = 0;
++                            ff_mpeg_draw_horiz_band(s, s->mb_y * mb_size, mb_size);
++                            ff_mpv_report_decode_progress(s);
++                            s->mb_y++;
++                        }
++                        return 0;
++                    } else {
++                        av_log(s->avctx, AV_LOG_ERROR, "Invalid macroblock position for reconstruction\n");
++                        return AVERROR_INVALIDDATA;
+@@ -271 +278,0 @@ static int decode_slice(MpegEncContext *s)
+-                    return 0;
+@@ -287 +294 @@ static int decode_slice(MpegEncContext *s)
+-            }
++             }
+@@ -288,0 +296,6 @@ static int decode_slice(MpegEncContext *s)
++            // Verify macroblock position is valid before reconstruction to prevent buffer overflow
++            if (!(s->mb_x >= 0 && s->mb_x < s->mb_width && 
++                  s->mb_y >= 0 && s->mb_y < ((s->avctx->height + 15) >> 4))) {
++                av_log(s->avctx, AV_LOG_ERROR, "Macroblock out of valid range for reconstruction\n");
++                return AVERROR_INVALIDDATA;
++            }

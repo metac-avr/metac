@@ -1,0 +1,23 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..af9d5a274 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -238 +238,2 @@ static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+@@ -239,0 +241,3 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++  if (mrb_immediate_p(v)) return 0;
++  if (mrb_nil_p(v)) return 0;
++  if (!mrb_ptr(v)) return 0;
+@@ -250,2 +254 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
+-void
+-mrb_gc_mark_gv(mrb_state *mrb)
++voidmrb_gc_mark_gv(mrb_state *mrb)
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..af6fef975 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1202,0 +1203,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      // Mark objects as dead before freeing to prevent use-after-free
++      mark_dead_objects(page);

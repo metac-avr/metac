@@ -1,0 +1,28 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..f379fa1e92 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -655,2 +655,9 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-            av_fifo_generic_write(fpc->fifo_buf, (void*) read_start,
+-                                  read_end - read_start, NULL);
++            /* Check bounds before copying data */
++            if (read_start >= buf && read_end >= read_start && 
++                read_end <= buf + buf_size) {
++                av_fifo_generic_write(fpc->fifo_buf, (void*) read_start,
++                                      read_end - read_start, NULL);
++            } else {
++                av_log(avctx, AV_LOG_WARNING, "Buffer boundary violation detected\n");
++                goto handle_error;
++            }
+@@ -664 +671 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-                       ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
++                        ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index d4e9276da1..ea799c9f68 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -404,0 +405,4 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++    // Check available bits before reading
++    if (n > re.bits_left && re.buffer_ptr >= re.buffer_end) {
++        return 0; // Return safe value instead of reading past buffer
++    }

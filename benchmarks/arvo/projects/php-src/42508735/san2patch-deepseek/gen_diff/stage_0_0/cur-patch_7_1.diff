@@ -1,0 +1,95 @@
+diff --git a/sapi/fuzzer/fuzzer-sapi.c b/sapi/fuzzer/fuzzer-sapi.c
+index a9d2ce89a8b..21c930d3967 100644
+--- a/sapi/fuzzer/fuzzer-sapi.c
++++ b/sapi/fuzzer/fuzzer-sapi.c
+@@ -246,0 +247 @@ int fuzzer_do_request_from_buffer(
++ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
+@@ -248 +249 @@ int fuzzer_do_request_from_buffer(
+-	int retval = FAILURE; /* failure by default */
++	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+@@ -250,6 +251,3 @@ int fuzzer_do_request_from_buffer(
+-	SG(options) |= SAPI_OPTION_NO_CHDIR;
+-	SG(request_info).argc=0;
+-	SG(request_info).argv=NULL;
+-
+-	if (fuzzer_request_startup() == FAILURE) {
+-		return FAILURE;
++	/* GC might have released this object already. */
++	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
++		return;
+@@ -258,23 +256,14 @@ int fuzzer_do_request_from_buffer(
+-	// Commented out to avoid leaking the header callback.
+-	//SG(headers_sent) = 1;
+-	//SG(request_info).no_headers = 1;
+-	php_register_variable("PHP_SELF", filename, NULL);
+-
+-	zend_first_try {
+-		zend_file_handle file_handle;
+-		zend_stream_init_filename(&file_handle, filename);
+-		file_handle.primary_script = 1;
+-		file_handle.buf = estrndup(data, data_len);
+-		file_handle.len = data_len;
+-		/* Avoid ZEND_HANDLE_FILENAME for opcache. */
+-		file_handle.type = ZEND_HANDLE_STREAM;
+-
+-		zend_op_array *op_array = zend_compile_file(&file_handle, ZEND_REQUIRE);
+-		zend_destroy_file_handle(&file_handle);
+-		if (op_array) {
+-			if (execute) {
+-				zend_execute(op_array, NULL);
+-			}
+-			zend_destroy_static_vars(op_array);
+-			destroy_op_array(op_array);
+-			efree(op_array);
++	/*	Make sure we hold a reference count during the destructor call
++		otherwise, when the destructor ends the storage might be freed
++		when the refcount reaches 0 a second time
++	 */
++	if (!(OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
++		GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
++
++		if (object->handlers->dtor_obj != zend_objects_destroy_object
++				|| object->ce->destructor) {
++			zend_fiber_switch_block();
++			GC_SET_REFCOUNT(object, 1);
++			object->handlers->dtor_obj(object);
++			GC_DELREF(object);
++			zend_fiber_switch_unblock();
+@@ -282,5 +270,0 @@ int fuzzer_do_request_from_buffer(
+-	} zend_end_try();
+-
+-	CG(compiled_filename) = NULL; /* ??? */
+-	if (before_shutdown) {
+-		before_shutdown();
+@@ -288 +271,0 @@ int fuzzer_do_request_from_buffer(
+-	fuzzer_request_shutdown();
+@@ -290 +273,17 @@ int fuzzer_do_request_from_buffer(
+-	return (retval == SUCCESS) ? SUCCESS : FAILURE;
++	if (GC_REFCOUNT(object) == 0) {
++		uint32_t handle = object->handle;
++		void *ptr;
++
++		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
++		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
++		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
++		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
++			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++			GC_SET_REFCOUNT(object, 1);
++			object->handlers->free_obj(object);
++		}
++		ptr = ((char*)object) - object->handlers->offset;
++		GC_REMOVE_FROM_BUFFER(object);
++		efree(ptr);
++		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++	}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..be5dc4a56c9 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -195,0 +196,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		if (EG(objects_store).destructors && zend_hash_index_exists(EG(objects_store).destructors, handle)) {
++			return;
++		}
+@@ -202 +205 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++ 		ptr = ((char*)object) - object->handlers->offset;

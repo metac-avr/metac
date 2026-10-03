@@ -1,0 +1,49 @@
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..d80294bbccb 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -216 +216,2 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		}
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		}
+@@ -218,2 +219,4 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-			zend_hash_index_update(ht, i, &intern->array.elements[i]);
+-			Z_TRY_ADDREF(intern->array.elements[i]);
++			if (i < intern->array.capacity) {
++				zend_hash_index_update(ht, i, &intern->array.elements[i]);
++				Z_TRY_ADDREF(intern->array.elements[i]);
++			}
+@@ -223 +226,3 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-				zend_hash_index_del(ht, i);
++				if (i < intern->array.capacity) {
++					zend_hash_index_del(ht, i);
++				}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..8b027817fb6 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -558,4 +558,4 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
+-#define IS_PTR						13
+-#define IS_ALIAS_PTR				14
+-#define _IS_ERROR					15
++#define IS_INDIRECT                                         12
++#define IS_PTR                                               13
++#define IS_ALIAS_PTR                                         14
++#define _IS_ERROR                                            15
+@@ -564,3 +564,4 @@ struct _zend_ast_ref {
+-#define _IS_BOOL					18
+-#define _IS_NUMBER					19
+-
++#define _IS_BOOL                                             18
++#define _IS_NUMBER                                           19
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -568 +569 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-	return pz->u1.v.type;
++	return pz ? pz->u1.v.type : IS_UNDEF;
+@@ -577,2 +578,2 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
++#define Z_TYPE(zval)                zval_get_type(&(zval))
++#define Z_TYPE_P(zval_p)            Z_TYPE(*(zval_p))

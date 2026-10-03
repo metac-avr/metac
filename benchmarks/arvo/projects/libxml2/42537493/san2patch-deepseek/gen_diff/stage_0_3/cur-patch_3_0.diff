@@ -1,0 +1,24 @@
+diff --git a/encoding.c b/encoding.c
+index 3d336fb1..bd447690 100644
+--- a/encoding.c
++++ b/encoding.c
+@@ -1923,4 +1923,13 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
+-    xmlFree(handler->name);
+-    if (handler->ctxtDtor != NULL) {
+-        handler->ctxtDtor(handler->inputCtxt);
+-        handler->ctxtDtor(handler->outputCtxt);
++    int flags = handler->flags;
++    xmlChar *name = handler->name;
++    void *inputCtxt = handler->inputCtxt;
++    void *outputCtxt = handler->outputCtxt;
++    xmlCharEncodingHandlerCtxtDtor ctxtDtor = handler->ctxtDtor;
++
++    xmlFree(name);
++    name = NULL;
++    if (ctxtDtor != NULL) {
++        ctxtDtor(inputCtxt);
++        inputCtxt = NULL;
++        ctxtDtor(outputCtxt);
++        outputCtxt = NULL;
+@@ -1928,0 +1938 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
++    handler = NULL;

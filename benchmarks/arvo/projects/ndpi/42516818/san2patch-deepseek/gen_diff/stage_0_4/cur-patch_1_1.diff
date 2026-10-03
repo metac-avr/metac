@@ -1,0 +1,29 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 34c6f5594..edc927b2c 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -734,22 +734,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-					     (u_int16_t)packet->http_method.len);
+-
+-    if((flow->http.method == NDPI_HTTP_METHOD_RPC_IN_DATA)
+-       || (flow->http.method == NDPI_HTTP_METHOD_RPC_OUT_DATA)) {
+-      ndpi_set_detected_protocol(ndpi_struct, flow, NDPI_PROTOCOL_RPC, flow->detected_protocol_stack[0], NDPI_CONFIDENCE_DPI);
+-      check_content_type_and_change_protocol(ndpi_struct, flow);
+-    }
+-  }
+-
+-  if(packet->server_line.ptr != NULL)
+-    ndpi_check_http_server(ndpi_struct, flow, (const char *)packet->server_line.ptr, packet->server_line.len);
+- 
+-  if(packet->user_agent_line.ptr != NULL && packet->user_agent_line.len != 0) {
+-    ret = http_process_user_agent(ndpi_struct, flow, packet->user_agent_line.ptr, packet->user_agent_line.len);
+-    /* TODO: Is it correct to avoid setting ua, host_name,... if we have a (Netflix) subclassification? */
+-    if(ret != 0)
+-      return;
+-  }
+-
+-  /* check for host line */
+-  if(packet->host_line.ptr != NULL) {
+-    u_int len;
++  if(packet->server_line.ptr != NULL && packet->server_line.len < sizeof(((struct ndpi_int_one_line_struct *)0)->ptr))
++    ndpi_check_http_server(ndpi_struct, flow, (const char *)packet->server_line.ptr, packet->server_line.len);    u_int len;

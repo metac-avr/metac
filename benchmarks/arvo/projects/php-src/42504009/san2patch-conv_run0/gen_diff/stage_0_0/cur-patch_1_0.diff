@@ -1,0 +1,47 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..ff9a15ef839 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1026 +1026,2 @@ static zend_never_inline void ZEND_FASTCALL add_function_array(zval *result, zva
+-static zend_always_inline zend_result add_function_fast(zval *result, zval *op1, zval *op2) /* {{{ */
++// Fixed: Validate zval pointers before type access to prevent use-after-free
++ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1, zval *op2) /* {{{ */
+@@ -1028 +1029,17 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-	zend_uchar type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));
++	zend_uchar type_pair;
++	
++	/* Check if pointers are valid before dereferencing */
++	if (UNEXPECTED(!op1 || !op2)) {
++		return FAILURE;
++	}
++	
++	/* Validate zval types before accessing them */
++	if (UNEXPECTED(Z_TYPE_P(op1) < IS_UNDEF || Z_TYPE_P(op1) > IS_REFERENCE)) {
++		return FAILURE;
++	}
++	
++	if (UNEXPECTED(Z_TYPE_P(op2) < IS_UNDEF || Z_TYPE_P(op2) > IS_REFERENCE)) {
++		return FAILURE;
++	}
++	
++	type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));
+@@ -1051,0 +1069,3 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
++	zval *safe_op1 = op1;
++	zval *safe_op2 = op2;
++
+@@ -1054 +1074,2 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (add_function_fast(result, op1, op2) == SUCCESS) {
++	
++	if (op1 && op2 && add_function_fast(result, op1, op2) == SUCCESS) {
+@@ -1061,4 +1082,4 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (UNEXPECTED(zendi_try_convert_scalar_to_number(op1, &op1_copy) == FAILURE)
+-			|| UNEXPECTED(zendi_try_convert_scalar_to_number(op2, &op2_copy) == FAILURE)) {
+-		zend_binop_error("+", op1, op2);
+-		if (result != op1) {
++	if (UNEXPECTED(zendi_try_convert_scalar_to_number(safe_op1, &op1_copy) == FAILURE)
++			|| UNEXPECTED(zendi_try_convert_scalar_to_number(safe_op2, &op2_copy) == FAILURE)) {
++		zend_binop_error("+", safe_op1, safe_op2);
++		if (result != safe_op1) {
+@@ -1070 +1091 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (result == op1) {
++	if (result == safe_op1) {

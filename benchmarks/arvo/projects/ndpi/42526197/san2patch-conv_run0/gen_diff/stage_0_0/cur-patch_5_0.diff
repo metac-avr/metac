@@ -1,0 +1,48 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..8e3d35208 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -294,2 +294,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	if(packet->content_disposition_line.ptr[attachment_len] == '\"') {
+-	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '\"') {
++	if(packet->content_disposition_line.ptr[attachment_len] == '"') {
++	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '"') {
+@@ -297,4 +297,7 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    flow->http.filename = ndpi_malloc(filename_len);
+-	    if(flow->http.filename != NULL) {
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++	    size_t max_len = packet->content_disposition_line.len - attachment_len - 1;
++	    if(filename_len > 0 && (size_t)filename_len <= max_len) {
++	      flow->http.filename = ndpi_malloc(filename_len);
++	      if(flow->http.filename != NULL) {
++	        strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
++	        flow->http.filename[filename_len-1] = '\0';
++	      }
+@@ -305 +308,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    flow->http.filename = ndpi_malloc(filename_len-1);
++	    size_t max_len = packet->content_disposition_line.len - attachment_len - 1;
++	    if(filename_len > 1 && (size_t)filename_len <= max_len) {
++	      flow->http.filename = ndpi_malloc(filename_len-1);
+@@ -307,2 +312,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    if(flow->http.filename != NULL) {
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
++	      if(flow->http.filename != NULL) {
++	        strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+@@ -310 +315,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      flow->http.filename[filename_len-2] = '\0';
++	        flow->http.filename[filename_len-2] = '\0';
++	      }
+@@ -316 +322,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	  flow->http.filename = ndpi_malloc(filename_len+1);
++	  size_t max_len = packet->content_disposition_line.len - attachment_len;
++	  if(filename_len >= 0 && (size_t)filename_len <= max_len) {
++	    flow->http.filename = ndpi_malloc(filename_len+1);
+@@ -318,3 +326,4 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	  if(flow->http.filename != NULL) {
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    if(flow->http.filename != NULL) {
++	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
++	      flow->http.filename[filename_len] = '\0';
++	    }

@@ -1,0 +1,60 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..7a0afd50 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2747,2 +2747 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-
+-    attr->atype = 0;
++attr->atype = 0;
+@@ -2768 +2767,50 @@ xmlGetID(xmlDocPtr doc, const xmlChar *ID) {
+-    if (doc == NULL) {
++    if (doc == NULL || ID == NULL)
++        return(NULL);
++
++    table = (xmlIDTablePtr) doc->ids;
++    if (table == NULL)
++        return(NULL);
++
++    id = (xmlIDPtr) xmlHashLookup(table, ID);
++    if (id == NULL)
++        return(NULL);
++
++    return(id->attr);
++}
++
++/**
++ * xmlRemoveID:
++ * @doc:  pointer to the document
++ * @attr:  pointer to the attribute
++ *
++ * Remove an ID from the document ID table.
++ *
++ * Returns 0 on success, -1 on failure.
++ */
++int
++xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    xmlIDTablePtr table;
++    xmlIDPtr id;
++
++    if (attr == NULL)
++        return(-1);
++
++    id = (xmlIDPtr) attr->id;
++    if (id == NULL)
++        return(-1);
++
++    if (doc == NULL)
++        return(-1);
++
++    table = (xmlIDTablePtr) doc->ids;
++    if (table == NULL)
++        return(-1);
++
++    if (id->attr == attr) {
++        attr->id = NULL;
++        xmlHashRemoveEntry(table, id->name, xmlFreeID);
++        return(0);
++    }
++
++    return(-1);
++}    if (doc == NULL) {

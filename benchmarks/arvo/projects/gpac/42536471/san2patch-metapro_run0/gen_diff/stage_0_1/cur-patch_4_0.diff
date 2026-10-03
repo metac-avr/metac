@@ -1,0 +1,20 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index dca7f4da1..c1f853b7b 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -1164,4 +1164,11 @@ static GF_Err gsfdmx_demux(GF_Filter *filter, GSF_DemuxCtx *ctx, char *data, u32
+-						if (!pck_frag) {
+-							gf_bs_reassign_buffer(ctx->bs_pck, ctx->buffer + cur_pos, pck_len);
+-							e = gsfdmx_read_data_pck(ctx, gst, gpck, pck_len, full_pck, ctx->bs_pck);
+-	 						append = GF_FALSE;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 						if (!pck_frag) {
++							// Check if ctx->bs_pck is valid before using it
++							if (ctx->bs_pck != NULL) {
++								gf_bs_reassign_buffer(ctx->bs_pck, ctx->buffer + cur_pos, pck_len);
++								e = gsfdmx_read_data_pck(ctx, gst, gpck, pck_len, full_pck, ctx->bs_pck);
++							} else {
++								// Skip operation if pointer is expired/invalid
++								e = GF_BAD_PARAM;
++							}
++							append = GF_FALSE;

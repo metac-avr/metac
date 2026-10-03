@@ -1,0 +1,101 @@
+diff --git a/src/lib/protocols/dns.c b/src/lib/protocols/dns.c
+index a0942badc..2826318cd 100644
+--- a/src/lib/protocols/dns.c
++++ b/src/lib/protocols/dns.c
+@@ -293,2 +293,2 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	for(num = 0; num < dns_header->num_answers; num++) {
+-	  u_int16_t data_len;
++	        for(num = 0; num < dns_header->num_answers; num++) {
++      u_int16_t data_len;
+@@ -296,3 +296,3 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	  if((x+6) >= packet->payload_packet_len) {
+-	    break;
+-	  }
++      if((x+6) >= packet->payload_packet_len) {
++        break;
++      }
+@@ -300,5 +300,5 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	  if((data_len = getNameLength(x, packet->payload,
+-				       packet->payload_packet_len)) == 0) {
+-	    break;
+-	  } else
+-	    x += data_len;
++      if((data_len = getNameLength(x, packet->payload,
++                                   packet->payload_packet_len)) == 0) {
++        break;
++      } else
++        x += data_len;
+@@ -306,3 +306,3 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	  if((x+2) >= packet->payload_packet_len) {
+-	    break;
+-	  }
++      if((x+2) >= packet->payload_packet_len) {
++        break;
++      }
+@@ -310,2 +310,5 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	  rsp_type = get16(&x, packet->payload);
+-	  rsp_ttl  = ntohl(*((u_int32_t*)&packet->payload[x+2]));
++      rsp_type = get16(&x, packet->payload);
++      if((x+6) > packet->payload_packet_len) {
++        break;
++      }
++      rsp_ttl  = ntohl(*((u_int32_t*)&packet->payload[x+2]));
+@@ -313,2 +316,2 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	  if(rsp_ttl == 0)
+-	    ndpi_set_risk(ndpi_struct, flow, NDPI_DNS_SUSPICIOUS_TRAFFIC, "DNS Record with zero TTL");	  
++      if(rsp_ttl == 0)
++        ndpi_set_risk(ndpi_struct, flow, NDPI_DNS_SUSPICIOUS_TRAFFIC, "DNS Record with zero TTL");
+@@ -317,2 +320,2 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	  printf("[DNS] TTL = %u\n", rsp_ttl);
+-	  printf("[DNS] [response] response_type=%d\n", rsp_type);
++      printf("[DNS] TTL = %u\n", rsp_ttl);
++      printf("[DNS] [response] response_type=%d\n", rsp_type);
+@@ -321 +324 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	  ndpi_check_dns_type(ndpi_struct, flow, rsp_type);
++      ndpi_check_dns_type(ndpi_struct, flow, rsp_type);
+@@ -323 +326 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	  flow->protos.dns.rsp_type = rsp_type;
++      flow->protos.dns.rsp_type = rsp_type;
+@@ -325,4 +328,4 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	  /* here x points to the response "class" field */
+-	  if((x+12) <= packet->payload_packet_len) {
+-	    x += 6;
+-	    data_len = get16(&x, packet->payload);
++      /* here x points to the response "class" field */
++      if((x+12) <= packet->payload_packet_len) {
++        x += 6;
++        data_len = get16(&x, packet->payload);
+@@ -330,2 +333,2 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	    if((x + data_len) <= packet->payload_packet_len) {
+-	      // printf("[rsp_type: %u][data_len: %u]\n", rsp_type, data_len);
++        if((x + data_len) <= packet->payload_packet_len) {
++          // printf("[rsp_type: %u][data_len: %u]\n", rsp_type, data_len);
+@@ -333,4 +336,4 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	      if(rsp_type == 0x05 /* CNAME */) {
+-		x += data_len;
+-		continue; /* Skip CNAME */
+-	      }
++          if(rsp_type == 0x05 /* CNAME */) {
++        x += data_len;
++        continue; /* Skip CNAME, continue loop is valid here inside for loop */
++          }
+@@ -338,7 +341,7 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	      if((((rsp_type == 0x1) && (data_len == 4)) /* A */
+-		  || ((rsp_type == 0x1c) && (data_len == 16)) /* AAAA */
+-		  )) {
+-		memcpy(&flow->protos.dns.rsp_addr, packet->payload + x, data_len);
+-	      }
+-	    }
+-	  }
++          if((((rsp_type == 0x1) && (data_len == 4)) /* A */
++          || ((rsp_type == 0x1c) && (data_len == 16)) /* AAAA */
++          )) {
++        memcpy(&flow->protos.dns.rsp_addr, packet->payload + x, data_len);
++          }
++        }
++      }
+@@ -346,2 +349,2 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
+-	  break;
+-	}
++      break;
++    }

@@ -1,0 +1,44 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..156cc98b 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1159,0 +1160 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		// Fixed CWE-416: Use After Free - Added comprehensive pointer validation
+@@ -1178,0 +1180,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			    /* Validate node before accessing its properties */
++			    if (cur == NULL || cur->type == XML_NULL_NODE) break;
+@@ -1188,0 +1192 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++				    if (tmp == NULL) break; /* Handle allocation failure */
+@@ -1192,0 +1197 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++					if (last == NULL) break; /* Handle insertion failure */
+@@ -1193,0 +1199,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++				    /* Validate cur before next iteration */
++				    if (cur == NULL) break;
+@@ -1214,9 +1221,12 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		/* Final safety check before copying node */
++		if (set->nodeTab[i] != NULL) {
++		    if (last == NULL)
++			list = last = xmlXIncludeCopyNode(ctxt, target, source,
++				                              set->nodeTab[i]);
++		    else {
++			xmlAddNextSibling(last,
++				xmlXIncludeCopyNode(ctxt, target, source,
++					                set->nodeTab[i]));
++			if (last != NULL && last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2275 +2285,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-416: Use After Free
++          */
+@@ -2277,0 +2289 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	cur = NULL; /* Prevent use-after-free */

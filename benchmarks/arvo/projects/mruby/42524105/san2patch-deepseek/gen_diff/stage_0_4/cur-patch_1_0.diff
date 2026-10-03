@@ -1,0 +1,18 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..2bcd1d523 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1685 +1685 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-    hval ^= (uint32_t)*s++;
++  hval ^= (uint32_t)*s++;
+@@ -1693 +1693,2 @@ uint32_t
+-mrb_byte_hash(const uint8_t *s, mrb_int len)
++// FIXME: Crash CWE-416: Use After Free
++ mrb_byte_hash(const uint8_t *s, mrb_int len)
+@@ -1695 +1696,5 @@ mrb_byte_hash(const uint8_t *s, mrb_int len)
+-  return mrb_byte_hash_step(s, len, FNV1_32_INIT);
++  uint32_t hval = FNV1_32_INIT;
++  for (mrb_int i = 0; i < len; i++) {
++    hval = (hval ^ s[i]) * FNV1_32_PRIME;
++  }
++  return hval;

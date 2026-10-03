@@ -1,0 +1,30 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..59e3d744 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -425 +425,4 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     */
++// FIXME: Crash CWE-416: Use After Free
++      */
++    if (ctxt->input == NULL)
++        return(0);
+@@ -426,0 +430,2 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++    if (cur == NULL)
++        return(0);
+@@ -437,2 +442 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-            goto encoding_error;
+-        if ((c & 0xe0) == 0xe0) {
++            goto encoding_error;        if ((c & 0xe0) == 0xe0) {
+@@ -3457 +3461,2 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
+-	    (r != '-') || (q != '-'))) {
++// FIXME: Crash CWE-416: Use After Free
++ 	    (r != '-') || (q != '-'))) {
+@@ -3478,0 +3484,8 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++	    
++	    if (ctxt->input == NULL || ctxt->input->cur == NULL) {
++	        htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++			     "Buffer corruption after realloc", NULL, NULL);
++	        xmlFree(buf);
++	        ctxt->instate = state;
++	        return;
++	    }

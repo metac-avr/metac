@@ -1,0 +1,48 @@
+diff --git a/tree.c b/tree.c
+index e4425f10..2f7b75d9 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3800,2 +3800,8 @@ xmlFreeNode(xmlNodePtr cur) {
+-	DICT_FREE(ent->SystemID);
+-	DICT_FREE(ent->ExternalID);
++	if (ent->SystemID != NULL) {
++	    if ((dict == NULL) || (!xmlDictOwns(dict, ent->SystemID)))
++	        xmlFree((char *)ent->SystemID);
++	}
++	if (ent->ExternalID != NULL) {
++	    if ((dict == NULL) || (!xmlDictOwns(dict, ent->ExternalID)))
++	        xmlFree((char *)ent->ExternalID);
++	}
+@@ -3803 +3809 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->children != NULL) &&
++     if ((cur->children != NULL) &&
+@@ -3817 +3823,2 @@ xmlFreeNode(xmlNodePtr cur) {
+-	DICT_FREE(cur->content)
++	if ((dict == NULL) || (!xmlDictOwns(dict, cur->content)))
++	    xmlFree((char *)cur->content);
+@@ -3827,2 +3834,4 @@ xmlFreeNode(xmlNodePtr cur) {
+-        (cur->type != XML_COMMENT_NODE))
+-	DICT_FREE(cur->name)
++        (cur->type != XML_COMMENT_NODE)) {
++	if ((dict == NULL) || (!xmlDictOwns(dict, cur->name)))
++	    xmlFree((char *)cur->name);
++    }
+diff --git a/parser.c b/parser.c
+index c3068cad..58bab8cf 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7185,2 +7185,8 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-	    ctxt->depth++;
+-	    ret = xmlParseExternalEntityPrivate(ctxt->myDoc, ctxt, ctxt->sax,
++	    /* Check if ExternalID/SystemID are from dictionary before processing */
++	    if ((ent->ExternalID != NULL) && 
++	        (xmlDictOwns(ctxt->dict, ent->ExternalID))) {
++	        /* Skip external entity processing that would cause bad free */
++	        ret = XML_ERR_OK;
++	    } else {
++	        ctxt->depth++;
++	        ret = xmlParseExternalEntityPrivate(ctxt->myDoc, ctxt, ctxt->sax,
+@@ -7189 +7195,2 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-	    ctxt->depth--;
++	        ctxt->depth--;
++	    }

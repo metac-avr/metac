@@ -1,0 +1,29 @@
+diff --git a/src/utils/error.c b/src/utils/error.c
+index 957e7dc9b..48b4c9668 100644
+--- a/src/utils/error.c
++++ b/src/utils/error.c
+@@ -2187 +2187,2 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-       //basically a memmem clone (we don't use for portability reasons)
++        // Fixed: Proper bounds checking before memchr call
++        u32 remaining = data_size;
+@@ -2189 +2190,4 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-               char *next = memchr(data, pat[0], data_size);
++               if (remaining < len_pat) return NULL;
++               // Ensure search length doesn't exceed remaining data
++               u32 search_len = remaining;
++               char *next = memchr(data, pat[0], search_len);
+@@ -2191 +2195,4 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-               u32 left = data_size - (u32) (next-data);
++               u32 offset = (u32) (next-data);
++               // Verify offset is within bounds
++               if (offset >= remaining) return NULL;
++               u32 left = remaining - offset;
+@@ -2194,3 +2201,5 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-               //left is always at least 1
+-               data_size = left-1;
+-               data = next+1;
++               // Advance data pointer safely
++               u32 step = offset + 1;
++               if (step >= remaining) return NULL;
++               data += step;
++               remaining -= step;

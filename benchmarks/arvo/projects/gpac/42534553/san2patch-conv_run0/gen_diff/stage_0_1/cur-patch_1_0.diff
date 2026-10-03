@@ -1,0 +1,23 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..c9519fc4e 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -1236,2 +1236 @@ GF_Err gf_netcap_setup(char *rules)
+-
+-	GF_NetcapFilter *nf = gf_net_filter_get(id);
++GF_NetcapFilter *nf = gf_net_filter_get(id);
+@@ -1257 +1256 @@ GF_Err gf_netcap_setup(char *rules)
+-	nf->rt = cap_rt;
++	if (nf) nf->valid = 1;	nf->rt = cap_rt;
+@@ -1482,3 +1481,8 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		else
+-			gf_netcap_load_pck_pcap(nf);
+-
++		else {
++			// Validate capture buffer before use to prevent use-after-free
++			if (nf->cap_bs != NULL)
++				gf_netcap_load_pck_pcap(nf);
++			else
++				return;
++		}
++ 

@@ -1,0 +1,30 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..6c536f81b 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -179,0 +180,5 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Check for integer overflow before multiplication */
++  if (size > SIZE_MAX / sizeof(mrb_value)) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
++
+@@ -480,0 +486,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    // Add bounds checking before stack extension
++    if (argc > MRB_INT_MAX - 3) {
++      mrb_raise(mrb, E_RUNTIME_ERROR, "too many arguments");
++    }
+@@ -506,0 +517,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++        // Add bounds checking for proc stack extension
++        if (p->body.irep && p->body.irep->nregs > MRB_INT_MAX - argc) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow");
++        }
+@@ -515 +529,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++      if (argc > 0) {
++        // Add bounds checking before stack copy
++        if (ci->stack + 1 + argc > mrb->c->stend) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow during copy");
++        }
+@@ -516,0 +535 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      }

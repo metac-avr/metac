@@ -1,0 +1,40 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..e55a88be2 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -1791,10 +1791,11 @@ mrb_method_search_vm(mrb_state *mrb, struct RClass **cp, mrb_sym mid)
+-        *cp = c;
+-        if (ret & MT_FUNC_P) {
+-          MRB_METHOD_FROM_FUNC(m, ptr.func);
+-        }
+-        else {
+-          MRB_METHOD_FROM_PROC(m, ptr.proc);
+-        }
+-        if (ret & MT_NOARG_P) {
+-          MRB_METHOD_NOARG_SET(m);
+-        }
++        if (!mrb_object_dead_p(mrb, (struct RBasic*)ptr.proc)) {
++          *cp = c;
++          if (ret & MT_FUNC_P) {
++            MRB_METHOD_FROM_FUNC(m, ptr.func);
++          }
++          else {
++            MRB_METHOD_FROM_PROC(m, ptr.proc);
++          }
++          if (ret & MT_NOARG_P) {
++            MRB_METHOD_NOARG_SET(m);
++          }
+@@ -1802,4 +1803,4 @@ mrb_method_search_vm(mrb_state *mrb, struct RClass **cp, mrb_sym mid)
+-        mc->c = oc;
+-        mc->c0 = c;
+-        mc->mid = mid;
+-        mc->m = m;
++          mc->c = oc;
++          mc->c0 = c;
++          mc->mid = mid;
++          mc->m = m;
+@@ -1807 +1808,3 @@ mrb_method_search_vm(mrb_state *mrb, struct RClass **cp, mrb_sym mid)
+-        return m;
++          return m;
++        }
++        break;

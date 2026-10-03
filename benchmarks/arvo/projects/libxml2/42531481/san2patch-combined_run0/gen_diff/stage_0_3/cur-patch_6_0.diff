@@ -1,0 +1,35 @@
+diff --git a/parser.c b/parser.c
+index cae2b7fd..39efc908 100644
+--- a/parser.c
++++ b/parser.c
+@@ -11625,0 +11626 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
++// FIXME: Crash CWE-416: Use After Free
+@@ -11628 +11629,16 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
+-		    xmlParseReference(ctxt);
++		    /* Validate namespace pointers before parsing reference */
++		    if (ctxt->node && ctxt->node->nsDef) {
++		        xmlNsPtr ns = ctxt->node->nsDef;
++		        while (ns != NULL) {
++		            if (ns->_private == NULL) {
++		                /* Namespace has been freed, skip reference parsing */
++		                break;
++		            }
++		            ns = ns->next;
++		        }
++		        if (ns == NULL) {
++		            xmlParseReference(ctxt);
++		        }
++		    } else {
++		        xmlParseReference(ctxt);
++		    }
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..273bcc32 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -403,2 +403,4 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Clear nsDef pointer to prevent use-after-free */
++        cur->nsDef = NULL;
++    }

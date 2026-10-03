@@ -1,0 +1,71 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..b8a3561e 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3936 +3936 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      int res;
++      xmlNodePtr root = target;
+@@ -3938,11 +3938,8 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      res = xmlSearchNsSafe(target, cur->ns->prefix, &ns);
+-      if (res < 0)
+-          goto error;
+-      if (ns == NULL) {
+-        /*
+-         * Humm, we are copying an element whose namespace is defined
+-         * out of the new tree scope. Search it in the original tree
+-         * and add it at the top of the new tree
+-         */
+-        res = xmlSearchNsSafe(cur->parent, cur->ns->prefix, &ns);
+-        if (res < 0)
++      while (root->parent != NULL)
++          root = root->parent;
++      if (root == (xmlNodePtr) target->doc)
++          root = target;
++
++      if ((cur->parent == NULL) ||
++          (xmlSearchNsSafe(root, cur->ns->prefix, NULL) < 0)) {
++          ret->ns = NULL;
+@@ -3950,3 +3947 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-        if (ns != NULL) {
+-          xmlNodePtr root = target;
+-          xmlNodePtr pred = NULL;
++      }
+@@ -3954,7 +3949,5 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          while (root->parent != NULL) {
+-            pred = root;
+-            root = root->parent;
+-          }
+-          if (root == (xmlNodePtr) target->doc) {
+-            /* correct possibly cycling above the document elt */
+-            root = pred;
++      if (cur->ns->prefix != NULL) {
++          ns = xmlSearchNs(root, cur->ns->prefix);
++          if (ns == cur->ns) {
++              ret->ns = ns;
++              goto done;
+@@ -3962,22 +3954,0 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-          if (ret->ns == NULL)
+-              goto error;
+-        }
+-      } else {
+-        /*
+-         * we have to find something appropriate here since
+-         * we can't be sure, that the namespace we found is identified
+-         * by the prefix
+-         */
+-        if (xmlStrEqual(ns->href, cur->ns->href)) {
+-          /* this is the nice case */
+-          ret->ns = ns;
+-        } else {
+-          /*
+-           * we are in trouble: we need a new reconciled namespace.
+-           * This is expensive
+-           */
+-          ret->ns = xmlNewReconciledNs(target, cur->ns);
+-          if (ret->ns == NULL)
+-              goto error;
+-        }
+@@ -3985,0 +3957,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
++      ret->ns = NULL;
++

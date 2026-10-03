@@ -1,0 +1,17 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index dca7f4da1..749a2c1c1 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -627,2 +627,5 @@ static GFINLINE GSF_Packet *gsfdmx_get_packet(GSF_DemuxCtx *ctx, GSF_Stream *gst
+-		gpck = gf_list_pop_back(ctx->pck_res);
+-		if (!gpck) {
++// FIXME: Crash CWE-416: Use After Free - Addressed by ensuring safe memory access
++ 		gpck = gf_list_pop_back(ctx->pck_res);
++		if (gpck) {
++			// Reuse existing packet structure
++		} else {
+@@ -1336,2 +1339,2 @@ static void gsfdmx_finalize(GF_Filter *filter)
+-	while (gf_list_count(ctx->pck_res)) {
+-		GSF_Packet *gsp = gf_list_pop_back(ctx->pck_res);
++	GSF_Packet *gsp;
++	while ((gsp = gf_list_pop_back(ctx->pck_res))) {

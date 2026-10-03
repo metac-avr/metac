@@ -1,0 +1,28 @@
+diff --git a/parser.c b/parser.c
+index c3068cad..1faaebfa 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7195,0 +7196,5 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++	/* Track node list allocation source to prevent invalid pointer release */
++	if (list != NULL) {
++	    xmlSetNodeAllocationFlag(list, XML_NODE_ALLOCATED_EXTERNALLY);
++	}
++
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 7b44bf60..f50e862e 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -10636,0 +10637,4 @@ xmlSchemaAddSchemaDoc(xmlSchemaParserCtxtPtr pctxt,
++	/* Fix: Clear node list references before parsing to prevent invalid pointer issues */
++	parserCtxt->node_seq.maximum = 0;
++	parserCtxt->node_seq.length = 0;
++	parserCtxt->node_seq.buffer = NULL;
+@@ -10646,2 +10650,6 @@ xmlSchemaAddSchemaDoc(xmlSchemaParserCtxtPtr pctxt,
+-	    if (doc != NULL)
+-		doc->URL = xmlStrdup(schemaLocation);
++	    if (doc != NULL) {
++	        if (doc->URL != NULL) {
++	            xmlFree((char*)doc->URL);
++	        }
++	        doc->URL = (char*)xmlStrdup(schemaLocation);
++	    }

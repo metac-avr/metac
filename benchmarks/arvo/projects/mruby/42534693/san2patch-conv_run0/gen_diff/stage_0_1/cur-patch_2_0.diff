@@ -1,0 +1,23 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..1cf8528b4 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -164,0 +165,16 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++#ifndef __has_feature
++  #define __has_feature(x) 0
++#endif
++#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
++extern void __asan_poison_memory_region(void const volatile *addr, size_t size);
++extern int __asan_address_is_poisoned(void const volatile *addr);
++#define DEFINE_INCREMENTER(ht, field) \
++  do { \
++    if (hsh.ht != NULL && !__asan_address_is_poisoned(&hsh.ht->field)) { \
++      hsh.ht->field++; \
++    } \
++  } while(0)
++#else
++DEFINE_INCREMENTER(ht, size)
++#endif
+@@ -177 +192,0 @@ DEFINE_SWITCHER(ht, HT)
+-

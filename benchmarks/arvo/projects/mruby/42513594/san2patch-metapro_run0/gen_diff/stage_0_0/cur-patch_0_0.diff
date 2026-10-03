@@ -1,0 +1,22 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..7ccedbfb8 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -114 +114 @@ stack_init(mrb_state *mrb)
+-
++ 
+@@ -117,0 +118,5 @@ stack_init(mrb_state *mrb)
++  
++  // Add bounds check to prevent out-of-bounds writes
++  if (c->stend <= c->stbase) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "Stack initialization failed");
++  }
+@@ -1707 +1712,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1755,0 +1762,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Bounds check before writing to stack */
++        if (ci->stack + 0 >= mrb->c->stend) {
++          mrb_stack_extend(mrb, mrb->c->stend - mrb->c->stbase + 1);
++        }

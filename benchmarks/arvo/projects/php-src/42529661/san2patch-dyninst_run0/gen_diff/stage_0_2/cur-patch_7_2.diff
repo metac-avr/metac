@@ -1,0 +1,35 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..2b283c7b331 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2494,0 +2495,6 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Reference count check to prevent use-after-free in JIT traces */
++		if (ht->u.flags & HASH_FLAG_JIT_TRACE_ACTIVE) {
++			/* Increment deferred reference count instead of freeing */
++			ht->u.flags |= HASH_FLAG_JIT_PENDING_FREE;
++			return;
++		}
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..9f5d3b7832a 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -1509,0 +1510,4 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
++			if (opline == NULL || zend_jit_is_expired_pointer(opline)) {  // Check for expired pointers
++				p->op = ZEND_JIT_TRACE_END;  // Terminate trace to avoid dereferencing expired pointer
++				break;
++			}
+@@ -1515 +1519,5 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-				opline++;
++ 				opline++;
++				if (opline == NULL || zend_jit_is_expired_pointer(opline)) {  // Check for expired pointers
++					p->op = ZEND_JIT_TRACE_END;  // Terminate trace to avoid dereferencing expired pointer
++					break;
++				}
+@@ -1526,0 +1535,3 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
++			if (op_array == NULL || zend_jit_is_expired_pointer(op_array)) {  // Check for expired pointers
++				return NULL;
++			}
+@@ -1536,0 +1548,3 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
++			if (op_array == NULL || zend_jit_is_expired_pointer(op_array)) {  // Check for expired pointers
++				return NULL;
++			}

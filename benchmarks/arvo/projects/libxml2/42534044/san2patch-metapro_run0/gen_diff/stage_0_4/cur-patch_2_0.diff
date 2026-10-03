@@ -1,0 +1,22 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..aab248db 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -640,0 +641,9 @@ dropNode(xmlNodePtr node) {
++        /*
++         * Prevent use-after-free by checking node validity
++         */
++        if (other->_private != NULL) {
++            /* Check if node has been marked as invalid */
++            if (*((int*)other->_private) == -1)
++                continue;
++        }
++        
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..8cbae0cf 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3635,0 +3636,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Zero out the entire node structure to prevent use-after-free */
++	    memset(cur, 0, sizeof(xmlNode));

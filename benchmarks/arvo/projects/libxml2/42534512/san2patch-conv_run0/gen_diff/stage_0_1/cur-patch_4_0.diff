@@ -1,0 +1,25 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..35e7a632 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3609,0 +3610,15 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    /* Ensure node is properly detached before freeing to prevent use-after-free */
++	    if (cur->parent != NULL) {
++	        if (cur->parent->children == cur)
++	            cur->parent->children = cur->next;
++	        else if (cur->parent->last == cur)
++	            cur->parent->last = cur->prev;
++	    }
++	    if (cur->prev != NULL)
++	        cur->prev->next = cur->next;
++	    if (cur->next != NULL)
++	        cur->next->prev = cur->prev;
++	    cur->parent = NULL;
++	    cur->next = NULL;
++	    cur->prev = NULL;
++
+@@ -6855 +6870 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (res < 0)
++        if (res < 0) {
+@@ -6856,0 +6872 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
++        }

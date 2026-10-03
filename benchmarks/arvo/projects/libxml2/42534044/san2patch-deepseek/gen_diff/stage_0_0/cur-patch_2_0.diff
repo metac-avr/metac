@@ -1,0 +1,22 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..e7b4a284 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6867,0 +6868 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++        xmlNodePtr oldchildren = NULL;
+@@ -6881,3 +6882,9 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	}
+-	if (prop->children != NULL)
+-	    xmlFreeNodeList(prop->children);
++// FIXME: Crash CWE-416: Use After Free
++ 	}
++	oldchildren = prop->children;
++	if (oldchildren != NULL) {
++            xmlNodePtr tmp;
++
++            for (tmp = oldchildren; tmp != NULL; tmp = tmp->next)
++                tmp->parent = NULL;
++        }
+@@ -6899,0 +6907,2 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++	if (oldchildren != NULL)
++	    xmlFreeNodeList(oldchildren);

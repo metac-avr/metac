@@ -1,0 +1,37 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..e1cf99141bd 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7865 +7865 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
++if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+@@ -7875 +7875,4 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-		return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
++		/* Check if trace and exit numbers are valid to prevent use-after-free */
++		if (trace_num >= 0 && exit_num >= 0) {
++			return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
++		}
+@@ -7879,8 +7882 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	return (orig_opline == t->opline && EX(opline) == orig_opline);
+-}
+-
+-static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline)
+-{
+-	switch (opline->opcode) {
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++	return (orig_opline == t->opline && EX(opline) == orig_opline);		case ZEND_FAST_CALL:
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..4e91d55916d 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *check_ptr = EX_VAR(opline->op1.var);
++		if (check_ptr != NULL && !Z_ISREF_P(check_ptr)) {
++			zval_ptr_dtor_nogc(check_ptr);
++		}
++	} else {
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+@@ -29957 +29961,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));

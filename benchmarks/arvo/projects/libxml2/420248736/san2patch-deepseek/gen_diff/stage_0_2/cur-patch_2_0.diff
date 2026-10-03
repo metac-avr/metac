@@ -1,0 +1,37 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4..49644d7e 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -2587,0 +2588 @@ LLVMFuzzerTestOneInput(const char *data, size_t size) {
++                xmlNodePtr oldNode;
+@@ -2589,0 +2591 @@ LLVMFuzzerTestOneInput(const char *data, size_t size) {
++                oldNode = getNode(0);
+@@ -2597,3 +2599,10 @@ LLVMFuzzerTestOneInput(const char *data, size_t size) {
+-                if (decl != NULL)
+-                    oomReport = 0;
+-                setNode(0, (xmlNodePtr) decl);
++                if (decl != NULL) {
++                    if (oldNode != (xmlNodePtr) decl) {
++                        setNode(0, (xmlNodePtr) decl);
++                        oomReport = 0;
++                    } else {
++                        setNode(0, NULL);
++                    }
++                } else {
++                    setNode(0, NULL);
++                }
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..e448d494 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1173 +1173,2 @@ xmlAddElementDecl(xmlValidCtxt *ctxt,
+-        int res;
++// FIXME: Crash CWE-416: Use After Free
++         int res;
+@@ -1197,0 +1199,6 @@ xmlAddElementDecl(xmlValidCtxt *ctxt,
++	    if (res == 0) {
++	        xmlElementPtr old = (xmlElementPtr) xmlHashLookup2(table, localName, ret->prefix);
++	        if (old != NULL) {
++	            xmlFreeElement(old);
++	        }
++	    }

@@ -1,0 +1,29 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..24629ce2 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3696,0 +3697,2 @@ xmlFreeNode(xmlNodePtr cur) {
++        xmlNsPtr nsDef = cur->nsDef;  /* Save namespace list */
++        cur->nsDef = NULL;  /* Prevent dangling pointer access */
+@@ -3698,3 +3700,3 @@ xmlFreeNode(xmlNodePtr cur) {
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
+-            xmlFreeNsList(cur->nsDef);
++             xmlFreePropList(cur->properties);
++        if (nsDef != NULL)
++            xmlFreeNsList(nsDef);  /* Free saved namespace list */
+@@ -8452,2 +8454,2 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * Handle XML namespace.
+-    */
++     * Handle XML namespace.
++     */
+@@ -8464,2 +8466,7 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * If the search should be done in ancestors only and no
+-    * @elem (the first ancestor) was specified, then skip the search.
++     * Check if namespace is valid to prevent use-after-free
++     */
++    if (ns->href == NULL && ns->prefix == NULL) {
++        return (-1);
++    }
++    /*
++    * If the search should be done in ancestors only and no    * @elem (the first ancestor) was specified, then skip the search.

@@ -1,0 +1,32 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..e4edd5338 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -91,7 +90,0 @@ stack_clear(mrb_value *from, size_t count)
+-{
+-  while (count-- > 0) {
+-    SET_NIL_VALUE(*from);
+-    from++;
+-  }
+-}
+-
+@@ -99 +92,2 @@ static inline void
+-stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
++// FIXME: Crash CWE-416: Use After Free
++ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+@@ -101 +95,3 @@ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+-  memcpy(dst, src, sizeof(mrb_value)*size);
++  while (size-- > 0) {
++    *dst++ = *src++;
++  }
+@@ -103,10 +98,0 @@ stack_copy(mrb_value *dst, const mrb_value *src, size_t size)
+-
+-static void
+-stack_init(mrb_state *mrb)
+-{
+-  struct mrb_context *c = mrb->c;
+-
+-  /* mrb_assert(mrb->stack == NULL); */
+-  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE, sizeof(mrb_value));
+-  c->stend = c->stbase + STACK_INIT_SIZE;
+-

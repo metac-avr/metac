@@ -1,0 +1,51 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index d1ca0ee62ae..f40d568bef1 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4335,22 +4335,24 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-							if (level == 0) {
+-								do_exit = 1;
+-							}
+-							level--;
+-							break;
+-					}
+-					opline--;
+-				} while (!do_exit);
+-			}
+-
+-			zend_vm_stack_free_args(EX(call));
+-
+-			if (ZEND_CALL_INFO(call) & ZEND_CALL_RELEASE_THIS) {
+-				OBJ_RELEASE(Z_OBJ(call->This));
+-			}
+-			if (ZEND_CALL_INFO(call) & ZEND_CALL_HAS_EXTRA_NAMED_PARAMS) {
+-				zend_free_extra_named_params(call->extra_named_params);
+-			}
+-			if (call->func->common.fn_flags & ZEND_ACC_CLOSURE) {
+-				zend_object_release(ZEND_CLOSURE_OBJECT(call->func));
+-			} else if (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
+-				zend_string_release_ex(call->func->common.function_name, 0);
++                            if (level == 0) {
++                                do_exit = 1;
++                            }
++                            level--;
++                            break;
++                    }
++                    opline--;
++                } while (!do_exit);
++// FIXME: Crash CWE-416: Use After Free
++            }
++
++            if (EX(call) != NULL) {
++                zend_vm_stack_free_args(EX(call));
++            }
++
++            if (ZEND_CALL_INFO(call) & ZEND_CALL_RELEASE_THIS) {
++                OBJ_RELEASE(Z_OBJ(call->This));
++            }
++            if (ZEND_CALL_INFO(call) & ZEND_CALL_HAS_EXTRA_NAMED_PARAMS) {
++                zend_free_extra_named_params(call->extra_named_params);
++            }
++            if (call->func->common.fn_flags & ZEND_ACC_CLOSURE) {
++                zend_object_release(ZEND_CLOSURE_OBJECT(call->func));
++            } else if (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {				zend_string_release_ex(call->func->common.function_name, 0);

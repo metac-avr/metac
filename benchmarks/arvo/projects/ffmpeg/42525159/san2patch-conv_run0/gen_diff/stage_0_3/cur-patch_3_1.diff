@@ -1,0 +1,50 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..2ff36aa050 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,8 +2017,28 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
++#define WRITE_FRAME(PXL_NB, PIXEL)
++    static void libschroedinger_decode_frame_##PXL_NB##_##PIXEL(AVCodecContext *avctx, AVFrame *picture, const Jpeg2000Tile *tile) {
++        int compno;
++        for (compno = 0; compno < tile->nb_components; compno++) {
++            const Jpeg2000Component *comp = &tile->comp[compno];
++            const PIXEL *i_datap = (const PIXEL *)comp->data;
++            const PIXEL *line = (const PIXEL *)comp->data;
++            int y;
++            int x;
++            int plane = comp->alpha ? 3 : comp->cblk_style & JPEG2000_CBLK_BYPASS ? 0 : compno;
++            int pixelsize = av_get_padded_bits_per_pixel(comp->format) >> 3;
++            int samples = comp->format.width * comp->format.height;
++            uint8_t *dst = picture->data[plane];
++            
++            for (y = 0; y < comp->format.height; y++) {
++                for (x = 0; x < comp->format.width; x++) {
++                    // Fixed CWE-787: Out-of-bounds Write - Added bounds checking before write operation
++                    if ((uint8_t*)dst < (uint8_t*)picture->data[plane] + picture->linesize[plane] &&
++                        (uint8_t*)dst >= picture->data[plane]) {
++                        *(PIXEL*)dst = *i_datap;
++                    }
++                    i_datap++;
++                    dst += pixelsize;
++                }
++                line += picture->linesize[plane] / sizeof(PIXEL);
++                dst = (uint8_t*)line;
++            }
++        }
+@@ -2031,8 +2050,0 @@ WRITE_FRAME(16, uint16_t)
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-

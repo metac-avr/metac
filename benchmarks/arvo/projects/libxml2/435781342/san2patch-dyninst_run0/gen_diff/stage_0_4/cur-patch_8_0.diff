@@ -1,0 +1,28 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..b17e8cce 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2339,0 +2340,5 @@ xmlSAX2StartElementNs(void *ctx,
++                    /* Validate namespace before creating attribute to prevent use-after-free */
++                    if (attributes[j+2] != NULL) {
++                        xmlURIPtr uri = xmlParseURI((const char *)attributes[j+2]);
++                        if (uri != NULL) xmlFreeURI(uri);
++                    }
+@@ -2345 +2350,2 @@ xmlSAX2StartElementNs(void *ctx,
+-		}
++// FIXME: Crash CWE-416: Use After Free
++ 		}
+@@ -2362,0 +2369 @@ xmlSAX2StartElementNs(void *ctx,
++
+diff --git a/parser.c b/parser.c
+index 12ca104e..e02feecc 100644
+--- a/parser.c
++++ b/parser.c
+@@ -9342 +9342,4 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
+-	(!ctxt->disableSAX)) {
++    (!ctxt->disableSAX)) {
++	/* Store current validation context state to prevent dangling pointer access */
++	void* savedValidationContext = ctxt->vctxt.userData;
++	ctxt->vctxt.userData = NULL; /* Temporarily disable validation during namespace processing */
+@@ -9349,0 +9353 @@ xmlParseStartTag2(xmlParserCtxtPtr ctxt, const xmlChar **pref,
++	ctxt->vctxt.userData = savedValidationContext; /* Restore validation context */

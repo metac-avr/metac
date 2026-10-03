@@ -1,0 +1,40 @@
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..00bd85160 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2843,2 +2843,6 @@ mrb_str_cat(mrb_state *mrb, mrb_value str, const char *ptr, size_t len)
+-  if (ptr >= RSTR_PTR(s) && ptr <= RSTR_PTR(s) + (size_t)RSTR_LEN(s)) {
+-      off = ptr - RSTR_PTR(s);
++  
++  /* Prevent expired pointer dereference by validating pointer range */
++  if (ptr != NULL) {
++    if (ptr >= RSTR_PTR(s) && ptr <= RSTR_PTR(s) + (size_t)RSTR_LEN(s)) {
++        off = ptr - RSTR_PTR(s);
++    }
+@@ -2859 +2863 @@ mrb_str_cat(mrb_state *mrb, mrb_value str, const char *ptr, size_t len)
+-  if (off != -1) {
++  if (off != -1 && ptr != NULL) {
+@@ -2862,3 +2866,5 @@ mrb_str_cat(mrb_state *mrb, mrb_value str, const char *ptr, size_t len)
+-  memcpy(RSTR_PTR(s) + RSTR_LEN(s), ptr, len);
+-  RSTR_SET_LEN(s, total);
+-  RSTR_PTR(s)[total] = '\0';   /* sentinel */
++  if (ptr != NULL) {
++    memcpy(RSTR_PTR(s) + RSTR_LEN(s), ptr, len);
++    RSTR_SET_LEN(s, total);
++    RSTR_PTR(s)[total] = '\0';   /* sentinel */
++  }
+@@ -2876,0 +2883 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
++  if (mrb_nil_p(str2) || !mrb_string_p(str2)) return str;
+@@ -2878 +2885,4 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-    mrb_str_modify(mrb, mrb_str_ptr(str));
++     mrb_str_modify(mrb, mrb_str_ptr(str));
++  }
++  if (RSTRING_LEN(str2) > 0 && RSTRING_PTR(str2)) {
++    return mrb_str_cat(mrb, str, RSTRING_PTR(str2), RSTRING_LEN(str2));
+@@ -2880 +2890 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-  return mrb_str_cat(mrb, str, RSTRING_PTR(str2), RSTRING_LEN(str2));
++  return str;
+@@ -2890,2 +2900 @@ mrb_str_append(mrb_state *mrb, mrb_value str1, mrb_value str2)
+-/*
+- * call-seq:
++/* * call-seq:

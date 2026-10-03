@@ -1,0 +1,36 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..41ef751f1c 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -2561,3 +2561,8 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
+-                s->progressive && s->cur_scan && s->got_picture)
+-                mjpeg_idct_scan_progressive_ac(s);
++// Fixed: Added bounds check before progressive AC scan to prevent heap buffer overflow
++             if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
++                s->progressive && s->cur_scan && s->got_picture) {
++                // Ensure buffer dimensions are valid before IDCT operation
++                if (s->picture_ptr && s->picture_ptr->data[0] && 
++                    s->mb_width > 0 && s->mb_height > 0)
++                    mjpeg_idct_scan_progressive_ac(s);
++            }
+@@ -2573,2 +2578 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-                if (s->bottom_field == !s->interlace_polarity)
+-                    break;
++                if (s->bottom_field == !s->interlace_polarity)                    break;
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..50dc9e543c 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -656 +656,2 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    }
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     }
+@@ -704,0 +706,7 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
++    // Validate destination coordinates to prevent buffer overflow
++    if (dst_x < 0 || dst_y < 0 || dst_x + w > frame->width || dst_y + h > frame->height) {
++        av_log(avctx, AV_LOG_ERROR, "Invalid destination coordinates for JPEG tile\n");
++        av_frame_unref(s->jpgframe);
++        return AVERROR_INVALIDDATA;
++    }
++

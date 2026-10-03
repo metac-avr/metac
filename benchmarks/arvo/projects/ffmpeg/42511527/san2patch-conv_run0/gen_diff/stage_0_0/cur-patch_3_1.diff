@@ -1,0 +1,40 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..c75aecc79d 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -195 +195,2 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    if (s->zlibprime_curr || s->zlibprime_prev) {
++    // FIXME: Crash CWE-416: Use After Free
++    if ((s->zlibprime_curr || s->zlibprime_prev) && s->tmpblock) {
+@@ -348,0 +350,22 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++static int flashsv_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
++{
++    struct FlashSVContext *s = avctx->priv_data;
++    GetBitContext gb;
++    int ret;
++    int h_blocks, v_blocks, h_part, v_part;
++
++    if (avpkt->size < 2) {
++        av_log(avctx, AV_LOG_ERROR, "Packet too small\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    if ((ret = init_get_bits8(&gb, avpkt->data, avpkt->size)) < 0)
++        return ret;
++
++    /* get screen size */
++    s->image_width  = get_bits(&gb, 16);
++    s->image_height = get_bits(&gb, 16);
++
++    /* check for changes of image dimensions */
++    if (s->image_width != avctx->width || s->image_height != avctx->height) {
++        av_log(avctx, AV_LOG_ERROR,
+@@ -356,0 +380 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++    // FIXME: Crash CWE-416: Use After Free
+@@ -361 +385,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        if (s->keyframedata)
++            memcpy(s->keyframedata, avpkt->data, avpkt->size);
+@@ -370,0 +396,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++    return 0;
++}

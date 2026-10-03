@@ -1,0 +1,26 @@
+diff --git a/Zend/Optimizer/block_pass.c b/Zend/Optimizer/block_pass.c
+index 95cd6b1bcee..e9d9ad97c59 100644
+--- a/Zend/Optimizer/block_pass.c
++++ b/Zend/Optimizer/block_pass.c
+@@ -286,0 +287 @@ static void zend_optimize_block(zend_basic_block *block, zend_op_array *op_array
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -298,8 +299,11 @@ static void zend_optimize_block(zend_basic_block *block, zend_op_array *op_array
+-						src->result_type = IS_UNUSED;
+-						MAKE_NOP(opline);
+-						++(*opt_count);
+-						if (src->opcode == ZEND_QM_ASSIGN) {
+-							if (src->op1_type & (IS_VAR|IS_TMP_VAR)) {
+-								src->opcode = ZEND_FREE;
+-							} else {
+-								MAKE_NOP(src);
++						/* Validate src pointer before use */
++						if (src >= op_array->opcodes && src < (op_array->opcodes + op_array->last)) {
++							src->result_type = IS_UNUSED;
++							MAKE_NOP(opline);
++							++(*opt_count);
++							if (src->opcode == ZEND_QM_ASSIGN) {
++								if (src->op1_type & (IS_VAR|IS_TMP_VAR)) {
++									src->opcode = ZEND_FREE;
++								} else {
++									MAKE_NOP(src);
++								}

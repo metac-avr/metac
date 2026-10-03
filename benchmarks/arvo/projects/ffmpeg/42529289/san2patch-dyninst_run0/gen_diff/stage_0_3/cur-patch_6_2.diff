@@ -1,0 +1,24 @@
+diff --git a/libavcodec/bitstream_template.h b/libavcodec/bitstream_template.h
+index 0308e3a924..ffd3c3474b 100644
+--- a/libavcodec/bitstream_template.h
++++ b/libavcodec/bitstream_template.h
+@@ -529 +529,2 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-    int ret, nb_bits, code, n = Jtable[idx].len;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     int ret, nb_bits, code, n = Jtable[idx].len;
+@@ -531 +532,3 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-        AV_COPY64U(dst, Jtable[idx].val);
++        if (/* Add bounds check for 8-byte write */ dst != NULL) {
++            AV_COPY64U(dst, Jtable[idx].val);
++        }
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..c44ef4ee95 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -296,0 +297,6 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
++            // Add bounds checking to prevent heap buffer overflow
++            if (get_bits_left(&gb) < 64) {
++                av_log(avctx, AV_LOG_ERROR, "Insufficient bits left for VLC decoding\n");
++                return AVERROR_INVALIDDATA;
++            }
++ 

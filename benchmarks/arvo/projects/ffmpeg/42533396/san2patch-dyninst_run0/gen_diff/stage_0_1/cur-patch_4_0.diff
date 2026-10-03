@@ -1,0 +1,39 @@
+diff --git a/libavformat/aiffdec.c b/libavformat/aiffdec.c
+index 5314d159ef..279f90b76b 100644
+--- a/libavformat/aiffdec.c
++++ b/libavformat/aiffdec.c
+@@ -335 +335,2 @@ static int aiff_read_header(AVFormatContext *s)
+-            break;
++// FIXED: Validate size parameter to prevent buffer overflow
++             break;
+@@ -336,0 +338,4 @@ static int aiff_read_header(AVFormatContext *s)
++            if (size <= 0 || size > INT_MAX / 2) { // Prevent integer overflow and negative sizes
++                av_log(s, AV_LOG_ERROR, "Invalid CHAN chunk size: %d\n", size);
++                return AVERROR_INVALIDDATA;
++            }
+@@ -353,0 +359,4 @@ static int aiff_read_header(AVFormatContext *s)
++            if (size < 0) { // Prevent negative size skips
++                av_log(s, AV_LOG_ERROR, "Invalid chunk size: %d\n", size);
++                return AVERROR_INVALIDDATA;
++            }
+diff --git a/libavcodec/codec_par.c b/libavcodec/codec_par.c
+index abaac63841..c882a58081 100644
+--- a/libavcodec/codec_par.c
++++ b/libavcodec/codec_par.c
+@@ -271 +271 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        } else {
++         } else {
+@@ -273,3 +273,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
+-        if (ret < 0)
+-            return ret;
++        // Check for valid channel layout parameters before copying
++        if (par->ch_layout.order >= AV_CHANNEL_ORDER_NATIVE && par->ch_layout.order <= AV_CHANNEL_ORDER_CUSTOM) {
++            ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++            if (ret < 0)
++                return ret;
++        } else {
++            // Initialize with safe defaults for invalid layouts
++            codec->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
++            codec->ch_layout.nb_channels = par->ch_layout.nb_channels;
++        }

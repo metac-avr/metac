@@ -1,0 +1,18 @@
+diff --git a/sapi/fuzzer/fuzzer-sapi.c b/sapi/fuzzer/fuzzer-sapi.c
+index a9d2ce89a8b..89cec3df836 100644
+--- a/sapi/fuzzer/fuzzer-sapi.c
++++ b/sapi/fuzzer/fuzzer-sapi.c
+@@ -273,0 +274 @@ int fuzzer_do_request_from_buffer(
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -284,0 +286 @@ int fuzzer_do_request_from_buffer(
++	zend_objects_store_del_deferred();
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..37305bf53dd 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++		if (EG(objects_store).destructors && zend_hash_index_exists(EG(objects_store).destructors, handle)) {
++			zend_hash_index_del(EG(objects_store).destructors, handle);
++		}
++ 		ptr = ((char*)object) - object->handlers->offset;

@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..80de418fbb7 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -154,0 +155 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++			
+@@ -155,0 +157,8 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++			
++			/* Prevent use-after-free by checking if memory is still allocated */
++			if (UNEXPECTED(garbage && (GC_FLAGS(garbage) & GC_IMMUTABLE))) {
++				/* Handle immutable values safely */
++				zend_copy_to_variable(variable_ptr, value, value_type);
++				return variable_ptr;
++			}
++			
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..55892b9cb49 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -27157,0 +27158 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
++// FIXME: Crash CWE-416: Use After Free
+@@ -27163 +27164,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
+-		zend_assign_to_variable_reference(variable_ptr, value_ptr);
++		/* Prevent use-after-free by validating pointer integrity before assignment */
++		if (EXPECTED(variable_ptr) && EXPECTED(value_ptr)) {
++			zend_assign_to_variable_reference(variable_ptr, value_ptr);
++		}

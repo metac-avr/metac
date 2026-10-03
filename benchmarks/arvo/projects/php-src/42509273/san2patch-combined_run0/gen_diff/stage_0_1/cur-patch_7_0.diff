@@ -1,0 +1,36 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..726c665a6d1 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -559 +559 @@ struct _zend_ast_ref {
+-#define IS_PTR						13
++#define IS_PTR					13
+@@ -566 +566,2 @@ struct _zend_ast_ref {
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -568 +569 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-	return pz->u1.v.type;
++	return pz ? pz->u1.v.type : 0;
+@@ -577,3 +578,2 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
+-
++#define Z_TYPE(zval)                zval_get_type(&(zval))
++#define Z_TYPE_P(zval_p)            Z_TYPE(*(zval_p))
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..d971762879d 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -216,4 +216,7 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		}
+-		for (zend_long i = 0; i < intern->array.size; i++) {
+-			zend_hash_index_update(ht, i, &intern->array.elements[i]);
+-			Z_TRY_ADDREF(intern->array.elements[i]);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		}
++		if (intern->array.elements != NULL && intern->array.size >= 0) {
++			for (zend_long i = 0; i < intern->array.size; i++) {
++				zend_hash_index_update(ht, i, &intern->array.elements[i]);
++				Z_TRY_ADDREF(intern->array.elements[i]);
++			}

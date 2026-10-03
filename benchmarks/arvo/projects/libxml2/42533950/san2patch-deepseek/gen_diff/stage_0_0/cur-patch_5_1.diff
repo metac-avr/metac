@@ -1,0 +1,92 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..c925f38e 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3934,51 +3934,3 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-    if ((cur->ns != NULL) && (target != NULL)) {
+-      xmlNsPtr ns;
+-      int res;
+-
+-      res = xmlSearchNsSafe(target, cur->ns->prefix, &ns);
+-      if (res < 0)
+-          goto error;
+-      if (ns == NULL) {
+-        /*
+-         * Humm, we are copying an element whose namespace is defined
+-         * out of the new tree scope. Search it in the original tree
+-         * and add it at the top of the new tree
+-         */
+-        res = xmlSearchNsSafe(cur->parent, cur->ns->prefix, &ns);
+-        if (res < 0)
+-          goto error;
+-        if (ns != NULL) {
+-          xmlNodePtr root = target;
+-          xmlNodePtr pred = NULL;
+-
+-          while (root->parent != NULL) {
+-            pred = root;
+-            root = root->parent;
+-          }
+-          if (root == (xmlNodePtr) target->doc) {
+-            /* correct possibly cycling above the document elt */
+-            root = pred;
+-          }
+-          ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-          if (ret->ns == NULL)
+-              goto error;
+-        }
+-      } else {
+-        /*
+-         * we have to find something appropriate here since
+-         * we can't be sure, that the namespace we found is identified
+-         * by the prefix
+-         */
+-        if (xmlStrEqual(ns->href, cur->ns->href)) {
+-          /* this is the nice case */
+-          ret->ns = ns;
+-        } else {
+-          /*
+-           * we are in trouble: we need a new reconciled namespace.
+-           * This is expensive
+-           */
+-          ret->ns = xmlNewReconciledNs(target, cur->ns);
+-          if (ret->ns == NULL)
+-              goto error;
+-        }
+-      }
++    xmlNodePtr
++xmlCopyNode(xmlNodePtr node, int extended) {
++    xmlNodePtr ret;
+@@ -3986,2 +3938,3 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-    } else
+-        ret->ns = NULL;
++    ret = xmlStaticCopyNode(node, NULL, NULL, extended);
++    return(ret);
++}
+@@ -4415,6 +4367,0 @@ xmlStaticCopyNodeList(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent) {
+- *		if 2 copy properties and namespaces (when applicable)
+- *
+- * Do a copy of the node.
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
+- */
+@@ -4423 +4370 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+-    xmlNodePtr ret;
++    xmlNodePtr ret = NULL;
+@@ -4424,0 +4372,4 @@ xmlCopyNode(xmlNodePtr node, int extended) {
++    if (node == NULL)
++        return(NULL);
++    if (node->doc == NULL)
++        return(NULL);
+@@ -4427,10 +4378 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+-}
+-
+-/**
+- * xmlDocCopyNode:
+- * @node:  the node
+- * @doc:  the document
+- * @extended:   if 1 do a recursive copy (properties, namespaces and children
+- *			when applicable)
+- *		if 2 copy properties and namespaces (when applicable)
+- *
++} *

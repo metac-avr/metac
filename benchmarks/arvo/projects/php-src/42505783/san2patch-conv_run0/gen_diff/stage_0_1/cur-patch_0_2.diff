@@ -1,0 +1,58 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..e963ad3c6b0 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2025,0 +2026 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
++	zval_ptr_dtor(&tmp);
+@@ -2545 +2546 @@ static void ZEND_FASTCALL zend_jit_free_trampoline_helper(zend_function *func)
+-static zend_string* ZEND_FASTCALL zend_jit_rope_end(zend_string **rope, uint32_t count)
++static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend_property_info *info, zval *value, zval *result)
+@@ -2547,4 +2548,2 @@ static zend_string* ZEND_FASTCALL zend_jit_rope_end(zend_string **rope, uint32_t
+-	zend_string *ret;
+-	uint32_t i;
+-	size_t len = 0;
+-	char *target;
++	zend_execute_data *execute_data = EG(current_execute_data);
++	zval tmp;
+@@ -2552,2 +2551,5 @@ static zend_string* ZEND_FASTCALL zend_jit_rope_end(zend_string **rope, uint32_t
+-	for (i = 0; i <= count; i++) {
+-		len += ZSTR_LEN(rope[i]);
++	if (UNEXPECTED(Z_TYPE_P(value) == IS_UNDEF)) {
++		const zend_op *op_data = execute_data->opline + 1;
++		ZEND_ASSERT(op_data->opcode == ZEND_OP_DATA && op_data->op1_type == IS_CV);
++		zend_jit_undefined_op_helper(op_data->op1.var);
++		value = &EG(uninitialized_zval);
+@@ -2555,6 +2557,7 @@ static zend_string* ZEND_FASTCALL zend_jit_rope_end(zend_string **rope, uint32_t
+-	ret = zend_string_alloc(len, 0);
+-	target = ZSTR_VAL(ret);
+-	for (i = 0; i <= count; i++) {
+-		memcpy(target, ZSTR_VAL(rope[i]), ZSTR_LEN(rope[i]));
+-		target += ZSTR_LEN(rope[i]);
+-		zend_string_release_ex(rope[i], 0);
++
++	if (UNEXPECTED(info->flags & ZEND_ACC_READONLY)) {
++		zend_readonly_property_modification_error(info);
++		if (result) {
++			ZVAL_UNDEF(result);
++		}
++		return;
+@@ -2562,2 +2565,17 @@ static zend_string* ZEND_FASTCALL zend_jit_rope_end(zend_string **rope, uint32_t
+-	*target = '\0';
+-	return ret;
++
++	ZVAL_DEREF(value);
++	ZVAL_COPY(&tmp, value);
++
++	if (UNEXPECTED(!zend_verify_property_type(info, &tmp, EX_USES_STRICT_TYPES()))) {
++		zval_ptr_dtor(&tmp);
++		if (result) {
++			ZVAL_NULL(result);
++		}
++		return;
++	}
++
++	value = zend_assign_to_variable(property_val, &tmp, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++	if (result) {
++		ZVAL_COPY_DEREF(result, value);
++	}
++	zval_ptr_dtor(&tmp);

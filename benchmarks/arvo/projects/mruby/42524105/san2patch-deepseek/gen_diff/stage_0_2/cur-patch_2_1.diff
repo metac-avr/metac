@@ -1,0 +1,33 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..1c9ce360f 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1692,6 +1691,0 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-uint32_t
+-mrb_byte_hash(const uint8_t *s, mrb_int len)
+-{
+-  return mrb_byte_hash_step(s, len, FNV1_32_INIT);
+-}
+-
+@@ -1701,2 +1695,6 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-  struct RString *s = mrb_str_ptr(str);
+-  return mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
++  struct RString *s;
++  uint32_t hash;
++  mrb_gc_protect(mrb, str);
++  s = mrb_str_ptr(str);
++  hash = mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
++  return hash;
+@@ -1705,7 +1702,0 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-/* 15.2.10.5.20 */
+-/*
+- * call-seq:
+- *    str.hash   => int
+- *
+- * Return a hash based on the string's length and content.
+- */
+@@ -1713,0 +1705,4 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++{
++  uint32_t key = mrb_str_hash(mrb, self);
++  return mrb_int_value(mrb, key);
++}mrb_str_hash_m(mrb_state *mrb, mrb_value self)

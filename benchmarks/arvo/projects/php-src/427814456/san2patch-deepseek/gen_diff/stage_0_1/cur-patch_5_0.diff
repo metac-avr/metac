@@ -1,0 +1,44 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..e0a5704ab30 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1650,0 +1651 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
++	zend_string *op1_str = NULL, *op2_str = NULL;
+@@ -1694 +1695,2 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
+-		bool failed;
++// FIXME: Crash CWE-416: Use After Free
++ 		bool failed;
+@@ -1695,0 +1698,3 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
++		if (Z_TYPE_P(op1) == IS_STRING) {
++			op1_str = zend_string_copy(Z_STR_P(op1));
++		}
+@@ -1698 +1703,7 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
+-			zend_binop_error("&", op1, op2);
++			zval tmp;
++			if (op1_str) {
++				ZVAL_STR(&tmp, op1_str);
++				zend_binop_error("&", &tmp, op2);
++			} else {
++				zend_binop_error("&", op1, op2);
++			}
+@@ -1701,0 +1713,3 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
++			if (op1_str) {
++				zend_string_release(op1_str);
++			}
+@@ -1709,0 +1724,3 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
++		if (Z_TYPE_P(op2) == IS_STRING) {
++			op2_str = zend_string_copy(Z_STR_P(op2));
++		}
+@@ -1712 +1729,7 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
+-			zend_binop_error("&", op1, op2);
++			zval tmp;
++			if (op2_str) {
++				ZVAL_STR(&tmp, op2_str);
++				zend_binop_error("&", op1, &tmp);
++			} else {
++				zend_binop_error("&", op1, op2);
++			}
+@@ -1715,0 +1739,3 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
++			if (op2_str) {
++				zend_string_release(op2_str);
++			}

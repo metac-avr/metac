@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+# C++ compiler wrapper for tests
+# Copyright (C) 2023  Nguyễn Gia Phong
+#
+# This file is part of MetaPro.
+#
+# MetaPro is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MetaPro is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with MetaPro.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+from sys import argv
+from subprocess import run
+from os import environ,path
+import sys
+
+if 'METAPRO_PATH' in environ and environ['METAPRO_PATH'] != '':
+    specific_path=True
+    runtime_include_arg = environ['METAPRO_PATH'] + "/include"
+    runtime_library_path = environ['METAPRO_PATH'] + "/build"
+    environ['LD_LIBRARY_PATH']=runtime_library_path+":"+environ.get('LD_LIBRARY_PATH', '')
+    environ['LIBRARY_PATH']=runtime_library_path+":"+environ.get('LIBRARY_PATH', '')
+    instrument_pass_path = path.join(environ['METAPRO_PATH'], 'libmetapro-instrument-pass.so')
+else:
+    specific_path=False
+    runtime_include_arg = "/usr/local/include/metapro/include"
+    instrument_pass_path = "/usr/local/lib/libmetapro-instrument-pass.so"
+
+if 'METAPRO_CXX' not in environ:
+    cxx = 'clang++'
+else:
+    cxx = environ['METAPRO_CXX']
+cmd = [cxx, f'-I{runtime_include_arg}', '-fpermissive']
+for arg in argv[1:]:
+    cmd.append(arg)
+
+# Inject the noop instrumentation pass during any compilation phase.
+# METAPRO_PASS_DIR is read directly by the pass via getenv(), not via -mllvm,
+# because -mllvm flags are parsed before -fpass-plugin loads the plugin.
+if 'METAPRO_PASS' in environ and '-E' not in cmd:
+    import re, subprocess
+    ver_out = subprocess.run([cxx, '--version'], capture_output=True, text=True).stdout
+    m = re.search(r'clang version (\d+)', ver_out)
+    clang_major = int(m.group(1)) if m else 99
+    cmd.append('-g')
+    if clang_major <= 12:
+        cmd.extend(['-Xclang', '-load', '-Xclang', instrument_pass_path])
+    else:
+        cmd.append(f'-fpass-plugin={instrument_pass_path}')
+
+if ('-c' not in cmd and # Compile
+    '-E' not in cmd and # Preprocess
+    '-S' not in cmd and # Assemble
+    '-shared' not in cmd and # Shared library
+    '-r' not in cmd): # Relocatable object file
+    # Link with metapro runtime library when only generating executable
+    if specific_path:
+        cmd.append(f'-Wl,-rpath,{runtime_library_path}')
+        cmd.append(f'-L{runtime_library_path}')
+    # if 'METAPRO_DEBUG_MODE' in environ:
+    #     cmd.append('-lmetapro-runtime-cxx-debug')
+    # else:
+    #     cmd.append('-lmetapro-runtime-cxx')
+    # -rdynamic puts the program's own functions in .dynsym, so the runtime can resolve a callee of a
+    # patch expression with dlsym() instead of the meta-program taking its address at compile time.
+    cmd.append('-rdynamic')
+    cmd.append('-lmetapro-runtime-c')
+    cmd.append('-ltree-sitter')
+    cmd.append('-ltree-sitter-cpp')
+    cmd.append('-lcurl')
+
+# Append last so they override any -W[error][=...] the project's build system
+# placed earlier in the command line.
+cmd.append('-Wno-error')
+cmd.append('-Wno-error=return-type')
+cmd.append('-Wno-ignored-qualifiers')
+cmd.append('-Wno-incompatible-pointer-types-discards-qualifiers')
+cmd.append('-Wno-strict-prototypes')
+
+if environ.get('METAPRO_DEBUG_CC', '0') == '1':
+    # Print the command for debugging
+    # Note: printing executed command sometimes break ./configure when using autoconf and libtool. Use when debugging only.
+    print(f'Command: {" ".join(cmd)}', file=sys.stderr)
+exit(run(cmd).returncode)

@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..23fb5954bc1 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40388,2 +40388,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-	if (opline->extended_value & ZEND_BIND_REF) {
+-		i_zval_ptr_dtor(variable_ptr);
++	        if (opline->extended_value & ZEND_BIND_REF) {
++		zval *old_variable_ptr = variable_ptr;
+@@ -40403,0 +40404,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
++			Z_TRY_ADDREF_P(value);
++			if (old_variable_ptr != value) {
++				i_zval_ptr_dtor(old_variable_ptr);
++			}
+@@ -40406 +40410,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
++			Z_TRY_ADDREF_P(value);
++			if (old_variable_ptr != value) {
++				i_zval_ptr_dtor(old_variable_ptr);
++			}
+@@ -40412,0 +40420 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
++		Z_TRY_ADDREF_P(value);
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..ce70f37477f 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -46 +46,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-			gc_check_possible_root(ref);
++			if (GC_REFCOUNT(ref) > 0) {
++				gc_check_possible_root(ref);
++			}

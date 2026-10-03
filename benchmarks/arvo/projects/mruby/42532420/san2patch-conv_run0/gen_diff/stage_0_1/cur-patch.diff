@@ -1,0 +1,25 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..78d20d98f 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1370,6 +1370,8 @@ str_escape(mrb_state *mrb, mrb_value str, mrb_bool inspect)
+-      mrb_int clen = mrb_utf8len(p, pend);
+-      if (clen > 1) {
+-        mrb_str_cat(mrb, result, p, clen);
+-        p += clen-1;
+-        sb_flag = 0;
+-        continue;
++      if (p < pend) {  /* Validate pointer before dereference */
++        mrb_int clen = mrb_utf8len(p, pend);
++        if (clen > 1 && p + clen - 1 < pend) {  /* Validate full range access */
++          mrb_str_cat(mrb, result, p, clen);
++          p += clen-1;
++          sb_flag = 0;
++          continue;
++        }
+@@ -1380 +1382 @@ str_escape(mrb_state *mrb, mrb_value str, mrb_bool inspect)
+-    if (c == '"'|| c == '\\' || (c == '#' && IS_EVSTR(p+1, pend))) {
++    if (c == '"'|| c == '\\' || (c == '#' && p+1 < pend && IS_EVSTR(p+1, pend))) {
+@@ -2353 +2355 @@ mrb_str_split_m(mrb_state *mrb, mrb_value str)
+-    while (idx < str_len) {
++    while (idx <= str_len - pat_len) {

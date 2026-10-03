@@ -1,0 +1,29 @@
+diff --git a/parser.c b/parser.c
+index c3068cad..7320e4eb 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7188 +7188 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-					   ent->ExternalID, &list);
++				   ent->ExternalID, &list);
+@@ -7195,0 +7196,10 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++	/* Add ownership tracking to prevent invalid frees */
++	if (list != NULL) {
++	    xmlNodePtr node;
++	    for (node = list; node != NULL; node = node->next) {
++	        /* Mark nodes as owned to prevent double-free */
++	        if (node->doc == NULL) 
++	            node->doc = ctxt->myDoc;
++	    }
++	}
++
+@@ -13425,2 +13435,2 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-		oldctxt->valid &= xmlValidateElement(&oldctxt->vctxt,
+-			oldctxt->myDoc, cur);
++        oldctxt->valid &= xmlValidateElement(&oldctxt->vctxt,
++		oldctxt->myDoc, cur);
+@@ -13433,2 +13443,3 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-    }
+-    if (ctxt->myDoc != NULL) {
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     }
++    if ((ctxt->myDoc != NULL) && (ctxt->myDoc->children != NULL)) {

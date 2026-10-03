@@ -1,0 +1,41 @@
+diff --git a/src/lib/protocols/kerberos.c b/src/lib/protocols/kerberos.c
+index 1f242ac46..8bb6b3d42 100644
+--- a/src/lib/protocols/kerberos.c
++++ b/src/lib/protocols/kerberos.c
+@@ -217,0 +218 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
++		  u_int remaining;
+@@ -220 +221,3 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(name_offset < packet->payload_packet_len - 1 &&
++		  remaining = packet->payload_packet_len - name_offset;
++
++		  if(remaining > 1 &&
+@@ -223,0 +227 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
++		    remaining--;
+@@ -226 +230 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(name_offset < packet->payload_packet_len - 1 &&
++		  if(remaining > 1 &&
+@@ -229,0 +234 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
++		    remaining -= 2;
+@@ -231 +236,4 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		  
++
++		  if(remaining == 0)
++		    return;
++
+@@ -256 +264 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		      if(((strcmp(cname_str, "host") == 0) || (strcmp(cname_str, "ldap") == 0)) && (packet->payload[name_offset+1+cname_len] == 0x1b)) {
++		      if(((strcmp(cname_str, "host") == 0) || (strcmp(cname_str, "ldap") == 0)) && (name_offset + 1 + cname_len < packet->payload_packet_len) && (packet->payload[name_offset+1+cname_len] == 0x1b)) {
+@@ -267 +275 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		    /* if cname does not end with a $ then it's a username */
++		    /* if cname does not end with a '$' then it's a username */
+@@ -279,0 +288,3 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
++
++		    if(realm_offset >= packet->payload_packet_len)
++		      return;
+@@ -283 +294 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-			   packet->payload[realm_offset], packet->payload[realm_offset+1]);
++		   packet->payload[realm_offset], (realm_offset + 1 < packet->payload_packet_len) ? packet->payload[realm_offset+1] : 0);
+@@ -291 +302,2 @@ void ndpi_search_kerberos(struct ndpi_detection_module_struct *ndpi_struct,
+-		      if((realm_offset+realm_len) < packet->payload_packet_len) {
++		      if((realm_offset+realm_len) < packet->payload_packet_len &&
++		         (realm_offset + 1 + realm_len < packet->payload_packet_len)) {

@@ -1,0 +1,45 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..fd31aa9ec 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -299,2 +299,9 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++	      size_t copy_len = filename_len - 1;
++	      size_t max_dst = sizeof(flow->http.filename) - 1;
++	      size_t avail = packet->content_disposition_line.len > attachment_len + 1 ? packet->content_disposition_line.len - attachment_len - 1 : 0;
++	      if(copy_len > max_dst)
++	        copy_len = max_dst;
++	      if(copy_len > avail)
++	        copy_len = avail;
++	      memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, copy_len);
++	      flow->http.filename[copy_len] = '\0';
+@@ -306 +312,0 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-
+@@ -308,3 +314,9 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++	      size_t copy_len = filename_len >= 3 ? filename_len - 2 : 0;
++	      size_t max_dst = sizeof(flow->http.filename) - 1;
++	      size_t avail = packet->content_disposition_line.len > attachment_len + 1 ? packet->content_disposition_line.len - attachment_len - 1 : 0;
++	      if(copy_len > max_dst)
++	        copy_len = max_dst;
++	      if(copy_len > avail)
++	        copy_len = avail;
++	      memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, copy_len);
++	      flow->http.filename[copy_len] = '\0';
+@@ -317 +328,0 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-
+@@ -319,2 +330,9 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    size_t copy_len = filename_len;
++	    size_t max_dst = sizeof(flow->http.filename) - 1;
++	    size_t avail = packet->content_disposition_line.len > attachment_len ? packet->content_disposition_line.len - attachment_len : 0;
++	    if(copy_len > max_dst)
++	      copy_len = max_dst;
++	    if(copy_len > avail)
++	      copy_len = avail;
++	    memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, copy_len);
++	    flow->http.filename[copy_len] = '\0';

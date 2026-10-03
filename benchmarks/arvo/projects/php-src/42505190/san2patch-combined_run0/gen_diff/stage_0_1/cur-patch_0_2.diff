@@ -1,0 +1,60 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..450ce27e04e 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -543,11 +543,4 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
+-#define IS_PTR						13
+-#define IS_ALIAS_PTR				14
+-#define _IS_ERROR					15
+-
+-/* used for casts */
+-#define _IS_BOOL					18
+-#define _IS_NUMBER					19
+-
+-static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-	return pz->u1.v.type;
++static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(zval *container_ptr, zval *dim, int dim_type OPLINE_DC EXECUTE_DATA_DC)
++{
++	zval *result = EX_VAR(opline->result.var);
++	zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_UNSET EXECUTE_DATA_CC);
+@@ -555,10 +547,0 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-
+-#define ZEND_SAME_FAKE_TYPE(faketype, realtype) ( \
+-	(faketype) == (realtype) \
+-	|| ((faketype) == _IS_BOOL && ((realtype) == IS_TRUE || (realtype) == IS_FALSE)) \
+-)
+-
+-/* we should never set just Z_TYPE, we should set Z_TYPE_INFO */
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
+-
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..dc50bfde63b 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2433,7 +2432,0 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-				zend_use_scalar_as_array();
+-				ZVAL_UNDEF(result);
+-			}
+-		}
+-	}
+-}
+-
+@@ -2442,0 +2436,3 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
++	if (container_ptr && Z_TYPE_P(container_ptr) == IS_FALSE) {
++		zend_false_to_array_deprecated(container_ptr);
++	}
+@@ -2444,11 +2440 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-}
+-
+-static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_RW(zval *container_ptr, zval *dim, int dim_type OPLINE_DC EXECUTE_DATA_DC)
+-{
+-	zval *result = EX_VAR(opline->result.var);
+-	zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_RW EXECUTE_DATA_CC);
+-}
+-
+-static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(zval *container_ptr, zval *dim, int dim_type OPLINE_DC EXECUTE_DATA_DC)
+-{
+-	zval *result = EX_VAR(opline->result.var);
++}	zval *result = EX_VAR(opline->result.var);

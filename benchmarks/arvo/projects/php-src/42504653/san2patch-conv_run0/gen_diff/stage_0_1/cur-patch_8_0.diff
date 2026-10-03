@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..7d5ba6ce364 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30062,0 +30063,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++			/* Add validation to prevent use-after-free on freed object_ptr */
++			if (object_ptr && !Z_REFCOUNTED_P(object_ptr)) {
++				/* Object has been freed or is not reference counted, skip dim access */
++				goto assign_dim_error;
++			}
+@@ -49649,0 +49655,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
++			/* Add validation to prevent use-after-free on freed object_ptr */
++			if (object_ptr && !Z_REFCOUNTED_P(object_ptr)) {
++				/* Object has been freed or is not reference counted, skip dim access */
++				goto assign_dim_error;
++			}
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..19883ae1dd2 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -862,0 +864,10 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Prevent use-after-free by validating memory before access */
++			if (execute_data) {
++				/* Verify stack frame integrity before proceeding */
++				if ((char*)execute_data < (char*)EG(vm_stack) || 
++				    (char*)execute_data >= (char*)EG(vm_stack)->end) {
++					/* execute_data points outside valid stack range */
++					continue;
++				}
++			}
++		}
+@@ -874,0 +886 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++

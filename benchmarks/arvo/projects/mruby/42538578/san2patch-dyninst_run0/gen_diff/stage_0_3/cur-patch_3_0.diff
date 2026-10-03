@@ -1,0 +1,14 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..7800eb0d2 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -2710 +2710,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
++      /* Validate callinfo pointer before use to prevent use-after-free */
++      if (mrb->c->ci < mrb->c->cibase || mrb->c->ci >= mrb->c->cibase + mrb->c->ci_size) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "invalid callinfo pointer");
++      }
+@@ -2722 +2726,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

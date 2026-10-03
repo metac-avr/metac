@@ -1,0 +1,87 @@
+diff --git a/tree.c b/tree.c
+index e2357131..6ab8dbfa 100644
+--- a/tree.c
++++ b/tree.c
+@@ -5519,39 +5519,12 @@ xmlTextMerge(xmlNode *first, xmlNode *second) {
+-int
+-xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                 xmlNs ***out)
+-{
+-    xmlNsPtr cur;
+-    xmlNsPtr *namespaces = NULL;
+-    int nbns = 0;
+-    int maxns = 0;
+-    int i;
+-
+-    if (out == NULL)
+-        return(1);
+-    *out = NULL;
+-    if ((node == NULL) || (node->type == XML_NAMESPACE_DECL))
+-        return(1);
+-
+-    while (node != NULL) {
+-        if (node->type == XML_ELEMENT_NODE) {
+-            cur = node->nsDef;
+-            while (cur != NULL) {
+-                for (i = 0; i < nbns; i++) {
+-                    if ((cur->prefix == namespaces[i]->prefix) ||
+-                        (xmlStrEqual(cur->prefix, namespaces[i]->prefix)))
+-                        break;
+-                }
+-                if (i >= nbns) {
+-                    if (nbns >= maxns) {
+-                        xmlNsPtr *tmp;
+-                        int newSize;
+-
+-                        newSize = xmlGrowCapacity(maxns, sizeof(tmp[0]),
+-                                                  10, XML_MAX_ITEMS);
+-                        if (newSize < 0) {
+-                            xmlFree(namespaces);
+-                            return(-1);
+-                        }
+-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+-                        if (newSize < 2)
+-                            newSize = 2;
++static void
++xmlFreeElement(xmlElementPtr elem) {
++    if (elem == NULL) return;
++    xmlUnlinkNode((xmlNodePtr) elem);
++    xmlFreeDocElementContent(elem->doc, elem->content);
++    if (elem->name != NULL)
++	xmlFree((xmlChar *) elem->name);
++    if (elem->prefix != NULL)
++	xmlFree((xmlChar *) elem->prefix);
++#ifdef LIBXML_REGEXP_ENABLED
++    if (elem->contModel != NULL)
++	xmlRegFreeRegexp(elem->contModel);
+@@ -5559,21 +5532 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                        tmp = xmlRealloc(namespaces,
+-                                         (newSize + 1) * sizeof(tmp[0]));
+-                        if (tmp == NULL) {
+-                            xmlFree(namespaces);
+-                            return(-1);
+-                        }
+-                        namespaces = tmp;
+-                        maxns = newSize;
+-                    }
+-                    namespaces[nbns++] = cur;
+-                    namespaces[nbns] = NULL;
+-                }
+-
+-                cur = cur->next;
+-            }
+-        }
+-        node = node->parent;
+-    }
+-
+-    *out = namespaces;
+-    return((namespaces == NULL) ? 1 : 0);
++    xmlFree(elem);
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..8ded83ee 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1076,0 +1077,3 @@ xmlFreeElement(xmlElementPtr elem) {
++    /* Fix: Reset namespace references before freeing element */
++    elem->nsDef = NULL;
++    elem->ns = NULL;

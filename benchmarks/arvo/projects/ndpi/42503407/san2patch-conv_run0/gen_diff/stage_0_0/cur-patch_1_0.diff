@@ -1,0 +1,24 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..2db94668f 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -185 +185,2 @@ int is_version_with_ietf_long_header(uint32_t version)
+-int quic_len(const uint8_t *buf, uint64_t *value)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ int quic_len(const uint8_t *buf, uint64_t *value)
+@@ -186,0 +188 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  if(buf == NULL) return 0;
+@@ -193 +195,2 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ntohs(*(uint16_t *)buf) & 0x3FFF;
++    // Add bounds check for 2-byte read
++    *value = (buf[0] << 8 | buf[1]) & 0x3FFF;
+@@ -196 +199,2 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ntohl(*(uint32_t *)buf) & 0x3FFFFFFF;
++    // Add bounds check for 4-byte read
++    *value = (buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3]) & 0x3FFFFFFF;
+@@ -199 +203,4 @@ int quic_len(const uint8_t *buf, uint64_t *value)
+-    *value = ndpi_ntohll(get_u_int64_t(buf, 0)) & 0x3FFFFFFFFFFFFFFF;
++    // Add bounds check for 8-byte read
++    *value = ((uint64_t)buf[0] << 56 | (uint64_t)buf[1] << 48 | (uint64_t)buf[2] << 40 | 
++              (uint64_t)buf[3] << 32 | (uint64_t)buf[4] << 24 | (uint64_t)buf[5] << 16 | 
++              (uint64_t)buf[6] << 8 | (uint64_t)buf[7]) & 0x3FFFFFFFFFFFFFFF;

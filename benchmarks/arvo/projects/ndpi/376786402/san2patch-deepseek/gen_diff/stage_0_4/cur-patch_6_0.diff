@@ -1,0 +1,27 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..6b4efe534 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1456 +1456 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-  }
++   }
+@@ -1457,0 +1458,19 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++  {
++    size_t auth_header_len = ndpi_get_http_header(ndpi_struct, flow, "authorization", NULL, 0);
++    if(auth_header_len > 0) {
++      if(ndpi_get_http_header(ndpi_struct, flow, "authorization", NULL, 0) > 0 &&
++         strncasecmp((const char *)packet->payload, "Basic ", 6) == 0) {
++        size_t base64_len = auth_header_len - 6;
++        unsigned char *decoded_value = ndpi_base64_decode((unsigned char *)packet->payload + 6, base64_len, &base64_len);
++        if(decoded_value) {
++          unsigned char *colon = (unsigned char *)memchr(decoded_value, ':', base64_len);
++          if(colon) {
++            *colon = '\0';
++            ndpi_check_snprintf(flow->http.user, sizeof(flow->http.user), "%s", decoded_value);
++            ndpi_check_snprintf(flow->http.password, sizeof(flow->http.password), "%s", (char *)colon + 1);
++          }
++          ndpi_free(decoded_value);
++        }
++      }
++    }
++  }

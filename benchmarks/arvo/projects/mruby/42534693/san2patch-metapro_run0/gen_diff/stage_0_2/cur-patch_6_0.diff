@@ -1,0 +1,22 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..2d6b3dfc2 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -164,0 +165,15 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++#ifdef MRB_ENABLE_DEBUG_LOG
++static inline void check_ht_validity(hash_table *ht) {
++  if (ht == NULL) return;
++  // Add basic sanity check for hash_table pointer
++  if ((uintptr_t)ht < 0x1000 || (uintptr_t)ht > (uintptr_t)-0x1000) {
++    // Suspicious pointer detected
++    abort();
++  }
++}
++#define HT_SIZE_WITH_CHECK(ht_val) \
++  (check_ht_validity(ht_val), (ht_val)->size)
++#else
++#define HT_SIZE_WITH_CHECK(ht_val) ((ht_val)->size)
++#endif
+@@ -177 +191,0 @@ DEFINE_SWITCHER(ht, HT)
+-

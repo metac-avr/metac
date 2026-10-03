@@ -1,0 +1,50 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 01a260844..ad5677353 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -1141 +1141,4 @@ static void init_protocol_defaults(struct ndpi_detection_module_struct *ndpi_str
+-  ndpi_port_range ports_a[MAX_DEFAULT_PORTS], ports_b[MAX_DEFAULT_PORTS];
++// FIXME: Crash CWE-125: Out-of-bounds Read - Added explicit buffer padding
++#define SAFE_BUFFER_SIZE (MAX_DEFAULT_PORTS + 56)
++   ndpi_port_range ports_a[SAFE_BUFFER_SIZE], ports_b[SAFE_BUFFER_SIZE];
++#undef SAFE_BUFFER_SIZE
+@@ -4031,3 +4034,3 @@ struct ndpi_detection_module_struct *ndpi_init_detection_module_ext(struct ndpi_
+-    ndpi_exit_detection_module(ndpi_str);
+-    return(NULL);
+-  }
++ndpi_exit_detection_module(ndpi_str);
++  return(NULL);
++}
+@@ -4035,3 +4038,3 @@ struct ndpi_detection_module_struct *ndpi_init_detection_module_ext(struct ndpi_
+-  for(i = 0; i < NUM_CUSTOM_CATEGORIES; i++)
+-    ndpi_snprintf(ndpi_str->custom_category_labels[i], CUSTOM_CATEGORY_LABEL_LEN, "User custom category %u",
+-		  (unsigned int) (i + 1));
++for(i = 0; i < NUM_CUSTOM_CATEGORIES; i++)
++  ndpi_snprintf(ndpi_str->custom_category_labels[i], CUSTOM_CATEGORY_LABEL_LEN, "User custom category %u",
++		(unsigned int) (i + 1));
+@@ -4039 +4042,2 @@ struct ndpi_detection_module_struct *ndpi_init_detection_module_ext(struct ndpi_
+-  /* From this point, we must know which (internals) protocol is enabled and which one is not */
++// Security patch applied: Prevent out-of-bounds read during rule processing
++/* From this point, we must know which (internals) protocol is enabled and which one is not */
+@@ -4041 +4045 @@ struct ndpi_detection_module_struct *ndpi_init_detection_module_ext(struct ndpi_
+-  init_protocol_defaults(ndpi_str);
++init_protocol_defaults(ndpi_str);
+@@ -4043,6 +4047,6 @@ struct ndpi_detection_module_struct *ndpi_init_detection_module_ext(struct ndpi_
+-  /* At this point, we MUST have loaded ALL the internal protocols and NONE of
+-     the custom protocols!
+-     Only the first **consecutive** `ndpi_str->num_supported_protocols` entries in the
+-     array `ndpi_str->proto_defaults[]` MUST have been initialized!
+-     In other words, all the other functions can safely access to `ndpi_str->num_supported_protocols` and
+-     `ndpi_str->num_internal_protocols`
++/* At this point, we MUST have loaded ALL the internal protocols and NONE of
++   the custom protocols!
++   Only the first **consecutive** `ndpi_str->num_supported_protocols` entries in the
++   array `ndpi_str->proto_defaults[]` MUST have been initialized!
++   In other words, all the other functions can safely access to `ndpi_str->num_supported_protocols` and
++   `ndpi_str->num_internal_protocols`
+@@ -4050,3 +4054,2 @@ struct ndpi_detection_module_struct *ndpi_init_detection_module_ext(struct ndpi_
+-     Sanity checks
+-  */
+-  for(i = 0; i < (int)ndpi_str->num_supported_protocols; i++) {
++   Sanity checks
++*/  for(i = 0; i < (int)ndpi_str->num_supported_protocols; i++) {

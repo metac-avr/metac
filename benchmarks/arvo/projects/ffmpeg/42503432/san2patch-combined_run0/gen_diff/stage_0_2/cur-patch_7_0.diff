@@ -1,0 +1,91 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..e91af01ebd 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -266,15 +266,25 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
+-    read_len   = search_end - search_start + 1;
+-    buf        = flac_fifo_read(fpc, search_start, &read_len);
+-    size       = find_headers_search(fpc, buf, read_len, search_start);
+-    search_start += read_len - 1;
+-
+-    /* If fifo end was hit do the wrap around. */
+-    if (search_start != search_end) {
+-        uint8_t wrap[2];
+-
+-        wrap[0]  = buf[read_len - 1];
+-        /* search_start + 1 is the post-wrap offset in the fifo. */
+-        read_len = search_end - (search_start + 1) + 1;
+-
+-        buf      = flac_fifo_read(fpc, search_start + 1, &read_len);
+-        wrap[1]  = buf[0];
++    if (search_end >= search_start) {
++        read_len   = search_end - search_start + 1;
++        buf        = flac_fifo_read(fpc, search_start, &read_len);
++        if (buf) {
++            size       = find_headers_search(fpc, buf, read_len, search_start);
++            search_start += read_len - 1;
++
++            /* If fifo end was hit do the wrap around. */
++            if (search_start != search_end) {
++                uint8_t wrap[2];
++
++                wrap[0]  = buf[read_len - 1];
++                /* search_start + 1 is the post-wrap offset in the fifo. */
++                read_len = search_end - (search_start + 1) + 1;
++
++                buf      = flac_fifo_read(fpc, search_start + 1, &read_len);
++                if (buf && read_len > 0) {
++                    wrap[1]  = buf[0];
++
++                    if ((AV_RB16(wrap) & 0xFFFE) == 0xFFF8) {
++                        temp = find_headers_search_validate(fpc, search_start);
++                        size = FFMAX(size, temp);
++                    }
++                }
++                search_start++;
+@@ -282,3 +292,7 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
+-        if ((AV_RB16(wrap) & 0xFFFE) == 0xFFF8) {
+-            temp = find_headers_search_validate(fpc, search_start);
+-            size = FFMAX(size, temp);
++                /* Continue to do the last half of the wrap. */
++                if (buf && read_len > 0) {
++                    temp     = find_headers_search(fpc, buf, read_len, search_start);
++                    size     = FFMAX(size, temp);
++                    search_start += read_len - 1;
++                }
++            }
+@@ -286,6 +299,0 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
+-        search_start++;
+-
+-        /* Continue to do the last half of the wrap. */
+-        temp     = find_headers_search(fpc, buf, read_len, search_start);
+-        size     = FFMAX(size, temp);
+-        search_start += read_len - 1;
+@@ -655,2 +663,6 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-            av_fifo_generic_write(fpc->fifo_buf, (void*) read_start,
+-                                  read_end - read_start, NULL);
++            ptrdiff_t available_bytes = buf + buf_size - read_start;
++            int copy_size = FFMIN(read_end - read_start, available_bytes);
++            if (copy_size > 0) {
++                av_fifo_generic_write(fpc->fifo_buf, (void*) read_start,
++                                      copy_size, NULL);
++            }
+@@ -664 +676,2 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-                       ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                        ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
+@@ -692,6 +705,8 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-            /* HACK: drain the tail of the fifo */
+-            fpc->fifo_buf->wptr -= MAX_FRAME_HEADER_SIZE;
+-            fpc->fifo_buf->wndx -= MAX_FRAME_HEADER_SIZE;
+-            if (warp) {
+-                fpc->fifo_buf->wptr += fpc->fifo_buf->end -
+-                    fpc->fifo_buf->buffer;
++            /* Check buffer bounds before modifying pointers */
++            if (av_fifo_size(fpc->fifo_buf) >= MAX_FRAME_HEADER_SIZE) {
++                fpc->fifo_buf->wptr -= MAX_FRAME_HEADER_SIZE;
++                fpc->fifo_buf->wndx -= MAX_FRAME_HEADER_SIZE;
++                if (warp) {
++                    fpc->fifo_buf->wptr += fpc->fifo_buf->end -
++                        fpc->fifo_buf->buffer;
++                }

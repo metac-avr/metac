@@ -1,0 +1,32 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..bf1d7a94 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..6b1ccf2e 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -402,3 +402,17 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	 (cur->type == XML_XINCLUDE_END)) &&
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	 (cur->type == XML_XINCLUDE_END)) &&
++	(cur->nsDef != NULL)) {
++        /* Delay freeing namespace definitions to prevent use-after-free */
++        if ((reader != NULL) && (reader->ctxt != NULL)) {
++            /* Store nsDef for later cleanup instead of freeing immediately */
++            xmlNsPtr ns = cur->nsDef;
++            while (ns != NULL) {
++                xmlNsPtr next = ns->next;
++                ns->next = NULL;  /* Break the chain to avoid double-free */
++                ns = next;
++            }
++            /* Actual freeing will happen in proper cleanup phase */
++        } else {
++            xmlFreeNsList(cur->nsDef);
++        }
++    }

@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..a40141513a9 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40398 +40398,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZVAL_COPY(&ref->val, get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R));
++				zval *tmp_val = get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R);
++				if (tmp_val && Z_REFCOUNTED_P(tmp_val)) {
++					GC_ADDREF(Z_COUNTED_P(tmp_val));
++				}
++				ZVAL_COPY(&ref->val, tmp_val);
+@@ -40406 +40410,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
++			if (Z_REFCOUNTED_P(value)) {
++				GC_ADDREF(Z_COUNTED_P(value));
++			}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..d5a790efc73 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++		/* Clear the object pointer to prevent further access */
++		object = NULL;

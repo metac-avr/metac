@@ -1,0 +1,44 @@
+diff --git a/Zend/zend_iterators.c b/Zend/zend_iterators.c
+index f67033b1116..7344162668f 100644
+--- a/Zend/zend_iterators.c
++++ b/Zend/zend_iterators.c
+@@ -56 +55,0 @@ static const zend_object_handlers iterator_object_handlers = {
+-
+@@ -64 +63,2 @@ static void iter_wrapper_free(zend_object *object)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -66 +66,5 @@ static void iter_wrapper_free(zend_object *object)
+-	iter->funcs->dtor(iter);
++	if (iter != NULL && iter->funcs != NULL) {
++		if (iter->funcs->dtor != NULL) {
++			iter->funcs->dtor(iter);
++		}
++	}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..94da90193ab 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74,2 +74,4 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
++i_zval_ptr_dtor(&ref->val);
++	if (ref && ((zend_uintptr_t)ref > 4096)) {
++		efree_size(ref, sizeof(zend_reference));
++	}
+@@ -82 +84,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +87,3 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr && ((zend_uintptr_t)zval_ptr > 4096)) {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -90 +95 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
+@@ -94,2 +99 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

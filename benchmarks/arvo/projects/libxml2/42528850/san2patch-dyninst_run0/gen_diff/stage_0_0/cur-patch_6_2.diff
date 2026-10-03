@@ -1,0 +1,35 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..33b4fde1 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4367 +4367 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4375 +4375 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++     xmlNodePtr ret;
+@@ -4376,0 +4377,3 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (node == NULL)
++        return(NULL);
++    
+@@ -4387,2 +4390 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
++ * * Returns: a new #xmlNodePtr, or NULL in case of error.
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..ed10c9ab 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -422,2 +422,10 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Delay freeing namespace definitions to prevent use-after-free */
++        if ((reader != NULL) && (reader->ctxt != NULL)) {
++            /* Add to deferred cleanup list instead of freeing immediately */
++            cur->next = (xmlNodePtr)reader->ctxt->freeNsDefs;
++            reader->ctxt->freeNsDefs = cur->nsDef;
++        } else {
++            xmlFreeNsList(cur->nsDef);
++        }
++    }

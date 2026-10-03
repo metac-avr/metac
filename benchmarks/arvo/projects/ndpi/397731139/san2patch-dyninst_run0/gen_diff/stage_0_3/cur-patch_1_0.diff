@@ -1,0 +1,40 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 6656143f6..45f1d102c 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1377,8 +1377,27 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      size_t length = strlen(flow->info);
+-
+-      strncat(flow->info + length, flow->ndpi_flow->protos.slp.url[i],
+-              sizeof(flow->info) - length);
+-      length = strlen(flow->info);
+-
+-      if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1)
+-        strncat(flow->info + length, ", ", sizeof(flow->info) - length);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t length = strlen(flow->info);
++       size_t url_len = strlen(flow->ndpi_flow->protos.slp.url[i]);
++       
++       // Calculate required space including potential comma separator
++       size_t required_space = url_len;
++       if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1) {
++         required_space += 2; // For ", " separator
++       }
++       
++       // Check if there's enough space before proceeding
++       if (length + required_space < sizeof(flow->info)) {
++         strncat(flow->info + length, flow->ndpi_flow->protos.slp.url[i],
++                 sizeof(flow->info) - length - 1);
++         length = strlen(flow->info);
++         
++         if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1)
++           strncat(flow->info + length, ", ", sizeof(flow->info) - length - 1);
++       } else {
++         // Not enough space, truncate the URL to fit
++         size_t available_space = sizeof(flow->info) - length - 1;
++         if (available_space > 0) {
++           strncat(flow->info + length, flow->ndpi_flow->protos.slp.url[i],
++                   available_space);
++         }
++         break; // Stop processing further URLs to prevent overflow
++       }

@@ -1,0 +1,20 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..8f3ae7148 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1095,0 +1096,2 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++    // Validate object is not freed before accessing
++    if ((uintptr_t)obj == (uintptr_t)0xdeadbeef) continue;  // Skip known bad pointers
+@@ -1097,2 +1099,5 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    // Add null check and validity check before marking
++    if (obj != NULL && obj->tt != MRB_TT_FREE) {
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    }
+@@ -1202,0 +1208,4 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Add validation to prevent expired pointer dereference */
++      if (gc->atomic_gray_list) {
++        gc->atomic_gray_list = NULL;
++      }

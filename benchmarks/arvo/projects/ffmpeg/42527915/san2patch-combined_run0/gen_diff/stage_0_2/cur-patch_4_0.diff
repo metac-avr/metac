@@ -1,0 +1,36 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..6f39728e85 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -427 +427,2 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-416: Use After Free
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
+@@ -438,4 +439,14 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    for (int j = 0; j < 1<<numbits; j++) {
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++    // Add null check before accessing single->table
++    if (single && single->table) {
++        for (int j = 0; j < 1<<numbits; j++) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        }
++    } else {
++        // Initialize table with safe defaults if single or single->table is null
++        for (int j = 0; j < 1<<numbits; j++) {
++            table[j].len = 0;
++            table[j].num = 0;
++            AV_WN16(table[j].val, 0);
++        }
+@@ -495 +506 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -499,0 +511,5 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    
++    if (buf == NULL) {
++        av_log(logctx, AV_LOG_ERROR, "Buffer is NULL after vlc_common_end\n");
++        return AVERROR_INVALIDDATA;
++    }

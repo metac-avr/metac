@@ -1,0 +1,33 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..a8e65228 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..72ba1d3d 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1299 +1299 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
+@@ -1301 +1301,17 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-		xmlTextReaderFreeNode(reader, tmp);
++		/* Add safety check for namespace usage before freeing */
++		int can_free = 1;
++		xmlNsPtr ns = tmp->nsDef;
++		while (ns != NULL) {
++		    if (ns->context != NULL) {
++		        can_free = 0;
++		        break;
++		    }
++		    ns = ns->next;
++		}
++		if (can_free) {
++		    xmlTextReaderFreeNode(reader, tmp);
++		} else {
++		    /* Mark node as preserved if namespaces are still in use */
++		    tmp->extra |= NODE_IS_PRESERVED;
++		    reader->preserves++;
++		}

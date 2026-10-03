@@ -1,0 +1,49 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..1aa9dcdd911 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,2 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+@@ -1153 +1151,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1154,0 +1154 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (p == NULL) return 0;
+@@ -1158,0 +1159 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
++	if (p == NULL) return 0;
+@@ -1163,0 +1165 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (p == NULL) return 0;
+@@ -1165,2 +1167 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
+-}
++	return ++(p->refcount);}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..acf98e592ea 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30087 +30087 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	SAVE_OPLINE();
++SAVE_OPLINE();
+@@ -30090,0 +30091,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++		/* Validate array pointer before dimension assignment to prevent use-after-free */
++		if (UNEXPECTED(Z_ARR_P(object_ptr) == NULL || GC_REFCOUNT(Z_ARR_P(object_ptr)) == 0)) {
++			/* Skip processing if array is invalid or has been destroyed */
++			object_ptr = orig_object_ptr;
++		} else {
+@@ -30092,5 +30097,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-		SEPARATE_ARRAY(object_ptr);
+-		if (IS_CV == IS_UNUSED) {
+-			value = _get_zval_ptr_var((opline+1)->op1.var EXECUTE_DATA_CC);
+-			if (IS_VAR == IS_CV || IS_VAR == IS_VAR) {
+-				ZVAL_DEREF(value);
++			SEPARATE_ARRAY(object_ptr);
++			if (IS_CV == IS_UNUSED) {
++				value = _get_zval_ptr_var((opline+1)->op1.var EXECUTE_DATA_CC);
++				if (IS_VAR == IS_CV || IS_VAR == IS_VAR) {
++					ZVAL_DEREF(value);
++				}
+@@ -30098 +30104 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			value = zend_hash_next_index_insert(Z_ARRVAL_P(object_ptr), value);
++		}			value = zend_hash_next_index_insert(Z_ARRVAL_P(object_ptr), value);

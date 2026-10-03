@@ -1,0 +1,69 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index c3c18764d..fcda30e22 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1549,9 +1549,4 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-      else {
+-	/* New protocol detected or give up */
+-	flow->detection_completed = 1;
+-
+-#if 0
+-	/* Check if we should keep checking extra packets */
+-	if(ndpi_flow && ndpi_flow->check_extra_packets)
+-	  flow->check_extra_packets = 1;
+-#endif
++      char *ndpi_strdup(const char *s) {
++  if(s == NULL ){
++    return NULL;
++  }
+@@ -1559,2 +1554,5 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-	if(flow->detected_protocol.app_protocol == NDPI_PROTOCOL_UNKNOWN) {
+-	  u_int8_t proto_guessed;
++  // First check if the pointer is valid before using it
++  // Using a simple null check since ndpi_is_valid_ptr is not available
++  if(s != NULL) {
++    int len = strlen(s);
++    char *m = ndpi_malloc(len + 1);
+@@ -1562,4 +1560,4 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-	  flow->detected_protocol = ndpi_detection_giveup(workflow->ndpi_struct, flow->ndpi_flow,
+-							  enable_protocol_guess, &proto_guessed);
+-	  if(enable_protocol_guess) workflow->stats.guessed_flow_protocols++;
+-	}
++    if(m) {
++      memcpy(m, s, len);
++      m[len] = '\0';
++    }
+@@ -1567,2 +1565,5 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow * workflow,
+-	process_ndpi_collected_info(workflow, flow);
+-      }
++    return(m);
++  }
++  
++  return NULL;
++}
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..5bb494c54 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -269,2 +269,9 @@ char *ndpi_strdup(const char *s) {
+-  int len = strlen(s);
+-  char *m = ndpi_malloc(len + 1);
++  // Validate that s points to accessible memory before calling strlen
++  if(ndpi_is_valid_ptr(s)) {
++    int len = strlen(s);
++    char *m = ndpi_malloc(len + 1);
++
++    if(m) {
++      memcpy(m, s, len);
++      m[len] = '\0';
++    }
+@@ -272,3 +279 @@ char *ndpi_strdup(const char *s) {
+-  if(m) {
+-    memcpy(m, s, len);
+-    m[len] = '\0';
++    return(m);
+@@ -276,2 +281,2 @@ char *ndpi_strdup(const char *s) {
+-
+-  return(m);
++  
++  return NULL;

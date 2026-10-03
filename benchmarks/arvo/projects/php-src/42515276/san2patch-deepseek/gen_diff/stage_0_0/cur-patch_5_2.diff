@@ -1,0 +1,41 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index 229d9890251..72f5d9ef1d7 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2317 +2317,15 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = timelib_parse_from_format(format, time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
++static int php_date_initialize(php_date_obj *dateobj, const char *time_str, size_t time_str_len, const char *format, const timelib_tzinfo *tz, int flags)
++{
++	timelib_error_container *err = NULL;
++
++	if (dateobj->time) {
++		timelib_time_dtor(dateobj->time);
++		dateobj->time = NULL;
++	}
++
++	if (!time_str_len) {
++		if (format) {
++			dateobj->time = timelib_parse_from_format(format, "", 0, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
++		} else {
++			dateobj->time = timelib_strtotime("now", sizeof("now") - 1, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
++		}
+@@ -2319,3 +2333,4 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		if (time_str_len == 0) {
+-			time_str = "now";
+-			time_str_len = sizeof("now") - 1;
++		if (format) {
++			dateobj->time = timelib_parse_from_format(format, time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
++		} else {
++			dateobj->time = timelib_strtotime(time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
+@@ -2323 +2337,0 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = timelib_strtotime(time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
+@@ -2331 +2344,0 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		/* spit out the first library error message, at least */
+@@ -2337,2 +2350,5 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = 0;
+-		return 0;
++		dateobj->time = NULL;
++	}
++
++	return SUCCESS;
++}		return 0;

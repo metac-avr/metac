@@ -1,0 +1,16 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..3b369105580 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -429 +429,2 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -432 +433,6 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-	ZVAL_COPY_DEREF(result, retval);
++	if (retval != NULL) {
++		ZVAL_COPY_DEREF(result, retval);
++		return;
++	}
++	zend_error(E_WARNING, "Undefined array key " ZEND_LONG_FMT, hval);
++	ZVAL_NULL(result);

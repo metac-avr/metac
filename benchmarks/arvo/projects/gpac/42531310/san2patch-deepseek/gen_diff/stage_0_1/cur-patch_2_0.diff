@@ -1,0 +1,14 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..d1674be8a 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -1587 +1587,8 @@ static u64 gf_inspect_dump_obu_internal(FILE *dump, AV1State *av1, u8 *obu_ptr,
+-			GF_BitStream *bs = gf_bs_new(obu_ptr+hdr_size, obu_ptr_length-hdr_size, GF_BITSTREAM_READ);
++			if (obu_ptr_length <= hdr_size) return;
++			u32 avail = obu_ptr_length - hdr_size;
++			if (!avail) return;
++			GF_BitStream *bs = gf_bs_new(obu_ptr+hdr_size, avail, GF_BITSTREAM_READ);
++			if (!bs || !gf_bs_available(bs)) {
++				if (bs) gf_bs_del(bs);
++				return;
++			}

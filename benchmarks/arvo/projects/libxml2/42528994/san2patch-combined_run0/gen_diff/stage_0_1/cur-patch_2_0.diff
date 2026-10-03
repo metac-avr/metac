@@ -1,0 +1,28 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index 9667ccb4..ff174818 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -1085,3 +1085,14 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	if (val <   0x800) { *out++= (val >>  6) | 0xC0;  bits=  0; }
+-	else if (val < 0x10000) { *out++= (val >> 12) | 0xE0;  bits=  6;}
+-	else if (val < 0x110000)  { *out++= (val >> 18) | 0xF0;  bits=  12; }
++	// Check buffer bounds before multi-byte operations
++	if (out == NULL) return(0);
++	if (val <   0x800) { 
++	    if (out + 2 > out + 4) return(0); // Prevent overflow beyond 4-byte buffer
++	    *out++= (val >>  6) | 0xC0;  bits=  0; 
++	}
++	else if (val < 0x10000) { 
++	    if (out + 3 > out + 4) return(0); // Prevent overflow beyond 4-byte buffer
++	    *out++= (val >> 12) | 0xE0;  bits=  6;
++	}
++	else if (val < 0x110000)  { 
++	    if (out + 4 > out + 4) return(0); // Prevent overflow beyond 4-byte buffer
++	    *out++= (val >> 18) | 0xF0;  bits=  12; 
++	}
+@@ -1094 +1105,2 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	for ( ; bits >= 0; bits-= 6)
++	for ( ; bits >= 0; bits-= 6) {
++	    if (out + 1 > out + 4) return(0); // Prevent overflow beyond 4-byte buffer
+@@ -1095,0 +1108 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
++	}

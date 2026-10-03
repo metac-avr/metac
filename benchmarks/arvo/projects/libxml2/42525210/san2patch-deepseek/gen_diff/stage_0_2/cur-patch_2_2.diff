@@ -1,0 +1,46 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index a3c47f69..de2dbc58 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -2749 +2749 @@ htmlParseHTMLAttribute(htmlParserCtxtPtr ctxt, const xmlChar stop) {
+-    buffer = (xmlChar *) xmlMallocAtomic(buffer_size);
++            buffer = (xmlChar *) xmlMallocAtomic(buffer_size);
+@@ -2757 +2757,2 @@ htmlParseHTMLAttribute(htmlParserCtxtPtr ctxt, const xmlChar stop) {
+-     * Ok loop until we reach one of the ending chars
++// FIXME: Crash CWE-125: Out-of-bounds Read
++      * Ok loop until we reach one of the ending chars
+@@ -2763,8 +2764,26 @@ htmlParseHTMLAttribute(htmlParserCtxtPtr ctxt, const xmlChar stop) {
+-	    if (NXT(1) == '#') {
+-		unsigned int c;
+-		int bits;
+-
+-		c = htmlParseCharRef(ctxt);
+-		if      (c <    0x80)
+-		        { *out++  = c;                bits= -6; }
+-		else if (c <   0x800)
++	    if (ctxt->input->cur + 1 < ctxt->input->end) {
++		if (NXT(1) == '#') {
++		    unsigned int c;
++		    int bits;
++
++		    c = htmlParseCharRef(ctxt);
++		    if      (c <    0x80)
++		            { *out++  = c;                bits= -6; }
++		    else if (c <   0x800)
++		            { *out++  =((c >>  6) & 0x1F) | 0xC0;  bits=  0; }
++		    else if (c < 0x10000)
++		            { *out++  =((c >> 12) & 0x0F) | 0xE0;  bits=  6; }
++		    else
++		            { *out++  =((c >> 18) & 0x07) | 0xF0;  bits=  12; }
++		    for ( ; bits >= 0; bits-= 6) {
++		        *out++  = ((c >> bits) & 0x3F) | 0x80;
++		    }
++		    continue;
++		}
++	    } else {
++		break;
++	    }
++	}
++    }
++    *out = 0;
++    return(buffer);		else if (c <   0x800)

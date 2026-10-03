@@ -1,0 +1,21 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..98060ebb1 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -618,0 +619,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++    /* Early exit if not enough bytes remain */
++    if (i > n - sizeof(bitint)) continue;
+@@ -626,2 +628,8 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-        if (memcmp(substr, xs + 1, m - 2) == 0) {
+-          return i + j;
++        /* Safety check: ensure substr is within bounds */
++        if (substr >= (char*)ys && substr + (m - 2) <= ys + n) {
++          if (memcmp(substr, xs + 1, m - 2) == 0) {
++            return i + j;
++          }
++        } else {
++          /* Fallback to safe character-by-character search */
++          break;
+@@ -636,0 +645,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++      /* Prevent j from going beyond available bytes */
++      if (i + j >= n) break;

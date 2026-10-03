@@ -1,0 +1,24 @@
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..444019ea5 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -817,2 +817,6 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-  if (count == -1)
+-    count = slen * 2;
++  if (count == -1) {
++     count = slen * 2;
++     if (count < 0 || count > slen * 2) return 0; // Prevent integer overflow
++  }
++
++  if (count < 0) count = 0; // Ensure non-negative count
+diff --git a/src/string.c b/src/string.c
+index 1b5aecff2..af65ee1a2 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -138 +138,5 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
++  if (len < 0 || len > MRB_INT_MAX) {
++    len = 0;
++  }

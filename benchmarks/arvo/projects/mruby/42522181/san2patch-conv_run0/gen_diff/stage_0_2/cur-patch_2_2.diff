@@ -1,0 +1,147 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..442c6ed39 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779,6 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
+-    break;
+-  }
+-}
+-
+@@ -793,8 +787 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++}  case MRB_TT_OBJECT:
+@@ -1165,11 +1152,18 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-  while (page && (tried_sweep < limit)) {
+-    RVALUE *p = objects(page);
+-    RVALUE *e = p + MRB_HEAP_PAGE_SIZE;
+-    size_t freed = 0;
+-    mrb_bool dead_slot = TRUE;
+-    mrb_bool full = (page->freelist == NULL);
+-
+-    if (is_minor_gc(gc) && page->old) {
+-      /* skip a slot which doesn't contain any young object */
+-      p = e;
+-      dead_slot = FALSE;
++  static void
++obj_free(mrb_state *mrb, struct RBasic *obj, int end)
++{
++  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
++  switch (obj->tt) {
++
++  case MRB_TT_OBJECT:
++    if (!end) mrb_obj_iv_tbl_free(mrb, (struct RObject*)obj);
++    break;
++
++  case MRB_TT_CLASS:
++  case MRB_TT_MODULE:
++  case MRB_TT_ICLASS:
++  case MRB_TT_SCLASS:
++    if (!end) mrb_gc_free_mt(mrb, (struct RClass*)obj);
++    if (!end) mrb_obj_iv_tbl_free(mrb, (struct RObject*)obj);
++    if (((struct RClass*)obj)->super != NULL) {
++      ((struct RClass*)obj)->super = NULL;
+@@ -1177,18 +1171,8 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    while (p<e) {
+-      if (is_dead(gc, &p->as.basic)) {
+-        if (p->as.basic.tt != MRB_TT_FREE) {
+-          obj_free(mrb, &p->as.basic, FALSE);
+-          if (p->as.basic.tt == MRB_TT_FREE) {
+-            p->as.free.next = page->freelist;
+-            page->freelist = (struct RBasic*)p;
+-            freed++;
+-          }
+-          else {
+-            dead_slot = FALSE;
+-          }
+-        }
+-      }
+-      else {
+-        if (!is_generational(gc))
+-          paint_partial_white(gc, &p->as.basic); /* next gc target */
+-        dead_slot = FALSE;
++    break;
++
++  case MRB_TT_ENV:
++    if (!end) {
++      struct REnv *e = (struct REnv*)obj;
++      if (e->cxt && e->cxt->fib) {
++        mrb_assert(e->cxt->fib->env == e || e->cxt->fib->env == NULL);
++        e->cxt->fib->env = NULL;
+@@ -1196 +1179,0 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      p++;
+@@ -1197,0 +1181 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++    break;
+@@ -1199,8 +1183,3 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    /* free dead slot */
+-    if (dead_slot && freed < MRB_HEAP_PAGE_SIZE) {
+-      mrb_heap_page *next = page->next;
+-
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++  case MRB_TT_FIBER:
++    if (!end && ((struct RFiber*)obj)->cxt) {
++      mrb_fiber_close(mrb, (struct RFiber*)obj);
+@@ -1208,3 +1187,7 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    else {
+-      if (full && freed > 0) {
+-        link_free_heap_page(gc, page);
++    break;
++
++  case MRB_TT_PROC:
++    if (!end) {
++      struct RProc *p = (struct RProc*)obj;
++      if (p->body.reps) {
++        mrb_irep_decref(mrb, p->body.reps);
+@@ -1212,5 +1194,0 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      if (page->freelist == NULL && is_minor_gc(gc))
+-        page->old = TRUE;
+-      else
+-        page->old = FALSE;
+-      page = page->next;
+@@ -1218,3 +1196,30 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    tried_sweep += MRB_HEAP_PAGE_SIZE;
+-    gc->live -= freed;
+-    gc->live_after_mark -= freed;
++    break;
++
++  case MRB_TT_ARRAY:
++    if (!end) mrb_ary_decref(mrb, ((struct RArray*)obj)->aux);
++    break;
++
++  case MRB_TT_HASH:
++    if (!end) mrb_gc_free_hash(mrb, (struct RHash*)obj);
++    break;
++
++  case MRB_TT_STRING:
++    if (!end) mrb_gc_free_str(mrb, (struct RString*)obj);
++    break;
++
++  case MRB_TT_RANGE:
++    if (!end) mrb_gc_free_range(mrb, (struct RRange*)obj);
++    break;
++
++  case MRB_TT_EXCEPTION:
++    if (!end) mrb_obj_iv_tbl_free(mrb, (struct RObject*)obj);
++    break;
++
++  case MRB_TT_CDATA:
++    if (!end && ((struct RData*)obj)->type && ((struct RData*)obj)->type->dfree) {
++      ((struct RData*)obj)->type->dfree(mrb, ((struct RData*)obj)->data);
++    }
++    break;
++
++  default:
++    break;
+@@ -1221,0 +1227 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++}

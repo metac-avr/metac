@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..978b725fb 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -199 +199,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++// FIXED: Synchronize ci->stack with current stack after potential realloc
++ {
+@@ -200,0 +202 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    mrb_value *old_stack = mrb->c->ci->stack;
+@@ -201,0 +204,4 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    // Update ci->stack to point to new location if stack was reallocated
++    if (old_stack != mrb->c->stack) {
++      mrb->c->ci->stack = mrb->c->stack;
++    }
+@@ -525 +531,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     c = mrb_class(mrb, self);
+@@ -528,0 +536 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      ci = mrb->c->ci;  // Refresh ci pointer after stack extension
+@@ -533,0 +542 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      ci = mrb->c->ci;  // Refresh ci pointer after stack extension

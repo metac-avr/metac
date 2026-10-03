@@ -1,0 +1,25 @@
+diff --git a/buf.c b/buf.c
+index 9dc9400f..1be18fd7 100644
+--- a/buf.c
++++ b/buf.c
+@@ -410,0 +411,2 @@ xmlBufGrowInternal(xmlBufPtr buf, size_t len) {
++        // Reset parser state to force pointer refresh
++        buf->state = XML_PARSER_STATE_RESTART;
+@@ -417,0 +420,2 @@ xmlBufGrowInternal(xmlBufPtr buf, size_t len) {
++        // Reset parser state to force pointer refresh
++        buf->state = XML_PARSER_STATE_RESTART;
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..5f553759 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -4877,0 +4878,10 @@ htmlParseDocument(htmlParserCtxtPtr ctxt) {
++    /*
++     * Ensure buffer pointers are valid after potential realloc operations
++     */
++    if (ctxt->input && ctxt->input->buf && ctxt->input->buf->buffer) {
++        xmlBufferPtr buffer = ctxt->input->buf->buffer;
++        ctxt->input->cur = buffer->content + 
++                          MIN(buffer->use, ctxt->input->cur - buffer->content);
++        ctxt->input->end = buffer->content + buffer->use;
++    }
++    

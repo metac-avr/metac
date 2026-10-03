@@ -1,0 +1,22 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..f50455fb 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2546 +2546,5 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
+-    return(xmlXIncludeProcessTreeFlagsData(tree, flags, data));
++    /* Prevent potential use-after-free by validating document state */
++    if ((doc != NULL) && (tree != NULL) && (tree->doc == doc)) {
++        return(xmlXIncludeProcessTreeFlagsData(tree, flags, data));
++    }
++    return(-1);
+diff --git a/tree.c b/tree.c
+index 8077348a..e5c806c8 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699 +3699 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
++xmlFreeNsList((xmlNsPtr) cur);
+@@ -3702,0 +3703,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
++    /* Break circular references to prevent use-after-free */
++    cur->next = NULL;
++    cur->prev = NULL;

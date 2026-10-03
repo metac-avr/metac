@@ -1,0 +1,20 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..1fd53a5e 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -444 +444,2 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	reader->ctxt->freeElemsNr++;
++// FIXME: Crash CWE-416: Use After Free
++ 	reader->ctxt->freeElemsNr++;
+@@ -446 +447,7 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	xmlFree(cur);
++	if (reader->ctxt->xinclude == 0)
++	    xmlFree(cur);
++	else {
++	    cur->next = reader->ctxt->freeElems;
++	    reader->ctxt->freeElems = cur;
++	    reader->ctxt->freeElemsNr++;
++	}
+@@ -452 +459 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+- * @reader:  the xmlTextReaderPtr used
++ * * @reader:  the xmlTextReaderPtr used

@@ -1,0 +1,27 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..65879c0d8 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1683 +1683,2 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1685 +1686,2 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-    hval ^= (uint32_t)*s++;
++    if (s && send) hval ^= (uint32_t)*s++;
++    else break;
+diff --git a/src/gc.c b/src/gc.c
+index 823297612..b2bb85b74 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -816 +816 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-    else if (!ARY_EMBED_P(obj))
++else if (!ARY_EMBED_P(obj))
+@@ -824 +824,2 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -825,0 +827,3 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
++    // Invalidate string hash cache before deallocation to prevent use-after-free
++    // Clear the hash flag to indicate the string is no longer valid for hashing
++    ((struct RString*)obj)->hash = 0;

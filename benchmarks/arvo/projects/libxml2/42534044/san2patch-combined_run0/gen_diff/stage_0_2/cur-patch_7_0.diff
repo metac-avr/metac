@@ -1,0 +1,46 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..5c72f0ed 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3608,3 +3608,6 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    if (((cur->type == XML_ELEMENT_NODE) ||
+-		 (cur->type == XML_XINCLUDE_START) ||
+-		 (cur->type == XML_XINCLUDE_END)) &&
++	    /* Store node type before freeing content */
++	    xmlElementType node_type = cur->type;
++	    
++	    if (((node_type == XML_ELEMENT_NODE) ||
++		 (node_type == XML_XINCLUDE_START) ||
++		 (node_type == XML_XINCLUDE_END)) &&
+@@ -3613,4 +3616,4 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    if ((cur->type != XML_ELEMENT_NODE) &&
+-		(cur->type != XML_XINCLUDE_START) &&
+-		(cur->type != XML_XINCLUDE_END) &&
+-		(cur->type != XML_ENTITY_REF_NODE) &&
++	    if ((node_type != XML_ELEMENT_NODE) &&
++		(node_type != XML_XINCLUDE_START) &&
++		(node_type != XML_XINCLUDE_END) &&
++		(node_type != XML_ENTITY_REF_NODE) &&
+@@ -3620,3 +3623,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    if (((cur->type == XML_ELEMENT_NODE) ||
+-	         (cur->type == XML_XINCLUDE_START) ||
+-		 (cur->type == XML_XINCLUDE_END)) &&
++	    if (((node_type == XML_ELEMENT_NODE) ||
++	         (node_type == XML_XINCLUDE_START) ||
++		 (node_type == XML_XINCLUDE_END)) &&
+@@ -3633,2 +3636,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_TEXT_NODE) &&
+-		(cur->type != XML_COMMENT_NODE))
++		(node_type != XML_TEXT_NODE) &&
++		(node_type != XML_COMMENT_NODE))
+@@ -6882 +6885 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6884,2 +6887,5 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	prop->children = NULL;
+-	prop->last = NULL;
++	    prop->children = NULL;
++	    prop->last = NULL; /* Ensure consistency after freeing */
++	} else {
++	    prop->last = NULL; /* Initialize last even when children is NULL */
++	}

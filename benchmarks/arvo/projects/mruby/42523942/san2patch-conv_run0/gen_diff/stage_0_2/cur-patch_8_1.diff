@@ -1,0 +1,65 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..de2dc5efb 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -778,0 +779 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
++#include <string.h>
+@@ -780,3 +781,29 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  default:
+-    break;
+-  }
++#ifndef MRB_HEAP_PAGE_SIZE
++#define MRB_HEAP_PAGE_SIZE 1024
++#endif
++
++typedef struct {
++  mrb_bool old:1;
++  mrb_bool shared:1;
++} flags_t;
++
++static void
++add_gray_list(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj);
++
++#ifdef GC_DEBUG
++static void
++assert_type(mrb_state *mrb, mrb_value obj, enum mrb_vtype t, const char *type_str);
++#define GC_ASSERT_TYPE(mrb, obj, t) assert_type(mrb, obj, t, #t)
++#else
++#define GC_ASSERT_TYPE(mrb, obj, t)
++#endif
++
++#if defined(GC_PROFILE) && GC_PROFILE
++#include <sys/time.h>
++
++static double
++gettimeofday_sec()
++{
++  struct timeval tv;
++  gettimeofday(&tv, NULL);
++  return tv.tv_sec + (double)tv.tv_usec * 1e-6;
+@@ -783,0 +811 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
++#endif
+@@ -793,8 +821 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++}  case MRB_TT_OBJECT:
+@@ -1245,5 +1266,8 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-     size_t tried_sweep = 0;
+-     tried_sweep = incremental_sweep_phase(mrb, gc, limit);
+-     if (tried_sweep == 0)
+-       gc->state = MRB_GC_STATE_ROOT;
+-     return tried_sweep;
++    size_t tried_sweep = 0;
++    tried_sweep = incremental_sweep_phase(mrb, gc, limit);
++    if (tried_sweep == 0) {
++      gc->state = MRB_GC_STATE_ROOT;
++      /* Reset GC pointers to prevent expired pointer dereference */
++      gc->gray_list = NULL;
++    }
++    return tried_sweep;

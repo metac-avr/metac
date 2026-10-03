@@ -1,0 +1,51 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..4f3c2b72405 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1681,6 +1681,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	}
+-	SET_INCONSISTENT(HT_DESTROYED);
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
+-	zend_hash_iterators_remove(ht);
+-	FREE_HASHTABLE(ht);
++static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
++	return GC_DELREF(Z_COUNTED_P(pz));
+@@ -1688,5 +1684,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..24c0ce69536 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,8 +1208,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+@@ -1219,12 +1211,5 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	return GC_DELREF(Z_COUNTED_P(pz));
+-}
+-
+-#if SIZEOF_SIZE_T == 4
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++	if (EXPECTED(Z_COUNTED_P(pz) != NULL)) {
++		return GC_DELREF(Z_COUNTED_P(pz));
++	}
++	return 0;
++}#elif SIZEOF_SIZE_T == 8

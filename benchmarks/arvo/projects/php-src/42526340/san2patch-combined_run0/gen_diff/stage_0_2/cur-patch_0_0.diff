@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..1d7c9375855 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1251,7 +1250,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+@@ -1259 +1252,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1260,0 +1255 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (!p) return 0;
+@@ -1271,2 +1266 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
+-}
++	return ++(p->refcount;}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..c9e5f7835a5 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,3 +202,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
++// Fixed: Add guard to prevent expired pointer dereference by checking object validity before access
++		if (object != NULL && object->handlers != NULL) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++		} else {
++			GC_REMOVE_FROM_BUFFER(object);
++		}

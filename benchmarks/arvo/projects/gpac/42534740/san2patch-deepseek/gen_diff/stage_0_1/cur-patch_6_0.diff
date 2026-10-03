@@ -1,0 +1,21 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index eee917756..c378a51b6 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -351,2 +351,14 @@ static GF_Err gsfdmx_read_prop(GF_BitStream *bs, GF_PropertyValue *p)
+-			char *str = gf_malloc(sizeof(char)*(len+1));
+-			gf_bs_read_data(bs, str, len);
++			if (len > SIZE_MAX - 1) {
++				p->value.string_list.vals[i] = NULL;
++				return GF_NON_COMPLIANT_BITSTREAM;
++			}
++ 			char *str = gf_malloc(sizeof(char)*(len+1));
++			if (!str) {
++				p->value.string_list.vals[i] = NULL;
++				return GF_NON_COMPLIANT_BITSTREAM;
++			}
++			if (gf_bs_read_data(bs, str, len) != len) {
++				gf_free(str);
++				p->value.string_list.vals[i] = NULL;
++				return GF_NON_COMPLIANT_BITSTREAM;
++			}

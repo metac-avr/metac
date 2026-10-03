@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..7f166ded7c0 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1051,0 +1052,5 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
++	// Prevent expired pointer dereference by validating pointers early
++	if (!op1 || !op2) {
++		goto error_handler;
++	}
++
+@@ -1054,2 +1059,8 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (add_function_fast(result, op1, op2) == SUCCESS) {
+-		return SUCCESS;
++	
++	// Validate that dereferenced values are still valid
++	if (op1 && op2) {
++		if (add_function_fast(result, op1, op2) == SUCCESS) {
++			return SUCCESS;
++		}
++	} else {
++		goto error_handler;
+@@ -1063,0 +1075 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
++		error_handler:

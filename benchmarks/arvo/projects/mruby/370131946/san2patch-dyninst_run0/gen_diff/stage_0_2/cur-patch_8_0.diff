@@ -1,0 +1,39 @@
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..b3b1c8bf1 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2878 +2878 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-    mrb_str_modify(mrb, mrb_str_ptr(str));
++     mrb_str_modify(mrb, mrb_str_ptr(str));
+@@ -2880 +2880,26 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-  return mrb_str_cat(mrb, str, RSTRING_PTR(str2), RSTRING_LEN(str2));
++  
++  /* Prevent expired pointer dereference by validating string object */
++  if (!mrb_string_p(str2)) {
++    mrb_raise(mrb, E_TYPE_ERROR, "String expected");
++  }
++  
++  /* Safety wrapper to validate string data before access */
++  struct RString *rstr2 = mrb_str_ptr(str2);
++  if (rstr2 == NULL) {
++    return mrb_str_cat(mrb, str, "", 0);
++  }
++  
++  const char *data = RSTRING_PTR(str2);
++  mrb_int datalen = RSTRING_LEN(str2);
++  
++  /* Check for uninitialized or corrupted string data */
++  if (data == NULL && datalen != 0) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "corrupted string data");
++  }
++  
++  /* Ensure proper alignment for RBasic structure access */
++  if (data != NULL && ((uintptr_t)data & (sizeof(void*) - 1)) != 0) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "misaligned string data");
++  }
++  
++  return mrb_str_cat(mrb, str, data, datalen);
+@@ -2890,2 +2915 @@ mrb_str_append(mrb_state *mrb, mrb_value str1, mrb_value str2)
+-/*
+- * call-seq:
++/* * call-seq:

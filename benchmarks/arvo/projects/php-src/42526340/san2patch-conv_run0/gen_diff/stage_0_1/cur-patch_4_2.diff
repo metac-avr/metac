@@ -1,0 +1,58 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..b21f711e30c 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1251,2 +1251,45 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
++#ifndef ZEND_TYPES_H
++#define ZEND_TYPES_H
++
++#if defined(__GNUC__) && (__GNUC__ >= 9)
++# pragma GCC diagnostic push
++# pragma GCC diagnostic ignored "-Wattributes"
++#endif
++
++#include "zend_portability.h"
++#include "zend_long.h"
++
++#ifdef HAVE_VALGRIND
++# include <valgrind/memcheck.h>
++# ifndef VALGRIND_CHECK_MEM_DEFINED
++#  define VALGRIND_CHECK_MEM_DEFINED(a) VALGRIND_MAKE_MEM_DEFINED(&(a), sizeof(a))
++# endif
++#else
++# define VALGRIND_MAKE_MEM_DEFINED(a, b) do { } while (0)
++# define VALGRIND_CHECK_MEM_DEFINED(a) do { } while (0)
++# define VALGRIND_MAKE_MEM_UNDEFINED(a, b) do { } while (0)
++#endif
++
++#define GC_PERSISTENT_LOCAL 0x80000000
++
++#ifdef GC_ADD_FLAGS
++# undef GC_ADD_FLAGS
++#endif
++
++#ifdef ZEND_RC_MOD_CHECK
++# undef ZEND_RC_MOD_CHECK
++#endif
++
++#ifdef GC_MAKE_PERSISTENT_LOCAL
++# undef GC_MAKE_PERSISTENT_LOCAL
++#endif
++
++#ifdef GC_DEL_FLAGS
++# undef GC_DEL_FLAGS
++#endif
++
++#if ZEND_RC_DEBUG
++# define ZEND_RC_MOD_CHECK(p) \
++	zend_rc_mod_check(p)
++# define GC_MAKE_PERSISTENT_LOCAL(p) \
++	zend_gc_make_persistent_local(p)
+@@ -1273,0 +1317,5 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	ZEND_RC_MOD_CHECK(p);
++	return --(p->refcount);
++}}
++

@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..c97742ccf8a 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -155 +155 @@ static zend_attribute *get_attribute(HashTable *attributes, zend_string *lcname,
+-			if (attr->offset == offset && zend_string_equals(attr->lcname, lcname)) {
++			if (attr->offset == offset && lcname && attr->lcname && zend_string_equals(attr->lcname, lcname)) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..7aab0a528f7 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1838,2 +1838,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
+-					if (EXPECTED(p->key)) {
++// FIXME: Crash CWE-416: Use After Free
++ 					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(p->key) && !ZSTR_IS_INTERNED(p->key)) {
+@@ -1847 +1848 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						if (EXPECTED(p->key)) {
++						if (EXPECTED(p->key) && !ZSTR_IS_INTERNED(p->key)) {

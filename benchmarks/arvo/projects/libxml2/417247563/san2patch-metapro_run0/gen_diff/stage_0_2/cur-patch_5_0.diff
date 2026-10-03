@@ -1,0 +1,25 @@
+diff --git a/tree.c b/tree.c
+index 09c82336..78ecb7da 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1476,7 +1476,13 @@ xmlNodeListGetStringInternal(const xmlNode *node, int escape, int flags) {
+-                    xmlChar *encoded;
+-
+-                    encoded = xmlEscapeText(node->content, flags);
+-                    if (encoded == NULL)
+-                        goto error;
+-                    xmlBufCat(buf, encoded);
+-                    xmlFree(encoded);
++// FIXME: Crash CWE-562: Return of Stack Variable Address - Fixed by dynamic allocation
++                     xmlChar *encoded;
++                     xmlChar *result;
++
++                     result = xmlMalloc(XML_MAX_TEXT_LENGTH);
++                     if (result == NULL) goto error;
++                     encoded = xmlEscapeTextToBuffer(result, node->content, flags);
++                     if (encoded == NULL) {
++                         xmlFree(result);
++                         goto error;
++                     }
++                     xmlBufCat(buf, result);
++                     xmlFree(result);

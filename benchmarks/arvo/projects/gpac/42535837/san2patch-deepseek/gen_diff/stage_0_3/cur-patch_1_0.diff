@@ -1,0 +1,35 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..3fe10c864 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -517,0 +518 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
++	if (count > 0 && !cfg->sequenceParameterSets) return GF_BAD_PARAM;
+@@ -528 +529,2 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
+-	}
++// FIXME: Crash CWE-416: Use After Free
++ 	}
+@@ -530,0 +533 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
++		if (!sl || !sl->data) return GF_BAD_PARAM;
+@@ -543,0 +547 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
++		if (!sl || !sl->data) return GF_BAD_PARAM;
+@@ -565,0 +570 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
++			if (!sl || !sl->data) return GF_BAD_PARAM;
+diff --git a/src/media_tools/isom_tools.c b/src/media_tools/isom_tools.c
+index a41e51a0d..930c88906 100644
+--- a/src/media_tools/isom_tools.c
++++ b/src/media_tools/isom_tools.c
+@@ -1404 +1404 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-	if (item_type == GF_ISOM_SUBTYPE_AVC_H264) {
++		if (item_type == GF_ISOM_SUBTYPE_AVC_H264) {
+@@ -1416 +1416,2 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
++// FIXME: Crash CWE-416: Use After Free
++ 		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
+@@ -1418 +1419,6 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-			gf_odf_avc_cfg_write(((GF_AVCConfigurationBox *)props.config)->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			GF_AVCConfigurationBox *avc_box = (GF_AVCConfigurationBox *)props.config;
++			if (!avc_box->config) {
++				gf_odf_desc_del((GF_Descriptor *)esd);
++				return NULL;
++			}
++			gf_odf_avc_cfg_write(avc_box->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);

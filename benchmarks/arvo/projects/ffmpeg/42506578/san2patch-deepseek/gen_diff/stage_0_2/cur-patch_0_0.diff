@@ -1,0 +1,38 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..eaa4e9071f 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -677 +677,2 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    /* Copy the outputted tile's pixels from 'jpgframe' to 'frame' (final buffer) */
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     /* Copy the outputted tile's pixels from 'jpgframe' to 'frame' (final buffer) */
+@@ -708,0 +710,17 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
++    if (s->jpgframe->buf[0]) {
++        AVBufferRef *ref = av_buffer_ref(s->jpgframe->buf[0]);
++        if (!ref) {
++            av_frame_unref(s->jpgframe);
++            return AVERROR(ENOMEM);
++        }
++
++        uint8_t *base = s->jpgframe->buf[0]->data;
++        src_data = base + (s->jpgframe->data[0] - base);
++
++        /* Transfer the original buffer reference to the final frame so that
++         * the original base pointer is released exactly once by the caller. */
++        av_buffer_unref(&frame->buf[0]);
++        frame->buf[0] = ref;
++        frame->data[0] = src_data;
++    }
++
+@@ -872 +889,0 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
+-
+@@ -874,0 +892,5 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++        if (s->compr == TIFF_DNG) {
++            av_frame_unref(p);
++            return AVERROR_INVALIDDATA;
++        }
+@@ -882,2 +904 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
+-                horizontal_fill(s, s->bpp * (s->avctx->pix_fmt == AV_PIX_FMT_PAL8 || s->is_bayer),
+-                                dst, 1, src, 0, width, 0);
++                horizontal_fill(s, s->bpp * (s->avctx->pix_fmt == AV_PIX_FMT_PAL8 || s->is_bayer),                                dst, 1, src, 0, width, 0);

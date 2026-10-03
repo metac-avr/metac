@@ -1,0 +1,60 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..6582d9908ec 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -164 +164 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+-ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
++ZEND_API void void zend_call_destructors(void) /* {{{ */
+@@ -166,41 +166,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+-
+-	/* GC might have released this object already. */
+-	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
+-		return;
+-	}
+-
+-	/*	Make sure we hold a reference count during the destructor call
+-		otherwise, when the destructor ends the storage might be freed
+-		when the refcount reaches 0 a second time
+-	 */
+-	if (!(OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
+-		GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
+-
+-		if (object->handlers->dtor_obj != zend_objects_destroy_object
+-				|| object->ce->destructor) {
+-			zend_fiber_switch_block();
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->dtor_obj(object);
+-			GC_DELREF(object);
+-			zend_fiber_switch_unblock();
+-		}
+-	}
+-
+-	if (GC_REFCOUNT(object) == 0) {
+-		uint32_t handle = object->handle;
+-		void *ptr;
+-
+-		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+-		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+-		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
+-		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
+-		}
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
+-	}
++	zend_try {
++		shutdown_destructors();
++	} zend_end_try();
+@@ -208,0 +171 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++/* }}} */
+diff --git a/Zend/zend.c b/Zend/zend.c
+index b5339c4f87a..4a81b0ee532 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1242,0 +1243 @@ void zend_call_destructors(void) /* {{{ */
++		zend_hash_graceful_reverse_destroy(&EG(symbol_table));

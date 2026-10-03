@@ -1,0 +1,21 @@
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..61f769f3c 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -522 +522,6 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-		memcpy(szLang, stream->sub.language, 3);
++		if (stream->sub.language) {
++			memcpy(szLang, stream->sub.language, MIN(3, strlen(stream->sub.language)));
++			if (strlen(stream->sub.language) < 3) memset(szLang + strlen(stream->sub.language), 0, 3 - strlen(stream->sub.language));
++		} else {
++			memset(szLang, 0, 3);
++		}
+@@ -592 +597,2 @@ static void m2tsdmx_setup_program(GF_M2TSDmxCtx *ctx, GF_M2TS_Program *prog)
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -594 +600,3 @@ static void m2tsdmx_setup_program(GF_M2TSDmxCtx *ctx, GF_M2TS_Program *prog)
+-			m2tsdmx_declare_pid(ctx, (GF_M2TS_PES *)es, NULL);
++			if (es != NULL) { // Validate es pointer before passing to m2tsdmx_declare_pid
++				m2tsdmx_declare_pid(ctx, (GF_M2TS_PES *)es, NULL);
++			}

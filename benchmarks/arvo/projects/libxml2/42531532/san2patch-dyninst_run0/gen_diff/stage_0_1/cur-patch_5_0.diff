@@ -1,0 +1,32 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..593c0104 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743,4 +2743,11 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
+-
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++         return(-1);
++
++    /* Safely remove ID entry by checking if it's still valid */
++    xmlIDPtr current_id = attr->id;
++    if (current_id != NULL) {
++        xmlIDPtr table_id = xmlHashLookup(table, current_id->value);
++        if (table_id == current_id) {
++            if (xmlHashRemoveEntry(table, current_id->value, xmlFreeIDTableEntry) < 0)
++                return(-1);
++        }
++    }
+diff --git a/xinclude.c b/xinclude.c
+index 72a88c99..156677f7 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1980 +1980,6 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-            next = child->next;
++             next = child->next;
++            /* Clean up ID references before node destruction to prevent dangling pointers */
++            if (child->doc && child->psvi) {
++                xmlNodePtr tmp_node = child;
++                tmp_node->psvi = NULL;  /* Break potential circular references */
++            }

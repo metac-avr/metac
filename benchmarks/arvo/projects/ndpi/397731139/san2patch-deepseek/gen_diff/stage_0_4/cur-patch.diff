@@ -1,0 +1,34 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 6656143f6..144f25cc5 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1377 +1377,2 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      size_t length = strlen(flow->info);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       size_t length = strlen(flow->info);
+@@ -1379,2 +1380,8 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      strncat(flow->info + length, flow->ndpi_flow->protos.slp.url[i],
+-              sizeof(flow->info) - length);
++      size_t url_len = strlen(flow->ndpi_flow->protos.slp.url[i]);
++      if (length >= sizeof(flow->info)) {
++        break;
++      }
++      size_t available = sizeof(flow->info) - length - 1;
++      size_t copy_len = url_len < available ? url_len : available;
++      strncpy(flow->info + length, flow->ndpi_flow->protos.slp.url[i], copy_len);
++      flow->info[length + copy_len] = '\0';
+@@ -1383,2 +1390,12 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1)
+-        strncat(flow->info + length, ", ", sizeof(flow->info) - length);
++      if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1) {
++        if (length >= sizeof(flow->info)) {
++          break;
++        }
++        size_t available2 = sizeof(flow->info) - length - 1;
++        size_t sep_len = 2 < available2 ? 2 : available2;
++        strncpy(flow->info + length, ", ", sep_len);
++        flow->info[length + sep_len] = '\0';
++        if (sep_len < 2) {
++          break;
++        }
++      }

@@ -1,0 +1,33 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..f8208c205c 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -349 +349,19 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
++static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++                                     int *got_frame, AVPacket *avpkt)
++{
++    FlashSVContext *s = avctx->priv_data;
++    int h_blocks, v_blocks, h_part, v_part, i, j, ret;
++    GetByteContext gb;
++    uint8_t *tmp;
++
++    if ((ret = init_get_bits8(&gb, avpkt->data, avpkt->size)) < 0)
++        return ret;
++
++    if (avpkt->size < 4)
++        return AVERROR_INVALIDDATA;
++
++    bytestream2_get_le32(&gb);
++
++    if (s->ver == 2 && s->image_width  != avctx->width &&
++        s->image_height != avctx->height) {
++        av_log(avctx, AV_LOG_ERROR, "Frame width or height differs from first frame!\n");
+@@ -359 +377 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
++        if ((err = av_reallocp(&tmp, avpkt->size)) < 0)
+@@ -360,0 +379 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        s->keyframedata = tmp;
+@@ -363 +382 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if(s->ver == 2 && !s->blocks)
++    if (s->ver == 2 && !s->blocks)

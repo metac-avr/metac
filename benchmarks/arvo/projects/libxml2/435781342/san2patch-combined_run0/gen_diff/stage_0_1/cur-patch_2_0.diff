@@ -1,0 +1,33 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..e657b544 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2226 +2226,3 @@ xmlSAX2StartElementNs(void *ctx,
+-        pref = namespaces[i++];
++	// FIXME: Crash CWE-416: Use After Free
++	/* Fix: Clone namespace to avoid dangling pointer issues */
++	pref = namespaces[i++];
+@@ -2236,2 +2238,4 @@ xmlSAX2StartElementNs(void *ctx,
+-	    if ((URI != NULL) && (prefix == pref))
+-		ret->ns = ns;
++	    if ((URI != NULL) && (prefix == pref)) {
++		/* Create a safe copy for ret->ns */
++		ret->ns = xmlCopyNamespace(ns);
++	    }
+diff --git a/valid.c b/valid.c
+index e11d2c95..da9ea6c1 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364,6 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
++
++	xmlNsPtr saved_ns = elem->ns;
++	if (saved_ns != NULL) {
++	    saved_ns->refcnt = saved_ns->refcnt + 1;
++	}
+@@ -2384,0 +2390,4 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
++	if (saved_ns != NULL) {
++	    saved_ns->refcnt = saved_ns->refcnt - 1;
++	}
++

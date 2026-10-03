@@ -1,0 +1,27 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..daa7083161a 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1201 +1201,2 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -1215 +1216,2 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-			if (GC_REFCOUNT(op1_str) == 1) {
++			/* Check if string is still valid before checking refcount */
++			if (op1_str && GC_REFCOUNT(op1_str) == 1) {
+@@ -1222 +1224,4 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-			GC_DELREF(op1_str);
++			/* Only decrement if string is valid */
++			if (op1_str) {
++				GC_DELREF(op1_str);
++			}
+@@ -1225 +1230,7 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-		memcpy(ZSTR_VAL(result_str), ZSTR_VAL(op1_str), op1_len);
++		/* Safe copy with null check */
++		if (op1_str) {
++			memcpy(ZSTR_VAL(result_str), ZSTR_VAL(op1_str), op1_len);
++		} else {
++			zend_throw_error(NULL, "Invalid source string");
++			return;
++		}

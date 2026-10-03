@@ -1,0 +1,17 @@
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 846ed0b0f8..e294190bd2 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -154 +154,2 @@ static void put_signed_pixels_clamped_c(const int16_t *block,
+-    }
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     }
+@@ -164,3 +165,5 @@ void ff_add_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-        pixels[0] = av_clip_uint8(pixels[0] + block[0]);
+-        pixels[1] = av_clip_uint8(pixels[1] + block[1]);
+-        pixels[2] = av_clip_uint8(pixels[2] + block[2]);
++        if (pixels + 7 < pixels + line_size) {  // Simple bounds validation
++            pixels[0] = av_clip_uint8(pixels[0] + block[0]);
++            pixels[1] = av_clip_uint8(pixels[1] + block[1]);
++            pixels[2] = av_clip_uint8(pixels[2] + block[2]);
++        }

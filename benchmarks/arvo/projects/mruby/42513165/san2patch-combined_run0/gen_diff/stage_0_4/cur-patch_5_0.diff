@@ -1,0 +1,28 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..8a893430e 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -987,0 +988,20 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
++  // Early validation to prevent out-of-bounds access
++  if (!x || len < 0) {
++    struct RBigint *zero_b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
++    mpz_init_set_str(mrb, &zero_b->mp, "0", 1, 10);
++    return mrb_obj_value(zero_b);
++  }
++  
++  // Skip leading whitespace
++  mrb_int start = 0;
++  while (start < len && (x[start] == ' ' || x[start] == '\t')) {
++    start++;
++  }
++  
++  // Check if string is only whitespace
++  if (start >= len) {
++    struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
++    mpz_init_set_str(mrb, &b->mp, "0", 1, 10);
++    return mrb_obj_value(b);
++  }
++  
+@@ -990 +1010 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  mpz_init_set_str(mrb, &b->mp, x, len, base);
++  mpz_init_set_str(mrb, &b->mp, x + start, len - start, base);

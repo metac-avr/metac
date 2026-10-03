@@ -1,0 +1,26 @@
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..26cc529f0 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -524,0 +525,4 @@ unpack_float(mrb_state *mrb, const unsigned char * src, int srclen, mrb_value ar
++  // Check bounds before accessing memory to prevent out-of-bounds read
++  if (src == NULL || srclen < 4) {
++    return 0; // Return 0 to indicate error/invalid input
++  }
+@@ -1589 +1593,2 @@ static mrb_value
+-mrb_pack_unpack(mrb_state *mrb, mrb_value str)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ mrb_pack_unpack(mrb_state *mrb, mrb_value str)
+@@ -1591 +1596,7 @@ mrb_pack_unpack(mrb_state *mrb, mrb_value str)
+-  return pack_unpack(mrb, str, 0);
++  if (mrb_string_p(str)) {
++    mrb_int len = RSTRING_LEN(str);
++    if (len > 0) {
++      return pack_unpack(mrb, str, 0);
++    }
++  }
++  return mrb_nil_value();
+@@ -1601,2 +1612 @@ void
+-mrb_mruby_pack_gem_init(mrb_state *mrb)
+-{
++mrb_mruby_pack_gem_init(mrb_state *mrb){

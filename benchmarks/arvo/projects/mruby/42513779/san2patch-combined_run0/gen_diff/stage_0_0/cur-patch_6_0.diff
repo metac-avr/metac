@@ -1,0 +1,40 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..41d1aa94f 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -432,0 +433 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    if (j+yd >= x.sz || j+yd-1 >= x.sz) break;  /* bounds check to prevent OOB read */
+@@ -436,0 +438 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        if (i >= y.sz) break;  /* bounds check for y.p access */
+@@ -439 +441,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-        x.p[i+j] = LOW(u);
++        if (i+j < x.sz) {  /* bounds check for x.p access */
++          x.p[i+j] = LOW(u);
++        }
+@@ -442 +446,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if (i+j < x.sz) {  /* bounds check for x.p access */
++        b += x.p[i+j];
++      }
+@@ -444 +450 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
++    for (; b!=0 && qhat > 0; qhat--) {  /* added qhat > 0 check */
+@@ -447,3 +453,8 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-        c += (mp_limb2)x.p[i+j] + (mp_limb2)y.p[i];
+-        x.p[i+j] = LOW(c);
+-        c = HIGH(c);
++        if (i+j < x.sz && i < y.sz) {  /* bounds checks */
++          c += (mp_limb2)x.p[i+j] + (mp_limb2)y.p[i];
++          x.p[i+j] = LOW(c);
++          c = HIGH(c);
++        }
++      }
++      if (i < x.sz) {  /* bounds check */
++        b += c;
+@@ -451 +461,0 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += c;
+@@ -453 +463,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < q.sz) {  /* bounds check for q.p access */
++      q.p[j] = qhat;
++    }

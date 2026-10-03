@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..282961400be 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -543,2 +543,2 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
+-#define IS_PTR						13
++#define IS_INDIRECT              	12
++#define IS_PTR					13
+@@ -551 +551,2 @@ struct _zend_ast_ref {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -553 +554 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-	return pz->u1.v.type;
++	return (pz != NULL) ? pz->u1.v.type : IS_NULL;
+@@ -562,2 +563,2 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
++#define Z_TYPE(zval)                zval_get_type(&(zval))
++#define Z_TYPE_P(zval_p)            Z_TYPE(*(zval_p))
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..c0faaaff920 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -58975,5 +58975,8 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
+-	i_init_code_execute_data(execute_data, op_array, return_value);
+-	ZEND_OBSERVER_FCALL_BEGIN(execute_data);
+-	zend_execute_ex(execute_data);
+-	/* Observer end handlers are called from ZEND_RETURN */
+-	zend_vm_stack_free_call_frame(execute_data);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++	if (op_array != NULL && execute_data != NULL) {
++		i_init_code_execute_data(execute_data, op_array, return_value);
++		ZEND_OBSERVER_FCALL_BEGIN(execute_data);
++		zend_execute_ex(execute_data);
++		/* Observer end handlers are called from ZEND_RETURN */
++		zend_vm_stack_free_call_frame(execute_data);
++	}

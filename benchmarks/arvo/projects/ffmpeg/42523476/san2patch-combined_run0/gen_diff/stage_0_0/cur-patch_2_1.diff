@@ -1,0 +1,29 @@
+diff --git a/libavutil/buffer.c b/libavutil/buffer.c
+index e4562a79b1..4baefd1071 100644
+--- a/libavutil/buffer.c
++++ b/libavutil/buffer.c
+@@ -134,5 +133,0 @@ static void buffer_replace(AVBufferRef **dst, AVBufferRef **src)
+-        if (free_avbuffer)
+-            av_free(b);
+-    }
+-}
+-
+@@ -144,12 +139,6 @@ void av_buffer_unref(AVBufferRef **buf)
+-    buffer_replace(buf, NULL);
+-}
+-
+-int av_buffer_is_writable(const AVBufferRef *buf)
+-{
+-    if (buf->buffer->flags & AV_BUFFER_FLAG_READONLY)
+-        return 0;
+-
+-    return atomic_load(&buf->buffer->refcount) == 1;
+-}
+-
+-void *av_buffer_get_opaque(const AVBufferRef *buf)
++    // Atomic check and clear to prevent race conditions and double-free
++    AVBufferRef *ref = *buf;
++    if (ref && ref == atomic_exchange(buf, NULL)) {
++        buffer_replace(&ref, NULL);
++    }
++}void *av_buffer_get_opaque(const AVBufferRef *buf)

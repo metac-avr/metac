@@ -1,0 +1,34 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..73002356ec 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1128 +1128,2 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
+-    case VVC_RADL_NUT:
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     case VVC_RADL_NUT:
+@@ -1137,0 +1139,4 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
++            // Initialize variables to prevent undefined behavior
++            pos = 0;
++            len = 0;
++
+@@ -1148 +1153,2 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
+-            if (slice->header.sh_picture_header_in_slice_header_flag) {
++// Fixed: Ensure non-negative slice data size to prevent memcpy with negative size
++             if (slice->header.sh_picture_header_in_slice_header_flag) {
+@@ -1154,6 +1160,10 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
+-            slice->data_size = len - pos / 8;
+-            slice->data_ref  = av_buffer_ref(unit->data_ref);
+-            if (!slice->data_ref)
+-                return AVERROR(ENOMEM);
+-            slice->data = unit->data + pos / 8;
+-            slice->data_bit_start = pos % 8;
++            if (len >= pos / 8) {
++                slice->data_size = len - pos / 8;
++                slice->data_ref  = av_buffer_ref(unit->data_ref);
++                if (!slice->data_ref)
++                    return AVERROR(ENOMEM);
++                slice->data = unit->data + pos / 8;
++                slice->data_bit_start = pos % 8;
++            } else {
++                return AVERROR_INVALIDDATA;
++            }

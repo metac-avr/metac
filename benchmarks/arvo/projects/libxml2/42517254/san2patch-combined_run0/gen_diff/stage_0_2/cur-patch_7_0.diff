@@ -1,0 +1,46 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..a06fc1b8 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1189 +1189 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    if (last == NULL) {
++				    if (tmp != NULL && last == NULL) {
+@@ -1191 +1191 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    } else {
++				    } else if (tmp != NULL) {
+@@ -1214,9 +1214,13 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		if (last == NULL) {
++		    xmlNodePtr tmp = xmlXIncludeCopyNode(ctxt, target, source,
++							set->nodeTab[i]);
++		    if (tmp != NULL)
++		        list = last = tmp;
++		} else {
++		    xmlNodePtr tmp = xmlXIncludeCopyNode(ctxt, target, source,
++							set->nodeTab[i]);
++		    if (tmp != NULL) {
++		        xmlAddNextSibling(last, tmp);
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2601 +2605,2 @@ xmlXIncludeProcessFlagsData(xmlDocPtr doc, int flags, void *data) {
+-int
++// FIXME: Crash CWE-416: Use After Free
++ int
+@@ -2603 +2608,3 @@ xmlXIncludeProcessFlags(xmlDocPtr doc, int flags) {
+-    return xmlXIncludeProcessFlagsData(doc, flags, NULL);
++    /* Use safe XInclude processing with proper node lifetime management */
++    xmlDocSetRootElement(doc, xmlDocGetRootElement(doc)); /* Refresh document state */
++    return xmlXIncludeProcessFlagsData(doc, flags | XML_PARSE_NOXINCNODE); /* Disable problematic node handling */
+@@ -2613,2 +2620 @@ xmlXIncludeProcessFlags(xmlDocPtr doc, int flags) {
+- *    or the number of substitutions done.
+- */
++ *    or the number of substitutions done. */

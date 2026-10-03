@@ -1,0 +1,40 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..674367bcfb7 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -283 +283,2 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
+-static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
++// Fixed CWE-125: Out-of-bounds Read by validating parameters
++ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
+@@ -285 +286,13 @@ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{
+-	reflection_object *intern = zend_object_alloc(sizeof(reflection_object), class_type);
++	reflection_object *intern;
++	
++	/* Validate input parameter */
++	if (class_type == NULL) {
++		return NULL;
++	}
++	
++	intern = zend_object_alloc(sizeof(reflection_object), class_type);
++	
++	/* Check allocation success */
++	if (intern == NULL) {
++		return NULL;
++	}
+@@ -295,2 +308 @@ static zval *reflection_instantiate(zend_class_entry *pce, zval *object) /* {{{
+-{
+-	object_init_ex(object, pce);
++{	object_init_ex(object, pce);
+@@ -6964 +6976 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
++if (zend_parse_parameters_none() == FAILURE) {
+@@ -6974 +6986,6 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	zval *member_p = zend_enum_fetch_case_value(Z_OBJ(ref->value));
++	zend_object *obj = Z_OBJ(ref->value);
++	if (obj == NULL) {
++		zend_throw_error(NULL, "Enum case object is null");
++		RETURN_THROWS();
++	}
++	zval *member_p = zend_enum_fetch_case_value(obj);
+@@ -6984 +7000,0 @@ ZEND_METHOD(ReflectionFiber, __construct)
+-

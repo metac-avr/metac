@@ -1,0 +1,29 @@
+diff --git a/dict.c b/dict.c
+index a0d311a2..cd101b5b 100644
+--- a/dict.c
++++ b/dict.c
+@@ -464 +464,2 @@ static unsigned
+-xmlDictHashName(unsigned seed, const xmlChar* data, size_t maxLen,
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ xmlDictHashName(unsigned seed, const xmlChar* data, size_t maxLen,
+@@ -467 +468 @@ xmlDictHashName(unsigned seed, const xmlChar* data, size_t maxLen,
+-    size_t i;
++    size_t i = 0;
+@@ -471 +472,3 @@ xmlDictHashName(unsigned seed, const xmlChar* data, size_t maxLen,
+-    for (i = 0; i < maxLen && data[i]; i++) {
++    while (i < maxLen) {
++        if (data[i] == 0)
++            break;
+@@ -472,0 +476 @@ xmlDictHashName(unsigned seed, const xmlChar* data, size_t maxLen,
++        i++;
+diff --git a/parser.c b/parser.c
+index 43ef214e..3b3e0ca9 100644
+--- a/parser.c
++++ b/parser.c
+@@ -3504,2 +3504,4 @@ xmlParseNCNameComplex(xmlParserCtxtPtr ctxt) {
+-    if (len > maxLength) {
+-        xmlFatalErr(ctxt, XML_ERR_NAME_TOO_LONG, "NCName");
++    if ((len == 0) || (len > maxLength)) {
++        if (len > maxLength)
++            xmlFatalErr(ctxt, XML_ERR_NAME_TOO_LONG, "NCName");
++// FIXME: Crash CWE-125: Out-of-bounds Read

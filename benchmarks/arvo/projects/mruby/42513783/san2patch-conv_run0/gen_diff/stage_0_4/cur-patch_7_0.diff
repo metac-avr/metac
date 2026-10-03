@@ -1,0 +1,16 @@
+diff --git a/src/vm.c b/src/vm.c
+index 424567a18..ba9ce6e66 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1730 +1730,8 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-            check_method_noarg(mrb, ci);
++// FIXME: Crash CWE-476: NULL Pointer Dereference
++             check_method_noarg(mrb, ci);
++          }
++          mrb_func_t func_ptr = MRB_METHOD_FUNC(m);
++          if (func_ptr != NULL) {
++            recv = func_ptr(mrb, recv);
++          } else {
++            mrb_raise(mrb, E_NULL_POINTER_ERROR, "Method function pointer is NULL");
+@@ -1732 +1738,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-          recv = MRB_METHOD_FUNC(m)(mrb, recv);

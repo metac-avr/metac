@@ -1,0 +1,20 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..a63a96f84 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -198,0 +199,5 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++  /* Add bounds checking to prevent out-of-bounds writes */
++  if (room <= 0) return;
++  if ((mrb_uint)(mrb->c->ci->stack - mrb->c->stbase) + room > MRB_STACK_MAX) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
+@@ -480,0 +486,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    // Check for excessive stack growth to prevent buffer overflow
++    if ((char*)mrb->c->stend - (char*)mrb->c->stbase > 1024 * 1024) {  // 1MB limit
++      mrb_raise(mrb, E_SYSTEM_CALL_ERROR, "stack size too large");
++    }
++    
+@@ -515 +526 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++       if (argc > 0)

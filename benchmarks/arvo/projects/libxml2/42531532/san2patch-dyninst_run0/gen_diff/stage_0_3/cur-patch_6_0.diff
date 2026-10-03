@@ -1,0 +1,48 @@
+diff --git a/xinclude.c b/xinclude.c
+index 72a88c99..31e6a532 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2135 +2135,2 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-    for (i = start; i < ctxt->incNr; i++) {
++// FIXME: Crash CWE-416: Use After Free
++     for (i = start; i < ctxt->incNr; i++) {
+@@ -2136,0 +2138,24 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
++            /* Clean up ID attributes before freeing nodes to prevent use-after-free */
++            if (ctxt->incTab[i]->inc != NULL) {
++                xmlNodePtr node = ctxt->incTab[i]->inc;
++                xmlNodePtr next;
++                
++                /* Iterate through the node list and remove ID attributes first */
++                while (node != NULL) {
++                    next = node->next;
++                    if ((node->type == XML_ELEMENT_NODE) && (node->properties != NULL)) {
++                        xmlAttrPtr prop = node->properties;
++                        while (prop != NULL) {
++                            if (prop->atype == XML_ATTRIBUTE_ID) {
++                                xmlChar *name = xmlGetProp(node, prop->name);
++                                if (name != NULL) {
++                                    xmlRemoveID(node->doc, prop);
++                                    xmlFree(name);
++                                }
++                            }
++                            prop = prop->next;
++                        }
++                    }
++                    node = next;
++                }
++            }
+diff --git a/valid.c b/valid.c
+index 1ecc762c..50096c26 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2745,5 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    /* Check if the ID entry points to valid memory before removal */
++    if (attr->id->value != NULL) {
++        if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }

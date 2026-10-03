@@ -1,0 +1,44 @@
+diff --git a/Zend/Optimizer/dfa_pass.c b/Zend/Optimizer/dfa_pass.c
+index 9eddbde3b71..20a8443c31a 100644
+--- a/Zend/Optimizer/dfa_pass.c
++++ b/Zend/Optimizer/dfa_pass.c
+@@ -193,0 +194,14 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
++		uint32_t early_binding_opline_nums[256];
++		int early_binding_count = 0;
++		uint32_t current_opline_num;
++
++		/* cache early binding opline numbers before compacting */
++		if (op_array->fn_flags & ZEND_ACC_EARLY_BINDING) {
++			current_opline_num = ctx->script->first_early_binding_opline;
++			ZEND_ASSERT(op_array == &ctx->script->main_op_array);
++			while (current_opline_num != (uint32_t)-1) {
++				early_binding_opline_nums[early_binding_count++] = current_opline_num;
++				current_opline_num = op_array->opcodes[current_opline_num].result.opline_num;
++			}
++		}
++
+@@ -238 +252 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
+-		/* update early binding list */
++		/* update early binding list using cached indices */
+@@ -240,7 +254,14 @@ static void zend_ssa_remove_nops(zend_op_array *op_array, zend_ssa *ssa, zend_op
+-			uint32_t *opline_num = &ctx->script->first_early_binding_opline;
+-
+-			ZEND_ASSERT(op_array == &ctx->script->main_op_array);
+-			do {
+-				*opline_num -= shiftlist[*opline_num];
+-				opline_num = &op_array->opcodes[*opline_num].result.opline_num;
+-			} while (*opline_num != (uint32_t)-1);
++			uint32_t current = ctx->script->first_early_binding_opline;
++			uint32_t mapped_current = current - shiftlist[current];
++			int k;
++
++			ctx->script->first_early_binding_opline = mapped_current;
++			for (k = 0; k < early_binding_count - 1; k++) {
++				uint32_t next = early_binding_opline_nums[k + 1];
++				uint32_t mapped_next = next - shiftlist[next];
++				op_array->opcodes[mapped_current].result.opline_num = mapped_next;
++				mapped_current = mapped_next;
++			}
++			if (early_binding_count > 0) {
++				op_array->opcodes[mapped_current].result.opline_num = (uint32_t)-1;
++			}

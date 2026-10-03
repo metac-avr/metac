@@ -1,0 +1,52 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..b70fa907202 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,2 +1208,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+@@ -1216,0 +1215 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -1218,2 +1217,4 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_DELREF(Z_COUNTED_P(pz));
++	if (!pz || !Z_REFCOUNTED_P(pz)) return 0;
++	zend_refcounted *ref = Z_COUNTED_P(pz);
++	if (!ref) return 0;
++	return GC_DELREF(ref);
+@@ -1223,6 +1224,6 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
++# define ZVAL_COPY_VALUE_EX(z, v, gc, t)\
++tdo {\
++		uint32_t _w2 = v->value.ww.w2;\
++		Z_COUNTED_P(z) = gc;\
++		z->value.ww.w2 = _w2;\
++		Z_TYPE_INFO_P(z) = t;\
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..c3c936e3e1a 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -23,0 +24 @@
++
+@@ -31,0 +33 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -34 +36 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+@@ -41 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
+@@ -43 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref && !GC_DELREF(ref)) {
+@@ -44,0 +47,5 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++		}
++	} else if (zval_ptr) {
++		zval_free(zval_ptr);
++	}
++}

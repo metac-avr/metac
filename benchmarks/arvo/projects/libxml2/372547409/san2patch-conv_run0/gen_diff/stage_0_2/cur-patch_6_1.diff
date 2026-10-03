@@ -1,0 +1,68 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..798ac303 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5982,4 +5982,25 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
++static int
++xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
++			     xmlNodePtr elem) {
++    int ret = 1;
++    int tmp;
++    xmlNodePtr child;
++    xmlAttrPtr attr;
++    xmlElementPtr elemDecl;
++
++    if (elem->type != XML_ELEMENT_NODE)
++        return(1);
++
++    elemDecl = xmlGetDtdElementDesc(doc->intSubset, elem->name);
++    if (elemDecl == NULL)
++        elemDecl = xmlGetDtdElementDesc(doc->extSubset, elem->name);
++    if (elemDecl == NULL)
++        return(1);
++
++    /* [ VC: Element Valid ] */
++    child = elem->children;
++    while (child != NULL) {
++        tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
++        if (tmp <= 0)
++            ret = 0;
++        break;
+@@ -5990,14 +6011,19 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    attr = elemDecl->attributes;
+-    while (attr != NULL) {
+-	if (attr->def == XML_ATTRIBUTE_REQUIRED) {
+-	    int qualified = -1;
+-
+-	    if ((attr->prefix == NULL) &&
+-		(xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
+-		xmlNsPtr ns;
+-
+-		ns = elem->nsDef;
+-		while (ns != NULL) {
+-		    if (ns->prefix == NULL)
+-			goto found;
+-		    ns = ns->next;
++    if (elemDecl != NULL) {
++        attr = elemDecl->attributes;
++        while (attr != NULL) {
++            if (attr->def == XML_ATTRIBUTE_REQUIRED) {
++                int qualified = -1;
++
++                if ((attr->prefix == NULL) &&
++                    (xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
++                    xmlNsPtr ns;
++
++                    ns = elem->nsDef;
++                    while (ns != NULL) {
++                        if (ns->prefix == NULL)
++                            goto found;
++                        ns = ns->next;
++                    }
++                }
++            }
++            attr = attr->nex		    ns = ns->next;

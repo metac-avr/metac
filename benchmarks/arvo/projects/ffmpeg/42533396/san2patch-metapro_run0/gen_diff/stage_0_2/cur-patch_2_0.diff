@@ -1,0 +1,33 @@
+diff --git a/libavcodec/codec_par.c b/libavcodec/codec_par.c
+index abaac63841..8febc45525 100644
+--- a/libavcodec/codec_par.c
++++ b/libavcodec/codec_par.c
+@@ -271 +271 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        } else {
++         } else {
+@@ -273 +273,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++        // Prevent out-of-bounds read by validating channel layout size
++        if (par->ch_layout.order != AV_CHANNEL_ORDER_CUSTOM || 
++            (par->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM && par->ch_layout.u.map)) {
++            if (par->ch_layout.nb_channels <= 64) {
++                ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++            } else {
++                av_log(codec, AV_LOG_WARNING, "Excessive channel count detected, ignoring layout\n");
++                codec->ch_layout = (AVChannelLayout){0};
++                ret = 0;
++            }
++        } else {
++            codec->ch_layout = (AVChannelLayout){0};
++            ret = 0;
++        }
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..873f8e6830 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -405,2 +405,3 @@ int av_channel_layout_custom_init(AVChannelLayout *channel_layout, int nb_channe
+-    if (nb_channels <= 0)
+-        return AVERROR(EINVAL);
++    // Enhanced validation to prevent buffer overflow
++    if (nb_channels <= 0 || nb_channels > 128)
++         return AVERROR(EINVAL);

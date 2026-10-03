@@ -1,0 +1,47 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index ba738db4..b6972458 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -616,6 +615,0 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
+-        return 0;
+-
+-    return ((1 << child->type) & CHILD_MASK_DTD) != 0;
+-}
+-
+@@ -624 +618,4 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++// FIXME: Crash CWE-416: Use After Free
++    if (node == NULL)
++        return NULL;
++     xmlNodePtr cur = node;
+@@ -629,9 +626 @@ nodeGetTree(xmlNodePtr node) {
+-}
+-
+-/*
+- * This function is called whenever a reference to a node is removed.
+- * It checks whether the node is still reachable and frees unreferenced
+- * nodes.
+- *
+- * A node is reachable if its tree, identified by the root node,
+- * is reachable. If a non-document tree is unreachable, it can be
++} * is reachable. If a non-document tree is unreachable, it can be
+@@ -3600,12 +3588,0 @@ LLVMFuzzerTestOneInput(const char *data, size_t size) {
+-size_t
+-LLVMFuzzerCustomMutator(char *data, size_t size, size_t maxSize,
+-                        unsigned seed) {
+-    static const xmlFuzzChunkDesc chunks[] = {
+-        { 4, XML_FUZZ_PROB_ONE / 10 }, /* failurePos */
+-        { 0, 0 }
+-    };
+-
+-    return xmlFuzzMutateChunks(chunks, data, size, maxSize, seed,
+-                               LLVMFuzzerMutate);
+-}
+-
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..17cad6ad 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1076,0 +1077 @@ xmlFreeElement(xmlElementPtr elem) {
++    memset(elem, 0, sizeof(*elem));

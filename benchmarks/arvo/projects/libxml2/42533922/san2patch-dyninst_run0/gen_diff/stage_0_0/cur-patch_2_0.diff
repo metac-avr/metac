@@ -1,0 +1,76 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..06bfc119 100644
+--- a/tree.c
++++ b/tree.c
+@@ -8452,10 +8452,12 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * Handle XML namespace.
+-    */
+-    if (IS_STR_XML(ns->prefix)) {
+-	/*
+-	* Insert XML namespace mapping.
+-	*/
+-	*retNs = xmlTreeEnsureXMLDecl(doc);
+-	if (*retNs == NULL)
+-	    return (-1);
+-	return (0);
++     * Handle XML namespace.
++     */
++    if (ns != NULL) {
++        if (IS_STR_XML(ns->prefix)) {
++	    /*
++	    * Insert XML namespace mapping.
++	    */
++	    *retNs = xmlTreeEnsureXMLDecl(doc);
++	    if (*retNs == NULL)
++	        return (-1);
++	    return (0);
++        }
+@@ -8464,2 +8466 @@ xmlDOMWrapNSNormAcquireNormalizedNs(xmlDocPtr doc,
+-    * If the search should be done in ancestors only and no
+-    * @elem (the first ancestor) was specified, then skip the search.
++    * If the search should be done in ancestors only and no    * @elem (the first ancestor) was specified, then skip the search.
+@@ -8725 +8726 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-			    (cur->ns == mi->oldNs)) {
++                            (cur->ns == mi->oldNs)) {
+@@ -8727,15 +8728,20 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-			    cur->ns = mi->newNs;
+-			    goto ns_end;
+-			}
+-		    }
+-		}
+-		/*
+-		* Acquire a normalized ns-decl and add it to the map.
+-		*/
+-		if (xmlDOMWrapNSNormAcquireNormalizedNs(doc, curElem,
+-			cur->ns, &ns,
+-			&nsMap, depth,
+-			ancestorsOnly,
+-			(cur->type == XML_ATTRIBUTE_NODE) ? 1 : 0) == -1)
+-		    ret = -1;
+-		cur->ns = ns;
++                            cur->ns = mi->newNs;
++                            goto ns_end;
++                        }
++                    }
++                }
++                /*
++// FIXME: Crash CWE-416: Use After Free
++                * Acquire a normalized ns-decl and add it to the map.
++                */
++                if (cur->ns != NULL) {
++                    if (xmlDOMWrapNSNormAcquireNormalizedNs(doc, curElem,
++                        cur->ns, &ns,
++                        &nsMap, depth,
++                        ancestorsOnly,
++                        (cur->type == XML_ATTRIBUTE_NODE) ? 1 : 0) == -1)
++                        ret = -1;
++                } else {
++                    ns = NULL;
++                }
++                cur->ns = ns;
+@@ -8744,3 +8750,2 @@ xmlDOMWrapReconcileNamespaces(xmlDOMWrapCtxtPtr ctxt ATTRIBUTE_UNUSED,
+-		if ((cur->type == XML_ELEMENT_NODE) &&
+-		    (cur->properties != NULL)) {
+-		    /*
++                if ((cur->type == XML_ELEMENT_NODE) &&
++                    (cur->properties != NULL)) {		    /*

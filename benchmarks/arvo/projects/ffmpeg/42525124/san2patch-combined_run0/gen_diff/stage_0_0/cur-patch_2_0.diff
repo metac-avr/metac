@@ -1,0 +1,21 @@
+diff --git a/libavformat/jpegxl_probe.c b/libavformat/jpegxl_probe.c
+index a3845b037d..bf92bbff50 100644
+--- a/libavformat/jpegxl_probe.c
++++ b/libavformat/jpegxl_probe.c
+@@ -211 +211,2 @@ static void jpegxl_skip_bit_depth(GetBitContext *gb)
+-static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
+@@ -213 +214,7 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
+-    int all_default = jxl_bits(1);
++    int all_default;
++    
++    // Check if we have enough bits before reading
++    if (get_bits_left(gb) < 1)
++        return -1;
++    
++    all_default = jxl_bits(1);
+@@ -230,0 +238,3 @@ static int jpegxl_read_extra_channel_info(GetBitContext *gb, int validate_level)
++    // Validate that we have enough bits to skip
++    if (get_bits_left(gb) < (int)(8 * name_len))
++        return -1;

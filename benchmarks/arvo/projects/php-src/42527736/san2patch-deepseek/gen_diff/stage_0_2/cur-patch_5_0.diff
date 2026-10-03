@@ -1,0 +1,16 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..c098731367f 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2148 +2148,2 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
+@@ -2150,2 +2151,5 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-			tptr += (bptr - hunk_begin);
++			if (bptr <= hunk_begin) {
++				goto quit_loop_3_error;
++			}
++			memcpy(tptr, hunk_begin, (size_t)(bptr - hunk_begin));
++			tptr += (size_t)(bptr - hunk_begin);

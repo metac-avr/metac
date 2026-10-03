@@ -1,0 +1,89 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..5231d0a97bf 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -164 +164 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+-ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
++ZEND_API void static void gc_grow_root_buffer(void)
+@@ -166,21 +166,10 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+-
+-	/* GC might have released this object already. */
+-	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
+-		return;
+-	}
+-
+-	/*	Make sure we hold a reference count during the destructor call
+-		otherwise, when the destructor ends the storage might be freed
+-		when the refcount reaches 0 a second time
+-	 */
+-	if (!(OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
+-		GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
+-
+-		if (object->handlers->dtor_obj != zend_objects_destroy_object
+-				|| object->ce->destructor) {
+-			zend_fiber_switch_block();
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->dtor_obj(object);
+-			GC_DELREF(object);
+-			zend_fiber_switch_unblock();
++	size_t new_size;
++	gc_root_buffer *old_buf;
++
++	if (GC_G(buf_size) >= GC_MAX_BUF_SIZE) {
++		if (!GC_G(gc_full)) {
++			zend_error(E_WARNING, "GC buffer overflow (GC disabled)\n");
++			GC_G(gc_active) = 1;
++			GC_G(gc_protected) = 1;
++			GC_G(gc_full) = 1;
++			return;
+@@ -189,17 +178,15 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-
+-	if (GC_REFCOUNT(object) == 0) {
+-		uint32_t handle = object->handle;
+-		void *ptr;
+-
+-		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+-		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+-		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
+-		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
+-		}
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++	if (GC_G(buf_size) < GC_BUF_GROW_STEP) {
++		new_size = GC_G(buf_size) * 2;
++	} else {
++		new_size = GC_G(buf_size) + GC_BUF_GROW_STEP;
++	}
++	if (new_size > GC_MAX_BUF_SIZE) {
++		new_size = GC_MAX_BUF_SIZE;
++	}
++	/* Store old buffer pointer to prevent UAF */
++	old_buf = GC_G(buf);
++	GC_G(buf) = perealloc(GC_G(buf), sizeof(gc_root_buffer) * new_size, 1);
++	/* Check if reallocation failed */
++	if (GC_G(buf) == NULL && new_size > 0) {
++		GC_G(buf) = old_buf; /* Restore old buffer to prevent null dereference */
++		return;
+@@ -206,0 +194 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++	GC_G(buf_size) = new_size;
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index 6a9762eb549..e26c03dedf0 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -581,0 +582 @@ static void gc_grow_root_buffer(void)
++	gc_root_buffer *old_buf;
+@@ -599,0 +601,2 @@ static void gc_grow_root_buffer(void)
++	/* Store old buffer pointer to prevent UAF */
++	old_buf = GC_G(buf);
+@@ -600,0 +604,5 @@ static void gc_grow_root_buffer(void)
++	/* Check if reallocation failed */
++	if (GC_G(buf) == NULL && new_size > 0) {
++		GC_G(buf) = old_buf; /* Restore old buffer to prevent null dereference */
++		return;
++	}

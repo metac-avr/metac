@@ -1,0 +1,22 @@
+diff --git a/libavcodec/faanidct.c b/libavcodec/faanidct.c
+index 3921f82dae..dfbaee8354 100644
+--- a/libavcodec/faanidct.c
++++ b/libavcodec/faanidct.c
+@@ -123 +123,2 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-        }
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         }
+@@ -131 +132,12 @@ void ff_faanidct(int16_t block[64]){
+-    emms_c();
++    // Validate array indices before memory writes to prevent buffer overflow
++    const int max_index = 64; // 8x8 block size
++    int idx1 = (y + 5) * stride + x + i;
++    int idx2 = (y + 3) * stride + x + i;
++    int idx3 = (y + 4) * stride + x + i;
++    
++    if (idx1 >= 0 && idx1 < max_index)
++        dest[5*stride + i]= av_clip_uint8(lrintf(os25 - od25));
++    if (idx2 >= 0 && idx2 < max_index)
++        dest[3*stride + i]= av_clip_uint8(lrintf(os34 - od34));
++    if (idx3 >= 0 && idx3 < max_index)
++        dest[4*stride + i]= av_clip_uint8(lrintf(os34 + od34));    emms_c();

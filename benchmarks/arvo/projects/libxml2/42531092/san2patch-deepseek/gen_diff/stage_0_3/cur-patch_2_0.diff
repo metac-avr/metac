@@ -1,0 +1,26 @@
+diff --git a/dict.c b/dict.c
+index a0d311a2..0350f005 100644
+--- a/dict.c
++++ b/dict.c
+@@ -464 +464,2 @@ static unsigned
+-xmlDictHashName(unsigned seed, const xmlChar* data, size_t maxLen,
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ xmlDictHashName(unsigned seed, const xmlChar* data, size_t maxLen,
+@@ -471 +472,3 @@ xmlDictHashName(unsigned seed, const xmlChar* data, size_t maxLen,
+-    for (i = 0; i < maxLen && data[i]; i++) {
++    for (i = 0; i < maxLen; i++) {
++        if (data[i] == 0)
++            break;
+diff --git a/parser.c b/parser.c
+index 43ef214e..c9a4e1e7 100644
+--- a/parser.c
++++ b/parser.c
+@@ -3503,0 +3504,4 @@ xmlParseNCNameComplex(xmlParserCtxtPtr ctxt) {
++    if (len == 0) {
++        ret.hashValue = xmlDictComputeHash(ctxt->dict, BAD_CAST "", 0);
++        return(ret);
++    }
+@@ -3506 +3510,2 @@ xmlParseNCNameComplex(xmlParserCtxtPtr ctxt) {
+-        return(ret);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         return(ret);

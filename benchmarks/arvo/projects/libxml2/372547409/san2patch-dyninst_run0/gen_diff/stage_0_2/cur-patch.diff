@@ -1,0 +1,28 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..4f05ef59 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5982,7 +5981,0 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
+-
+@@ -5990 +5983,2 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    attr = elemDecl->attributes;
++// Fixed CWE-825: Expired Pointer Dereference - Null check added
++    attr = (elemDecl != NULL) ? elemDecl->attributes : NULL;
+@@ -6220 +6214,5 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                value = xmlNodeListGetString(doc, attr->children, 0);
++                /* Add defensive check for attribute validity before processing */
++                xmlAttrPtr temp_attr = attr;
++                attr = attr->next;
++                
++                value = xmlNodeListGetString(doc, temp_attr->children, 0);
+@@ -6225 +6223 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, temp_attr, value);
+@@ -6228 +6225,0 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                attr= attr->next;

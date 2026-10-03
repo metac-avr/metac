@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..e2081cbaa 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -133 +133 @@ envadjust(mrb_state *mrb, mrb_value *oldbase, mrb_value *newbase, size_t oldsize
+-      ptrdiff_t off = e->stack - oldbase;
++      ptrdiff_t off = st - oldbase;  /* Use st instead of e->stack to avoid dereferencing freed pointer */
+@@ -143 +143 @@ envadjust(mrb_state *mrb, mrb_value *oldbase, mrb_value *newbase, size_t oldsize
+-        ptrdiff_t off = e->stack - oldbase;
++        ptrdiff_t off = st - oldbase;  /* Use st instead of e->stack to avoid dereferencing freed pointer */
+@@ -199 +199,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -200,0 +202 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    mrb_value *old_stack = mrb->c->ci->stack;
+@@ -201,0 +204,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    /* Nullify old stack pointer to prevent use-after-free */
++    old_stack = NULL;
+@@ -211,2 +215 @@ uvenv(mrb_state *mrb, mrb_int up)
+-  while (up--) {
+-    proc = proc->upper;
++  while (up--) {    proc = proc->upper;

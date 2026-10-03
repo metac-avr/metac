@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..f834e8c191b 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -40,0 +41 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++	if (zval_ptr == NULL) return;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 63a3112405b..5f1565276bd 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3121,2 +3121,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+-				}
++				zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++			}
++		}
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++		zend_refcounted *ref = Z_COUNTED_P(EX_VAR(throw_op->result.var));
++		if (ref && GC_DELREF(ref) == 0) {
++			zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));

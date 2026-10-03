@@ -1,0 +1,42 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..820be201 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2492,0 +2493,2 @@ xmlFreeID(xmlIDPtr id) {
++    xmlChar *temp_value = NULL;
++    xmlChar *temp_name = NULL;
+@@ -2499,4 +2501,12 @@ xmlFreeID(xmlIDPtr id) {
+-    if (id->value != NULL)
+-	DICT_FREE(id->value)
+-    if (id->name != NULL)
+-	DICT_FREE(id->name)
++    /* Extract values before potential freeing */
++    temp_value = id->value;
++    temp_name = id->name;
++    
++    /* Clear original pointers */
++    id->value = NULL;
++    id->name = NULL;
++    
++    if (temp_value != NULL)
++	DICT_FREE(temp_value)
++    if (temp_name != NULL)
++	DICT_FREE(temp_name)
+@@ -2736,0 +2747 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    xmlChar *idValue;
+@@ -2742,0 +2754,8 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++         return(-1);
++
++    /* Store the ID value before potentially freeing the structure */
++    idValue = xmlStrdup(attr->id->value);
++    if (idValue == NULL) return(-1);
++    
++    if (xmlHashRemoveEntry(table, idValue, xmlFreeIDTableEntry) < 0) {
++        xmlFree(idValue);
+@@ -2744,3 +2763 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    }
+@@ -2749,0 +2767 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    xmlFree(idValue);

@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index f2eb205d53c..c8ee8ab5e04 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3110 +3110,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				/* smart branch opcodes may not initialize result */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 				/* smart branch opcodes may not initialize result */
+@@ -3112 +3113,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *result_var = EX_VAR(throw_op->result.var);
++					if (result_var && !EG(exception)) {
++						zval_ptr_dtor_nogc(result_var);
++					}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..b6c8b6dd1c6 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209 +1209 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
++return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+@@ -1217 +1217,2 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+@@ -1219 +1220,4 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	return GC_DELREF(Z_COUNTED_P(pz));
++	if (!Z_ISUNDEF_P(pz)) {
++		return GC_DELREF(Z_COUNTED_P(pz));
++	}
++	return 0;
+@@ -1224 +1228 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	do {												\
++	do {								\
+@@ -1226,3 +1230,3 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
++		Z_COUNTED_P(z) = gc;						\
++		z->value.ww.w2 = _w2;						\
++		Z_TYPE_INFO_P(z) = t;						\

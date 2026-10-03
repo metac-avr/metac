@@ -1,0 +1,22 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..ad3e24e36a7 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -862,0 +864,2 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Reset stale references to avoid expired pointer dereference */
++			prev_execute_data = NULL;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..dcf8472bf8d 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *target = EX_VAR(opline->op1.var);
++		if (target && Z_TYPE_P(target) == IS_INDIRECT) {
++			zval *ref = Z_INDIRECT_P(target);
++			if (ref && (Z_TYPE_P(ref) == IS_NULL || Z_TYPE_P(ref) == IS_UNDEF)) {
++				ZVAL_NULL(target);
++			}
++		}

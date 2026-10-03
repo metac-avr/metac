@@ -1,0 +1,52 @@
+diff --git a/valid.c b/valid.c
+index e11d2c95..aef1a375 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2358,30 +2358 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            ((doc->intSubset == NULL) && (doc->extSubset == NULL)))
+-            return(0);
+-
+-        if ((elem == NULL) ||
+-            (elem->type != XML_ELEMENT_NODE) ||
+-            (elem->name == NULL))
+-            return(0);
+-
+-	fullelemname = (elem->ns != NULL && elem->ns->prefix != NULL) ?
+-	    xmlBuildQName(elem->name, elem->ns->prefix, felem, 50) :
+-	    (xmlChar *)elem->name;
+-        if (fullelemname == NULL)
+-            return(-1);
+-
+-        aprefix = (attr->ns != NULL) ? attr->ns->prefix : NULL;
+-
+-	if (fullelemname != NULL) {
+-	    attrDecl = xmlGetDtdQAttrDesc(doc->intSubset, fullelemname,
+-		                          attr->name, aprefix);
+-	    if ((attrDecl == NULL) && (doc->extSubset != NULL))
+-		attrDecl = xmlGetDtdQAttrDesc(doc->extSubset, fullelemname,
+-					      attr->name, aprefix);
+-	}
+-
+-	if ((fullelemname != felem) && (fullelemname != elem->name))
+-	    xmlFree(fullelemname);
+-
+-        if ((attrDecl != NULL) && (attrDecl->atype == XML_ATTRIBUTE_ID))
+-	    return(1);
+-    }
++            ((doc->intSubse
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..edd8faae 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2226 +2226,2 @@ xmlSAX2StartElementNs(void *ctx,
+-        pref = namespaces[i++];
++// FIXME: Crash CWE-416: Use After Free
++	 pref = namespaces[i++];
+@@ -2248,2 +2249,5 @@ xmlSAX2StartElementNs(void *ctx,
+-	    ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
+-	                                           ret, prefix, ns, uri);
++	    /* Check if ns is still valid before accessing it */
++	    if (ns != NULL) {
++	        ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
++	                                               ret, prefix, ns, uri);
++	    }

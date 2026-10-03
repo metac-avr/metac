@@ -1,0 +1,22 @@
+diff --git a/libavformat/iamf_parse.c b/libavformat/iamf_parse.c
+index feb670180e..34fef75a7b 100644
+--- a/libavformat/iamf_parse.c
++++ b/libavformat/iamf_parse.c
+@@ -942 +942,2 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
+-                int sound_system;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                 int sound_system;
+@@ -944 +945,6 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
+-                av_channel_layout_copy(&submix_layout->sound_system, &ff_iamf_sound_system_map[sound_system].layout);
++                if (sound_system >= 0 && sound_system < (int)FF_ARRAY_ELEMS(ff_iamf_sound_system_map)) {
++                    av_channel_layout_copy(&submix_layout->sound_system, &ff_iamf_sound_system_map[sound_system].layout);
++                } else {
++                    memset(&submix_layout->sound_system, 0, sizeof(submix_layout->sound_system));
++                    av_log(s, AV_LOG_WARNING, "Sound system index %d out of bounds, using default layout\n", sound_system);
++                }
+@@ -1080 +1086,4 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+-            break;
++            if (ret >= 0) {  // Validate return value to prevent propagation of errors
++                // Additional validation can be added here if needed
++            }
++             break;

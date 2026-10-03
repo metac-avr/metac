@@ -1,0 +1,109 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..98b88bed2 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,22 +2381,82 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
+-
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+-
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
+-
+-		  if(rc < 0) break;
+-		}
+-
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+-
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++static void ndpi_int_tls_dissect_client_certificate(NDPI_PROTOCOL_BITMASK *detection_bitmask,
++                                                     struct ndpi_detection_module_struct *ndpi_struct,
++                                                     struct ndpi_flow_struct *flow,
++                                                     u_int32_t quic_version) {
++  struct ndpi_packet_struct *packet = &flow->packet;
++
++  if(packet->payload_packet_len >= 10) {
++    u_int32_t s_offset;
++    u_int8_t num_signature_algorithms;
++    u_int16_t tot_signature_algorithms_len;
++    u_int16_t sa_size;
++    u_int16_t i, id;
++    u_int16_t last_signature = 0;
++    u_int8_t duplicate_found = 0;
++
++    /* Skip certificate request context length and certificate request context */
++    s_offset = 1 + packet->payload[0];
++
++    if(s_offset + 2 < packet->payload_packet_len) {
++      u_int16_t cert_len = ntohs(*(u_int16_t*)&packet->payload[s_offset]);
++      s_offset += 2;
++
++      if(s_offset + cert_len <= packet->payload_packet_len) {
++        s_offset += cert_len;
++
++        if(s_offset + 2 < packet->payload_packet_len) {
++          u_int16_t extensions_len = ntohs(*(u_int16_t*)&packet->payload[s_offset]);
++          s_offset += 2;
++
++          if(s_offset + extensions_len <= packet->payload_packet_len) {
++            u_int16_t extension_id, extension_len;
++            u_int16_t offset = s_offset;
++
++            while(offset + 4 < s_offset + extensions_len) {
++              extension_id = ntohs(*(u_int16_t*)&packet->payload[offset]);
++              offset += 2;
++              extension_len = ntohs(*(u_int16_t*)&packet->payload[offset]);
++              offset += 2;
++
++              if(extension_id == 13 /* signature_algorithms */) {
++                if(offset + 2 < s_offset + extensions_len) {
++                  tot_signature_algorithms_len = ntohs(*(u_int16_t*)&packet->payload[offset]);
++                  offset += 2;
++
++                  if(offset + tot_signature_algorithms_len <= s_offset + extensions_len) {
++                    sa_size = tot_signature_algorithms_len / 2;
++
++#ifdef NDPI_ENABLE_DEBUG_MESSAGES
++                    if(ndpi_struct->tls_certificate_debug)
++                      NDPI_LOG_DBG2(ndpi_struct, "signature_algorithms_len=%u\n", sa_size);
++#endif
++
++                    ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++
++                    for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<packet->payload_packet_len; i++) {
++                      int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++                                             sizeof(ja.client.signature_algorithms_str)-i*2,
++                                             "%02X", packet->payload[offset+i]);
++                      
++                      if(offset + i*2 + 1 < packet->payload_packet_len) {
++                        ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[offset+i*2]);
++                      }
++
++                      if(rc < 0) break;
++                    }
++
++                    for(i=0; i<tot_signature_algorithms_len && offset + (int)i + 1 < packet->payload_packet_len; i+=2) {
++                      if(offset + i + 1 < packet->payload_packet_len) {
++                        u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[offset+i]));
++
++                        if(last_signature == signature_algo) {
++                          /* Consecutive duplication */
++                          duplicate_found = 1;
++                        } else {
++                          last_signature = signature_algo;
++                        }
++                      }
++                    }
++                  }
++                }
++              } else if(extension_id == 16 /* application_layer_protocol_negotiation */ &&
++                		    continue;

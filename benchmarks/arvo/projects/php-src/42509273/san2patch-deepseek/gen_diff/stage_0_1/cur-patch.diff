@@ -1,0 +1,66 @@
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..f16647a5646 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -210,20 +210,10 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-	if (!spl_fixedarray_empty(&intern->array)) {
+-		zend_long j = zend_hash_num_elements(ht);
+-
+-		if (GC_REFCOUNT(ht) > 1) {
+-			intern->std.properties = zend_array_dup(ht);
+-			GC_TRY_DELREF(ht);
+-		}
+-		for (zend_long i = 0; i < intern->array.size; i++) {
+-			zend_hash_index_update(ht, i, &intern->array.elements[i]);
+-			Z_TRY_ADDREF(intern->array.elements[i]);
+-		}
+-		if (j > intern->array.size) {
+-			for (zend_long i = intern->array.size; i < j; ++i) {
+-				zend_hash_index_del(ht, i);
+-			}
+-		}
+-		if (HT_IS_PACKED(ht)) {
+-			/* Engine doesn't expet packed array */
+-			zend_hash_packed_to_hash(ht);
+-		}
++	ZEND_API void ZEND_FASTCALL zend_hash_packed_grow(HashTable *ht)
++{
++	HT_ASSERT_RC1(ht);
++	if (ht->nTableSize >= HT_MAX_SIZE) {
++		zend_error_noreturn(E_ERROR, "Possible integer overflow in memory allocation (%u * %zu + %zu)", ht->nTableSize * 2, sizeof(Bucket), sizeof(Bucket));
++	}
++	if (UNEXPECTED(ht->nNumUsed != ht->nNumOfElements || ht->nNumUsed > ht->nTableSize)) {
++		zend_hash_destroy(ht);
++		HT_INVALIDATE(ht);
++		return;
+@@ -230,0 +221,3 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
++	ht->nTableSize += ht->nTableSize;
++	HT_SET_DATA_ADDR(ht, perealloc2(HT_GET_DATA_ADDR(ht), HT_PACKED_SIZE_EX(ht->nTableSize, HT_MIN_MASK), HT_PACKED_USED_SIZE(ht), GC_FLAGS(ht) & IS_ARRAY_PERSISTENT));
++}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 6e809c87341..1566922d502 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -296,3 +295,0 @@ ZEND_API HashTable* ZEND_FASTCALL zend_new_pair(zval *val1, zval *val2)
+-	return ht;
+-}
+-
+@@ -304,0 +302,5 @@ ZEND_API void ZEND_FASTCALL zend_hash_packed_grow(HashTable *ht)
++	if (UNEXPECTED(ht->nNumUsed != ht->nNumOfElements || ht->nNumUsed > ht->nTableSize)) {
++		zend_hash_destroy(ht);
++		HT_INVALIDATE(ht);
++		return;
++	}
+@@ -307,11 +309 @@ ZEND_API void ZEND_FASTCALL zend_hash_packed_grow(HashTable *ht)
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_real_init(HashTable *ht, bool packed)
+-{
+-	IS_CONSISTENT(ht);
+-
+-	HT_ASSERT_RC1(ht);
+-	zend_hash_real_init_ex(ht, packed);
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_real_init_packed(HashTable *ht)
++}ZEND_API void ZEND_FASTCALL zend_hash_real_init_packed(HashTable *ht)

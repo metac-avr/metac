@@ -1,0 +1,45 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..b173a867 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6857,2 +6857,16 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-        if (ns != NULL)
+-            return(xmlSetNsProp(node, ns, localname, value));
++        if (ns != NULL) {
++            xmlAttrPtr ret = xmlSetNsProp(node, ns, localname, value);
++            if (ret != NULL && ret->children != NULL) {
++                /* Ensure children pointer is valid after potential free operations */
++                xmlNodePtr temp = ret->children;
++                while (temp != NULL) {
++                    if (temp->type == XML_TEXT_NODE && temp->content == NULL) {
++                        /* Skip invalid nodes */
++                        temp = temp->next;
++                        continue;
++                    }
++                    temp = temp->next;
++                }
++            }
++            return(ret);
++        }
+@@ -6861 +6875,14 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
+-    return(xmlSetNsProp(node, NULL, name, value));
++    xmlAttrPtr ret = xmlSetNsProp(node, NULL, name, value);
++    if (ret != NULL && ret->children != NULL) {
++        /* Ensure children pointer is valid after potential free operations */
++        xmlNodePtr temp = ret->children;
++        while (temp != NULL) {
++            if (temp->type == XML_TEXT_NODE && temp->content == NULL) {
++                /* Skip invalid nodes */
++                temp = temp->next;
++                continue;
++            }
++            temp = temp->next;
++        }
++    }
++    return(ret);
+@@ -6904 +6931 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6905,0 +6933,2 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++	    prop->children = NULL; /* Prevent dangling pointer */
++	}

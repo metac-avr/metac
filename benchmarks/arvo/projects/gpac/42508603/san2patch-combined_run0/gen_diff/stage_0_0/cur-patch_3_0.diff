@@ -1,0 +1,41 @@
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index 753cff17d..3f5d4f420 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -1294,2 +1294 @@ GF_Err esds_box_read(GF_Box *s, GF_BitStream *bs)
+-					gf_odf_slc_set_pref(ptr->desc->slConfig);
+-				}
++gf_odf_slc_set_pref(ptr->desc->slConfig);
+@@ -1302 +1301,2 @@ GF_Err esds_box_read(GF_Box *s, GF_BitStream *bs)
+-GF_Box *esds_box_new()
++// FIXME: Crash CWE-416: Use After Free
++ GF_Box *esds_box_new()
+@@ -1304,0 +1305 @@ GF_Box *esds_box_new()
++	if (tmp) tmp->reference_count = 1;
+@@ -1314,2 +1315 @@ GF_Err esds_box_write(GF_Box *s, GF_BitStream *bs)
+-	u8 *enc_desc;
+-	u32 descSize = 0;
++	u8 *enc_desc;	u32 descSize = 0;
+diff --git a/src/isomedia/box_funcs.c b/src/isomedia/box_funcs.c
+index 84310399e..afe7e93d4 100644
+--- a/src/isomedia/box_funcs.c
++++ b/src/isomedia/box_funcs.c
+@@ -1675 +1675,4 @@ GF_Box *gf_isom_box_new_ex(u32 boxType, u32 parentType, Bool skip_logs, Bool is_
+-            if (a) a->registry = &box_registry[1];
++            if (a) {
++                a->registry = &box_registry[1];
++                a->reference_count = 1; // Initialize reference count
++            }
+@@ -1679,3 +1682,4 @@ GF_Box *gf_isom_box_new_ex(u32 boxType, u32 parentType, Bool skip_logs, Bool is_
+-            	((GF_UnknownBox *)a)->original_4cc = boxType;
+-            	a->registry = &box_registry[0];
+-			}
++                ((GF_UnknownBox *)a)->original_4cc = boxType;
++                a->registry = &box_registry[0];
++                a->reference_count = 1; // Initialize reference count
++            }
+@@ -1683 +1687 @@ GF_Box *gf_isom_box_new_ex(u32 boxType, u32 parentType, Bool skip_logs, Bool is_
+-		return a;
++ 		return a;
+@@ -1695,0 +1700 @@ GF_Box *gf_isom_box_new_ex(u32 boxType, u32 parentType, Bool skip_logs, Bool is_
++		a->reference_count = 1; // Initialize reference count

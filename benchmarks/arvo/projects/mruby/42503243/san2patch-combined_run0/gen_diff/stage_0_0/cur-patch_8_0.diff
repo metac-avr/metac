@@ -1,0 +1,44 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..292a8c186 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -531,7 +530,0 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
+-  }
+-  mrb_gc_arena_restore(mrb, ai);
+-  mrb_gc_protect(mrb, val);
+-  return val;
+-}
+-
+@@ -540,0 +534,8 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
++  /* Prevent out-of-bounds write during constant resolution */
++  if (argc < 0 || argc > MRB_INT_MAX - 1) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument count");
++  }
++  /* Ensure sufficient stack space for 8-byte boundary writes */
++  if ((char*)(mrb->c->ci->stack + argc + 1) + 8 > (char*)mrb->c->stend) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow protection");
++  }
+@@ -542,11 +543 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
+-}
+-
+-static mrb_value
+-exec_irep(mrb_state *mrb, mrb_value self, struct RProc *p)
+-{
+-  mrb_callinfo *ci = mrb->c->ci;
+-  int keep, nregs;
+-
+-  ci->stack[0] = self;
+-  mrb_vm_ci_proc_set(ci, p);
+-  if (MRB_PROC_CFUNC_P(p)) {
++}  if (MRB_PROC_CFUNC_P(p)) {
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..480de6bdf 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -775,0 +776,5 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  /* Prevent heap buffer overflow by checking stack bounds */
++  if (mrb->c->stack >= mrb->c->stend) {
++    mrb_raise(mrb, E_STACK_ERROR, "stack limit exceeded during constant resolution");
++  }
++

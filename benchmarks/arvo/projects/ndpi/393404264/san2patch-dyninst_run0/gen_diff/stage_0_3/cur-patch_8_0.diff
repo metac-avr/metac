@@ -1,0 +1,27 @@
+diff --git a/src/lib/ndpi_serializer.c b/src/lib/ndpi_serializer.c
+index 3cda728bd..18cddb921 100644
+--- a/src/lib/ndpi_serializer.c
++++ b/src/lib/ndpi_serializer.c
+@@ -2113 +2113 @@ int ndpi_serialize_string_string_len(ndpi_serializer *_serializer,
+-				      value, value_len));
++                                      value, value_len));
+@@ -2120,2 +2120,12 @@ int ndpi_serialize_string_string(ndpi_serializer *_serializer,
+-				 const char *key, const char *_value) {
+-  const char *value = _value ? _value : "";
++         const char *key, const char *_value) {
++  // FIXME: Crash CWE-416: Use After Free
++  char local_value[2048]; /* Local buffer to avoid use-after-free */
++  const char *value;
++  
++  if (_value == NULL) {
++    value = "";
++  } else {
++    strncpy(local_value, _value, sizeof(local_value) - 1);
++    local_value[sizeof(local_value) - 1] = '\0';
++    value = local_value;
++  }
+@@ -2130 +2140 @@ int ndpi_serialize_string_raw(ndpi_serializer *_serializer,
+-			      const char *key, const char *_value, u_int16_t vlen) {
++            const char *key, const char *_value, u_int16_t vlen) {
+@@ -2133 +2142,0 @@ int ndpi_serialize_string_raw(ndpi_serializer *_serializer,
+-

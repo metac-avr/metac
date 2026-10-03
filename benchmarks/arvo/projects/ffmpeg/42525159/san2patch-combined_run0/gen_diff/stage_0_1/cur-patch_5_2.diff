@@ -1,0 +1,70 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..1681794fd9 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,13 +2017,43 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
++#define WRITE_FRAME(DIRECTORY, PIXEL) \
++    static void write_frame_ ## DIRECTORY (Jpeg2000DecoderContext *s, AVFrame *picture,   \
++                                           int tile_index, int compno,                   \
++                                           int dest_x, int dest_y,                       \
++                                           int src_x, int src_y,                         \
++                                           int w, int h)                                 \
++    {                                                                                     \
++        Jpeg2000Tile *tile = s->tile + tile_index;                                        \
++        Jpeg2000Component *comp = tile->comp + compno;                                     \
++        PIXEL *line = (PIXEL *)comp->data + src_y * comp->stride + src_x;                \
++        PIXEL *dst;                                                                       \
++        int x, y, pixelsize = picture->linesize[compno] / sizeof(PIXEL);                 \
++        int *i_datap;                                                                     \
++                                                                                          \
++        if (comp->format == GRK_PIX_FMT_RGB)                                              \
++            pixelsize /= 3;                                                               \
++                                                                                          \
++        dst = (PIXEL *)(picture->data[compno] +                                           \
++                        (dest_y * picture->linesize[compno]) +                            \
++                        dest_x * sizeof(PIXEL));                                          \
++                                                                                          \
++        for (y = 0; y < h; y++) {                                                         \
++            i_datap = (int *)(line + y * comp->stride);                                   \
++            for (x = 0; x < w; x++) {                                                     \
++                /* Prevent out-of-bounds write by checking destination pointer */         \
++                if ((char*)dst >= picture->data[compno] &&                                \
++                    (char*)dst < picture->data[compno] +                                  \
++                               picture->linesize[compno] * picture->height -             \
++                               sizeof(PIXEL)) {                                           \
++                    *dst = *i_datap++;                                                    \
++                    dst += pixelsize;                                                     \
++                } else {                                                                  \
++                    i_datap++;                                                            \
++                    dst += pixelsize;                                                     \
++                }                                                                         \
++            }                                                                             \
++            line += comp->stride;                                                         \
++        }                                                                                 \
++    }                                                                                     \
++                                                                                          \
++WRITE_FRAME(8, uint8_t)                                                                   \
++WRITE_FRAME(16, uint16_t)                                                                \
++                                                                                          \
+@@ -2031,8 +2060,0 @@ WRITE_FRAME(16, uint16_t)
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-

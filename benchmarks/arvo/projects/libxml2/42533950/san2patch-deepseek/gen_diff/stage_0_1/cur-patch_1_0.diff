@@ -1,0 +1,47 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..ff1531d7 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3936 +3936 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      int res;
++       int res;
+@@ -3980 +3980,5 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          ret->ns = xmlNewReconciledNs(target, cur->ns);
++          if (cur->ns->href == NULL) {
++              ret->ns = NULL;
++          } else {
++              ret->ns = xmlNewReconciledNs(target, cur->ns);
++          }
+@@ -4040,8 +4043,0 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+- * Create a copy of the attribute. This function sets the parent
+- * pointer of the copy to @target but doesn't set the attribute on
+- * the target element. Users should consider to set the attribute
+- * by calling xmlAddChild afterwards or reset the parent pointer to
+- * NULL.
+- *
+- * Returns: a new #xmlAttrPtr, or NULL in case of error.
+- */
+@@ -4049,0 +4046,10 @@ xmlCopyProp(xmlNodePtr target, xmlAttrPtr cur) {
++	xmlNsPtr ns;
++
++	if (cur == NULL)
++		return NULL;
++	ns = cur->ns;
++	/* Before copying, make sure the namespace has not been freed along
++	 * with its owner node. If the namespace reference is stale, clear it
++	 * so xmlCopyPropInternal won't read freed memory. */
++	if ((ns != NULL) && (ns->href == NULL))
++		cur->ns = NULL;
+@@ -4051,11 +4057 @@ xmlCopyProp(xmlNodePtr target, xmlAttrPtr cur) {
+-}
+-
+-/**
+- * xmlCopyPropList:
+- * @target:  the element where the attributes will be grafted
+- * @cur:  the first attribute
+- *
+- * Create a copy of an attribute list. This function sets the
+- * parent pointers of the copied attributes to @target but doesn't
+- * set the attributes on the target element.
+- *
++} *

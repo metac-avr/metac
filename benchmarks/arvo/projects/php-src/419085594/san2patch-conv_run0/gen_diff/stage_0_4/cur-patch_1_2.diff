@@ -1,0 +1,95 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..1aa8a35eac6 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1892,0 +1893,8 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
++	static zend_opcode_handler_ret ZEND_CONCAT_SPEC_CP_VAR_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
++{
++	zend_op *opline = EX(opline);
++	zval *op1 = GET_OP1_CP_PTR();
++	zval *op2 = GET_OP2_ZVAL_PTR();
++	zval *result = EX_VAR(opline->result.var);
++	zval op1_copy;
++
+@@ -1894,11 +1902,19 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
+-			ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_CONCAT);
+-			ZVAL_STR(&op1_copy, zval_get_string_func(op1));
+-			if (UNEXPECTED(EG(exception))) {
+-				zval_ptr_dtor_str(&op1_copy);
+-				if (orig_op1 != result) {
+-					ZVAL_UNDEF(result);
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}
++			/* Validate zval before accessing to prevent use-after-free */
++			if (Z_REFCOUNTED_P(op1) && (GC_REFCOUNT(Z_COUNTED_P(op1)) == 0 || Z_TYPE_P(op1) == IS_NULL)) {
++				/* Create safe copy when zval is invalid */
++				ZVAL_DUP(&op1_copy, op1);
++				op1 = &op1_copy;
++			} else {
++				ZEND_TRY_BINARY_OBJECT_OPERATION(ZEND_CONCAT);
++				ZVAL_STR(&op1_copy, zval_get_string_func(op1));
++				if (UNEXPECTED(EG(exception))) {
++					zval_ptr_dtor_str(&op1_copy);
++					if (orig_op1 != result) {
++						ZVAL_UNDEF(result);
++					}
++					return FAILURE;
+@@ -1906 +1921,0 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-				return FAILURE;
+@@ -1915,0 +1931,23 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
++
++	/* Continue with normal string concatenation */
++	if (EXPECTED(Z_TYPE_P(op1) == IS_STRING) && EXPECTED(Z_TYPE_P(op2) == IS_STRING)) {
++		zend_string *str;
++		str = zend_string_alloc(Z_STRLEN_P(op1) + Z_STRLEN_P(op2), 0);
++		memcpy(ZSTR_VAL(str), Z_STRVAL_P(op1), Z_STRLEN_P(op1));
++		memcpy(ZSTR_VAL(str) + Z_STRLEN_P(op1), Z_STRVAL_P(op2), Z_STRLEN_P(op2));
++		ZSTR_VAL(str)[Z_STRLEN_P(op1) + Z_STRLEN_P(op2)] = '\0';
++		ZVAL_STR(result, str);
++	} else {
++		zend_string *op1_str = zval_get_string_func(op1);
++		zend_string *op2_str = zval_get_string_func(op2);
++		zend_string *str = zend_string_alloc(ZSTR_LEN(op1_str) + ZSTR_LEN(op2_str), 0);
++		memcpy(ZSTR_VAL(str), ZSTR_VAL(op1_str), ZSTR_LEN(op1_str));
++		memcpy(ZSTR_VAL(str) + ZSTR_LEN(op1_str), ZSTR_VAL(op2_str), ZSTR_LEN(op2_str));
++		ZSTR_VAL(str)[ZSTR_LEN(op1_str) + ZSTR_LEN(op2_str)] = '\0';
++		ZVAL_STR(result, str);
++		zend_string_release(op1_str);
++		zend_string_release(op2_str);
++	}
++
++	ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..ee75a59441d 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45972,0 +45973,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++	static zend_opcode_handler_ret ZEND_ASSIGN_DIM_OP_SPEC_CV_CONST_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
++{
++	zend_op *opline = EX(opline);
++	zval *container = GET_OP1_CV_PTR(BP_VAR_RW);
++	zval *dim;
++	zval *value;
++	zval *var_ptr;
++
+@@ -46006 +46014,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-			zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			
++			zval temp_container;
++			ZVAL_COPY(&temp_container, var_ptr);
++			zend_binary_op(&temp_container, &temp_container, value OPLINE_CC);
++			zval_ptr_dtor(var_ptr);
++			ZVAL_COPY_VALUE(var_ptr, &temp_container);
+@@ -46046,0 +46060,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++	ZEND_VM_NEXT_OPCODE();
++}
++

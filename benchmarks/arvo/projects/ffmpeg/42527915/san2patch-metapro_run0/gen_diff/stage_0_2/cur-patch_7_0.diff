@@ -1,0 +1,39 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..84766151e8 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239,3 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
+-        if (codes != localbuf)
+-            av_free(codes);
++     } else {
+@@ -242,0 +241,2 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++            if (codes != localbuf)
++                av_free(codes);
+@@ -245,0 +246,2 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++        if (codes != localbuf)
++            av_free(codes);
+@@ -488,0 +491,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++            av_free(multi->table);
++            multi->table = NULL;
+@@ -493,0 +498,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++            av_free(multi->table);
++            multi->table = NULL;
+@@ -498 +504,4 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    if (ret < 0)
++// FIXME: Crash CWE-416: Use After Free
++     if (ret < 0) {
++        av_free(multi->table);
++        multi->table = NULL;
+@@ -500 +509,10 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    }
++    ret = vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    if (ret < 0) {
++        if (buf != localbuf)
++            av_free(buf);
++        return ret;
++    }
++    if (buf != localbuf)
++        av_free(buf);
++    return 0;

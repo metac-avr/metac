@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..9ac6b14e8dd 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -25,7 +24,0 @@
+-#include "zend_gc.h"
+-
+-BEGIN_EXTERN_C()
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p);
+-ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-
+@@ -33,7 +25,0 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
+-	}
+-}
+-
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+@@ -42,2 +28,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-		if (!GC_DELREF(ref)) {
++		if (Z_DELREF_P(zval_ptr) == 0) {
++			zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++			ZVAL_UNDEF(zval_ptr);
+@@ -45,2 +32,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
+-			gc_check_possible_root(ref);
++		}
++	}
++}			gc_check_possible_root(ref);

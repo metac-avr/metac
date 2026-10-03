@@ -1,0 +1,23 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..0d8ebd691 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -391,0 +392,3 @@ add_heap(mrb_state *mrb, mrb_gc *gc)
++  /* Initialize page links to prevent dangling references */
++  page->links.prev = NULL;
++  page->links.next = NULL;
+@@ -1245,5 +1248,9 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-     size_t tried_sweep = 0;
+-     tried_sweep = incremental_sweep_phase(mrb, gc, limit);
+-     if (tried_sweep == 0)
+-       gc->state = MRB_GC_STATE_ROOT;
+-     return tried_sweep;
++    /* Prevent UAF by ensuring no marking occurs after sweep begins */
++    if (gc->gray_list) {
++      gc->gray_list = NULL;  /* Clear gray list before sweep */
++    }
++    size_t tried_sweep = 0;
++    tried_sweep = incremental_sweep_phase(mrb, gc, limit);
++    if (tried_sweep == 0)
++      gc->state = MRB_GC_STATE_ROOT;
++    return tried_sweep;

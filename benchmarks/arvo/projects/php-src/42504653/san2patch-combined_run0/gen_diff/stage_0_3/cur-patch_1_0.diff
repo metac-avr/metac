@@ -1,0 +1,32 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..b7fcd200e7a 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7616,6 +7615,0 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+-			} else if (!zend_jit_traces[parent_num].polymorphism) {
+-				polymorphism = 1;
+-			} else if (exit_num == 0) {
+-				polymorphism = zend_jit_traces[parent_num].polymorphism + 1;
+-			}
+@@ -7624 +7618,2 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -7625,0 +7621,4 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
++	if (UNEXPECTED(!trace_buffer)) {
++		JIT_G(tracing) = 0;
++		return 0;
++	}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..ddcc053fec6 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *op2_val = EX_VAR(opline->op2.var);
++		if (op2_val != NULL) {
++			if (Z_TYPE_P(op2_val) == IS_INDIRECT && Z_INDIRECT_P(op2_val) != NULL) {
++				ZVAL_DEREF(op2_val);
++			}
++		}

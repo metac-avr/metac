@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..08dd32ba419 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2166,0 +2167 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -2167,0 +2169 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++			if (UNEXPECTED(Z_TYPE(p->val) == IS_OBJECT && Z_OBJ(p->val) == NULL)) continue;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..892d3716cfc 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,9 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// Patch: Check if object is marked as invalid before proceeding to prevent expired pointer dereference
++		if (EG(objects_store).object_buckets[handle] != SET_OBJ_INVALID(object)) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		} else {
++			return;
++		}

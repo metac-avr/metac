@@ -1,0 +1,45 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index 4c31ee0eae6..348ce1f6fae 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2175,28 +2175,12 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-						switch (state) {
+-							case 1: /* escaped */
+-								bptr++;
+-								state = 0;
+-								break;
+-							case 2: /* embedded enclosure ? let's check it */
+-								if (*bptr != enclosure) {
+-									/* real enclosure */
+-									memcpy(tptr, hunk_begin, bptr - hunk_begin - 1);
+-									tptr += (bptr - hunk_begin - 1);
+-									hunk_begin = bptr;
+-									goto quit_loop_2;
+-								}
+-								memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-								tptr += (bptr - hunk_begin);
+-								bptr++;
+-								hunk_begin = bptr;
+-								state = 0;
+-								break;
+-							default:
+-								if (*bptr == enclosure) {
+-									state = 2;
+-								} else if (escape_char != PHP_CSV_NO_ESCAPE && *bptr == escape_char) {
+-									state = 1;
+-								}
+-								bptr++;
+-								break;
+-						}
++						{
++    "function": "php_fgetcsv",
++    "params": [
++      "zval *return_value",
++      "zval *stream_zval",
++      "zend_long length",
++      "zend_string *delimiter",
++      "zend_string *enclosure",
++      "zend_string *escape_char"
++    ],
++    "body": "php_stream *stream;\n\n\tchar *buf, *temp, *tptr, *bptr, *hunk_begin;\n\tsize_t buf_len;\n\tsize_t temp_len;\n\tint idx;\n\tint hunk_len;\n\tint state = 0;\n\tint enclosure_len = (int)enclosure->len;\n\tint escape_len = (escape_char == NULL) ? 0 : (int)escape_char->len;\n\tzval *tmp;\n\n\tZEND_PARSE_PARAMETERS_START(2, 5)\n\t\tZ_PARAM_RESOURCE(stream_zval)\n\t\tZ_PARAM_OPTIONAL\n\t\tZ_PARAM_LONG(length)\n\t\tZ_PARAM_STR(delimiter)\n\t\tZ_PARAM_STR(enclosure)\n\t\tZ_PARAM_STR_OR_NULL(escape_char)\n\tZEND_PARSE_PARAMETERS_END();\n\n\tphp_stream_from_zval(stream, stream_zval);\n\n\tif (!length) {\n\t\tlength = 0;\n\t}\n\n\tbuf_len = length;\n\tif (buf_len == 0) {\n\t\tbuf_len = PHP_CSV_READ_BUF_SIZE;\n\t}\n\n\tbuf = emalloc(buf_len + 1);\n\ttemp = emalloc(buf_len + 1);\n\ttptr = temp;\n\tbuf[0] = '\\0';\n\n\tidx = 0;\n\n\tarray_init(return_value);\n\n\twhile (1) {\n\t\tchar *read_buf;\n\t\tint read_len;\n\n\t\tread_buf = buf + idx;\n\n\t\tread_len = php_stream_get_line(stream, read_buf, (size_t)(buf_len - idx), NULL);\n\n\t\tif (read_len < 0) {\n\t\t\tefree(buf);\n\t\t\tefree(temp);\n\t\t\tRETURN_FALSE;\n\t\t}\n\n\t\tif (read_len == 0) {\n\t\t\tbreak;\n\t\t}\n\n\t\tidx += read_len;\n\n\t\tbuf[idx] = '\\0';\n\n\t\tbptr = buf;\n\t\ttptr = temp;\n\t\tstate = 0;\n\t\thunk_len = 0;\n\t\thunk_begin = bptr;\n\n\t\twhile (1) {\n\t\t\tif (*bptr == '\\0') {\n\t\t\t\tbreak;\n\t\t\t}\n\n\t\t\tswitch (state) {\n\t\t\t\tcase 1: /* escaped */\n\t\t\t\t\tbptr++;\n\t\t\t\t\tstate = 0;\n\t\t\t\t\tbreak;\n\t\t\t\tcase 2: /* embedded enclosure ? let's check it */\n\t\t\t\t\tif (*bptr != *enclosure->val) {\n\t\t\t\t\t\t/* real enclosure */\n\t\t\t\t\t\tmemcpy(tptr, hunk_begin, bptr - hunk_begin - 1);\n\t\t\t\t\t\ttptr += (bptr - hunk_begin - 1);\n\t\t\t\t\t\thunk_begin = bptr;\n\t\t\t\t\t\tgoto quit_loop;\n\t\t\t\t\t}\n\t\t\t\t\tmemcpy(tptr, hunk_begin, bptr - hunk_begin);\n\t\t\t\t\ttptr += (bptr - hunk_begin);\n\t\t\t\t\tbptr++;\n\t\t\t\t\thunk_begin = bptr;\n\t\t\t\t\tstate = 0;\n\t\t\t\t\tbreak;\n\t\t\t\tdefault:\n\t\t\t\t\tif (*bptr == *enclosure->val) {\n\t\t\t\t\t\tstate = 2;\n\t\t\t\t\t} else if (escape_char != NULL && *bptr == *escape_char->val) {\n\t\t\t\t\t\tstate = 1;\n\t\t\t\t\t}\n\t\t\t\t\tbptr++;\n\t\t\t\t\tbreak;\n\t\t\t}\n\t\t}\n\nquit_loop:\n\t\tif (hunk_len > 0) {\n\t\t\tmemcpy(tptr, hunk_begin, hunk_len);\n\t\t\ttptr += hunk_len;\n\t\t\thunk_len = 0;\n\t\t}\n\n\t\t*tptr = '\\0';\n\n\t\ttmp = zval_get_string(tmp);\n\t\tZVAL_STRINGL(tmp, temp, tptr - temp);\n\t\tadd_next_index_zval(return_value, tmp);\n\n\t\tif (read_len < buf_len - idx - 1) {\n\t\t\tbreak;\n\t\t}\n\n\t\tif (idx < buf_len - 1) {\n\t\t\tbuf_len *= 2;\n\t\t\tbuf = erealloc(buf, buf_len + 1);\n\t\t\ttemp = erealloc(temp, buf_len + 1);\n\t\t\ttptr = temp + (tptr - temp);\n\t\t}\n\t}\n\n\tefree(buf);\n\tefree(temp);\n\n\treturn_value;"
++  }

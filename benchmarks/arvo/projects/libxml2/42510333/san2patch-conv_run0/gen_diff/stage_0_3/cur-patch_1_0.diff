@@ -1,0 +1,36 @@
+diff --git a/tree.c b/tree.c
+index 8077348a..a95d9a50 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699 +3699 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
++xmlFreeNsList((xmlNsPtr) cur);
+@@ -3701,0 +3702,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
++    /* Prevent use-after-free by validating node before access */
++    if (cur == NULL) return;
+@@ -3703,0 +3706,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
++        /* Additional safety check for dangling pointers */
++        if (cur->children != NULL && cur->children->parent != cur) break;
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..5935aba7 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2218,3 +2218,7 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		       "XInclude error: would result in multiple root nodes\n",
+-			   NULL);
+-            xmlFreeNodeList(list);
++// FIXME: Crash CWE-416: Use After Free
++ 		       "XInclude error: would result in multiple root nodes\n",
++		       NULL);
++            if (list != NULL) {
++                xmlFreeNodeList(list);
++                list = NULL;
++            }
+@@ -2257,2 +2261,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-			   "failed to build node\n", NULL);
+-            xmlFreeNodeList(list);
++		   	"failed to build node\n", NULL);
++            if (list != NULL) {
++                xmlFreeNodeList(list);
++                list = NULL;
++            }

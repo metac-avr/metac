@@ -1,0 +1,29 @@
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..3507385c6 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -199 +199 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-	Bool has_scal_layer = GF_FALSE;
++		Bool has_scal_layer = GF_FALSE;
+@@ -209,2 +209,8 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-		if (stream->gpac_meta_dsi)
+-			stype = stream->gpac_meta_dsi[4];
++		if (stream->gpac_meta_dsi) {
++			if (gf_m2ts_is_dsi_valid(stream->gpac_meta_dsi, stream->gpac_meta_dsi_len, 4)) {
++				stype = stream->gpac_meta_dsi[4];
++			} else {
++				GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[M2TSDmx] Invalid GPAC meta DSI, ignoring pid\n"));
++				return;
++			}
++		}
+@@ -219,2 +225 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-			codecid = GF_CODECID_MPEG1;
+-			unframed = GF_TRUE;
++			codecid = GF_CODECID_MPEG1;			unframed = GF_TRUE;
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..f059dc1f9 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1460 +1460 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-			} else if (stream_type == GF_M2TS_QUALITY_SEC) {
++			}			} else if (stream_type == GF_M2TS_QUALITY_SEC) {

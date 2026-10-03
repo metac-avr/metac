@@ -1,0 +1,23 @@
+diff --git a/src/media_tools/webvtt.c b/src/media_tools/webvtt.c
+index f7e3a88ec..907e82e4b 100644
+--- a/src/media_tools/webvtt.c
++++ b/src/media_tools/webvtt.c
+@@ -934 +934,2 @@ GF_Err gf_webvtt_parser_parse_timings_settings(GF_WebVTTParser *parser, GF_WebVT
+-GF_Err gf_webvtt_parser_parse_internal(GF_WebVTTParser *parser, GF_WebVTTCue *cue)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ GF_Err gf_webvtt_parser_parse_internal(GF_WebVTTParser *parser, GF_WebVTTCue *cue)
+@@ -947,0 +949,2 @@ GF_Err gf_webvtt_parser_parse_internal(GF_WebVTTParser *parser, GF_WebVTTCue *cu
++	// Clear the buffer to prevent reading uninitialized memory
++	memset(szLine, 0, 2048);
+@@ -1029,3 +1032,8 @@ GF_Err gf_webvtt_parser_parse_internal(GF_WebVTTParser *parser, GF_WebVTTCue *cu
+-						gf_dynstrcat(&prevLine, szLine, NULL);
+-					else
+-						prevLine = gf_strdup(szLine);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 						gf_dynstrcat(&prevLine, szLine, NULL);
++					else {
++						char temp_buf[sizeof(szLine)];
++						memcpy(temp_buf, szLine, (len < sizeof(szLine)) ? len : sizeof(szLine)-1);
++						temp_buf[sizeof(szLine)-1] = '\0';
++						prevLine = gf_strdup(temp_buf);
++					}

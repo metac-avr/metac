@@ -1,0 +1,21 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..6ed92e768f 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -673,0 +674,2 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
++        if (src->nb_channels > 256 || src->nb_channels <= 0)
++            return AVERROR(EINVAL);
+@@ -676,0 +679,2 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
++        if (src->nb_channels * sizeof(*src->u.map) > 1024)
++            return AVERROR(EINVAL);
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..ae764bff81 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -523,0 +524,6 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
++ 
++        // Check for potential integer overflow and validate size
++        if (nb_channels <= 0 || nb_channels > INT_MAX / sizeof(*ch_layout->u.map)) {
++            av_log(s, AV_LOG_ERROR, "invalid number of channels: %d\n", nb_channels);
++            return AVERROR_INVALIDDATA;
++        }

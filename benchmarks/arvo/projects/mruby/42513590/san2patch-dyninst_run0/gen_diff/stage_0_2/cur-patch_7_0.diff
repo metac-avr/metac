@@ -1,0 +1,27 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..63a205a76 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -860,0 +861,3 @@ mpz_xor(mrb_state *mrb, mpz_t *z, mpz_t *x, mpz_t *y)  /* not the most efficient
++  if (!x || !y || !z) return; /* Validate input pointers */
++  if (x->sz > 0 && x->p == NULL) return; /* Check for invalid state */
++  if (y->sz > 0 && y->p == NULL) return; /* Check for invalid state */
+@@ -863,2 +866,6 @@ mpz_xor(mrb_state *mrb, mpz_t *z, mpz_t *x, mpz_t *y)  /* not the most efficient
+-  for (i=0; i < sz; i++)
+-    (z->p)[i] = dg(x,i) ^ dg(y,i);
++  for (i=0; i < sz; i++) {
++    /* Bounds check before accessing dg() */
++    mpfr_uint dx = (i < x->sz) ? dg(x,i) : 0;
++    mpfr_uint dy = (i < y->sz) ? dg(y,i) : 0;
++    (z->p)[i] = dx ^ dy;
++  }
+@@ -1425 +1432,3 @@ mrb_bint_xor(mrb_state *mrb, mrb_value x, mrb_value y)
+-    mpz_xor(mrb, &b3->mp, &b1->mp, &z);
++    if (b1->mp.size >= 1) {
++      mpz_xor(mrb, &b3->mp, &b1->mp, &z);
++    }
+@@ -1432 +1441,3 @@ mrb_bint_xor(mrb_state *mrb, mrb_value x, mrb_value y)
+-  mpz_xor(mrb, &b3->mp, &b1->mp, &b2->mp);
++  if (b1->mp.size >= 1 && b2->mp.size >= 1) {
++    mpz_xor(mrb, &b3->mp, &b1->mp, &b2->mp);
++  }

@@ -1,0 +1,28 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..6c074a478 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -987,0 +988,12 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
++  // Validate input parameters
++  if (x == NULL || len < 0 || base < 2 || base > 36) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
++    return mrb_nil_value();
++  }
++  
++  // Check for empty string
++  if (len == 0) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "empty string");
++    return mrb_nil_value();
++  }
++  
+@@ -990 +1002,9 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  mpz_init_set_str(mrb, &b->mp, x, len, base);
++  
++  // Initialize with proper validation
++  if (mpz_init_set_str(mrb, &b->mp, x, len, base) != 0) {
++    // Cleanup allocated object on failure
++    mrb_free(mrb, b);
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid string format");
++    return mrb_nil_value();
++  }
++  

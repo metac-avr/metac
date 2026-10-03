@@ -1,0 +1,40 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..0219f0933 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -238 +238,2 @@ static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+@@ -239,0 +241 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++  if (!mrb_immediate_p(v) && mrb_obj_ptr(v) == NULL) return 0;
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..6781e1a65 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -690 +690 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -694 +694,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super && !IS_INVALID_POINTER(c->super)) {
++        mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      }
+@@ -698 +700,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   case MRB_TT_OBJECT:
+@@ -700 +703,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (!IS_INVALID_POINTER(obj)) {
++      mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    }
+@@ -707,2 +712,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper && !IS_INVALID_POINTER(p->upper)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++      }
++      if (p->e.env && !IS_INVALID_POINTER(p->e.env)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      }

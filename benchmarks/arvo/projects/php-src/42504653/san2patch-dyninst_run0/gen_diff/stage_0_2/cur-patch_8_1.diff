@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..2522df0761c 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	/* Prevent use-after-free by clearing iterators before memory deallocation */
+@@ -1685,0 +1685,6 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Add null check before freeing memory */
++	void *data_addr = HT_GET_DATA_ADDR(ht);
++	if (data_addr) {
++		efree(data_addr);
++	}
++ free_ht:
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..e07257a4f46 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29939 +29939,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-				UNDEF_RESULT();
++// Validate object_ptr before UNDEF_RESULT to prevent use-after-free
++				if (Z_REFCOUNTED_P(object_ptr) && Z_COUNTED_P(object_ptr)->refcount > 0) {
++					UNDEF_RESULT();
++				}
+@@ -30289 +30292,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-				UNDEF_RESULT();
++// Validate object_ptr before UNDEF_RESULT to prevent use-after-free
++				if (Z_REFCOUNTED_P(object_ptr) && Z_COUNTED_P(object_ptr)->refcount > 0) {
++					UNDEF_RESULT();
++				}
+@@ -49526 +49532,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-				UNDEF_RESULT();
++// Validate object_ptr before UNDEF_RESULT to prevent use-after-free
++				if (Z_REFCOUNTED_P(object_ptr) && Z_COUNTED_P(object_ptr)->refcount > 0) {
++					UNDEF_RESULT();
++				}
+@@ -49876 +49885,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-				UNDEF_RESULT();
++// Validate object_ptr before UNDEF_RESULT to prevent use-after-free
++				if (Z_REFCOUNTED_P(object_ptr) && Z_COUNTED_P(object_ptr)->refcount > 0) {
++					UNDEF_RESULT();
++				}

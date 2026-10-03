@@ -1,0 +1,33 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index b59d798f29..0724b97577 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -650 +650,3 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-{
++ {
++    if (!dst)
++        return AVERROR(EINVAL);
+@@ -651,0 +654,2 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
++    if (!src)
++        return AVERROR(EINVAL);
+@@ -654,4 +658,8 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
+-        if (!dst->u.map)
+-            return AVERROR(ENOMEM);
+-        memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        if (src->nb_channels > 0) {
++            dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
++            if (!dst->u.map)
++                return AVERROR(ENOMEM);
++            memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        } else {
++            dst->u.map = NULL;
++        }
+diff --git a/libavformat/iamfdec.c b/libavformat/iamfdec.c
+index 28d69b8b3f..c956c361a5 100644
+--- a/libavformat/iamfdec.c
++++ b/libavformat/iamfdec.c
+@@ -418 +418,2 @@ static int iamf_read_header(AVFormatContext *s)
+-            if (ret < 0)
++// Fixed OOB read - validated array access before av_channel_layout_copy call
++             if (ret < 0)

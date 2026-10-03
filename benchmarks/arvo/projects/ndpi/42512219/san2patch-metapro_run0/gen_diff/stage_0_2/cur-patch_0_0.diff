@@ -1,0 +1,19 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..f3c21357b 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -267,3 +267,11 @@ char *ndpi_strdup(const char *s) {
+-  }
+-
+-  int len = strlen(s);
++   }
++
++  // Fix CWE-416: Use After Free by adding length validation
++  size_t len = 0;
++  const char *p = s;
++  
++  // Safely calculate length with bounds checking
++  while(len < 4096 && p[len] != '\0') len++;
++  
++  if(len >= 4096) return NULL; // Prevent excessive length
++  

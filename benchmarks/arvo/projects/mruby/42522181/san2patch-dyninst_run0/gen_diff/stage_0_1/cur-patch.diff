@@ -1,0 +1,27 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..3d686fe9d 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -791,0 +792,7 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  /* Fix for expired pointer dereference - validate object before marking */
++  if (mrb->gc.state == MRB_GC_STATE_SWEEP) {
++    /* Skip marking during sweep phase to prevent use-after-free */
++    return;
++  }
++  
+@@ -799,2 +806 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1202,0 +1209,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++/* Prevent expired pointer dereference by finishing sweep completely */
++      gc->state = GC_STATE_SWEEPING;
+@@ -1206,0 +1215 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      gc->state = GC_STATE_MARKING;

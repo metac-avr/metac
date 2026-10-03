@@ -1,0 +1,30 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..aaaca256a5 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -52 +52,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-476: NULL Pointer Dereference
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -58 +59,6 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-    return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
++    if (ref == NULL || ref->rpl_tab == NULL || ctb_addr_ts < 0 || ctb_addr_ts >= ref->rpl_tab_size)
++        return NULL;
++    RefPicListTab *rpl_tab_entry = ref->rpl_tab[ctb_addr_ts];
++    if (rpl_tab_entry == NULL)
++        return NULL;
++    return &rpl_tab_entry->refPicList[0];
+@@ -64,2 +70 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)        ff_hevc_unref_frame(&s->DPB[i],
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..d046d37332 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -2357 +2357 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
+-                                         sps->max_transform_hierarchy_depth_intra + lc->cu.intra_split_flag :
++                                          sps->max_transform_hierarchy_depth_intra + lc->cu.intra_split_flag :
+@@ -2365 +2365 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
+-                if (!s->sh.disable_deblocking_filter_flag)
++                if (!s->sh.disable_deblocking_filter_flag && lc != NULL)

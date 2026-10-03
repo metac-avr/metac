@@ -1,0 +1,46 @@
+diff --git a/parser.c b/parser.c
+index f69231d5..acda0b1b 100644
+--- a/parser.c
++++ b/parser.c
+@@ -5352 +5352 @@ xmlParseEntityDecl(xmlParserCtxtPtr ctxt) {
+-    xmlChar *orig = NULL;
++xmlChar *orig = NULL;
+@@ -5359,2 +5359,3 @@ xmlParseEntityDecl(xmlParserCtxtPtr ctxt) {
+-    if (CMP6(CUR_PTR, 'E', 'N', 'T', 'I', 'T', 'Y')) {
+-	int inputid = ctxt->input->id;
++    if (IN_LIBXML_SAFE(CMP6(CUR_PTR, 'E', 'N', 'T', 'I', 'T', 'Y'))) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	int inputid = ctxt->input->id;
+@@ -5372,0 +5374 @@ xmlParseEntityDecl(xmlParserCtxtPtr ctxt) {
++
+@@ -8331 +8333 @@ xmlParseInternalSubset(xmlParserCtxtPtr ctxt) {
+-                xmlParseConditionalSections(ctxt);
++                 xmlParseConditionalSections(ctxt);
+@@ -8333 +8335,8 @@ xmlParseInternalSubset(xmlParserCtxtPtr ctxt) {
+-	        xmlParseMarkupDecl(ctxt);
++                if (AVAILABLE(ctxt, 2)) {
++                    xmlParseMarkupDecl(ctxt);
++                } else {
++                    xmlFatalErr(ctxt, XML_ERR_INTERNAL_ERROR,
++                            "xmlParseInternalSubset: insufficient data for markup declaration\n");
++                    xmlHaltParser(ctxt);
++                    return;
++                }
+@@ -8335 +8344,8 @@ xmlParseInternalSubset(xmlParserCtxtPtr ctxt) {
+-	        xmlParsePEReference(ctxt);
++                if (AVAILABLE(ctxt, 1)) {
++                    xmlParsePEReference(ctxt);
++                } else {
++                    xmlFatalErr(ctxt, XML_ERR_INTERNAL_ERROR,
++                            "xmlParseInternalSubset: insufficient data for PE reference\n");
++                    xmlHaltParser(ctxt);
++                    return;
++                }
+@@ -8337 +8353 @@ xmlParseInternalSubset(xmlParserCtxtPtr ctxt) {
+-		xmlFatalErr(ctxt, XML_ERR_INTERNAL_ERROR,
++                xmlFatalErr(ctxt, XML_ERR_INTERNAL_ERROR,
+@@ -8343,2 +8359,2 @@ xmlParseInternalSubset(xmlParserCtxtPtr ctxt) {
+-	    SKIP_BLANKS;
+-	}
++            SKIP_BLANKS;
++        }

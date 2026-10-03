@@ -1,0 +1,32 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..a08abee1 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5982,6 +5982 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
++Looking at the build error message, there are multiple issues:
+@@ -5989,9 +5984,3 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    /* [ VC: Required Attribute ] */
+-    attr = elemDecl->attributes;
+-    while (attr != NULL) {
+-	if (attr->def == XML_ATTRIBUTE_REQUIRED) {
+-	    int qualified = -1;
+-
+-	    if ((attr->prefix == NULL) &&
+-		(xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
+-		xmlNsPtr ns;
++1. The main error is "function definition is not allowed here" which indicates that function definitions are being placed in the middle of another function body
++2. There's also a missing closing brace '}' that should match opening braces
++3. The misleading indentation warning shows a formatting issue
+@@ -5999,5 +5988 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-		ns = elem->nsDef;
+-		while (ns != NULL) {
+-		    if (ns->prefix == NULL)
+-			goto found;
+-		    ns = ns->next;
++The problem appears to be that code was moved incorrectly, causing functions to be defined inside other functions and breaking the brace structure. Let me reconstruct the proper code structure:		    ns = ns->next;

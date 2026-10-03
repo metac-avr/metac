@@ -1,0 +1,22 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..daf2dad258 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -52 +52 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -57 +57,13 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
++    int pic_height_cb = s->ps.sps->ctb_height;
++    int ctb_addr_ts;
++
++    if (x_cb < 0 || y_cb < 0 || x_cb >= pic_width_cb || y_cb >= pic_height_cb)
++        return NULL;
++
++    ctb_addr_ts = s->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
++    if (ctb_addr_ts < 0 || ctb_addr_ts >= ref->rpl_tab_size)
++        return NULL;
++
++    if (!ref->rpl_tab[ctb_addr_ts])
++        return NULL;
++

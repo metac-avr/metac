@@ -1,0 +1,41 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..7e5ed366 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2636,9 +2636,2 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
+-        }
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+-static void
++// FIXME: Crash CWE-416: Use After Free
++ static void
+@@ -2646,12 +2639,4 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++    if (id) {
++        xmlFreeID((xmlIDPtr) id);
++    }
++}    xmlHashFree(table, xmlFreeIDTableEntry);
+@@ -2743 +2728 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2747,0 +2733,4 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    /* Fix for CVE-2023-XXXX: Double-check attr validity after hash operation */
++    if ((attr == NULL) || (attr->id == NULL)) 
++        return(-1);
++

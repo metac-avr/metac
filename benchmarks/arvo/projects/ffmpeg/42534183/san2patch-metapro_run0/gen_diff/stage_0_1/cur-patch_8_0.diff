@@ -1,0 +1,17 @@
+diff --git a/libavformat/iamf_parse.c b/libavformat/iamf_parse.c
+index feb670180e..d0b7237c10 100644
+--- a/libavformat/iamf_parse.c
++++ b/libavformat/iamf_parse.c
+@@ -1080 +1080,2 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+-            break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             break;
+@@ -1082 +1083,7 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+-            ret = mix_presentation_obu(log_ctx, c, pb, obu_size);
++            // Validate that we have enough data and the size is reasonable
++            if (obu_size > 0 && obu_size <= max_size && obu_size <= INT_MAX) {
++                ret = mix_presentation_obu(log_ctx, c, pb, obu_size);
++            } else {
++                av_log(log_ctx, AV_LOG_ERROR, "Invalid or excessive OBU size for mix presentation: %u\n", obu_size);
++                ret = AVERROR_INVALIDDATA;
++            }

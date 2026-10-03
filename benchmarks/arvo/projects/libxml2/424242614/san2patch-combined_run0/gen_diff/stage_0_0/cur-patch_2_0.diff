@@ -1,0 +1,38 @@
+diff --git a/parser.c b/parser.c
+index 9ca09455..ede9ab5e 100644
+--- a/parser.c
++++ b/parser.c
+@@ -3490 +3490 @@ xmlExpandPEsInEntityValue(xmlParserCtxtPtr ctxt, xmlSBuf *buf,
+-        return;
++return;
+@@ -3498 +3498,2 @@ xmlExpandPEsInEntityValue(xmlParserCtxtPtr ctxt, xmlSBuf *buf,
+-
++// Security fix: Added bounds validation to prevent buffer overflow
++ 
+@@ -5526,3 +5527,12 @@ xmlParseEntityDecl(xmlParserCtxt *ctxt) {
+-
+-		    xmlSAX2EntityDecl(ctxt, name, XML_INTERNAL_GENERAL_ENTITY,
+-			              NULL, NULL, value);
++            xmlSAX2EntityDecl(ctxt, name, XML_INTERNAL_GENERAL_GENERAL_ENTITY,
++                          NULL, NULL, value);
++		if (literal != NULL) {
++		    char *safe_literal = xmlMalloc(101);
++		    if (safe_literal == NULL) {
++		        xmlFree(literal);
++		        return;
++		    }
++		    xmlStrncpy(safe_literal, literal, 100);
++		    safe_literal[100] = '\0';
++		    xmlFree(literal);
++		    literal = (xmlChar*)safe_literal;
+@@ -5530,2 +5540,4 @@ xmlParseEntityDecl(xmlParserCtxt *ctxt) {
+-	    } else {
+-	        URI = xmlParseExternalID(ctxt, &literal, 1);
++ 		return;
++	    }
++	} else {
++	    URI = xmlParseExternalID(ctxt, &literal, 1);
+@@ -5536,2 +5548 @@ xmlParseEntityDecl(xmlParserCtxt *ctxt) {
+-                    if (xmlStrchr(URI, '#')) {
+-                        xmlFatalErr(ctxt, XML_ERR_URI_FRAGMENT, NULL);
++                    if (xmlStrchr(URI, '#')) {                        xmlFatalErr(ctxt, XML_ERR_URI_FRAGMENT, NULL);

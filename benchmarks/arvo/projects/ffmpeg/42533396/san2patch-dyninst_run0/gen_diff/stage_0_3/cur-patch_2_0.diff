@@ -1,0 +1,36 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..6dfcde4ebe 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -673,0 +674,2 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
++        if (src->nb_channels > 1024 || src->nb_channels <= 0)  // Restrict nb_channels to reasonable limits
++            return AVERROR(EINVAL);
+@@ -675 +677 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        if (!dst->u.map)
++         if (!dst->u.map)
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..245e2def0b 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -524,0 +525,14 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
++        // Prevent buffer overflow by validating channel count
++        if (nb_channels <= 0) {
++            av_log(s, AV_LOG_ERROR, "invalid channel count: %d\n", nb_channels);
++            return AVERROR_INVALIDDATA;
++        }
++        
++        // Cap nb_channels to prevent excessive memory allocation
++        if (nb_channels > 128) {
++            av_log(s, AV_LOG_WARNING, "capping excessive channel count from %d to 128\n", nb_channels);
++            nb_channels = 128;
++            if (num_descr > nb_channels)
++                num_descr = nb_channels;
++        }
++
+@@ -529,0 +544,6 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
++        // Additional safety check for descriptor count
++        if (num_descr < 0 || num_descr > nb_channels) {
++            av_log(s, AV_LOG_ERROR, "invalid descriptor count: %d for %d channels\n", num_descr, nb_channels);
++            return AVERROR_INVALIDDATA;
++        }
++

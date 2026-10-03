@@ -1,0 +1,23 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 41e4fb539..eeeb3dbb0 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -3403 +3403 @@ int ndpi_match_custom_category(struct ndpi_detection_module_struct *ndpi_str,
+-  return(id != NDPI_PROTOCOL_UNKNOWN ? 0 : -1);
++   return(id != NDPI_PROTOCOL_UNKNOWN ? 0 : -1);
+@@ -3405 +3405,14 @@ int ndpi_match_custom_category(struct ndpi_detection_module_struct *ndpi_str,
+-  u_int16_t rc = ndpi_domain_classify_contains(ndpi_str->custom_categories.sc_hostnames, name);
++  /* Fix: Validate input parameters and limit string operations */
++  if(name == NULL || name_len > 1024) /* reasonable upper limit */
++    return(-1);
++  
++  /* Create a bounded copy to prevent buffer overflows */
++  char bounded_name[46];
++  memset(bounded_name, 0, sizeof(bounded_name));
++  
++  /* Copy up to 45 characters and ensure null termination */
++  size_t copy_len = (name_len < 45) ? name_len : 45;
++  memcpy(bounded_name, name, copy_len);
++  bounded_name[45] = '\0'; /* Ensure null termination */
++  
++  u_int16_t rc = ndpi_domain_classify_contains(ndpi_str->custom_categories.sc_hostnames, bounded_name);

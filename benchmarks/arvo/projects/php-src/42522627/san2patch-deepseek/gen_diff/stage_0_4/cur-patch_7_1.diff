@@ -1,0 +1,81 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..5e83a35c069 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1660,32 +1660,28 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
+-	if (Z_TYPE_P(op1) == IS_STRING && Z_TYPE_P(op2) == IS_STRING) {
+-		zval *longer, *shorter;
+-		zend_string *str;
+-		size_t i;
+-
+-		if (EXPECTED(Z_STRLEN_P(op1) >= Z_STRLEN_P(op2))) {
+-			if (EXPECTED(Z_STRLEN_P(op1) == Z_STRLEN_P(op2)) && Z_STRLEN_P(op1) == 1) {
+-				zend_uchar and = (zend_uchar) (*Z_STRVAL_P(op1) & *Z_STRVAL_P(op2));
+-				if (result==op1) {
+-					zval_ptr_dtor_str(result);
+-				}
+-				ZVAL_CHAR(result, and);
+-				return SUCCESS;
+-			}
+-			longer = op1;
+-			shorter = op2;
+-		} else {
+-			longer = op2;
+-			shorter = op1;
+-		}
+-
+-		str = zend_string_alloc(Z_STRLEN_P(shorter), 0);
+-		for (i = 0; i < Z_STRLEN_P(shorter); i++) {
+-			ZSTR_VAL(str)[i] = Z_STRVAL_P(shorter)[i] & Z_STRVAL_P(longer)[i];
+-		}
+-		ZSTR_VAL(str)[i] = 0;
+-		if (result==op1) {
+-			zval_ptr_dtor_str(result);
+-		}
+-		ZVAL_NEW_STR(result, str);
+-		return SUCCESS;
+-	}
++	        switch (state) {
++							case 1: /* escaped */
++								bptr++;
++								state = 0;
++								break;
++							case 2: /* embedded enclosure ? let's check it */
++								if (*bptr != enclosure) {
++									/* real enclosure */
++									memcpy(tptr, hunk_begin, bptr - hunk_begin - 1);
++									tptr += (bptr - hunk_begin - 1);
++									hunk_begin = bptr;
++									goto quit_loop_2;
++								}
++								memcpy(tptr, hunk_begin, bptr - hunk_begin);
++								tptr += (bptr - hunk_begin);
++								bptr++;
++								hunk_begin = bptr;
++								state = 0;
++								break;
++							default:
++								if (*bptr == enclosure) {
++									state = 2;
++								} else if (escape_char != PHP_CSV_NO_ESCAPE && *bptr == escape_char) {
++									state = 1;
++								}
++								bptr++;
++								break;
++						}
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index 4c31ee0eae6..367597f5a0f 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2176,0 +2177,3 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
++								if (bptr >= end) {
++									goto quit_loop_2;
++								}
+@@ -2180,0 +2184,3 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
++								if (bptr >= end) {
++									goto quit_loop_2;
++								}
+@@ -2194,0 +2201,3 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
++								if (bptr >= end) {
++									goto quit_loop_2;
++								}

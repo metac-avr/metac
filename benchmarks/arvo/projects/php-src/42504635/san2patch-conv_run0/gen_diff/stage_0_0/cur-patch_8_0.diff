@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..ecfe6c787e7 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1968 +1968,9 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			zend_string *old_str = Z_STR_P(result);
++			int refcount = GC_REFCOUNT(old_str);
++			if (refcount <= 1) {
++				// String might be freed soon, create new string instead
++				result_str = zend_string_alloc(result_len, 0);
++				memcpy(ZSTR_VAL(result_str), Z_STRVAL_P(op1), op1_len);
++			} else {
++				result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..e3be6e2cd4c 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -65 +65 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+@@ -72,0 +73 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
++// FIXME: Crash CWE-416: Use After Free
+@@ -74,2 +75,8 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
++	/* Add safety check to prevent accessing freed memory */
++	if (ref != NULL) {
++		/* Mark as destroyed before freeing to prevent double-free/use-after-free */
++		zend_reference *temp_ref = ref;
++		ref = NULL; /* Zero the pointer immediately */
++		i_zval_ptr_dtor(&temp_ref->val);
++		efree_size(temp_ref, sizeof(zend_reference));
++	}
+@@ -85,2 +92 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-}
+-/* }}} */
++}/* }}} */

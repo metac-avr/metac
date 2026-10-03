@@ -1,0 +1,55 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 6656143f6..b4a5f76c1 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -926,2 +926,23 @@ static struct ndpi_flow_info *get_ndpi_flow_info(struct ndpi_workflow * workflow
+-        ndpi_patchIPv6Address(newflow->src_name), ndpi_patchIPv6Address(newflow->dst_name);
+-      }
++        char temp_src[sizeof(newflow->src_name)];
++        char temp_dst[sizeof(newflow->dst_name)];
++        snprintf(temp_src, sizeof(temp_src), "%s", newflow->src_name);
++        snprintf(temp_dst, sizeof(temp_dst), "%s", newflow->dst_name);
++        
++        char *src_zero = strstr(temp_src, ":0:");
++        if(src_zero && (src_zero - temp_src + 2) < sizeof(newflow->src_name)) {
++          size_t prefix_len = src_zero - temp_src;
++          snprintf(newflow->src_name, sizeof(newflow->src_name), "%.*s::%s", 
++                   (int)prefix_len, temp_src, src_zero + 3);
++        } else {
++          snprintf(newflow->src_name, sizeof(newflow->src_name), "%s", temp_src);
++        }
++        
++        char *dst_zero = strstr(temp_dst, ":0:");
++        if(dst_zero && (dst_zero - temp_dst + 2) < sizeof(newflow->dst_name)) {
++          size_t prefix_len = dst_zero - temp_dst;
++          snprintf(newflow->dst_name, sizeof(newflow->dst_name), "%.*s::%s", 
++                   (int)prefix_len, temp_dst, dst_zero + 3);
++        } else {
++          snprintf(newflow->dst_name, sizeof(newflow->dst_name), "%s", temp_dst);
++        }
++       }
+@@ -1377,8 +1398,16 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      size_t length = strlen(flow->info);
+-
+-      strncat(flow->info + length, flow->ndpi_flow->protos.slp.url[i],
+-              sizeof(flow->info) - length);
+-      length = strlen(flow->info);
+-
+-      if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1)
+-        strncat(flow->info + length, ", ", sizeof(flow->info) - length);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t length = strlen(flow->info);
++       size_t remaining_space = sizeof(flow->info) - length;
++
++       if (remaining_space > 1) {
++         strncat(flow->info + length, flow->ndpi_flow->protos.slp.url[i],
++                 remaining_space - 1);
++         length = strlen(flow->info);
++       }
++
++       if (i < (size_t)flow->ndpi_flow->protos.slp.url_count - 1) {
++         remaining_space = sizeof(flow->info) - length;
++         if (remaining_space > 3) {
++           strncat(flow->info + length, ", ", remaining_space - 1);
++         }
++       }

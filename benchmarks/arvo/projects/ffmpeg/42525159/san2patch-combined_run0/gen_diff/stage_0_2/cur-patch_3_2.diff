@@ -1,0 +1,50 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..0b4cac9a01 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,22 +2017,23 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++#define WRITE_FRAME(bits, PIXEL) \
++static void write_frame_##bits(AVCodecContext *avctx, AVFrame *picture, \
++                               uint8_t *buf, int cbps, int plane, int pixelsize) \
++{ \
++    int x, y, dimx, dimy; \
++    PIXEL *line, *dst, *i_datap; \
++    i_datap = (PIXEL *) buf; \
++    dimx = cbps ? avctx->width  : picture->width; \
++    dimy = cbps ? avctx->height : picture->height; \
++    for (y = 0; y < dimy; y++) { \
++        line = (PIXEL *)(picture->data[plane] + y * picture->linesize[plane]); \
++        for (x = 0; x < dimx; x += pixelsize) { \
++            dst = line + x; \
++            /* Fixed CWE-787: Out-of-bounds Write - Added bounds checking before write operation */ \
++            if ((uint8_t*)dst < ((uint8_t*)picture->data[plane] + picture->linesize[plane] * picture->height)) { \
++                *dst = *i_datap; \
++            } \
++            i_datap++; \
++            dst += pixelsize; \
++        } \
++        line += picture->linesize[plane] / sizeof(PIXEL); \
++    } \
++}

@@ -1,0 +1,21 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..3b12d28d2 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515,3 +515,13 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
+-      ci->stack[argc+1] = blk;
++      if (argc > 0) {
++        mrb_int available_space = mrb->c->stend - (ci->stack + 1);
++        if (available_space > argc) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "not enough stack space for arguments");
++        }
++      }
++      if ((mrb->c->stend - (ci->stack + argc + 1)) > 0) {
++        ci->stack[argc+1] = blk;
++      } else {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "no space for block parameter");
++      }

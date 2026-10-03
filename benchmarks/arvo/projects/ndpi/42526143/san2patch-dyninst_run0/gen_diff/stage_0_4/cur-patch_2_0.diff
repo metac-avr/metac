@@ -1,0 +1,46 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..b91ea28f7 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -294,2 +294,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	if(packet->content_disposition_line.ptr[attachment_len] == '\"') {
+-	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '\"') {
++	if(packet->content_disposition_line.ptr[attachment_len] == '"') {
++	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '"') {
+@@ -298,3 +298,7 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    if(flow->http.filename != NULL) {
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++	    if(flow->http.filename != NULL && attachment_len+1 < packet->content_disposition_line.len) {
++	      size_t max_copy = packet->content_disposition_line.len - (attachment_len+1);
++	      size_t copy_len = (filename_len-1 < max_copy) ? filename_len-1 : max_copy;
++	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, copy_len);
++	      flow->http.filename[copy_len] = '\0';
++	    } else if (flow->http.filename != NULL) {
++	      flow->http.filename[0] = '\0';
+@@ -306,2 +310,5 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-
+-	    if(flow->http.filename != NULL) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++	    if(flow->http.filename != NULL && attachment_len+1 < packet->content_disposition_line.len) {
++	      size_t max_copy = packet->content_disposition_line.len - (attachment_len+1);
++	      size_t copy_len = (filename_len-2 < max_copy) ? filename_len-2 : max_copy;
+@@ -309,2 +316,4 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++		      copy_len);
++	      flow->http.filename[copy_len] = '\0';
++	    } else if (flow->http.filename != NULL) {
++	      flow->http.filename[0] = '\0';
+@@ -318,3 +327,7 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	  if(flow->http.filename != NULL) {
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	  if(flow->http.filename != NULL && attachment_len < packet->content_disposition_line.len) {
++	    size_t max_copy = packet->content_disposition_line.len - attachment_len;
++	    size_t copy_len = (filename_len < max_copy) ? filename_len : max_copy;
++	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, copy_len);
++	    flow->http.filename[copy_len] = '\0';
++	  } else if (flow->http.filename != NULL) {
++	    flow->http.filename[0] = '\0';

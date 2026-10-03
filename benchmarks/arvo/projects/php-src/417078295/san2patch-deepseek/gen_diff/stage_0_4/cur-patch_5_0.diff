@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..bcee2ca963a 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40389,2 +40389,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-		i_zval_ptr_dtor(variable_ptr);
+-		if (UNEXPECTED(!Z_ISREF_P(value))) {
++		zval *new_value = value;
++		zval *old_value = variable_ptr;
++		Z_TRY_ADDREF_P(new_value);
++		i_zval_ptr_dtor(old_value);
++		if (UNEXPECTED(!Z_ISREF_P(new_value))) {
+@@ -40395 +40398 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZVAL_COPY_VALUE(&ref->val, value);
++				ZVAL_COPY_VALUE(&ref->val, new_value);
+@@ -40397 +40400 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZEND_ASSERT(!Z_REFCOUNTED_P(value));
++				ZEND_ASSERT(!Z_REFCOUNTED_P(new_value));
+@@ -40402,2 +40405,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_REF_P(value) = ref;
+-			Z_TYPE_INFO_P(value) = IS_REFERENCE_EX;
++			Z_REF_P(new_value) = ref;
++			Z_TYPE_INFO_P(new_value) = IS_REFERENCE_EX;
+@@ -40406,2 +40409 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
+-			ZVAL_REF(variable_ptr, Z_REF_P(value));
++			ZVAL_REF(variable_ptr, Z_REF_P(new_value));
+@@ -40412,0 +40415 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
++		Z_TRY_ADDREF(value);
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..fa23f5d3274 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43,3 +43,2 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
++		if (GC_REFCOUNT(ref) > 1) {
++			GC_DELREF(ref);
+@@ -46,0 +46,8 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++		} else {
++			zval tmp = *zval_ptr;
++			ZVAL_NULL(zval_ptr);
++			if (GC_DELREF(ref)) {
++				gc_check_possible_root(ref);
++			} else {
++				rc_dtor_func(ref);
++			}

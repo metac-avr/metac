@@ -1,0 +1,18 @@
+diff --git a/fuzz/fuzz_process_packet.c b/fuzz/fuzz_process_packet.c
+index eb5a0a281..6cf2613b5 100644
+--- a/fuzz/fuzz_process_packet.c
++++ b/fuzz/fuzz_process_packet.c
+@@ -11,0 +12 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
++  static int flow_cleanup_flag = 0;  // Fix: Track cleanup state
+@@ -26,0 +28 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
++  if (!ndpi_flow) return 0;  // Fix: Early exit on allocation failure
+@@ -41 +43,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-    ndpi_dpi2json(ndpi_info_mod, ndpi_flow, guessed_protocol, &csv_serializer);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     ndpi_dpi2json(ndpi_info_mod, ndpi_flow, guessed_protocol, &csv_serializer);
++  }
++  if (ndpi_flow && !flow_cleanup_flag) {  // Fix: State tracking to prevent double-free
++    ndpi_free_flow(ndpi_flow);
++    flow_cleanup_flag = 1;
+@@ -43 +49,0 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-  ndpi_free_flow(ndpi_flow);

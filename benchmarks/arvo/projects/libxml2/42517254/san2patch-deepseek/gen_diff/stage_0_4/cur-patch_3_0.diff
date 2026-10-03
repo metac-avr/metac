@@ -1,0 +1,33 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..3267a3a8 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1160 +1160,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (set->nodeTab[i] == NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 		if (set->nodeTab[i] == NULL)
+@@ -1218,3 +1219,5 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
++		    xmlNodePtr tmp = xmlXIncludeCopyNode(ctxt, target, source,
++				                set->nodeTab[i]);
++		    if (tmp == NULL)
++			continue;
++		    xmlAddNextSibling(last, tmp);
+@@ -2229,0 +2233,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	if (cur->parent == NULL && cur->doc == NULL) {
++	    xmlXPathFreeObject(ctxt->incTab[nr]->xptr);
++	    ctxt->incTab[nr]->xptr = NULL;
++	    return(-1);
++	}
+@@ -2232,0 +2241,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	if (ctxt->incTab[nr]->inc == NULL) {
++	    xmlXPathFreeObject(ctxt->incTab[nr]->xptr);
++	    ctxt->incTab[nr]->xptr = NULL;
++	    return(-1);
++	}
+@@ -2241,2 +2254 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-     * Check against the risk of generating a multi-rooted document
+-     */
++     * Check against the risk of generating a multi-rooted document     */

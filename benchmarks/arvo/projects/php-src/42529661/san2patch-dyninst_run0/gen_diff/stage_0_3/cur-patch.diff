@@ -1,0 +1,21 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..debc88b7ca7 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -648 +648,2 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				ce1 = Z_OBJCE_P(zv);
++// FIXME: Crash CWE-416: Use After Free
++ 				if (zv != NULL) ce1 = Z_OBJCE_P(zv);
+@@ -650 +651 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
++				if (zv != NULL && HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..48c38e50d5b 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2495 +2495,4 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-		efree(HT_GET_DATA_ADDR(ht));
++		char *data_addr = HT_GET_DATA_ADDR(ht);
++		efree(data_addr);
++		/* Clear the pointer in the HashTable to prevent use-after-free */
++		*(char**)&(ht->arData) = NULL;

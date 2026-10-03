@@ -1,0 +1,27 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..df25027a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -758,0 +759,9 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
++    /* Clear pointers before freeing to prevent UAF */
++    if (cur->href) {
++        xmlFree((void*)cur->href);
++        cur->href = NULL;
++    }
++    if (cur->prefix) {
++        xmlFree((void*)cur->prefix);
++        cur->prefix = NULL;
++    }
+@@ -3698,2 +3707,8 @@ xmlFreeNode(xmlNodePtr cur) {
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
++             xmlFreePropList(cur->properties);
++        if (cur->nsDef != NULL) {
++            xmlNsPtr ns = cur->nsDef;
++            while (ns != NULL) {
++                xmlNsPtr next = ns->next;
++                ns->next = NULL;
++                ns = next;
++            }
+@@ -3700,0 +3716 @@ xmlFreeNode(xmlNodePtr cur) {
++        }

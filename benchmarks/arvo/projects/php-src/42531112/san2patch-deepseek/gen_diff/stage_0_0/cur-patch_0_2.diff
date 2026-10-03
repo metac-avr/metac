@@ -1,0 +1,97 @@
+diff --git a/ext/pcre/php_pcre.c b/ext/pcre/php_pcre.c
+index 075d9fc5263..5b39e17aea0 100644
+--- a/ext/pcre/php_pcre.c
++++ b/ext/pcre/php_pcre.c
+@@ -649,21 +649,71 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-		if (key != regex) {
+-			zend_string_release_ex(key, 0);
+-		}
+-		php_error_docref(NULL, E_WARNING, "Delimiter must not be alphanumeric, backslash, or NUL");
+-		pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
+-		return NULL;
+-	}
+-
+-	start_delimiter = delimiter;
+-	if ((pp = strchr("([{< )]}>", delimiter)))
+-		delimiter = pp[5];
+-	end_delimiter = delimiter;
+-
+-	pp = p;
+-
+-	if (start_delimiter == end_delimiter) {
+-		/* We need to iterate through the pattern, searching for the ending delimiter,
+-		   but skipping the backslashed delimiters.  If the ending delimiter is not
+-		   found, display a warning. */
+-		while (pp < end_p) {
+-			if (*pp == '\\' && pp + 1 < end_p) pp++;
++        if (key != regex) {
++            zend_string_release_ex(key, 0);
++        }
++        php_error_docref(NULL, E_WARNING, "Delimiter must not be alphanumeric, backslash, or NUL");
++        pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
++        return NULL;
++    }
++
++    start_delimiter = delimiter;
++    if ((pp = memchr("([{< )]}>", delimiter, 10)))
++        delimiter = pp[5];
++    end_delimiter = delimiter;
++
++    pp = p;
++
++    if (start_delimiter == end_delimiter) {
++        /* We need to iterate through the pattern, searching for the ending delimiter,
++           but skipping the backslashed delimiters.  If the ending delimiter is not
++           found, display a warning. */
++        while (pp < end_p) {
++            if (*pp == '\\' && pp + 1 < end_p) pp++;
++            else if (*pp == delimiter)
++                break;
++            pp++;
++        }
++    } else {
++        /* We need to iterate through the pattern, searching for the matching ending
++           delimiter, but skipping the backslashed delimiters.  If the ending delimiter is not
++           found, display a warning. */
++        while (pp < end_p) {
++            if (*pp == '\\' && pp + 1 < end_p) pp++;
++            else if (*pp == end_delimiter)
++                break;
++            pp++;
++        }
++    }
++
++    if (pp >= end_p) {
++        if (key != regex) {
++            zend_string_release_ex(key, 0);
++        }
++        php_error_docref(NULL, E_WARNING, "No ending matching delimiter '%c' found", delimiter);
++        pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
++        return NULL;
++    }
++
++    pattern_len = pp - p;
++    pattern = estrndup(p, pattern_len);
++    pp++;
++
++    while (pp < end_p) {
++        if (*pp == '\\' && pp + 1 < end_p) pp++;
++        pp++;
++    }
++
++    if (key != regex) {
++        zend_string_release_ex(key, 0);
++    }
++
++    pcre2_set_character_tables(cctx, tables);
++
++    re = pcre2_compile((PCRE2_SPTR)pattern, pattern_len, coptions, &errnumber, &erroffset, cctx);
++
++    if (re == NULL) {
++        efree(pattern);
++        php_error_docref(NULL, E_WARNING, "Compilation failed: %s at offset %d", pcre2_get_error_message(errnumber), erroffset);
++        pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
++        return NULL;
++    }
++
++    efree(pattern);

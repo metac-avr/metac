@@ -1,0 +1,18 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..1eb568e86 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -387,0 +388,5 @@ mrb_funcall_id(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, ...)
++  /* Prevent stack overflow from infinite recursion */
++  if (mrb->exc == NULL && mrb->ci - mrb->cibase > 999) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "maximum recursion depth exceeded");
++  }
++
+@@ -479 +484,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++    // Prevent infinite recursion by checking call depth
++    if ((mrb->c->ci - mrb->c->cibase) > MRB_CALL_LEVEL_MAX - 100) {
++      mrb_raise(mrb, E_SYSTEM_STACK_ERROR, "stack level too deep");
++    }
++     c = mrb_class(mrb, self);

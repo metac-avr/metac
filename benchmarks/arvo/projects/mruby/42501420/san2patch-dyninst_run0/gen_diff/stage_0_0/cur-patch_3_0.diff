@@ -1,0 +1,23 @@
+diff --git a/src/value_array.h b/src/value_array.h
+index 6089b8aa0..d9455a553 100644
+--- a/src/value_array.h
++++ b/src/value_array.h
+@@ -19 +19,3 @@ value_move(mrb_value *s1, const mrb_value *s2, size_t n)
+-    while (n-- > 0) {
++    /* Bounds checking to prevent out-of-bounds read */
++    const mrb_value *end_s2 = s2 + n;
++    while (n-- > 0 && s2 < end_s2) {
+diff --git a/src/array.c b/src/array.c
+index fc3b0a087..a3ff9e4ad 100644
+--- a/src/array.c
++++ b/src/array.c
+@@ -804 +804,3 @@ mrb_ary_splice(mrb_state *mrb, mrb_value ary, mrb_int head, mrb_int len, mrb_val
+-      value_move(ptr + head + argc, ptr + tail, alen - tail);
++      if (tail <= alen && head + argc <= ARY_CAPA(a)) {
++        value_move(ptr + head + argc, ptr + tail, alen - tail);
++      }
+@@ -808 +810,3 @@ mrb_ary_splice(mrb_state *mrb, mrb_value ary, mrb_int head, mrb_int len, mrb_val
+-      value_move(ARY_PTR(a) + head, argv, argc);
++      if (head <= ARY_CAPA(a)) {
++        value_move(ARY_PTR(a) + head, argv, argc);
++      }

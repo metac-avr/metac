@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..dd058c31063 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29929 +29929 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-		} else if (EXPECTED(Z_TYPE_P(object_ptr) <= IS_FALSE)) {
++		} else if (EXPECTED(Z_TYPE_P(object_ptr) <= IS_FALSE && object_ptr != NULL)) {
+@@ -30279 +30279 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-		} else if (EXPECTED(Z_TYPE_P(object_ptr) <= IS_FALSE)) {
++		} else if (EXPECTED(Z_TYPE_P(object_ptr) <= IS_FALSE && object_ptr != NULL)) {
+@@ -49516 +49516 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-		} else if (EXPECTED(Z_TYPE_P(object_ptr) <= IS_FALSE)) {
++		} else if (EXPECTED(Z_TYPE_P(object_ptr) <= IS_FALSE && object_ptr != NULL)) {
+@@ -49866 +49866 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-		} else if (EXPECTED(Z_TYPE_P(object_ptr) <= IS_FALSE)) {
++		} else if (EXPECTED(Z_TYPE_P(object_ptr) <= IS_FALSE && object_ptr != NULL)) {
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..2eb59f8ecda 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2433,5 +2433,5 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-				zend_use_scalar_as_array();
+-				ZVAL_UNDEF(result);
+-			}
+-		}
+-	}
++                zend_use_scalar_as_array();
++                ZVAL_UNDEF(result);
++            }
++        }
++    }
+@@ -2443 +2443,6 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-	zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_W EXECUTE_DATA_CC);
++	if (EXPECTED(container_ptr != NULL) && EXPECTED(!Z_ISUNDEF_P(container_ptr))) {
++		zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_W EXECUTE_DATA_CC);
++	} else {
++		zend_use_scalar_as_array();
++		ZVAL_UNDEF(result);
++	}

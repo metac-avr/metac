@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..8bc4faeb5c1 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
+@@ -82 +82,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +85,3 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr && EG(active)) {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -94,2 +97 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 733ce54dc24..b43f810c1c9 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -5163,0 +5164 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
++/* Validate iterator pointer before use to prevent expired pointer dereference */
+@@ -5166 +5167,4 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			zend_object *obj = &iter->std;
++			if (obj) {
++				OBJ_RELEASE(obj);
++			}
+@@ -5179 +5183,6 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			if (iter) {
++				zend_object *obj = &iter->std;
++				if (obj) {
++					OBJ_RELEASE(obj);
++				}
++			}
+@@ -5188 +5197,6 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-		OBJ_RELEASE(&iter->std);
++		if (iter) {
++			zend_object *obj = &iter->std;
++			if (obj) {
++				OBJ_RELEASE(obj);
++			}
++		}

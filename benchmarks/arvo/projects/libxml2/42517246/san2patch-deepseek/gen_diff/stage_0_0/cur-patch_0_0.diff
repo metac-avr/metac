@@ -1,0 +1,59 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..5eede336 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2496,6 +2495,0 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-     * 132588) requesting that we output the XIncludes without error,
+-     * so the check for inc!=NULL || xptr!=NULL was put in.  This may
+-     * give some other problems in the future, but for now it seems to
+-     * work ok.
+-     *
+-     */
+@@ -2504 +2498,2 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-            (ctxt->incTab[i]->xptr != NULL) ||
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++             (ctxt->incTab[i]->xptr != NULL) ||
+@@ -2512,6 +2507 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-}
+-
+-/**
+- * xmlXIncludeSetFlags:
+- * @ctxt:  an XInclude processing context
+- * @flags: a set of xmlParserOption used for parsing XML includes
++} * @flags: a set of xmlParserOption used for parsing XML includes
+diff --git a/tree.c b/tree.c
+index 6a42f118..9044f832 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4519,6 +4518,0 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
+- *
+- * Do a copy of the node to a given document.
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
+- */
+@@ -4527,0 +4522 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    xmlNodePtr copy;
+@@ -4529,3 +4524,2 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    ret = xmlStaticCopyNode(node, doc, NULL, extended);
+-    return(ret);
+-}
++    if (node == NULL)
++        return(NULL);
+@@ -4533,8 +4527,8 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-/**
+- * xmlDocCopyNodeList:
+- * @doc: the target document
+- * @node:  the first node in the list.
+- *
+- * Do a recursive copy of the node list.
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
++    copy = xmlCopyNode(node, 1);
++    if (copy == NULL)
++        return(NULL);
++
++    ret = xmlStaticCopyNode(copy, doc, NULL, extended);
++    xmlFreeNode(copy);
++    return(ret);
++} * Returns: a new #xmlNodePtr, or NULL in case of error.

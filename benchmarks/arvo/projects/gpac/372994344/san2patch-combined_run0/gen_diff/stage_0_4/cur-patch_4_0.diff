@@ -1,0 +1,22 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..9dfdf5023 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -302,0 +303,9 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
++	// Clear reference in demuxer's ess array to prevent dangling pointer access
++	if (ts != NULL && es != NULL) {
++		for (u32 i = 0; i < GF_M2TS_MAX_PIDS; i++) {
++			if (ts->ess[i] == es) {
++				ts->ess[i] = NULL;
++				break;
++			}
++		}
++	}
+@@ -3116 +3125,3 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-			gf_m2ts_es_del(ts->ess[i], ts);
++			GF_M2TS_ES *es = ts->ess[i]; // Store pointer before freeing
++			ts->ess[i] = NULL; // Nullify before freeing to prevent reuse
++			gf_m2ts_es_del(es, ts);
+@@ -3138 +3149 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-		if (p->metadata_pointer_descriptor)	gf_m2ts_metadata_pointer_descriptor_del(p->metadata_pointer_descriptor);
++		if (p->metadata_pointer_descriptor) gf_m2ts_metadata_pointer_descriptor_del(p->metadata_pointer_descriptor);

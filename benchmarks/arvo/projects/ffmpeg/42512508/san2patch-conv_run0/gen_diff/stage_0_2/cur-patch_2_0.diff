@@ -1,0 +1,53 @@
+diff --git a/libavcodec/simple_idct_template.c b/libavcodec/simple_idct_template.c
+index 5ddd0b45a2..bcd548a784 100644
+--- a/libavcodec/simple_idct_template.c
++++ b/libavcodec/simple_idct_template.c
+@@ -267,0 +268 @@ static inline void FUNC6(idctSparseColPut)(pixel *dest, ptrdiff_t line_size,
++    pixel *current_dest = dest;
+@@ -271,15 +272,15 @@ static inline void FUNC6(idctSparseColPut)(pixel *dest, ptrdiff_t line_size,
+-    dest[0] = av_clip_pixel((int)(a0 + b0) >> COL_SHIFT);
+-    dest += line_size;
+-    dest[0] = av_clip_pixel((int)(a1 + b1) >> COL_SHIFT);
+-    dest += line_size;
+-    dest[0] = av_clip_pixel((int)(a2 + b2) >> COL_SHIFT);
+-    dest += line_size;
+-    dest[0] = av_clip_pixel((int)(a3 + b3) >> COL_SHIFT);
+-    dest += line_size;
+-    dest[0] = av_clip_pixel((int)(a3 - b3) >> COL_SHIFT);
+-    dest += line_size;
+-    dest[0] = av_clip_pixel((int)(a2 - b2) >> COL_SHIFT);
+-    dest += line_size;
+-    dest[0] = av_clip_pixel((int)(a1 - b1) >> COL_SHIFT);
+-    dest += line_size;
+-    dest[0] = av_clip_pixel((int)(a0 - b0) >> COL_SHIFT);
++    if (current_dest) current_dest[0] = av_clip_pixel((int)(a0 + b0) >> COL_SHIFT);
++    current_dest += line_size;
++    if (current_dest) current_dest[0] = av_clip_pixel((int)(a1 + b1) >> COL_SHIFT);
++    current_dest += line_size;
++    if (current_dest) current_dest[0] = av_clip_pixel((int)(a2 + b2) >> COL_SHIFT);
++    current_dest += line_size;
++    if (current_dest) current_dest[0] = av_clip_pixel((int)(a3 + b3) >> COL_SHIFT);
++    current_dest += line_size;
++    if (current_dest) current_dest[0] = av_clip_pixel((int)(a3 - b3) >> COL_SHIFT);
++    current_dest += line_size;
++    if (current_dest) current_dest[0] = av_clip_pixel((int)(a2 - b2) >> COL_SHIFT);
++    current_dest += line_size;
++    if (current_dest) current_dest[0] = av_clip_pixel((int)(a1 - b1) >> COL_SHIFT);
++    current_dest += line_size;
++    if (current_dest) current_dest[0] = av_clip_pixel((int)(a0 - b0) >> COL_SHIFT);
+diff --git a/libavcodec/speedhq.c b/libavcodec/speedhq.c
+index 4cfd4ce73d..45c3334674 100644
+--- a/libavcodec/speedhq.c
++++ b/libavcodec/speedhq.c
+@@ -274,2 +274,9 @@ static inline int decode_dct_block(const SHQContext *s, GetBitContext *gb, int l
+-    }
+-
++     }
++
++    /* Bounds check for IDCT output to prevent heap buffer overflow */
++    if (linesize <= 0)
++        return AVERROR_INVALIDDATA;
++    /* Ensure we don't exceed 2048 byte buffer boundary */
++    if (linesize * 8 > 2048)
++        return AVERROR_INVALIDDATA;
++    

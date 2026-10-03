@@ -1,0 +1,18 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..6018e950 100644
+--- a/tree.c
++++ b/tree.c
+@@ -792 +792,8 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
++    // Fix: Add reference counting to prevent use-after-free
++    if (cur->refcnt > 0) {
++        cur->refcnt--;
++        if (cur->refcnt > 0) {
++            return;
++        }
++    }
++     if (cur->href != NULL) xmlFree((char *) cur->href);
+@@ -804,2 +811 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;

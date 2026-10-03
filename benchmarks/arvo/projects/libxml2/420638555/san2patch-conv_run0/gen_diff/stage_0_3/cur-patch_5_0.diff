@@ -1,0 +1,23 @@
+diff --git a/tree.c b/tree.c
+index e2357131..a8aedd7c 100644
+--- a/tree.c
++++ b/tree.c
+@@ -5596 +5596,2 @@ xmlGetNsList(const xmlDoc *doc, const xmlNode *node)
+-    xmlNsPtr *ret;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     xmlNsPtr *ret;
+@@ -5598 +5599,3 @@ xmlGetNsList(const xmlDoc *doc, const xmlNode *node)
+-    xmlGetNsListSafe(doc, node, &ret);
++    ret = NULL;
++    if ((doc != NULL) && (node != NULL))
++        xmlGetNsListSafe(doc, node, &ret);
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..33e71764 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1068 +1068,4 @@ xmlFreeElement(xmlElementPtr elem) {
+-    xmlFreeDocElementContent(elem->doc, elem->content);
++    /* Set content to NULL before freeing to prevent use-after-free in xmlGetNsListSafe */
++    xmlElementContentPtr content = elem->content;
++    elem->content = NULL;
++    xmlFreeDocElementContent(elem->doc, content);

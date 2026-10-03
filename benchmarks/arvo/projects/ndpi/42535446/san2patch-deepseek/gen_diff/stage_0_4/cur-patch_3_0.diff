@@ -1,0 +1,21 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..8bf4d6047 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -534 +534,2 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
+-      origin_hostname = ptr + 3;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       origin_hostname = ptr + 3;
+@@ -540 +541,2 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
+-      NDPI_LOG_DBG2(ndpi_struct, "Origin: [%.*s] -> [%.*s]\n", packet->http_origin.len, packet->http_origin.ptr,
++      if(origin_hostname_len > 0 && origin_hostname_len <= (size_t)(packet->http_origin.len - (origin_hostname - (char *)packet->http_origin.ptr))) {
++        NDPI_LOG_DBG2(ndpi_struct, "Origin: [%.*s] -> [%.*s]\n", packet->http_origin.len, packet->http_origin.ptr,
+@@ -542,3 +544,3 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
+-      /* We already checked hostname...*/
+-      if(strncmp(origin_hostname, flow->host_server_name, origin_hostname_len) != 0) {
+-        ndpi_match_host_subprotocol(ndpi_struct, flow,
++        /* We already checked hostname...*/
++        if(strncmp(origin_hostname, flow->host_server_name, origin_hostname_len) != 0) {
++          ndpi_match_host_subprotocol(ndpi_struct, flow,
+@@ -548,0 +551 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
++        }

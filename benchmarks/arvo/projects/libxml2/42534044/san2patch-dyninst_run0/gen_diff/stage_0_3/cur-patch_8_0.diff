@@ -1,0 +1,35 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..319a3351 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -653 +653,5 @@ dropNode(xmlNodePtr node) {
+-             (xmlDtdPtr) tree != doc->extSubset))
++             (xmlDtdPtr) tree != doc->extSubset)) {
++            /* Clear node references before freeing to prevent use-after-free */
++            if (tree == node) {
++                node->doc = NULL;
++            }
+@@ -654,0 +659 @@ dropNode(xmlNodePtr node) {
++        }
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..ff83c9db 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6904 +6903,0 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	return(prop);
+@@ -6907 +6906 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-    * No equal attr found; create a new one.
++     * No equal attr found; create a new one.
+@@ -6909 +6908,7 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-    return(xmlNewPropInternal(node, ns, name, value, 0));
++    {
++        xmlAttrPtr new_prop = xmlNewPropInternal(node, ns, name, value, 0);
++        if (new_prop == NULL) {
++            return(NULL);
++        }
++        return(new_prop);
++    }
+@@ -6914,2 +6919 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-/**
+- * xmlNodeIsText:
++/** * xmlNodeIsText:

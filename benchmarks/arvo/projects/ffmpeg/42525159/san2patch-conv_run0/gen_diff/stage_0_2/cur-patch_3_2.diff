@@ -1,0 +1,67 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..7e64996d1d 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,22 +2017,40 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++#define WRITE_FRAME(pixeltype, PIXEL)
++static void write_frame_ ## pixeltype (AVFrame *picture, Jpeg2000Tile *tile, \
++                                   int compno, int format, int plane)          \
++{                                                                             \
++    int x, y, *src = tile->comp[compno].data;                                 \
++    int pixelsize = sizeof(PIXEL);                                            \
++    int needs_swap = 0;                                                       \
++    PIXEL *line, *dst;                                                        \
++    int *i_datap;                                                             \
++                                                                              \
++    switch (format) {                                                         \
++    case JPEG2000_CBLK_DATA_INT8:                                             \
++        i_datap = tile->comp[compno].i_data;                                  \
++        break;                                                                \
++    case JPEG2000_CBLK_DATA_INT16:                                            \
++        i_datap = tile->comp[compno].i_data;                                  \
++        break;                                                                \
++    default:                                                                  \
++        return;                                                               \
++    }                                                                         \
++                                                                              \
++    line = (PIXEL*)picture->data[plane];                                      \
++    for (y = 0; y < tile->ch[compno].height; y++) {                           \
++        dst = line;                                                           \
++        for (x = 0; x < tile->ch[compno].width; x++) {                       \
++            if (needs_swap) {                                                 \
++                *dst = ff_j2k_dwt_get_band_position(tile, compno, x, y);     \
++            } else {                                                          \
++                *dst = *i_datap;                                              \
++                i_datap++;                                                    \
++            }                                                                 \
++            dst += pixelsize;                                                 \
++        }                                                                     \
++        line += picture->linesize[plane] / sizeof(PIXEL);                     \
++    }                                                                         \
++    /* Fixed CWE-787: Out-of-bounds Write by adding boundary check */         \
++    if ((uint8_t*)dst < (uint8_t*)picture->data[plane] + picture->linesize[plane] * (picture->height - 1)) { \
++        *(PIXEL *)dst = *i_datap;                                             \
++    }                                                                         \
++}

@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..e8aa51830ff 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1144,0 +1145,4 @@ extern ZEND_API bool zend_rc_debug;
++#ifndef GC_MAKE_PERSISTENT_LOCAL
++# define ZEND_RC_MOD_CHECK(p) \
++	if (UNEXPECTED(GC_FLAGS(p) & GC_PERSISTENT_LOCAL)) { \
++		GC_DEL_FLAGS(p, GC_PERSISTENT_LOCAL); \
+@@ -1155 +1159 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	return (p != NULL) ? p->refcount : 0;
+@@ -1158,0 +1163 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
++	if (p == NULL) return 0;
+@@ -1163,0 +1169 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (p == NULL) return 0;
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..e2ac35f515e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54422 +54422,2 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		if (UNEXPECTED(!OPLINE)) {
++// Fixed CWE-416: Use After Free - Validate memory access before checking OPLINE
++		if (UNEXPECTED(EG(exception) || !OPLINE)) {

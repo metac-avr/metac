@@ -1,0 +1,8 @@
+target_sources(metapro PUBLIC main.cpp)
+add_subdirectory(fl)
+add_subdirectory(patch)
+add_subdirectory(utils)
+add_subdirectory(json)
+add_subdirectory(preprocess)
+add_subdirectory(postprocess)
+add_subdirectory(binary)

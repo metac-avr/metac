@@ -1,0 +1,39 @@
+diff --git a/libavutil/frame.c b/libavutil/frame.c
+index 0912ad9131..78ba36a232 100644
+--- a/libavutil/frame.c
++++ b/libavutil/frame.c
+@@ -444,4 +444,8 @@ void av_frame_unref(AVFrame *frame)
+-    for (i = 0; i < FF_ARRAY_ELEMS(frame->buf); i++)
+-        av_buffer_unref(&frame->buf[i]);
+-    for (i = 0; i < frame->nb_extended_buf; i++)
+-        av_buffer_unref(&frame->extended_buf[i]);
++    for (i = 0; i < FF_ARRAY_ELEMS(frame->buf); i++) {
++        if (frame->buf[i])
++            av_buffer_unref(&frame->buf[i]);
++    }
++    for (i = 0; i < frame->nb_extended_buf; i++) {
++        if (frame->extended_buf[i])
++            av_buffer_unref(&frame->extended_buf[i]);
++    }
+@@ -451 +455,2 @@ void av_frame_unref(AVFrame *frame)
+-    av_buffer_unref(&frame->hw_frames_ctx);
++    if (frame->hw_frames_ctx)
++        av_buffer_unref(&frame->hw_frames_ctx);
+@@ -453,2 +458,4 @@ void av_frame_unref(AVFrame *frame)
+-    av_buffer_unref(&frame->opaque_ref);
+-    av_buffer_unref(&frame->private_ref);
++    if (frame->opaque_ref)
++        av_buffer_unref(&frame->opaque_ref);
++    if (frame->private_ref)
++        av_buffer_unref(&frame->private_ref);
+diff --git a/libavutil/mem.c b/libavutil/mem.c
+index 194d880587..a8b5bfd73f 100644
+--- a/libavutil/mem.c
++++ b/libavutil/mem.c
+@@ -248 +248,2 @@ void av_free(void *ptr)
+-    _aligned_free(ptr);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++    if (ptr) _aligned_free(ptr);
+@@ -250 +251 @@ void av_free(void *ptr)
+-    free(ptr);
++    if (ptr) free(ptr);

@@ -1,0 +1,13 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..f45c7aac6b 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -1306,2 +1306,6 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
+-                for (i = 0; i < count; i++)
+-                    s->bpp += ff_tget(&s->gb, type, s->le);
++                for (i = 0; i < count; i++) {
++                    unsigned tag_value = ff_tget(&s->gb, type, s->le);
++                    if (tag_value > INT_MAX - s->bpp)
++                        return AVERROR_INVALIDDATA;
++                    s->bpp += tag_value;
++                }

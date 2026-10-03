@@ -1,0 +1,37 @@
+diff --git a/parser.c b/parser.c
+index 14288713..11c1800d 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4979 +4979,31 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-
++	if (cur != 0) {
++		if (len + 2 > size) {
++			size_t newSize = size ? size * 2 : 16;
++			while (newSize < len + 2)
++				newSize *= 2;
++			xmlChar *newBuf = (xmlChar *)xmlRealloc(buf, newSize);
++			if (newBuf == NULL) {
++				xmlFree(buf);
++				xmlFatalErr(ctxt, XML_ERR_NO_MEMORY, NULL);
++				return;
++			}
++			buf = newBuf;
++			size = newSize;
++		}
++		buf[len++] = cur;
++	}
++ 
++    }
++    if (len + 1 > size) {
++	xmlChar *newBuf = NULL;
++	size_t newSize = size ? size * 2 : 16;
++	while (newSize < len + 1)
++		newSize *= 2;
++	newBuf = (xmlChar *)xmlRealloc(buf, newSize);
++	if (newBuf == NULL) {
++		xmlFree(buf);
++		xmlFatalErr(ctxt, XML_ERR_NO_MEMORY, NULL);
++		return;
++	}
++	buf = newBuf;
++	size = newSize;

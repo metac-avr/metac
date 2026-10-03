@@ -1,0 +1,21 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..b38f3c879 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -200,5 +200,11 @@ static u32 inspect_get_nal_size(char *ptr, u32 nalh_size)
+-	while (v) {
+-		nal_size |= (u8) *ptr;
+-		ptr++;
+-		v-=1;
+-		if (v) nal_size <<= 8;
++	char *current_ptr = ptr;
++	while (v && current_ptr) {
++		// Add bounds checking to prevent out-of-bounds read
++		for (u32 i = 0; i < nalh_size && current_ptr; i++) {
++			if (i >= v) break;
++			nal_size |= (u8) *current_ptr;
++			current_ptr++;
++			if (v > 1) nal_size <<= 8;
++			v--;
++		}
++		break;

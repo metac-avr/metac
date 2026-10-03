@@ -1,0 +1,24 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..e9cb15b8 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1985,6 +1985,13 @@ xmlXIncludeLoadFallback(xmlXIncludeCtxtPtr ctxt, xmlNodePtr fallback, int nr) {
+-	xmlXIncludeFreeContext(newctxt);
+-
+-	ctxt->incTab[nr]->inc = xmlDocCopyNodeList(ctxt->doc,
+-	                                           fallback->children);
+-        if (ctxt->incTab[nr]->inc == NULL)
+-            ctxt->incTab[nr]->emptyFb = 1;
++// FIXME: Crash CWE-416: Use After Free
++ 	xmlXIncludeFreeContext(newctxt);
++
++	/* Validate fallback children before copying to prevent use-after-free */
++	if (fallback->children != NULL) {
++	    ctxt->incTab[nr]->inc = xmlDocCopyNodeList(ctxt->doc,
++	                                               fallback->children);
++            if (ctxt->incTab[nr]->inc == NULL)
++                ctxt->incTab[nr]->emptyFb = 1;
++	} else {
++	    ctxt->incTab[nr]->inc = NULL;
++	    ctxt->incTab[nr]->emptyFb = 1;
++	}

@@ -1,0 +1,25 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..292d58e4a 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1097,2 +1097,4 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj != NULL && !is_dead(gc, obj)) {  // Validate object before marking
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    }
+@@ -1203,3 +1205,10 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Defer page freeing to prevent use-after-free during concurrent marking */
++      if (gc->state != MRB_GC_STATE_NONE) {
++        /* Add to deferred free list instead of immediate freeing */
++        page->next = gc->deferred_free_list;
++        gc->deferred_free_list = page;
++      } else {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }

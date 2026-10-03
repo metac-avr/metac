@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..9feb24d0074 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -388,0 +389 @@ void shutdown_executor(void) /* {{{ */
++// FIXME: Crash CWE-416: Use After Free
+@@ -391 +392,3 @@ void shutdown_executor(void) /* {{{ */
+-	zend_shutdown_executor_values(fast_shutdown);
++	/* Implement defensive check to prevent use-after-free during GC operations */
++	zend_bool executor_active = EG(current_execute_data) != NULL;
++	zend_shutdown_executor_values(fast_shutdown && executor_active);
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..c45b2030f81 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1369,3 +1369 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-			prev = HT_HASH_TO_BUCKET(ht, i);
+-			while (Z_NEXT(prev->val) != idx) {
+-				i = Z_NEXT(prev->val);
++			if (HT_HASH_TO_BUCKET_EX(ht, i) != NULL) {
+@@ -1372,0 +1371,5 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++				while (Z_NEXT(prev->val) != idx) {
++					i = Z_NEXT(prev->val);
++					if (HT_HASH_TO_BUCKET_EX(ht, i) == NULL) break;
++					prev = HT_HASH_TO_BUCKET(ht, i);
++				}
+@@ -1374 +1377 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}

@@ -1,0 +1,12 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..54f5d7a5fd0 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2553 +2553,6 @@ static zend_string* ZEND_FASTCALL zend_jit_rope_end(zend_string **rope, uint32_t
+-		len += ZSTR_LEN(rope[i]);
++// FIXME: Crash CWE-416: Use After Free
++		if (UNEXPECTED(ZSTR_LEN(rope[i]) > SIZE_MAX - len)) {
++			zend_throw_error(NULL, "String size overflow");
++			return NULL;
++		}
++ 		len += ZSTR_LEN(rope[i]);

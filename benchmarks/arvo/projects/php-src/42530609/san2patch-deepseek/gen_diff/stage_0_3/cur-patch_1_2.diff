@@ -1,0 +1,81 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..6abfe6fd479 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -164,42 +164,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+-ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
+-{
+-	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+-
+-	/* GC might have released this object already. */
+-	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
+-		return;
+-	}
+-
+-	/*	Make sure we hold a reference count during the destructor call
+-		otherwise, when the destructor ends the storage might be freed
+-		when the refcount reaches 0 a second time
+-	 */
+-	if (!(OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
+-		GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
+-
+-		if (object->handlers->dtor_obj != zend_objects_destroy_object
+-				|| object->ce->destructor) {
+-			zend_fiber_switch_block();
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->dtor_obj(object);
+-			GC_DELREF(object);
+-			zend_fiber_switch_unblock();
+-		}
+-	}
+-
+-	if (GC_REFCOUNT(object) == 0) {
+-		uint32_t handle = object->handle;
+-		void *ptr;
+-
+-		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+-		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+-		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
+-		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
+-		}
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++ZEND_API void static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (UNEXPECTED(p->refcount == 0)) {
++		return 0;
+@@ -206,0 +168,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++	ZEND_ASSERT(p->refcount > 0);
++	ZEND_RC_MOD_CHECK(p);
++	return --(p->refcount);
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index f2f538a2c2c..93811fb9552 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1332,9 +1331,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
+-	}
+-}
+-
+@@ -1342 +1333,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
++	if (UNEXPECTED(p->refcount == 0)) {
++		return 0;
++	}
+@@ -1346,7 +1338,0 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-

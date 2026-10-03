@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..d759b525131 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
++/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p) return;
+@@ -57 +58 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -64,0 +66 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	// FIXME: Crash CWE-416: Use After Free
+@@ -67 +69,3 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
++	if (str) {  // Prevent access to potentially freed memory
++		efree(str);
++	}
+@@ -77 +80,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

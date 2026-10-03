@@ -1,0 +1,56 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..61424a66e 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -531,21 +530,0 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
+-  }
+-  mrb_gc_arena_restore(mrb, ai);
+-  mrb_gc_protect(mrb, val);
+-  return val;
+-}
+-
+-MRB_API mrb_value
+-mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, const mrb_value *argv)
+-{
+-  return mrb_funcall_with_block(mrb, self, mid, argc, argv, mrb_nil_value());
+-}
+-
+-static mrb_value
+-exec_irep(mrb_state *mrb, mrb_value self, struct RProc *p)
+-{
+-  mrb_callinfo *ci = mrb->c->ci;
+-  int keep, nregs;
+-
+-  ci->stack[0] = self;
+-  mrb_vm_ci_proc_set(ci, p);
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..9f2447e3b 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -768,7 +767,0 @@ mod_const_check(mrb_state *mrb, mrb_value mod)
+-static mrb_value
+-const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
+-{
+-  struct RClass *c = base;
+-  mrb_value v;
+-  mrb_bool retry = FALSE;
+-  mrb_value name;
+@@ -776,17 +768,0 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
+-  if (skip) c = c->super;
+-L_RETRY:
+-  while (c) {
+-    if (!MRB_FLAG_TEST(c, MRB_FL_CLASS_IS_PREPENDED) && c->iv) {
+-      if (iv_get(mrb, c->iv, sym, &v))
+-        return v;
+-    }
+-    c = c->super;
+-  }
+-  if (!retry && base->tt == MRB_TT_MODULE) {
+-    c = mrb->object_class;
+-    retry = TRUE;
+-    goto L_RETRY;
+-  }
+-  name = mrb_symbol_value(sym);
+-  return mrb_funcall_argv(mrb, mrb_obj_value(base), MRB_SYM(const_missing), 1, &name);
+-}

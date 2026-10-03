@@ -1,0 +1,31 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..49ae67778 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++ {
+@@ -791,0 +791,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (mrb->gc.sweep_slot && obj >= mrb->gc.sweep_slot->slot[0] && 
++      obj < mrb->gc.sweep_slot->slot[mrb->gc.sweep_slot->cnt]) return;
+@@ -799,2 +800 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1203,3 +1203,11 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Defer page freeing to next GC cycle to prevent UAF */
++      if (gc->state != MRB_GC_STATE_SWEEP) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      } else {
++        /* Mark page for deferred deletion */
++        page->freelist = (struct RBasic*)MRB_TT_UNUSED;
++        page = next;
++        continue;
++      }

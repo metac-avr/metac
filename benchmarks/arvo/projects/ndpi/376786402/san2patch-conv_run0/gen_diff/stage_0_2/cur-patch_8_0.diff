@@ -1,0 +1,32 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..6cb5aff6f 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1574 +1574,2 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    NDPI_LOG_DBG2(ndpi_struct, "Request where expected\n");
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     NDPI_LOG_DBG2(ndpi_struct, "Request where expected\n");
+@@ -1603 +1604,3 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-      check_content_type_and_change_protocol(ndpi_struct, flow);
++      if(ndpi_struct && flow->packet_lines_parsed_complete) {
++        check_content_type_and_change_protocol(ndpi_struct, flow);
++      }
+@@ -1631 +1634,3 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-      check_content_type_and_change_protocol(ndpi_struct, flow);
++      if(ndpi_struct && flow->packet_lines_parsed_complete) {
++        check_content_type_and_change_protocol(ndpi_struct, flow);
++      }
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..89f5d46ff 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -956 +956 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++ 
+@@ -992,0 +993,6 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++  
++  // Ensure null termination for string operations
++  if(olen > 0) {
++    out[olen-1] = '\0';
++    *out_len = (pos < (out + olen)) ? pos - out : olen - 1;
++  }

@@ -1,0 +1,29 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..53344b58a 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -161,15 +161 @@ int_div(mrb_state *mrb, mrb_value x)
+-  switch (mrb_type(y)) {
+-#ifdef MRB_USE_BIGINT
+-  case MRB_TT_BIGINT:
+-    return mrb_bint_div(mrb, mrb_bint_new_int(mrb, a), y);
+-#endif
+-#ifdef MRB_USE_RATIONAL
+-  case MRB_TT_RATIONAL:
+-    return mrb_rational_div(mrb, mrb_rational_new(mrb, a, 1), y);
+-#endif
+-#ifdef MRB_USE_COMPLEX
+-  case MRB_TT_COMPLEX:
+-    x = mrb_complex_new(mrb, (mrb_float)a, 0);
+-    return mrb_complex_div(mrb, x, y);
+-#endif
+-  default:
++    default:
+@@ -179 +165,6 @@ int_div(mrb_state *mrb, mrb_value x)
+-    return mrb_float_value(mrb, mrb_div_float((mrb_float)a, mrb_as_float(mrb, y)));
++    /* Check for potential overflow in float division */
++    mrb_float divisor = mrb_as_float(mrb, y);
++    if (divisor == 0.0) {
++      mrb_raise(mrb, E_FLOATDOMAIN_ERROR, "divided by zero");
++    }
++    return mrb_float_value(mrb, mrb_div_float((mrb_float)a, divisor));

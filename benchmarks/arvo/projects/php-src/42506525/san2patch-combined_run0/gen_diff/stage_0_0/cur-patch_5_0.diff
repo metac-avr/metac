@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..a338277ca13 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1429,0 +1430,4 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++			/* Bounds check to avoid accessing freed memory */
++			if (UNEXPECTED(i >= ht->nNumUsed)) {
++				return;
++			}
+@@ -1433 +1437 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-
++ 
+@@ -2154 +2158,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (result & ZEND_HASH_APPLY_REMOVE) {
++// FIXME: Crash CWE-416: Use After Free
++ 			if (result & ZEND_HASH_APPLY_REMOVE) {
+@@ -2156 +2161,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				if (idx < ht->nNumUsed) {  // Re-validate index before deletion
++					p = ht->arData + idx;  // Refresh pointer after potential resize
++					_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				}

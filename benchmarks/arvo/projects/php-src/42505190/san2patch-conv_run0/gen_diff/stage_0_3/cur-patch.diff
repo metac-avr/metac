@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..fac1134183a 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2327,0 +2328,5 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
++		/* Safety check to prevent use-after-free after array separation */
++		if (UNEXPECTED(container == NULL || Z_TYPE_P(container) != IS_ARRAY)) {
++			ZVAL_NULL(result);
++			return;
++		}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..1c5974d365b 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -39839 +39839,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_W_SPEC_CV_CONST_HAND
+-	zend_fetch_dimension_address_W(container, RT_CONSTANT(opline, opline->op2), IS_CONST OPLINE_CC EXECUTE_DATA_CC);
++	if (container != NULL) {
++		if (Z_TYPE_P(container) == IS_ARRAY && Z_REFCOUNTED_P(container)) {
++			SEPARATE_ARRAY(container);
++		}
++		zend_fetch_dimension_address_W(container, RT_CONSTANT(opline, opline->op2), IS_CONST OPLINE_CC EXECUTE_DATA_CC);
++	}

@@ -1,0 +1,20 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..766c18c7c 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1793 +1793,14 @@ int_to_s(mrb_state *mrb, mrb_value self)
+-    return mrb_bint_to_s(mrb, self, base);
++    /* Add buffer overflow protection */
++    mrb_value temp_result = mrb_bint_to_s(mrb, self, base);
++    if (mrb_string_p(temp_result)) {
++      /* Validate string bounds before returning */
++      mrb_int str_len = RSTRING_LEN(temp_result);
++      char* str_ptr = RSTRING_PTR(temp_result);
++      if (str_len > 0 && str_ptr[str_len] != '\0') {
++        /* Reallocate with proper bounds */
++        mrb_str_resize(mrb, temp_result, str_len + 1);
++        str_ptr = RSTRING_PTR(temp_result);
++        str_ptr[str_len] = '\0';
++      }
++    }
++    return temp_result;

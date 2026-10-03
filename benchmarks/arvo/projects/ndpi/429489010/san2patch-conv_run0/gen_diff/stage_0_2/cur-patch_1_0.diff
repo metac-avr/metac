@@ -1,0 +1,41 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 3ddcf8606..b69dc6b7a 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -378,10 +378,23 @@ static void ndpi_add_user_proto_id_mapping(struct ndpi_detection_module_struct *
+-  if(idx >= ndpi_str->ndpi_to_user_proto_id_num_allocated) {
+-    int new_num;
+-    u_int16_t *new_ptr;
+-
+-    new_num = ndpi_max(64, ndpi_str->ndpi_to_user_proto_id_num_allocated * 2);
+-    new_ptr = ndpi_realloc(ndpi_str->ndpi_to_user_proto_id,
+-                           ndpi_str->ndpi_to_user_proto_id_num_allocated * sizeof(u_int16_t),
+-                           new_num * sizeof(u_int16_t));
+-    if(!new_ptr) {
+-      NDPI_LOG_DBG(ndpi_str, "Realloc error\n");
++  /* Prevent potential integer overflow and out-of-bounds access */
++  if(idx < 0 || (u_int32_t)idx >= ndpi_str->ndpi_to_user_proto_id_num_allocated) {
++    if(idx >= ndpi_str->ndpi_to_user_proto_id_num_allocated) {
++      /* Index is too large, need to expand buffer */
++      int new_num;
++      u_int16_t *new_ptr;
++
++      new_num = ndpi_max(64, ndpi_str->ndpi_to_user_proto_id_num_allocated * 2);
++      /* Additional safety check to prevent excessive allocation */
++      if(new_num > 65535) new_num = 65535;
++      
++      new_ptr = ndpi_realloc(ndpi_str->ndpi_to_user_proto_id,
++                             ndpi_str->ndpi_to_user_proto_id_num_allocated * sizeof(u_int16_t),
++                             new_num * sizeof(u_int16_t));
++      if(!new_ptr) {
++        NDPI_LOG_DBG(ndpi_str, "Realloc error\n");
++        return;
++      }
++      ndpi_str->ndpi_to_user_proto_id = new_ptr;
++      ndpi_str->ndpi_to_user_proto_id_num_allocated = new_num;
++    } else {
++      /* Negative index case */
++      NDPI_LOG_ERR(ndpi_str, "Invalid negative index: %d\n", idx);
+@@ -390,2 +402,0 @@ static void ndpi_add_user_proto_id_mapping(struct ndpi_detection_module_struct *
+-    ndpi_str->ndpi_to_user_proto_id = new_ptr;
+-    ndpi_str->ndpi_to_user_proto_id_num_allocated = new_num;

@@ -1,0 +1,32 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..f51e42b086 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -266 +266,3 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
+-    read_len   = search_end - search_start + 1;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     read_len   = search_end - search_start + 1;
++    if (read_len <= 0) return 0;
+@@ -267,0 +270 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
++    if (!buf) return 0;
+@@ -280 +283,2 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
+-        wrap[1]  = buf[0];
++        if (read_len > 0 && buf) {
++            wrap[1]  = buf[0];
+@@ -282,3 +286,4 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
+-        if ((AV_RB16(wrap) & 0xFFFE) == 0xFFF8) {
+-            temp = find_headers_search_validate(fpc, search_start);
+-            size = FFMAX(size, temp);
++            if ((AV_RB16(wrap) & 0xFFFE) == 0xFFF8) {
++                temp = find_headers_search_validate(fpc, search_start);
++                size = FFMAX(size, temp);
++            }
+@@ -289,3 +294,5 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
+-        temp     = find_headers_search(fpc, buf, read_len, search_start);
+-        size     = FFMAX(size, temp);
+-        search_start += read_len - 1;
++        if (buf) {
++            temp     = find_headers_search(fpc, buf, read_len, search_start);
++            size     = FFMAX(size, temp);
++            search_start += read_len - 1;
++        }

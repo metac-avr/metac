@@ -1,0 +1,24 @@
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..e1b3305c93 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -642 +642,2 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-    p->flags |= AV_FRAME_FLAG_KEY;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     p->flags |= AV_FRAME_FLAG_KEY;
+@@ -646,0 +648,15 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
++    {
++        int plane;
++        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
++        for (plane = 0; plane < desc->nb_components; plane++) {
++            int width  = AV_CEIL_RSHIFT(avctx->width,  plane ? desc->log2_chroma_w : 0);
++            int height = AV_CEIL_RSHIFT(avctx->height, plane ? desc->log2_chroma_h : 0);
++            uint64_t needed = (uint64_t)width * height;
++            uint64_t available = (uint64_t)p->linesize[plane] * height;
++            if (needed > available || available > INT_MAX) {
++                av_log(avctx, AV_LOG_ERROR, "Invalid plane %d size\n", plane);
++                return AVERROR_INVALIDDATA;
++            }
++        }
++    }
++

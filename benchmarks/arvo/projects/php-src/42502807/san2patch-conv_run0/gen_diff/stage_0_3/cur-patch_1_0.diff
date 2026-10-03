@@ -1,0 +1,48 @@
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index c9d23d11b7d..0c6d5d48c8b 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -1076,0 +1077,9 @@ static void zend_redo_pass_two(zend_op_array *op_array)
++		size_t op_size = sizeof(zend_op) * op_array->last;
++		size_t aligned_op_size = ZEND_MM_ALIGNED_SIZE_EX(op_size, 16);
++		
++		/* Check for potential integer overflow */
++		if (aligned_op_size < op_size || aligned_op_size > SIZE_MAX - sizeof(zval) * op_array->last_literal) {
++			zend_throw_error(NULL, "Integer overflow detected during opcode reallocation");
++			return;
++		}
++		
+@@ -1078 +1087 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
++			aligned_op_size +
+@@ -1080 +1089 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
++		memcpy(((char*)op_array->opcodes) + aligned_op_size,
+@@ -1083 +1092 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)(((char*)op_array->opcodes) + aligned_op_size);
+@@ -1187,0 +1197,9 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
++		size_t op_size = sizeof(zend_op) * op_array->last;
++		size_t aligned_op_size = ZEND_MM_ALIGNED_SIZE_EX(op_size, 16);
++		
++		/* Check for potential integer overflow */
++		if (aligned_op_size < op_size || aligned_op_size > SIZE_MAX - sizeof(zval) * op_array->last_literal) {
++			zend_throw_error(NULL, "Integer overflow detected during opcode reallocation");
++			return;
++		}
++		
+@@ -1189 +1207 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-			ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16) +
++			aligned_op_size +
+@@ -1191 +1209 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
++		memcpy(((char*)op_array->opcodes) + aligned_op_size,
+@@ -1194 +1212 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		op_array->literals = (zval*)(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16));
++		op_array->literals = (zval*)(((char*)op_array->opcodes) + aligned_op_size);
+@@ -1526 +1544 @@ ZEND_API void zend_optimize_script(zend_script *script, zend_long optimization_l
+-				if (op_array->live_range) {
++				if (op_array->live_range && op_array->live_range >= (void*)0x1000) {
+@@ -1531 +1549 @@ ZEND_API void zend_optimize_script(zend_script *script, zend_long optimization_l
+-				if (op_array->live_range) {
++				if (op_array->live_range && op_array->live_range >= (void*)0x1000) {

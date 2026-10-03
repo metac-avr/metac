@@ -1,0 +1,22 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index a3c47f69..cf8d36ef 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3774,2 +3774,3 @@ htmlParseAttribute(htmlParserCtxtPtr ctxt, xmlChar **value) {
+-    if (CUR == '=') {
+-        NEXT;
++    if ((CUR == '=') && (ctxt->input != NULL) && (ctxt->input->cur < ctxt->input->end - 1)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         NEXT;
+@@ -4050 +4051 @@ htmlParseStartTag(htmlParserCtxtPtr ctxt) {
+-           (ctxt->instate != XML_PARSER_EOF)) {
++            (ctxt->instate != XML_PARSER_EOF)) {
+@@ -4051,0 +4053,8 @@ htmlParseStartTag(htmlParserCtxtPtr ctxt) {
++        if ((ctxt->input == NULL) || (ctxt->input->cur == NULL) || 
++            (ctxt->input->end == NULL) || (ctxt->input->cur >= ctxt->input->end)) {
++            if (ctxt->input != NULL && ctxt->input->cur != NULL && ctxt->input->end != NULL) {
++                htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++                             "Buffer boundary violation in HTML attribute parsing\n", NULL, NULL);
++            }
++            goto failed;
++        }

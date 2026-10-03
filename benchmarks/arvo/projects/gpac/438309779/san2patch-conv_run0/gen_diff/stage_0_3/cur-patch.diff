@@ -1,0 +1,14 @@
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index be826527f..5f911cf44 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -16142,3 +16142,6 @@ Bool gf_ac4_parser_bs(GF_BitStream *bs, GF_AC4Config *hdr, Bool full_parse)
+-	// clean the GF_List data if exits
+-	if (full_parse) {
+-		gf_odf_ac4_cfg_clean_list(hdr);
++	// Prevent use-after-free by ensuring hdr is valid and initialized
++	if (full_parse && hdr) {
++		// Validate that the header structure is properly initialized before cleanup
++		if (hdr->stream.ac4_dsi_version >= 0) {  // Basic validation check
++			gf_odf_ac4_cfg_clean_list(hdr);
++		}

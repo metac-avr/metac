@@ -1,0 +1,30 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..de6733344 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -647 +647 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super && !mrb_object_dead_p(mrb, (struct RBasic*)c->super)) mrb_gc_mark(mrb, (struct RBasic*)c->super);
+@@ -651 +651,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   case MRB_TT_OBJECT:
+@@ -660,2 +661,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper && !mrb_object_dead_p(mrb, (struct RBasic*)p->upper)) mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++      if (p->e.env && !mrb_object_dead_p(mrb, (struct RBasic*)p->e.env)) mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
+@@ -664 +664,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -732 +731,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -740 +739,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -743,0 +744 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (MRB_GC_RED <= (obj)->gccolor) return;  /* Additional check for object validity */
+@@ -752,2 +753 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:

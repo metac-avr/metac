@@ -1,0 +1,66 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..0badb273 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -413,9 +413,9 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     * From rfc2044: encoding of the Unicode values on UTF-8:
+-     *
+-     * UCS-4 range (hex.)           UTF-8 octet sequence (binary)
+-     * 0000 0000-0000 007F   0xxxxxxx
+-     * 0000 0080-0000 07FF   110xxxxx 10xxxxxx
+-     * 0000 0800-0000 FFFF   1110xxxx 10xxxxxx 10xxxxxx
+-     *
+-     * Check for the 0x110000 limit too
+-     */
++static int
++htmlCheckEncoding(htmlParserCtxtPtr ctxt, size_t *len) {
++    const xmlChar *cur;
++    xmlChar c;
++
++    if ((ctxt == NULL) || (ctxt->input == NULL) || (ctxt->input->cur == NULL) ||
++        (ctxt->input->cur >= ctxt->input->end))
++        return(0);
++
+@@ -434 +434,41 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        if ((c & 0xe0) == 0xe0) {
++
++        if ((c & 0xe0) == 0xc0) {
++            *len = 2;
++            return(cur[0] & 0x1f) << 6 | (cur[1] & 0x3f);
++        }
++
++        if ((c & 0xf0) == 0xe0) {
++            if ((avail < 3) || ((cur[2] & 0xc0) != 0x80))
++                goto encoding_error;
++            *len = 3;
++            return((cur[0] & 0x0f) << 12) |
++                   ((cur[1] & 0x3f) << 6) |
++                   (cur[2] & 0x3f);
++        }
++
++        if ((c & 0xf8) == 0xf0) {
++            if ((avail < 4) || ((cur[2] & 0xc0) != 0x80) ||
++                ((cur[3] & 0xc0) != 0x80))
++                goto encoding_error;
++            *len = 4;
++            return((cur[0] & 0x07) << 18) |
++                   ((cur[1] & 0x3f) << 12) |
++                   ((cur[2] & 0x3f) << 6) |
++                   (cur[3] & 0x3f);
++        }
++
++        goto encoding_error;
++    } else {
++        if (IS_CHAR(c)) {
++            *len = 1;
++            return(c);
++        }
++    }
++
++encoding_error:
++    xmlCtxtErrIO(ctxt, XML_ERR_INVALID_ENCODING, NULL);
++    if ((ctxt->input->flags & XML_INPUT_HAS_ENCODING) == 0)
++        ctxt->input->flags |= XML_INPUT_INVALID_ENCODING;
++    *len = 1;
++    return(*ctxt->input->cur);
++}        if ((c & 0xe0) == 0xe0) {

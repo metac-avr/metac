@@ -1,0 +1,20 @@
+diff --git a/src/range.c b/src/range.c
+index fc126be80..c0cb3105b 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -387 +387,5 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      ary = mrb_ary_new_capa(mrb, (mrb_int)(b - a) + 1);
++      mrb_int len = (mrb_int)(b - a) + 1;
++      if ((mrb_float)len > (mrb_float)MRB_INT_MAX) {
++        mrb_raise(mrb, E_RANGE_ERROR, "float range too long");
++      }
++      ary = mrb_ary_new_capa(mrb, len);
+@@ -391 +395 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-        while (a < b) {
++        while (a < b && i < len) {
+@@ -397,2 +401,3 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      else {
+-        while (a <= b) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       else {
++        while (a <= b && i < len) {

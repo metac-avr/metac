@@ -1,0 +1,29 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..20739d07 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2462,3 +2462,5 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-	if ((ctxt->incTab[i]->inc != NULL) ||
+-	    (ctxt->incTab[i]->emptyFb != 0))	/* (empty fallback) */
+-	    xmlXIncludeIncludeNode(ctxt, i);
++	if (i >= 0 && i < ctxt->incMax && ctxt->incTab[i] != NULL) {
++	    if ((ctxt->incTab[i]->inc != NULL) ||
++	        (ctxt->incTab[i]->emptyFb != 0))	/* (empty fallback) */
++	        xmlXIncludeIncludeNode(ctxt, i);
++	}
+@@ -2474,2 +2476 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+- * @ctxt:  an XInclude processing context
+- * @flags: a set of xmlParserOption used for parsing XML includes
++ * @ctxt:  an XInclude processing context * @flags: a set of xmlParserOption used for parsing XML includes
+diff --git a/tree.c b/tree.c
+index 8077348a..4bd53627 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3749,2 +3749,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
++		(cur->type != XML_COMMENT_NODE)) {
++		xmlChar *name_to_free = cur->name;  /* Store pointer for safe freeing */
++	        cur->name = NULL;  /* Nullify before freeing to prevent reuse */
++		DICT_FREE(name_to_free);
++	    }

@@ -1,0 +1,22 @@
+diff --git a/libavcodec/vvc/vvcdec.c b/libavcodec/vvc/vvcdec.c
+index 608d497cb7..dcae03a293 100644
+--- a/libavcodec/vvc/vvcdec.c
++++ b/libavcodec/vvc/vvcdec.c
+@@ -821 +821 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-                s->eos = 1;
++                 s->eos = 1;
+@@ -823,4 +823,10 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-            ret = decode_nal_unit(s, fc, nal, unit);
+-            if (ret < 0) {
+-                av_log(s->avctx, AV_LOG_WARNING,
+-                        "Error parsing NAL unit #%d.\n", i);
++            if (unit->data && unit->data_size >= 8) {
++                ret = decode_nal_unit(s, fc, nal, unit);
++                if (ret < 0) {
++                    av_log(s->avctx, AV_LOG_WARNING,
++                            "Error parsing NAL unit #%d.\n", i);
++                    goto fail;
++                }
++            } else {
++                av_log(s->avctx, AV_LOG_ERROR, "Insufficient NAL unit data size: %d\n", unit->data_size);
++                ret = AVERROR_INVALIDDATA;

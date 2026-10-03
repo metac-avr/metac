@@ -1,0 +1,35 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..8cf9b0aa 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -422 +422,2 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
++	(cur->nsDef != NULL)) {
++        cur->nsDef = NULL;
+@@ -423,0 +425 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
++    }
+diff --git a/parser.c b/parser.c
+index 11bb5199..c0906a9a 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7502,8 +7502,12 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw != NULL) {
+-			if (nw->_private == NULL)
+-			    nw->_private = cur->_private;
+-			if (firstChild == NULL){
+-			    firstChild = nw;
+-			}
+-			nw = xmlAddChild(ctxt->node, nw);
++		    if (cur->type != XML_NAMESPACE_DECL) {
++		        nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		        if (nw != NULL) {
++			    if (nw->_private == NULL)
++			        nw->_private = cur->_private;
++			    if (firstChild == NULL){
++			        firstChild = nw;
++			    }
++			    nw = xmlAddChild(ctxt->node, nw);
++		        }
++		    } else {
++		        nw = NULL;

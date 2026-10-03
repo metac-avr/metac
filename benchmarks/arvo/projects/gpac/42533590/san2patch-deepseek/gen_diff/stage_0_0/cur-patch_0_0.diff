@@ -1,0 +1,64 @@
+diff --git a/src/utils/error.c b/src/utils/error.c
+index 957e7dc9b..f7a06f3b6 100644
+--- a/src/utils/error.c
++++ b/src/utils/error.c
+@@ -2181,18 +2181,16 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-       if (!pat || !data) return NULL;
+-
+-       u32 len_pat = (u32) strlen(pat);
+-       if (len_pat==0) return data;
+-       if (len_pat>data_size) return NULL;
+-
+-       //basically a memmem clone (we don't use for portability reasons)
+-       while (1) {
+-               char *next = memchr(data, pat[0], data_size);
+-               if (!next) return NULL;
+-               u32 left = data_size - (u32) (next-data);
+-               if (left<len_pat) return NULL;
+-               if (!memcmp(next, pat, len_pat)) return next;
+-               //left is always at least 1
+-               data_size = left-1;
+-               data = next+1;
+-       }
+-       return NULL;
++	if (!pat || !data) return NULL;
++
++	u32 len_pat = (u32) strlen(pat);
++	if (len_pat==0) return data;
++	if (len_pat>data_size) return NULL;
++
++	while (data_size >= len_pat) {
++		char *next = memchr(data, pat[0], data_size - len_pat + 1);
++		if (!next) return NULL;
++		u32 left = data_size - (u32) (next-data);
++		if (left<len_pat) return NULL;
++		if (!memcmp(next, pat, len_pat)) return next;
++		data_size = left-1;
++		data = next+1;
++	}
++	return NULL;
+diff --git a/src/filters/load_text.c b/src/filters/load_text.c
+index ff3caecac..70cfd04df 100644
+--- a/src/filters/load_text.c
++++ b/src/filters/load_text.c
+@@ -4352 +4352 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	while (data[0] && strchr("\n\r\t ", (char) data[0]))
++	while (res_size && strchr("\n\r\t ", (char) data[0])) {
+@@ -4353,0 +4354,2 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
++		res_size --;
++	}
+@@ -4361,2 +4363,3 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (!strncmp(data, "WEBVTT", 6)) {
+-		PROBE_OK(GF_FPROBE_SUPPORTED, "subtitle/vtt")
++	if (res_size >= 6 && !strncmp(data, "WEBVTT", 6)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		PROBE_OK(GF_FPROBE_SUPPORTED, "subtitle/vtt")
+@@ -4367 +4370 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (!strncmp(data, "FWS", 3) || !strncmp(data, "CWS", 3)) {
++	if (res_size >= 3 && (!strncmp(data, "FWS", 3) || !strncmp(data, "CWS", 3))) {
+@@ -4370 +4373 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if (!strncmp(data, "[Script Info", 12)) {
++	if (res_size >= 12 && !strncmp(data, "[Script Info", 12)) {
+@@ -4374 +4377 @@ static const char *txtin_probe_data(const u8 *data, u32 data_size, GF_FilterProb
+-	if ((data[0]=='{') && gf_strmemstr(data, res_size, "}{")) {
++	if (res_size >= 1 && (data[0]=='{') && gf_strmemstr(data, res_size, "}{")) {

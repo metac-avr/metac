@@ -1,0 +1,38 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..47cc22cb5 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1034 +1034,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      size_t content_len;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t content_len;
+@@ -1037 +1038 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-					   packet->authorization_line.len - len, &content_len);
++				   packet->authorization_line.len - len, &content_len);
+@@ -1040,7 +1041,19 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
+-
+-	if(double_dot) {
+-	  double_dot[0] = '\0';
+-	  flow->http.username = ndpi_strdup((char*)content);
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
+-	}
++	char *double_dot = NULL;
++        
++        // Add null terminator to prevent out-of-bounds read
++        if(content_len > 0) {
++            // Create a null-terminated copy for string operations
++            char *null_terminated = (char*)ndpi_calloc(content_len + 1, sizeof(char));
++            if(null_terminated != NULL) {
++                memcpy(null_terminated, content, content_len);
++                double_dot = strchr(null_terminated, ':');
++                
++                if(double_dot) {
++                  double_dot[0] = '\0';
++                  flow->http.username = ndpi_strdup(null_terminated);
++                  flow->http.password = ndpi_strdup(&double_dot[1]);
++                }
++                
++                ndpi_free(null_terminated);
++            }
++        }

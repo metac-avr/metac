@@ -1,0 +1,28 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..1a8921fb 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745 +2745 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++    if (xmlHashRemoveEntry(table, attr->id->value, NULL) < 0)
+@@ -2747 +2747,2 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-
++    
++    xmlFreeID(attr->id);
+diff --git a/hash.c b/hash.c
+index 33e8581e..a735ee09 100644
+--- a/hash.c
++++ b/hash.c
+@@ -1274,3 +1274,6 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
+-
+-    if ((dealloc != NULL) && (entry->payload != NULL))
+-        dealloc(entry->payload, entry->key);
++ 
++    if ((dealloc != NULL) && (entry->payload != NULL)) {
++        void *payload = entry->payload;
++        entry->payload = NULL;  /* Clear payload before deallocation */
++        dealloc(payload, entry->key);
++    }

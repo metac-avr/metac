@@ -1,0 +1,19 @@
+diff --git a/src/lib/ndpi_serializer.c b/src/lib/ndpi_serializer.c
+index 9a27add4d..268c6666c 100644
+--- a/src/lib/ndpi_serializer.c
++++ b/src/lib/ndpi_serializer.c
+@@ -278 +278,2 @@ static inline int ndpi_extend_serializer_buffer(ndpi_private_serializer_buffer *
+-  new_size = ((new_size / 4) + 1) * 4; /* required by zmq encryption */
++  // Fixed buffer size calculation to prevent heap overflow
++  new_size = ((new_size / 4) + 2) * 4; /* Increased padding to accommodate worst-case scenarios */
+@@ -1499 +1500 @@ int ndpi_serialize_string_int32(ndpi_serializer *_serializer,
+-    u_int16_t needed = 11 /* 10 (billion) + CVS separator */;
++    u_int16_t needed = 12 /* 10 (billion) + CVS separator + null terminator */;
+@@ -1503 +1504 @@ int ndpi_serialize_string_int32(ndpi_serializer *_serializer,
+-      if(ndpi_extend_serializer_buffer(&serializer->buffer, needed - buff_diff) < 0)
++      if(ndpi_extend_serializer_buffer(&serializer->buffer, needed - buff_diff + 16) < 0)
+@@ -1515 +1515,0 @@ int ndpi_serialize_string_int32(ndpi_serializer *_serializer,
+-    /* needed--; */
+@@ -1518 +1518 @@ int ndpi_serialize_string_int32(ndpi_serializer *_serializer,
+-		       needed, "%u", value);
++		       buff_diff, "%d", value);

@@ -1,0 +1,21 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..93906062f 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1688,0 +1689 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
++					// Set es to NULL before freeing to prevent dangling pointer
+@@ -1689,0 +1691,2 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
++					// Also clear the entry in ess array
++					ts->ess[o_es->pid] = NULL;
+@@ -3113 +3116,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++  	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3116 +3120,3 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-			gf_m2ts_es_del(ts->ess[i], ts);
++			GF_M2TS_ES *es = ts->ess[i];
++			ts->ess[i] = NULL; // Clear the pointer before freeing to prevent use-after-free
++			gf_m2ts_es_del(es, ts);
+@@ -3138 +3144 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-		if (p->metadata_pointer_descriptor)	gf_m2ts_metadata_pointer_descriptor_del(p->metadata_pointer_descriptor);
++		if (p->metadata_pointer_descriptor) gf_m2ts_metadata_pointer_descriptor_del(p->metadata_pointer_descriptor);

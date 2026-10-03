@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..2c1e5b97710 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -894 +894 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
+-			if (Z_REFCOUNTED_P(zv)) {
++			if (Z_REFCOUNTED_P(zv) && p < end_ptr) {
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..29fab6179db 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -216,2 +216,4 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		}
+-		for (zend_long i = 0; i < intern->array.size; i++) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		}
++		zend_long elements_count = zend_hash_num_elements(ht);
++		for (zend_long i = 0; i < intern->array.size && i < elements_count; i++) {

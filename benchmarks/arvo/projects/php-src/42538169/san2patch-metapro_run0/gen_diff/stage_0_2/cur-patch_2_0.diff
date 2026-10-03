@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 6738674667e..6ad3e2f362e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -41150 +41150,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FE_RESET_R_SPEC_CV_HANDLER(ZEN
+-			ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..ee1390a2151 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -192,3 +192,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			if (object->handlers && object->handlers->free_obj) {
++				GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++				GC_SET_REFCOUNT(object, 1);
++				object->handlers->free_obj(object);
++			} else {
++				GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++			}

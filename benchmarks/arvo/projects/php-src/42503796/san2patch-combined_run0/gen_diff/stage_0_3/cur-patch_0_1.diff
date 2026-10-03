@@ -1,0 +1,47 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..c76e5f87cff 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,9 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+-#endif
+-
+@@ -1154,0 +1146 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (!p) return 0;
+@@ -1158,0 +1151 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
++	if (!p) return 0;
+@@ -1163,0 +1157 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (!p) return 0;
+@@ -1167,0 +1162,6 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (!p) return 0;
++	ZEND_RC_MOD_CHECK(p);
++	return --(p->refcount);
++}}
++
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..3739965625d 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -58975,5 +58975,10 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
+-	i_init_code_execute_data(execute_data, op_array, return_value);
+-	ZEND_OBSERVER_FCALL_BEGIN(execute_data);
+-	zend_execute_ex(execute_data);
+-	/* Observer end handlers are called from ZEND_RETURN */
+-	zend_vm_stack_free_call_frame(execute_data);
++	/* Fix for CWE-416: Use After Free - ensure proper reference counting before execution */
++	if (execute_data != NULL) {
++		i_init_code_execute_data(execute_data, op_array, return_value);
++		ZEND_OBSERVER_FCALL_BEGIN(execute_data);
++		zend_execute_ex(execute_data);
++		/* Observer end handlers are called from ZEND_RETURN */
++		zend_vm_stack_free_call_frame(execute_data);
++	} else {
++		zend_vm_stack_free_call_frame(execute_data);
++	}

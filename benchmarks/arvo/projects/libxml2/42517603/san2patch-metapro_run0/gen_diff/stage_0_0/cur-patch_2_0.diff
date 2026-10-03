@@ -1,0 +1,32 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..1c959779 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2054,0 +2055,5 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++    /* Validate that the current node is still valid before proceeding */
++    if (cur->doc == NULL) {
++        return(-1);
++    }
++
+@@ -2129 +2134,6 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	    xmlAddPrevSibling(end, cur);
++	    /* Check if the node being added is still valid */
++            if (cur->doc != NULL) {
++                xmlAddPrevSibling(end, cur);
++            } else {
++                xmlFreeNode(cur);
++            }
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..b02a0cca 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1364 +1364 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
+@@ -1365,0 +1366,6 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
++		/* Add safety check before freeing node */
++		if (reader->ctxt != NULL && reader->ctxt->freeNodeFunc != NULL) {
++		    reader->ctxt->freeNodeFunc(reader->ctxt->_private, tmp);
++		} else {
++		    xmlFreeNode(tmp);
++		}

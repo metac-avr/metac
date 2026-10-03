@@ -1,0 +1,24 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..247a5f64b 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1245,0 +1246 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
++     if (gc->state != MRB_GC_STATE_SWEEP) break;
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..d2c7630f9 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -238 +238,2 @@ static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+@@ -240 +241,8 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (!mrb_nil_p(v) && mrb_ptr_p(v)) {
++    struct RBasic *obj = (struct RBasic*)mrb_ptr(v);
++    if (!(obj->tt == MRB_TT_FREE)) {
++      mrb_gc_mark_value(mrb, v);
++    }
++  } else {
++    mrb_gc_mark_value(mrb, v);
++  }

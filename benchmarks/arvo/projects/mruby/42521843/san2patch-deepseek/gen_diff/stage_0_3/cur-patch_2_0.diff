@@ -1,0 +1,53 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..b6c54783d 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -1788,13 +1788,22 @@ mrb_method_search_vm(mrb_state *mrb, struct RClass **cp, mrb_sym mid)
+-      mrb_sym ret = mt_get(mrb, h, mid, &ptr);
+-      if (ret) {
+-        if (ptr.proc == 0) break;
+-        *cp = c;
+-        if (ret & MT_FUNC_P) {
+-          MRB_METHOD_FROM_FUNC(m, ptr.func);
+-        }
+-        else {
+-          MRB_METHOD_FROM_PROC(m, ptr.proc);
+-        }
+-        if (ret & MT_NOARG_P) {
+-          MRB_METHOD_NOARG_SET(m);
+-        }
++      mrb_sym ret;
++#ifndef MRB_NO_METHOD_CACHE
++      if (mc && (mc->c != c || mc->mid != mid || !mrb_method_cache_valid(mc))) {
++        mc->c = NULL;
++        mc->mid = 0;
++        h = NULL;
++      }
++#endif
++      if (h) {
++        ret = mt_get(mrb, h, mid, &ptr);
++        if (ret) {
++          if (ptr.proc == 0) break;
++          *cp = c;
++          if (ret & MT_FUNC_P) {
++            MRB_METHOD_FROM_FUNC(m, ptr.func);
++          }
++          else {
++            MRB_METHOD_FROM_PROC(m, ptr.proc);
++          }
++          if (ret & MT_NOARG_P) {
++            MRB_METHOD_NOARG_SET(m);
++          }
+@@ -1802,4 +1811,4 @@ mrb_method_search_vm(mrb_state *mrb, struct RClass **cp, mrb_sym mid)
+-        mc->c = oc;
+-        mc->c0 = c;
+-        mc->mid = mid;
+-        mc->m = m;
++          mc->c = oc;
++          mc->c0 = c;
++          mc->mid = mid;
++          mc->m = m;
+@@ -1807 +1816,2 @@ mrb_method_search_vm(mrb_state *mrb, struct RClass **cp, mrb_sym mid)
+-        return m;
++          return m;
++        }

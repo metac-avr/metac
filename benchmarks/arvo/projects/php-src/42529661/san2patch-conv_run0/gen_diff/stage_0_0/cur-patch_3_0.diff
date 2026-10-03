@@ -1,0 +1,23 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..f283c802209 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1529,0 +1530,9 @@ static void ZEND_FASTCALL zend_jit_assign_dim_helper(zval *object_ptr, zval *dim
++		
++		/* Validate array pointer before use to prevent use-after-free */
++		if (UNEXPECTED(!arr)) {
++			if (result) {
++				ZVAL_UNDEF(result);
++			}
++			return;
++		}
++		
+@@ -2495 +2504,7 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-		efree(HT_GET_DATA_ADDR(ht));
++		/* Clear data pointer to prevent UAF */
++		void *data_addr = HT_GET_DATA_ADDR(ht);
++		HT_SET_DATA_ADDR(ht, NULL);
++		efree(data_addr);
++	} else {
++		/* Ensure uninitialized arrays also clear their data addr */
++		HT_SET_DATA_ADDR(ht, NULL);

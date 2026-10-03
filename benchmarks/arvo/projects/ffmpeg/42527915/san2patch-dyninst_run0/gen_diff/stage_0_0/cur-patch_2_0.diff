@@ -1,0 +1,20 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..0699bfc1b3 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
++     } else {
+@@ -243,0 +244 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++            vlc->table = NULL;
+@@ -427 +428,2 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-416: Use After Free
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
+@@ -439,3 +441,3 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++        table[j].len = (single && single->table) ? single->table[j].len : 0;  // Conditional access with null checks
++        table[j].num = (single && single->table && single->table[j].len > 0) ? 1 : 0;
++        AV_WN16(table[j].val, (single && single->table) ? single->table[j].sym : 0);

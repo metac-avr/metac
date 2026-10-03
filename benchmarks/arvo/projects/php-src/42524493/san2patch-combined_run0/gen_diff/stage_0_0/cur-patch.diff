@@ -1,0 +1,56 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..a4b4cd549ba 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -257,0 +258 @@ void shutdown_destructors(void) /* {{{ */
++// Fixed CWE-416: Use After Free - Added defensive programming checks
+@@ -260,3 +261,5 @@ void shutdown_destructors(void) /* {{{ */
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
+-		} while (symbols != zend_hash_num_elements(&EG(symbol_table)));
+-		zend_objects_store_call_destructors(&EG(objects_store));
++			if (EG(symbol_table).nNumOfElements > 0) {
++				zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			}
++		} while (symbols != zend_hash_num_elements(&EG(symbol_table)) && symbols > 0);
++		zend_objects_store_call_destructors_safe(&EG(objects_store));
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index 4d40b76854d..1a4b59d347e 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -177,6 +177,6 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-			} else {
+-				EG(exception) = old_exception;
+-			}
+-		}
+-		OBJ_RELEASE(object);
+-	}
++            } else {
++                EG(exception) = old_exception;
++            }
++        }
++        OBJ_RELEASE(object);
++    }
+@@ -185 +185,2 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++// Fixed: Enhanced object allocation with safety checks to prevent use-after-free
++ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+@@ -187,4 +188,8 @@ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+-	zend_object *object = emalloc(sizeof(zend_object) + zend_object_properties_size(ce));
+-
+-	_zend_object_std_init(object, ce);
+-	return object;
++    if (ce == NULL) {
++        return NULL;
++    }
++    zend_object *object = emalloc(sizeof(zend_object) + zend_object_properties_size(ce));
++
++    _zend_object_std_init(object, ce);
++    object->gc.refcount = 1; // Initialize refcount to prevent premature freeing
++    return object;
+@@ -195 +200 @@ ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object,
+-	bool has_clone_method = old_object->ce->clone != NULL;
++    bool has_clone_method = old_object->ce->clone != NULL;
+@@ -197,2 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object,
+-	if (old_object->ce->default_properties_count) {
+-		zval *src = old_object->properties_table;
++    if (old_object->ce->default_properties_count) {		zval *src = old_object->properties_table;

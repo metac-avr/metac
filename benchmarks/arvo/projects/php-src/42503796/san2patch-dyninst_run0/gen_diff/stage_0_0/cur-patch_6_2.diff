@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..e99cc49efcf 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54420,0 +54421,5 @@ ZEND_API void execute_ex(zend_execute_data *ex)
++		/* Fixed CWE-416: Use After Free - Check if array is valid before handler execution */
++		if (UNEXPECTED(!OPLINE)) {
++			/* Handle null OPLINE to prevent accessing freed memory */
++			return;
++		}
+@@ -54421,0 +54427 @@ ZEND_API void execute_ex(zend_execute_data *ex)
++		/* Additional safety check after handler execution */
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..9f8f7364b4d 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1682,0 +1683,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Clear GC info before freeing to prevent UAF */
++	if (ht->u.flags & HASH_FLAG_HAS_ITERATORS) {
++		zend_hash_iterators_remove(ht);
++	}
++	if (ht->u.flags & HASH_FLAG_APPLY_MASK) {
++		zend_hash_apply_protection_end(ht);
++	}
+@@ -1684,2 +1691,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
+-	zend_hash_iterators_remove(ht);
++	/* Zero out critical fields to catch invalid accesses */
++	memset(ht, 0, sizeof(HashTable));
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1688,5 +1696,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-

@@ -1,0 +1,68 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..ca07d0b19 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,22 +2381 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
+-
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+-
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
+-
+-		  if(rc < 0) break;
+-		}
+-
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+-
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++processClientServerHello		    continue;
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 0b8674f38..4e21ac424 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -1367,34 +1367 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
+-void process_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-		 struct ndpi_flow_struct *flow,
+-		 const u_int8_t *crypto_data, uint32_t crypto_data_len)
+-{
+-  struct ndpi_packet_struct *packet = &ndpi_struct->packet;
+-
+-  /* Overwriting packet payload */
+-  u_int16_t p_len;
+-  const u_int8_t *p;
+-  p = packet->payload;
+-  p_len = packet->payload_packet_len;
+-  packet->payload = crypto_data;
+-  packet->payload_packet_len = crypto_data_len;
+-
+-  processClientServerHello(ndpi_struct, flow, flow->protos.tls_quic.quic_version);
+-  flow->protos.tls_quic.hello_processed = 1; /* Allow matching of custom categories */
+-
+-  /* Restore */
+-  packet->payload = p;
+-  packet->payload_packet_len = p_len;
+-
+-  /* ServerHello is not needed to sub-classified QUIC, so we ignore it:
+-     this way we lose JA3S and negotiated ciphers...
+-     Negotiated version is only present in the ServerHello message too, but
+-     fortunately, QUIC always uses TLS version 1.3 */
+-  flow->protos.tls_quic.ssl_version = 0x0304;
+-
+-  /* DNS-over-QUIC: ALPN is "doq" or "doq-XXX" (for drafts versions) */
+-  if(flow->protos.tls_quic.advertised_alpns &&
+-     strncmp(flow->protos.tls_quic.advertised_alpns, "doq", 3) == 0) {
+-    NDPI_LOG_DBG(ndpi_struct, "Found DOQ (ALPN: [%s])\n", flow->protos.tls_quic.advertised_alpns);
+-    ndpi_set_detected_protocol(ndpi_struct, flow, NDPI_PROTOCOL_DOH_DOT, NDPI_PROTOCOL_QUIC, NDPI_CONFIDENCE_DPI);
+-  }
+-}
++process_tls

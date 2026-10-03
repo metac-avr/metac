@@ -1,0 +1,25 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..81102ab68 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -109 +109 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Safe stack initialization to prevent expired pointer dereference */
+@@ -113 +113 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  /* Safe callinfo initialization to prevent expired pointer dereference */
+@@ -199 +199,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -200,0 +202,5 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    struct REnv *env = NULL;
++    /* Save current environment before stack extension */
++    if (mrb->c->ci->env) {
++      env = mrb->c->ci->env;
++    }
+@@ -201,0 +208,4 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    /* Restore environment references after realloc */
++    if (env && env->stack) {
++      mrb->c->ci->env = env;
++    }

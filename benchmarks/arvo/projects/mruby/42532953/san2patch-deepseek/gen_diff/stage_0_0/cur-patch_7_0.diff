@@ -1,0 +1,20 @@
+diff --git a/src/string.c b/src/string.c
+index e214ad4c2..81c17eb82 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1216,0 +1217 @@ str_convert_range(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen,
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -1219,4 +1220,9 @@ str_convert_range(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen,
+-        *beg = str_index_str(mrb, str, indx, 0);
+-        if (*beg < 0) { break; }
+-        *len = RSTRING_LEN(indx);
+-        return STR_BYTE_RANGE_CORRECTED;
++        {
++          mrb_int idx = str_index_str(mrb, str, indx, 0);
++          if (idx >= 0 && (mrb_int)RSTRING_LEN(indx) <= RSTRING_LEN(str) - idx) {
++            *beg = idx;
++            *len = RSTRING_LEN(indx);
++            return STR_BYTE_RANGE_CORRECTED;
++          }
++        }
++        break;

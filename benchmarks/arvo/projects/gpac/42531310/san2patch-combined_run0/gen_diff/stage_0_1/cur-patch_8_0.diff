@@ -1,0 +1,37 @@
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..02e068c68 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -148 +148,5 @@ GF_BitStream *gf_bs_new(const u8 *buffer, u64 BufferSize, u32 mode)
+-		break;
++		/* Initialize buffer boundary tracking to prevent heap overflow */
++		tmp->position = 0;
++		tmp->end = (buffer != NULL) ? BufferSize : 0;
++		tmp->size = tmp->end;
++ 		break;
+diff --git a/src/filters/reframe_av1.c b/src/filters/reframe_av1.c
+index 8309f74b1..77b16aa1e 100644
+--- a/src/filters/reframe_av1.c
++++ b/src/filters/reframe_av1.c
+@@ -1009,0 +1010,5 @@ GF_Err av1dmx_parse_av1(GF_Filter *filter, GF_AV1DmxCtx *ctx)
++			// Validate buffer bounds before parsing
++			if (ctx->bs) {
++				u64 available = gf_bs_available(ctx->bs);
++				if (available == 0) return GF_BUFFER_TOO_SMALL;
++			}
+@@ -1017,0 +1023,5 @@ GF_Err av1dmx_parse_av1(GF_Filter *filter, GF_AV1DmxCtx *ctx)
++			// Validate buffer bounds before parsing
++			if (ctx->bs) {
++				u64 available = gf_bs_available(ctx->bs);
++				if (available == 0) return GF_BUFFER_TOO_SMALL;
++			}
+@@ -1029,0 +1040,5 @@ GF_Err av1dmx_parse_av1(GF_Filter *filter, GF_AV1DmxCtx *ctx)
++			// Validate buffer bounds before parsing
++			if (ctx->bs) {
++				u64 available = gf_bs_available(ctx->bs);
++				if (available == 0) return GF_BUFFER_TOO_SMALL;
++			}
+@@ -1044 +1059,2 @@ GF_Err av1dmx_parse_av1(GF_Filter *filter, GF_AV1DmxCtx *ctx)
+-	if (e) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++  	if (e) {

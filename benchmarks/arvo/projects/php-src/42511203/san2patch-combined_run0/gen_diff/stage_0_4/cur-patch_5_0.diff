@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..8a7a124d6fb 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -155 +155,2 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			garbage = Z_COUNTED_P(variable_ptr);
++			
++garbage = Z_COUNTED_P(variable_ptr);
+@@ -162 +163,4 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-					gc_possible_root(garbage);
++					/* Additional safety check to prevent use-after-free */
++					if (garbage != NULL) {
++						gc_possible_root(garbage);
++					}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..e7911761ec1 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -570,0 +571,6 @@ static zend_never_inline ZEND_COLD zval *zend_wrong_assign_to_variable_reference
++	/* Ensure pointers are not dangling before proceeding */
++	if (variable_ptr == NULL || Z_TYPE_P(variable_ptr) == IS_UNDEF ||
++	    value_ptr == NULL || Z_TYPE_P(value_ptr) == IS_UNDEF) {
++		return &EG(uninitialized_zval);
++	}
++

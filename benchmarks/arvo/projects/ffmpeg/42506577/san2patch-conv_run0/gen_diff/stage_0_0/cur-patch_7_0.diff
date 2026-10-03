@@ -1,0 +1,172 @@
+diff --git a/libavcodec/faanidct.c b/libavcodec/faanidct.c
+index 3921f82dae..05b2947c32 100644
+--- a/libavcodec/faanidct.c
++++ b/libavcodec/faanidct.c
+@@ -59,4 +59,12 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-        s17= temp[1*x + i] + temp[7*x + i];
+-        d17= temp[1*x + i] - temp[7*x + i];
+-        s53= temp[5*x + i] + temp[3*x + i];
+-        d53= temp[5*x + i] - temp[3*x + i];
++        // Validate array indices before accessing temp array
++        int idx1 = 1*x + i;
++        int idx7 = 7*x + i;
++        int idx5 = 5*x + i;
++        int idx3 = 3*x + i;
++        
++        if (idx1 >= 0 && idx1 < 64 && idx7 >= 0 && idx7 < 64 &&
++            idx5 >= 0 && idx5 < 64 && idx3 >= 0 && idx3 < 64) {
++        s17= temp[idx1] + temp[idx7];
++        d17= temp[idx1] - temp[idx7];
++        s53= temp[idx5] + temp[idx3];
++        d53= temp[idx5] - temp[idx3];
+@@ -73,3 +81,12 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-
+-        s26 = temp[2*x + i] + temp[6*x + i];
+-        d26 = temp[2*x + i] - temp[6*x + i];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
++        // Validate array indices for second part
++        int idx2 = 2*x + i;
++        int idx6 = 6*x + i;
++        int idx0 = 0*x + i;
++        int idx4 = 4*x + i;
++        
++        if (idx2 >= 0 && idx2 < 64 && idx6 >= 0 && idx6 < 64 &&
++            idx0 >= 0 && idx0 < 64 && idx4 >= 0 && idx4 < 64) {
++        s26 = temp[idx2] + temp[idx6];
++        d26 = temp[idx2] - temp[idx6];
+@@ -79,2 +96,2 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-        s04= temp[0*x + i] + temp[4*x + i];
+-        d04= temp[0*x + i] - temp[4*x + i];
++        s04= temp[idx0] + temp[idx4];
++        d04= temp[idx0] - temp[idx4];
+@@ -88,8 +105,23 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-            temp[0*x + i]= os07 + od07;
+-            temp[7*x + i]= os07 - od07;
+-            temp[1*x + i]= os16 + od16;
+-            temp[6*x + i]= os16 - od16;
+-            temp[2*x + i]= os25 + od25;
+-            temp[5*x + i]= os25 - od25;
+-            temp[3*x + i]= os34 - od34;
+-            temp[4*x + i]= os34 + od34;
++            // Validate indices for temp array writes
++            int idx0t = 0*x + i;
++            int idx7t = 7*x + i;
++            int idx1t = 1*x + i;
++            int idx6t = 6*x + i;
++            int idx2t = 2*x + i;
++            int idx5t = 5*x + i;
++            int idx3t = 3*x + i;
++            int idx4t = 4*x + i;
++            
++            if (idx0t >= 0 && idx0t < 64 && idx7t >= 0 && idx7t < 64 &&
++                idx1t >= 0 && idx1t < 64 && idx6t >= 0 && idx6t < 64 &&
++                idx2t >= 0 && idx2t < 64 && idx5t >= 0 && idx5t < 64 &&
++                idx3t >= 0 && idx3t < 64 && idx4t >= 0 && idx4t < 64) {
++            temp[idx0t]= os07 + od07;
++            temp[idx7t]= os07 - od07;
++            temp[idx1t]= os16 + od16;
++            temp[idx6t]= os16 - od16;
++            temp[idx2t]= os25 + od25;
++            temp[idx5t]= os25 - od25;
++            temp[idx3t]= os34 - od34;
++            temp[idx4t]= os34 + od34;
++            }
+@@ -97,8 +129,23 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-            data[0*x + i]= lrintf(os07 + od07);
+-            data[7*x + i]= lrintf(os07 - od07);
+-            data[1*x + i]= lrintf(os16 + od16);
+-            data[6*x + i]= lrintf(os16 - od16);
+-            data[2*x + i]= lrintf(os25 + od25);
+-            data[5*x + i]= lrintf(os25 - od25);
+-            data[3*x + i]= lrintf(os34 - od34);
+-            data[4*x + i]= lrintf(os34 + od34);
++            // Validate indices for data array writes
++            int idx0d = 0*x + i;
++            int idx7d = 7*x + i;
++            int idx1d = 1*x + i;
++            int idx6d = 6*x + i;
++            int idx2d = 2*x + i;
++            int idx5d = 5*x + i;
++            int idx3d = 3*x + i;
++            int idx4d = 4*x + i;
++            
++            if (idx0d >= 0 && idx0d < 64 && idx7d >= 0 && idx7d < 64 &&
++                idx1d >= 0 && idx1d < 64 && idx6d >= 0 && idx6d < 64 &&
++                idx2d >= 0 && idx2d < 64 && idx5d >= 0 && idx5d < 64 &&
++                idx3d >= 0 && idx3d < 64 && idx4d >= 0 && idx4d < 64) {
++            data[idx0d]= lrintf(os07 + od07);
++            data[idx7d]= lrintf(os07 - od07);
++            data[idx1d]= lrintf(os16 + od16);
++            data[idx6d]= lrintf(os16 - od16);
++            data[idx2d]= lrintf(os25 + od25);
++            data[idx5d]= lrintf(os25 - od25);
++            data[idx3d]= lrintf(os34 - od34);
++            data[idx4d]= lrintf(os34 + od34);
++            }
+@@ -106,8 +153,23 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-            dest[0*stride + i]= av_clip_uint8(((int)dest[0*stride + i]) + lrintf(os07 + od07));
+-            dest[7*stride + i]= av_clip_uint8(((int)dest[7*stride + i]) + lrintf(os07 - od07));
+-            dest[1*stride + i]= av_clip_uint8(((int)dest[1*stride + i]) + lrintf(os16 + od16));
+-            dest[6*stride + i]= av_clip_uint8(((int)dest[6*stride + i]) + lrintf(os16 - od16));
+-            dest[2*stride + i]= av_clip_uint8(((int)dest[2*stride + i]) + lrintf(os25 + od25));
+-            dest[5*stride + i]= av_clip_uint8(((int)dest[5*stride + i]) + lrintf(os25 - od25));
+-            dest[3*stride + i]= av_clip_uint8(((int)dest[3*stride + i]) + lrintf(os34 - od34));
+-            dest[4*stride + i]= av_clip_uint8(((int)dest[4*stride + i]) + lrintf(os34 + od34));
++            // Validate indices for dest array writes
++            int idx0dest = 0*stride + i;
++            int idx7dest = 7*stride + i;
++            int idx1dest = 1*stride + i;
++            int idx6dest = 6*stride + i;
++            int idx2dest = 2*stride + i;
++            int idx5dest = 5*stride + i;
++            int idx3dest = 3*stride + i;
++            int idx4dest = 4*stride + i;
++            
++            if (idx0dest >= 0 && idx0dest < 64 && idx7dest >= 0 && idx7dest < 64 &&
++                idx1dest >= 0 && idx1dest < 64 && idx6dest >= 0 && idx6dest < 64 &&
++                idx2dest >= 0 && idx2dest < 64 && idx5dest >= 0 && idx5dest < 64 &&
++                idx3dest >= 0 && idx3dest < 64 && idx4dest >= 0 && idx4dest < 64) {
++            dest[idx0dest]= av_clip_uint8(((int)dest[idx0dest]) + lrintf(os07 + od07));
++            dest[idx7dest]= av_clip_uint8(((int)dest[idx7dest]) + lrintf(os07 - od07));
++            dest[idx1dest]= av_clip_uint8(((int)dest[idx1dest]) + lrintf(os16 + od16));
++            dest[idx6dest]= av_clip_uint8(((int)dest[idx6dest]) + lrintf(os16 - od16));
++            dest[idx2dest]= av_clip_uint8(((int)dest[idx2dest]) + lrintf(os25 + od25));
++            dest[idx5dest]= av_clip_uint8(((int)dest[idx5dest]) + lrintf(os25 - od25));
++            dest[idx3dest]= av_clip_uint8(((int)dest[idx3dest]) + lrintf(os34 - od34));
++            dest[idx4dest]= av_clip_uint8(((int)dest[idx4dest]) + lrintf(os34 + od34));
++            }
+@@ -115,8 +177,25 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-            dest[0*stride + i]= av_clip_uint8(lrintf(os07 + od07));
+-            dest[7*stride + i]= av_clip_uint8(lrintf(os07 - od07));
+-            dest[1*stride + i]= av_clip_uint8(lrintf(os16 + od16));
+-            dest[6*stride + i]= av_clip_uint8(lrintf(os16 - od16));
+-            dest[2*stride + i]= av_clip_uint8(lrintf(os25 + od25));
+-            dest[5*stride + i]= av_clip_uint8(lrintf(os25 - od25));
+-            dest[3*stride + i]= av_clip_uint8(lrintf(os34 - od34));
+-            dest[4*stride + i]= av_clip_uint8(lrintf(os34 + od34));
++            // Validate indices for dest array writes (type 3)
++            int idx0dest2 = 0*stride + i;
++            int idx7dest2 = 7*stride + i;
++            int idx1dest2 = 1*stride + i;
++            int idx6dest2 = 6*stride + i;
++            int idx2dest2 = 2*stride + i;
++            int idx5dest2 = 5*stride + i;
++            int idx3dest2 = 3*stride + i;
++            int idx4dest2 = 4*stride + i;
++            
++            if (idx0dest2 >= 0 && idx0dest2 < 64 && idx7dest2 >= 0 && idx7dest2 < 64 &&
++                idx1dest2 >= 0 && idx1dest2 < 64 && idx6dest2 >= 0 && idx6dest2 < 64 &&
++                idx2dest2 >= 0 && idx2dest2 < 64 && idx5dest2 >= 0 && idx5dest2 < 64 &&
++                idx3dest2 >= 0 && idx3dest2 < 64 && idx4dest2 >= 0 && idx4dest2 < 64) {
++            dest[idx0dest2]= av_clip_uint8(lrintf(os07 + od07));
++            dest[idx7dest2]= av_clip_uint8(lrintf(os07 - od07));
++            dest[idx1dest2]= av_clip_uint8(lrintf(os16 + od16));
++            dest[idx6dest2]= av_clip_uint8(lrintf(os16 - od16));
++            dest[idx2dest2]= av_clip_uint8(lrintf(os25 + od25));
++            dest[idx5dest2]= av_clip_uint8(lrintf(os25 - od25));
++            dest[idx3dest2]= av_clip_uint8(lrintf(os34 - od34));
++            dest[idx4dest2]= av_clip_uint8(lrintf(os34 + od34));
++            }
++        }
++        }

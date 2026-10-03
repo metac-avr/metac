@@ -1,0 +1,62 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..df2a15bca7b 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,15 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+-	/* IS_OBJECT       */ (zend_rc_dtor_func_t)zend_objects_store_del,
+-	/* IS_RESOURCE     */ (zend_rc_dtor_func_t)zend_list_free,
+-	/* IS_REFERENCE    */ (zend_rc_dtor_func_t)zend_reference_destroy,
+-	/* IS_CONSTANT_AST */ (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+@@ -63,6 +49,12 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++	if (Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (GC_IS_RECURSIVE(ref)) return;
++		if (!GC_DELREF(ref)) {
++			GC_SET_RECURSIVE(ref);
++			rc_dtor_func(ref);
++			GC_UNSET_RECURSIVE(ref);
++		} else {
++			gc_check_possible_root(ref);
++		}
++	}
++}}
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..a2e93667a53 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -39,10 +39,7 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
+-			gc_check_possible_root(ref);
+-		}
+-	}
++ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++// FIXME: Crash CWE-416: Use After Free
++ {
++	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++	if (GC_FLAGS(p) & GC_IMMUTABLE) return;
++	GC_SET_REFCOUNT(p, GC_REFCOUNT(p) | GC_IMMUTABLE);
++	zend_rc_dtor_func[GC_TYPE(p)](p);

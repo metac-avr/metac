@@ -1,0 +1,16 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..92b6e5864 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -269 +269,10 @@ char *ndpi_strdup(const char *s) {
+-  int len = strlen(s);
++  // Check for expired pointer before calling strlen
++  if (!s || (uintptr_t)s < 4096) {
++    return NULL;
++  }
++  
++  // Use safer strlen variant if available, or add basic memory validity check
++  int len;
++  __asm__ volatile("" : : "r"(s) : "memory");  // Compiler barrier
++  len = strlen(s);
++  

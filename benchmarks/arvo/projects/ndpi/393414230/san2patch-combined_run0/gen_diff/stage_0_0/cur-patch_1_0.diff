@@ -1,0 +1,73 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index fd79a63e1..deaf618bd 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -6750,2 +6750,3 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-       flow_is_proto(flow, NDPI_PROTOCOL_FTPS)) {
+-      if(flow->protos.tls_quic.server_names)
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++        flow_is_proto(flow, NDPI_PROTOCOL_FTPS)) {
++      if(flow->protos.tls_quic.server_names && flow->protos.tls_quic.server_names != NULL)
+@@ -6754 +6755 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.advertised_alpns)
++      if(flow->protos.tls_quic.advertised_alpns && flow->protos.tls_quic.advertised_alpns != NULL)
+@@ -6757 +6758 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.negotiated_alpn)
++      if(flow->protos.tls_quic.negotiated_alpn && flow->protos.tls_quic.negotiated_alpn != NULL)
+@@ -6760 +6761 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.tls_supported_versions)
++      if(flow->protos.tls_quic.tls_supported_versions && flow->protos.tls_quic.tls_supported_versions != NULL)
+@@ -6763 +6764 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.issuerDN)
++      if(flow->protos.tls_quic.issuerDN && flow->protos.tls_quic.issuerDN != NULL)
+@@ -6766 +6767 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.subjectDN)
++      if(flow->protos.tls_quic.subjectDN && flow->protos.tls_quic.subjectDN != NULL)
+@@ -6769 +6770 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.ja4_client_raw)
++      if(flow->protos.tls_quic.ja4_client_raw && flow->protos.tls_quic.ja4_client_raw != NULL)
+diff --git a/src/lib/ndpi_memory.c b/src/lib/ndpi_memory.c
+index f9df7acc6..06283b491 100644
+--- a/src/lib/ndpi_memory.c
++++ b/src/lib/ndpi_memory.c
+@@ -81 +81,11 @@ void ndpi_free(void *ptr) {
+-    if(ptr)
++    if(ptr) {
++      // Double-free protection: check if pointer appears valid
++      static void *freed_ptrs[1024];
++      static int freed_count = 0;
++      int i;
++      
++      // Check if already freed
++      for(i = 0; i < freed_count && i < 1024; i++) {
++        if(freed_ptrs[i] == ptr) return; // Already freed
++      }
++      
+@@ -83,2 +93,18 @@ void ndpi_free(void *ptr) {
+-  } else {
+-    if(ptr)
++      
++      // Track freed pointer
++      if(freed_count < 1024) {
++        freed_ptrs[freed_count++] = ptr;
++      }
++    }
++   } else {
++    if(ptr) {
++      // Same double-free protection for system free
++      static void *freed_ptrs[1024];
++      static int freed_count = 0;
++      int i;
++      
++      // Check if already freed
++      for(i = 0; i < freed_count && i < 1024; i++) {
++        if(freed_ptrs[i] == ptr) return; // Already freed
++      }
++      
+@@ -85,0 +112,6 @@ void ndpi_free(void *ptr) {
++      
++      // Track freed pointer
++      if(freed_count < 1024) {
++        freed_ptrs[freed_count++] = ptr;
++      }
++    }

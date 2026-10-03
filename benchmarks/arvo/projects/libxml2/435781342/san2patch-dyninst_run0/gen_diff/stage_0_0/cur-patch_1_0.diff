@@ -1,0 +1,41 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..7e08c6a2 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2089 +2089,3 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-	    xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);
++// FIXME: Crash CWE-416: Use After Free
++ 	    if (ret && ctxt && ctxt->myDoc)
++	        xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);
+@@ -2091 +2093,4 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-            int res = xmlIsID(ctxt->myDoc, ctxt->node, ret);
++            int res = 0;
++            if (ret && ctxt && ctxt->myDoc && ctxt->node) {
++                res = xmlIsID(ctxt->myDoc, ctxt->node, ret);
++            }
+@@ -2097 +2102 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-            else if (xmlIsRef(ctxt->myDoc, ctxt->node, ret))
++            else if (ret && ctxt && ctxt->myDoc && ctxt->node && xmlIsRef(ctxt->myDoc, ctxt->node, ret))
+@@ -2263 +2268,2 @@ xmlSAX2StartElementNs(void *ctx,
+-    if (nodePush(ctxt, ret) < 0) {
++// FIXME: Crash CWE-416: Use After Free
++     if (nodePush(ctxt, ret) < 0) {
+@@ -2276 +2282,17 @@ xmlSAX2StartElementNs(void *ctx,
+-    /*
++    /* 
++     * Ensure node and its namespace definitions are valid before proceeding
++     */
++    if (ret == NULL) return;
++    if (ret->nsDef != NULL) {
++        /* Perform validation check to prevent use-after-free */
++        xmlNsPtr current_ns = ret->nsDef;
++        while (current_ns != NULL) {
++            /* Add basic sanity check for namespace node */
++            if (current_ns > (xmlNsPtr)0x1000) {  /* Basic validity check */
++                current_ns = current_ns->next;
++            } else {
++                current_ns = NULL;
++                break;
++            }
++        }
++    }    /*

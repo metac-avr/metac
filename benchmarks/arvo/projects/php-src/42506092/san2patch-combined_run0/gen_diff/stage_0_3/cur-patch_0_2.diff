@@ -1,0 +1,28 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..1c88a92bdd6 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -755,0 +756,6 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
++static zend_never_inline zval* zend_jit_hash_load_dim(zend_jit_addr ht, zend_long hval, zval *dim, zval *retval)
++{
++	zend_string *offset_key;
++
++	offset_key = zval_try_get_string(dim);
++	if (UNEXPECTED(!offset_key)) {
+@@ -758 +764,5 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	return zend_hash_lookup(ht, offset_key);
++	if (ht && GC_REFCOUNTED((zend_refcounted_h*)ht) && GC_DELREF((zend_refcounted_h*)ht) >= 0) {
++		return zend_hash_lookup((HashTable*)ht, offset_key);
++	} else {
++		return NULL;
++	}
+@@ -761 +771 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
++	ZEND_HASH_INDEX_LOOKUP((HashTable*)ht, hval, retval);
+@@ -763,5 +773 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
+-{
+-	zend_long offset;
++}	zend_long offset;

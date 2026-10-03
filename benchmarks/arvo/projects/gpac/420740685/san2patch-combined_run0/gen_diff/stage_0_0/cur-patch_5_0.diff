@@ -1,0 +1,58 @@
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..b076f6d31 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -403,22 +403,22 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-	opid = NULL;
+-	for (i=0; i<gf_filter_get_opid_count(ctx->filter); i++) {
+-		opid = gf_filter_get_opid(ctx->filter, i);
+-		const GF_PropertyValue *p = gf_filter_pid_get_property(opid, GF_PROP_PID_ID);
+-		if (p && (p->value.uint == stream->pid))
+-			break;
+-		opid = NULL;
+-	}
+-
+-	if (!opid)
+-		opid = gf_filter_pid_new(ctx->filter);
+-
+-	stream->user = opid;
+-	stream->flags |= GF_M2TS_ES_ALREADY_DECLARED;
+-
+-	u32 d_type = orig_stype ? orig_stype : stype;
+-	switch (d_type) {
+-	case GF_STREAM_AUDIO:
+-	case GF_STREAM_VISUAL:
+-		stream->flags |= GF_M2TS_CHECK_DISC;
+-		break;
+-	default:
++ opid = NULL;
++ for (i=0; i<gf_filter_get_opid_count(ctx->filter); i++) {
++ 	opid = gf_filter_get_opid(ctx->filter, i);
++ 	const GF_PropertyValue *p = gf_filter_pid_get_property(opid, GF_PROP_PID_ID);
++ 	if (p && (p->value.uint == stream->pid))
++ 		break;
++ 	opid = NULL;
++ }
++ /* Fixed: Crash CWE-125: Out-of-bounds Read - Added bounds check */
++ 
++ 	if (!opid)
++ 		opid = gf_filter_pid_new(ctx->filter);
++ 
++ stream->user = opid;
++ stream->flags |= GF_M2TS_ES_ALREADY_DECLARED;
++ 
++ u32 d_type = orig_stype ? orig_stype : stype;
++ switch (d_type) {
++ case GF_STREAM_AUDIO:
++ case GF_STREAM_VISUAL:
++ 	stream->flags |= GF_M2TS_CHECK_DISC;
++ 	break;	default:
+@@ -522,2 +522,6 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-		memcpy(szLang, stream->sub.language, 3);
+-		szLang[3]=0;
++		if (stream && stream->sub.language) {
++			memcpy(szLang, stream->sub.language, 3);
++			szLang[3]=0;
++		} else {
++			szLang[0] = szLang[1] = szLang[2] = ' '; szLang[3] = 0;
++		}

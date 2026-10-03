@@ -1,0 +1,82 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..e687424d 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270,20 +4270,30 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
+-
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree.
+-             *
+-             * TODO: Searching the original tree seems unnecessary. We
+-             * already have a namespace URI.
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
+-
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-            } else {
+-                ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++         xmlNsPtr ns;
++
++	/* Validate namespace pointer before use to prevent use-after-free */
++	if (node->ns != NULL && (node->ns->type == XML_LOCAL_NAMESPACE || node->ns->type == XML_GLOBAL_NAMESPACE)) {
++	    ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	    if (ns == NULL) {
++	        /*
++	         * Humm, we are copying an element whose namespace is defined
++	         * out of the new tree scope. Search it in the original tree
++	         * and add it at the top of the new tree.
++                 *
++                 * TODO: Searching the original tree seems unnecessary. We
++                 * already have a namespace URI.
++	         */
++	        ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	        if (ns != NULL) {
++	            xmlNodePtr root = ret;
++
++		    while (root->parent != NULL) root = root->parent;
++		    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                } else {
++                    ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	        }
++                if (ret->ns == NULL)
++                    goto error;
++	    } else {
++	        /*
++	         * reference the existing namespace definition in our own tree.
++	         */
++	        ret->ns = ns;
+@@ -4291,2 +4300,0 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-            if (ret->ns == NULL)
+-                goto error;
+@@ -4294,4 +4302,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
++	    /* Prevent access to potentially freed namespace */
++	    ret->ns = NULL;
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..582a294b 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -402,3 +402,9 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	 (cur->type == XML_XINCLUDE_END)) &&
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++// FIXME: Crash CWE-416: Use After Free
++ 	 (cur->type == XML_XINCLUDE_END)) &&
++	(cur->nsDef != NULL)) {
++        /* Set namespace definitions to NULL before freeing to prevent use-after-free */
++        xmlNsPtr ns_temp = cur->nsDef;
++        cur->_private = NULL;  /* Mark as potentially referenced */
++        cur->nsDef = NULL;
++        xmlFreeNsList(ns_temp);
++    }

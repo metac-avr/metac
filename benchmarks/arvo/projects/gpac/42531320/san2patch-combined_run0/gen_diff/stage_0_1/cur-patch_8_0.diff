@@ -1,0 +1,28 @@
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..3086a4d77 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -538,0 +539 @@ u8 gf_bs_read_bit(GF_BitStream *bs)
++		if (bs->current == 0 && bs->position > bs->size) return 0;
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..bb375c6db 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -3236 +3236,2 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			u32 hdr_size = 0;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 			u32 hdr_size = 0;
+@@ -3237,0 +3239 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
++			if (data == NULL) break; // Null pointer check
+@@ -3240 +3242 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			if (obu_size > size) {
++			if (obu_size > size || obu_size == 0) {
+@@ -3244,3 +3246,5 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			data += obu_size;
+-			size -= (u32)obu_size;
+-			idx++;
++			if (obu_size > 0) { // Prevent negative/zero increment
++				data += obu_size;
++				size -= (u32)obu_size;
++				idx++;
++			}

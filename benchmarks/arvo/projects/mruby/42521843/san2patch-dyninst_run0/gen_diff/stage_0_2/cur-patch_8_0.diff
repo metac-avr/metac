@@ -1,0 +1,32 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..65fc27ea1 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -159,2 +160,5 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-        *pp = vals[pos];
+-        return key;
++        if (mrb && vals[pos].func) {  /* Null check for mrb state and pointer */
++          *pp = vals[pos];
++          return key;
++        }
++        return 0;  /* Return 0 for null checks */
+@@ -169 +173,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      *pp = vals[pos];
++      if (mrb && vals[pos].func) {  /* Null check for mrb state and pointer */
++        *pp = vals[pos];
+@@ -171,3 +176,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      if (pos < 0x100) {
+-        mt_cache[cpos] = pos;
+-      }
++        if (pos < 0x100) {
++          mt_cache[cpos] = pos;
++        }
+@@ -175 +180,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      return key;
++        return key;
++      }
++      return 0;  /* Return 0 for null checks */

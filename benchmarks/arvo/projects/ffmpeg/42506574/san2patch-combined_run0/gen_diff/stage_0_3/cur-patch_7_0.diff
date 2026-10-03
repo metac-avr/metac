@@ -1,0 +1,28 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..33a4c09234 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -2561,2 +2561,4 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
+-                s->progressive && s->cur_scan && s->got_picture)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
++                s->progressive && s->cur_scan && s->got_picture &&
++                s->picture_ptr && s->picture_ptr->data[0])  // Validate picture data exists
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..f125e447d3 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -656 +656 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    }
++     }
+@@ -704,0 +705,9 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
++    /* Bounds checking to prevent buffer overflow */
++    if ((int64_t)dst_x + w > (int64_t)frame->width || 
++        (int64_t)dst_y + h > (int64_t)frame->height ||
++        dst_x < 0 || dst_y < 0 || w <= 0 || h <= 0) {
++        av_log(avctx, AV_LOG_ERROR, "Buffer bounds check failed for JPEG tile\n");
++        av_frame_unref(s->jpgframe);
++        return AVERROR_INVALIDDATA;
++    }
++

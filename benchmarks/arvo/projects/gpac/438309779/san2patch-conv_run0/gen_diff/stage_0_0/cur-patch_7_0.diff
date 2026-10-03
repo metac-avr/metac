@@ -1,0 +1,21 @@
+diff --git a/src/filters/reframe_ac4.c b/src/filters/reframe_ac4.c
+index e86b40a57..78ed43f8b 100644
+--- a/src/filters/reframe_ac4.c
++++ b/src/filters/reframe_ac4.c
+@@ -386 +386,7 @@ GF_Err ac4dmx_process(GF_Filter *filter)
+-		u32 sync_pos, bytes_to_drop=0;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		u32 sync_pos, bytes_to_drop=0;
++
++		// Check if context and bitstream are valid before parsing
++		if (ctx == NULL || ctx->bs == NULL) {
++			return GF_BAD_PARAM;
++		}
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index be826527f..60d50f1bf 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -15955 +15955,2 @@ static Bool gf_ac4_raw_frame(GF_BitStream *bs, GF_AC4Config* hdr, Bool full_pars
+-			default_presentation_flag = gf_ac4_is_substream_group_part_of_default_presentation(hdr_p_list, i);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++			default_presentation_flag = (hdr_p_list != NULL) ? gf_ac4_is_substream_group_part_of_default_presentation(hdr_p_list, i) : GF_FALSE;

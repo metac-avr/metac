@@ -1,0 +1,41 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..f0ed4382 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2146,0 +2147 @@ xmlXIncludeLoadNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++		(children->ns->href != NULL) &&
+@@ -2148 +2149,2 @@ xmlXIncludeLoadNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		((xmlStrEqual(children->ns->href, XINCLUDE_NS)) ||
++// FIXME: Crash CWE-416: Use After Free
++ 		((xmlStrEqual(children->ns->href, XINCLUDE_NS)) ||
+diff --git a/tree.c b/tree.c
+index 8077348a..ed612792 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699,12 +3699,14 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
+-	return;
+-    }
+-    if (cur->doc != NULL) dict = cur->doc->dict;
+-    while (1) {
+-        while ((cur->children != NULL) &&
+-               (cur->type != XML_DOCUMENT_NODE) &&
+-               (cur->type != XML_HTML_DOCUMENT_NODE) &&
+-               (cur->type != XML_DTD_NODE) &&
+-               (cur->type != XML_ENTITY_REF_NODE)) {
+-            cur = cur->children;
+-            depth += 1;
++    xmlFreeNsList((xmlNsPtr) cur);
++    return;
++}
++// Fixed: Added defensive check for cur pointer validity
++if (!cur) return;
++// Ensure cur is not a dangling pointer by validating doc reference
++if (cur->doc != NULL) dict = cur->doc->dict;
++while (1) {
++    while ((cur->children != NULL) &&
++           (cur->type != XML_DOCUMENT_NODE) &&
++           (cur->type != XML_HTML_DOCUMENT_NODE) &&
++           (cur->type != XML_DTD_NODE) &&
++           (cur->type != XML_ENTITY_REF_NODE)) {
++        cur = cur->children;            depth += 1;

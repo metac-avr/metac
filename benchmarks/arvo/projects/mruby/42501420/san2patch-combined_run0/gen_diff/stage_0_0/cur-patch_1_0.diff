@@ -1,0 +1,32 @@
+diff --git a/src/array.c b/src/array.c
+index fc3b0a087..a5f84f8c5 100644
+--- a/src/array.c
++++ b/src/array.c
+@@ -804 +804,3 @@ mrb_ary_splice(mrb_state *mrb, mrb_value ary, mrb_int head, mrb_int len, mrb_val
+-      value_move(ptr + head + argc, ptr + tail, alen - tail);
++      if (alen > tail) {
++        value_move(ptr + head + argc, ptr + tail, alen - tail);
++      }
+@@ -975,0 +978 @@ mrb_ary_aset(mrb_state *mrb, mrb_value self)
++  mrb_int ary_len;
+@@ -983 +986,2 @@ mrb_ary_aset(mrb_state *mrb, mrb_value self)
+-    switch (mrb_range_beg_len(mrb, v1, &i, &len, RARRAY_LEN(self), FALSE)) {
++    ary_len = RARRAY_LEN(self);
++    switch (mrb_range_beg_len(mrb, v1, &i, &len, ary_len, FALSE)) {
+@@ -988 +992,5 @@ mrb_ary_aset(mrb_state *mrb, mrb_value self)
+-      mrb_ary_splice(mrb, self, i, len, v2);
++      if (i >= 0 && len >= 0 && i <= ary_len && i + len <= ary_len) {
++        mrb_ary_splice(mrb, self, i, len, v2);
++      } else {
++        mrb_raisef(mrb, E_RANGE_ERROR, "%v out of range", v1);
++      }
+@@ -999 +1007,8 @@ mrb_ary_aset(mrb_state *mrb, mrb_value self)
+-  mrb_ary_splice(mrb, self, aget_index(mrb, v1), aget_index(mrb, v2), v3);
++  mrb_int beg = aget_index(mrb, v1);
++  mrb_int slen = aget_index(mrb, v2);
++  ary_len = RARRAY_LEN(self);
++  if (beg >= 0 && slen >= 0 && beg <= ary_len && beg + slen <= ary_len) {
++    mrb_ary_splice(mrb, self, beg, slen, v3);
++  } else {
++    mrb_raisef(mrb, E_RANGE_ERROR, "index out of range");
++  }

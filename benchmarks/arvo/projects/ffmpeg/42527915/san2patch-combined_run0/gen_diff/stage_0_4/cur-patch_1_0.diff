@@ -1,0 +1,33 @@
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..428d5b3b91 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -89 +89,2 @@ static int huff_build(const uint8_t len[], uint16_t codes_pos[33],
+-    ff_free_vlc(vlc);
++// FIXME: Crash CWE-416: Use After Free
++     ff_free_vlc(vlc);
+@@ -90,0 +92,2 @@ static int huff_build(const uint8_t len[], uint16_t codes_pos[33],
++    if (vlc) vlc->table = NULL;
++    if (multi) multi->tables = NULL;
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..e8000eb34d 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -427 +427,2 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-416: Use After Free
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
+@@ -438,4 +439,9 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    for (int j = 0; j < 1<<numbits; j++) {
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++    if (single && single->table) {
++        for (int j = 0; j < 1<<numbits; j++) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        }
++    } else {
++        memset(table, 0, (1<<numbits) * sizeof(*table));
++        return AVERROR(EINVAL);

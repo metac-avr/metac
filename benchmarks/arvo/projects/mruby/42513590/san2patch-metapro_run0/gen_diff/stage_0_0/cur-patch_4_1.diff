@@ -1,0 +1,38 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..86afd750e 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -741,2 +741,2 @@ mpz_get_str(mrb_state *mrb, char *s, mrb_int sz, mrb_int base, mpz_t *x)
+-static int
+-mpz_get_int(mpz_t *y, mrb_int *v)
++static void
++mpz_xor(mrb_state *mrb, mpz_t *z, mpz_t *x, mpz_t *y)  /* not the most efficient way to do this */
+@@ -744,14 +744,12 @@ mpz_get_int(mpz_t *y, mrb_int *v)
+-  mp_limb i;
+-
+-  if (y->sn == 0) {
+-    i = 0;
+-  }
+-  else if (digits(y) > 2 || y->p[1] > 1) {
+-    return FALSE;
+-  }
+-  else {
+-    i = (y->sn * (y->p[0] | (y->p[1] & 1) << DIGITBITS));
+-    if (MRB_INT_MAX < i || i < MRB_INT_MIN) return FALSE;
+-  }
+-  *v = i;
+-  return TRUE;
++  size_t i,sz;
++  sz = imax(x->sz, y->sz);
++  mpz_realloc(mrb,z,(size_t)sz);
++  for (i=0; i < sz; i++)
++    (z->p)[i] = dg(x,i) ^ dg(y,i);
++  if ((x->sn <= 0 && y->sn > 0) || (x->sn > 0 && y->sn <=0))
++    z->sn = (-1);
++  else
++    z->sn = 1;
++  if (uzero(z))
++    z->sn = 0;
++  if (z->sz > 1) bint_norm(mrb, z);
+@@ -870,0 +869 @@ mpz_xor(mrb_state *mrb, mpz_t *z, mpz_t *x, mpz_t *y)  /* not the most efficient
++  if (z->sz > 1) bint_norm(mrb, z);

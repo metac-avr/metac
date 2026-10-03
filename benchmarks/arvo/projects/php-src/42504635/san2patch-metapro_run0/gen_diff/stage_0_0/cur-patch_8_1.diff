@@ -1,0 +1,54 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..a13c62b1395 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1750,4 +1750,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-			do {
+-				i_zval_ptr_dtor(zv);
+-			} while (++zv != end);
++// FIXME: Crash CWE-416: Use After Free
++ 
++			for (; zv != end; zv++) {
++				if (zv && Z_TYPE_P(zv) != IS_UNDEF) {
++					i_zval_ptr_dtor(zv);
++				}
++			}
+@@ -1759,3 +1762,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
+-					i_zval_ptr_dtor(&p->val);
+-				} while (++p != end);
++				for (; p != end; p++) {
++					if (Z_TYPE(p->val) != IS_UNDEF) {
++						i_zval_ptr_dtor(&p->val);
++					}
++				}
+@@ -1763,4 +1768,6 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
+-					i_zval_ptr_dtor(&p->val);
+-					if (EXPECTED(p->key)) {
+-						zend_string_release_ex(p->key, 0);
++				for (; p != end; p++) {
++					if (Z_TYPE(p->val) != IS_UNDEF) {
++						i_zval_ptr_dtor(&p->val);
++						if (EXPECTED(p->key)) {
++							zend_string_release_ex(p->key, 0);
++						}
+@@ -1768 +1775 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				} while (++p != end);
++				}
+@@ -1770 +1777 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
++				for (; p != end; p++) {
+@@ -1777 +1784 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				} while (++p != end);
++				}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..df2fb2adec9 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55 +55,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
++	if (!p) return;

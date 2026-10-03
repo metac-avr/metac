@@ -1,0 +1,24 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..153eca114 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -200 +200,3 @@ static u32 inspect_get_nal_size(char *ptr, u32 nalh_size)
+-	while (v) {
++	if (v == 0)
++		return 0;
++	do {
+@@ -205 +207 @@ static u32 inspect_get_nal_size(char *ptr, u32 nalh_size)
+-	}
++	} while (v);
+@@ -3220 +3222 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			if (pctx->nalu_size_length + nal_size > size) {
++			if (nal_size > size - pctx->nalu_size_length) {
+@@ -3229 +3231,7 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			size -= nal_size + pctx->nalu_size_length;
++			size -= pctx->nalu_size_length;
++			if (nal_size <= size)
++				size -= nal_size;
++			else {
++				size = 0;
++				break;
++			}

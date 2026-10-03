@@ -1,0 +1,21 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index a3c47f69..c310d3a8 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3775,3 +3775,13 @@ htmlParseAttribute(htmlParserCtxtPtr ctxt, xmlChar **value) {
+-        NEXT;
+-	SKIP_BLANKS;
+-	val = htmlParseAttValue(ctxt);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++        if ((ctxt->input != NULL) && (ctxt->input->cur != NULL) &&
++            (ctxt->input->base != NULL) && 
++            ((ctxt->input->cur - ctxt->input->base) >= 0) &&
++            ((size_t)(ctxt->input->cur - ctxt->input->base) < ctxt->input->length)) {
++             NEXT;
++	    SKIP_BLANKS;
++	    val = htmlParseAttValue(ctxt);
++        } else {
++            htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++                         "buffer boundary check failed\n", NULL, NULL);
++            return(NULL);
++        }

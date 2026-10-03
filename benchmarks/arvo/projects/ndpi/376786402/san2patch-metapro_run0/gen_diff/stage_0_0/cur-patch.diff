@@ -1,0 +1,49 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..49ee3de68 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1031 +1031 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-			     "Basic", packet->authorization_line.len))
++		     "Basic", packet->authorization_line.len))
+@@ -1033 +1033 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-				"Digest", packet->authorization_line.len))) {
++			"Digest", packet->authorization_line.len))) {
+@@ -1037,12 +1037,14 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-					   packet->authorization_line.len - len, &content_len);
+-
+-      if(content != NULL) {
+-	char *double_dot = strchr((char*)content, ':');
+-
+-	if(double_dot) {
+-	  double_dot[0] = '\0';
+-	  flow->http.username = ndpi_strdup((char*)content);
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
+-	}
+-	
+-	ndpi_free(content);
++				   packet->authorization_line.len - len, &content_len);
++ 
++      if(content != NULL && content_len > 0) {
++        // Add bounds checking before string operations
++        if(content_len <= 63) {
++          char *double_dot = strchr((char*)content, ':');
++
++          if(double_dot) {
++            double_dot[0] = '\0';
++            flow->http.username = ndpi_strdup((char*)content);
++            flow->http.password = ndpi_strdup(&double_dot[1]);
++          }
++        }
++        ndpi_free(content);
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..64cf44bac 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -956 +956 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++ 
+@@ -958 +958 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-  pos = out = ndpi_malloc(olen);
++  pos = out = ndpi_malloc(olen + 1); // Allocate extra byte for null termination
+@@ -960,0 +961 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++  out[olen] = '\0'; // Pre-null-terminate to prevent out-of-bounds access

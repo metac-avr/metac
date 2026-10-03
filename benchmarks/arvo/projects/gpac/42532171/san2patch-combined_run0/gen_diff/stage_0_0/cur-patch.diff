@@ -1,0 +1,22 @@
+diff --git a/src/filters/reframe_mpgvid.c b/src/filters/reframe_mpgvid.c
+index 29e961a07..28f6cebe9 100644
+--- a/src/filters/reframe_mpgvid.c
++++ b/src/filters/reframe_mpgvid.c
+@@ -739 +739,7 @@ GF_Err mpgviddmx_process(GF_Filter *filter)
+-			memcpy(ctx->hdr_store + ctx->bytes_in_header, start, MIN_HDR_STORE - ctx->bytes_in_header);
++			// Prevent overlapping memory copy by validating bounds
++			if (ctx->bytes_in_header < MIN_HDR_STORE) {
++				size_t remaining_bytes = MIN_HDR_STORE - ctx->bytes_in_header;
++				if (remaining_bytes > 0) {
++					memcpy(ctx->hdr_store + ctx->bytes_in_header, start, remaining_bytes);
++				}
++			}
+@@ -752 +758,7 @@ GF_Err mpgviddmx_process(GF_Filter *filter)
+-					memcpy(pck_data, ctx->hdr_store, ctx->bytes_in_header);
++					// Validate memcpy parameters to avoid overlap
++					if (ctx->bytes_in_header <= sizeof(ctx->hdr_store)) {
++						memcpy(pck_data, ctx->hdr_store, ctx->bytes_in_header);
++					} else {
++						// Handle error case gracefully
++						memset(pck_data, 0, ctx->bytes_in_header);
++					}

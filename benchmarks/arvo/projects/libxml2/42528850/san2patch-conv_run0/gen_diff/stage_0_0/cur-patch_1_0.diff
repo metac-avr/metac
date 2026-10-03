@@ -1,0 +1,25 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..0b06c0e0 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1299 +1299,12 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++		/* Validate node references before unlinking */
++		if (tmp->nsDef != NULL) {
++		    xmlNsPtr ns = tmp->nsDef;
++		    while (ns != NULL) {
++		        /* Clear references to prevent use-after-free */
++		        if (ns->href != NULL && ns->type == XML_LOCAL_NAMESPACE) {
++		            ns->href = (const xmlChar*)"";
++		        }
++		        ns = ns->next;
++		    }
++		}
+diff --git a/tree.c b/tree.c
+index fe02b414..dde380f4 100644
+--- a/tree.c
++++ b/tree.c
+@@ -737 +737 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-        /*
++        /

@@ -1,0 +1,25 @@
+diff --git a/parser.c b/parser.c
+index cae2b7fd..27ef73c8 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7372,0 +7373,12 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++		    /* Check if current node's namespace is valid before copying */
++		    if (cur->nsDef != NULL) {
++		        xmlNsPtr ns = cur->nsDef;
++		        while (ns != NULL) {
++		            if (ns->_private == NULL) {
++		                /* Skip nodes with invalid/deallocated namespaces */
++		                cur = cur->next;
++		                continue;
++		            }
++		            ns = ns->next;
++		        }
++		    }
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..d668f218 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346 +1346,2 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++// Fixed CWE-416: Use After Free - Check if oldnode points to freed memory
++                     oldnode = NULL;

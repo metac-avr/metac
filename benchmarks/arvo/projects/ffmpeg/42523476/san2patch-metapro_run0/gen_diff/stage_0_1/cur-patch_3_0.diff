@@ -1,0 +1,46 @@
+diff --git a/libavcodec/hevc_parser.c b/libavcodec/hevc_parser.c
+index 59f9a0ff3e..fbad0486dc 100644
+--- a/libavcodec/hevc_parser.c
++++ b/libavcodec/hevc_parser.c
+@@ -302 +302 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-                      const uint8_t *buf, int buf_size)
++                      const uint8_t *buf, int *buf_size)
+@@ -307 +307 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-    int is_dummy_buf = !buf_size;
++    int is_dummy_buf = !*buf_size;
+@@ -318 +318 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        next = buf_size;
++        next = *buf_size;
+@@ -320,2 +320,2 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        next = hevc_find_frame_end(s, buf, buf_size);
+-        if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
++        next = hevc_find_frame_end(s, buf, *buf_size);
++        if (ff_combine_frame(pc, next, &buf, buf_size) < 0) {
+@@ -324 +324 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-            return buf_size;
++            return *buf_size;
+@@ -329,3 +329,3 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-
+-    if (!is_dummy_buf)
+-        parse_nal_units(s, buf, buf_size, avctx);
++    
++    if (!is_dummy_buf && buf && *buf_size > 0)
++        parse_nal_units(s, buf, *buf_size, avctx);
+@@ -334 +334 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-    *poutbuf_size = buf_size;
++    *poutbuf_size = *buf_size;
+diff --git a/libavutil/buffer.c b/libavutil/buffer.c
+index e4562a79b1..46145b7ef9 100644
+--- a/libavutil/buffer.c
++++ b/libavutil/buffer.c
+@@ -140,0 +141,2 @@ void av_buffer_unref(AVBufferRef **buf)
++    AVBufferRef *ref;
++    
+@@ -144 +146,4 @@ void av_buffer_unref(AVBufferRef **buf)
+-    buffer_replace(buf, NULL);
++    ref = *buf;
++    *buf = NULL;  // Prevent accidental reuse
++    
++    buffer_replace(&ref, NULL);
+@@ -154 +158,0 @@ int av_buffer_is_writable(const AVBufferRef *buf)
+-

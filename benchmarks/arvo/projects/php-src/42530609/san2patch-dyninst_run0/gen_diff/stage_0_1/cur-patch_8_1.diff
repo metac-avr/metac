@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..89a8c717010 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -64,4 +64,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
++ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
++ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
++efree(str);
+@@ -72,3 +72,9 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-{
+-	ZEND_ASSERT(!ZEND_REF_HAS_TYPE_SOURCES(ref));
+-	i_zval_ptr_dtor(&ref->val);
++// FIXME: Crash CWE-416: Use After Free
++ {
++	if (!ref) return;
++	
++	/* Check if the reference is valid before accessing */
++	if ((GC_FLAGS(ref) & GC_MARKED) || GC_REFCOUNT(ref) == 0) {
++		ZEND_ASSERT(!ZEND_REF_HAS_TYPE_SOURCES(ref));
++		i_zval_ptr_dtor(&ref->val);
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index fbad44d2f2c..adc767d62fe 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3880 +3880,7 @@ static zend_always_inline void i_free_compiled_variables(zend_execute_data *exec
+-		i_zval_ptr_dtor(cv);
++		if (Z_REFCOUNTED_P(cv)) {
++			if (Z_TYPE_P(cv) == IS_REFERENCE && Z_REF_P(cv) != NULL) {
++				i_zval_ptr_dtor(cv);
++			} else if (Z_TYPE_P(cv) != IS_REFERENCE) {
++				i_zval_ptr_dtor(cv);
++			}
++		}

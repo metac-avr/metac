@@ -1,0 +1,39 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..a6ea3ddb5 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1034 +1034,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      size_t content_len;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t content_len;
+@@ -1037 +1038 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-					   packet->authorization_line.len - len, &content_len);
++				   packet->authorization_line.len - len, &content_len);
+@@ -1040,7 +1041,20 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
+-
+-	if(double_dot) {
+-	  double_dot[0] = '\0';
+-	  flow->http.username = ndpi_strdup((char*)content);
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
+-	}
++	char *double_dot = NULL;
++        
++        // Fix: Properly null-terminate the decoded content before string operations
++        if(content_len > 0) {
++            // Allocate buffer with extra space for null terminator
++            u_char *safe_buffer = (u_char*)ndpi_malloc(content_len + 1);
++            if(safe_buffer != NULL) {
++                memcpy(safe_buffer, content, content_len);
++                safe_buffer[content_len] = '\0';  // Explicit null termination
++                double_dot = strchr((char*)safe_buffer, ':');
++                
++                if(double_dot) {
++                  double_dot[0] = '\0';
++                  flow->http.username = ndpi_strdup((char*)safe_buffer);
++                  flow->http.password = ndpi_strdup(&double_dot[1]);
++                }
++                
++                ndpi_free(safe_buffer);
++            }
++        }

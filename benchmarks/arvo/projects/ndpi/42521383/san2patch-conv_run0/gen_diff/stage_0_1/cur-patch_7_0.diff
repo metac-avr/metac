@@ -1,0 +1,16 @@
+diff --git a/fuzz/fuzz_process_packet.c b/fuzz/fuzz_process_packet.c
+index eb5a0a281..1a4a65d32 100644
+--- a/fuzz/fuzz_process_packet.c
++++ b/fuzz/fuzz_process_packet.c
+@@ -41 +41,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-    ndpi_dpi2json(ndpi_info_mod, ndpi_flow, guessed_protocol, &csv_serializer);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     ndpi_dpi2json(ndpi_info_mod, ndpi_flow, guessed_protocol, &csv_serializer);
++  }
++  if (ndpi_flow && ndpi_flow->detected_protocol_stack[0] != 0) {  // Fix: Additional validation check
++    ndpi_free_flow(ndpi_flow);
++  } else if (ndpi_flow) {  // Fix: Ensure cleanup even with invalid state
++    ndpi_flow_free(ndpi_flow);  // Alternative cleanup method
++    ndpi_flow = NULL;
+@@ -43 +49,0 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-  ndpi_free_flow(ndpi_flow);

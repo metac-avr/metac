@@ -1,0 +1,17 @@
+diff --git a/src/filter_core/filter_props.c b/src/filter_core/filter_props.c
+index f507546bf..98343418c 100644
+--- a/src/filter_core/filter_props.c
++++ b/src/filter_core/filter_props.c
+@@ -1123 +1123,9 @@ GF_Err gf_props_set_property(GF_PropertyMap *map, u32 p4cc, const char *name, ch
+-	else
++	else {
++		// Validate property value size before insertion to prevent buffer overflow
++		if (value->type == GF_PROP_STRING && value->value.string) {
++			u32 str_len = (u32) strlen(value->value.string);
++			if (str_len > 1024*1024) { // Limit string properties to 1MB
++				gf_mx_v(map->session->info_mx);
++				return GF_INVALID_DATA;
++			}
++		}
+@@ -1124,0 +1133 @@ GF_Err gf_props_set_property(GF_PropertyMap *map, u32 p4cc, const char *name, ch
++	}

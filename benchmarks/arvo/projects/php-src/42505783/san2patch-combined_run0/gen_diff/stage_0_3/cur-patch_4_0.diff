@@ -1,0 +1,25 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..8ef09c8df37 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1201 +1201,2 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -1216,4 +1217,3 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-				Z_STR_P(op1) = result_str =
+-					perealloc(op1_str, ZEND_MM_ALIGNED_SIZE(_ZSTR_STRUCT_SIZE(result_len)), 0);
+-				ZSTR_LEN(result_str) = result_len;
+-				zend_string_forget_hash_val(result_str);
++				zend_string *new_str = zend_string_alloc(result_len, 0);
++				memcpy(ZSTR_VAL(new_str), ZSTR_VAL(op1_str), op1_len);
++				result_str = new_str;
+@@ -1222 +1221,0 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-			GC_DELREF(op1_str);
+@@ -2014,0 +2014,3 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
++		if (Z_TYPE(tmp) == IS_STRING && Z_STR(tmp)->gc.refcount > 1) {
++			zend_string_addref(Z_STR(tmp));
++		}
+@@ -2020 +2022 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
+-	}
++  	}

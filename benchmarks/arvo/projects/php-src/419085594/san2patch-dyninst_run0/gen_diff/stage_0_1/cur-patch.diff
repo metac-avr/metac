@@ -1,0 +1,52 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..ace45d9a28e 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -543,4 +543,4 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
+-#define IS_PTR						13
+-#define IS_ALIAS_PTR				14
+-#define _IS_ERROR					15
++#define IS_INDIRECT                 12
++#define IS_PTR                      13
++#define IS_ALIAS_PTR                14
++#define _IS_ERROR                   15
+@@ -549,3 +549,4 @@ struct _zend_ast_ref {
+-#define _IS_BOOL					18
+-#define _IS_NUMBER					19
+-
++#define _IS_BOOL                    18
++#define _IS_NUMBER                  19
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -553 +554 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-	return pz->u1.v.type;
++	return (pz != NULL) ? pz->u1.v.type : IS_NULL;
+@@ -562,3 +563,2 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
+-
++#define Z_TYPE(zval)                zval_get_type(&(zval))
++#define Z_TYPE_P(zval_p)            Z_TYPE(*(zval_p))
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..c9cff2b2324 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,5 +1894,12 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}
++			/* Validate op1 is not null and hasn't been freed */
++			if (!op1) {
++				if (orig_op1 != result) {
++					ZVAL_UNDEF(result);
++				}
++				return FAILURE;
++			}

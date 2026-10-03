@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..2d2fc4cb49d 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -257,0 +258,2 @@ void shutdown_destructors(void) /* {{{ */
++		zval *zv;
++		HashTable *ht = &EG(symbol_table);
+@@ -259,3 +261,7 @@ void shutdown_destructors(void) /* {{{ */
+-			symbols = zend_hash_num_elements(&EG(symbol_table));
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
+-		} while (symbols != zend_hash_num_elements(&EG(symbol_table)));
++			symbols = zend_hash_num_elements(ht);
++			ZEND_HASH_REVERSE_FOREACH_PTR(ht, zv) {
++				if (zv && Z_TYPE_P(zv) == IS_OBJECT && Z_OBJ_P(zv)->handlers) {
++					zval_call_destructor(zv);
++				}
++			} ZEND_HASH_FOREACH_END();
++		} while (symbols != zend_hash_num_elements(ht));
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index 6f00786b669..f207889c828 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -317,0 +318,3 @@ static void gc_stack_free(gc_stack *stack)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	if (!stack) return;
++
+@@ -322 +325 @@ static void gc_stack_free(gc_stack *stack)
+-		efree(p);
++		if (p) efree(p);

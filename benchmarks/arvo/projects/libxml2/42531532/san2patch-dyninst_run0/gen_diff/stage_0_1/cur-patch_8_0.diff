@@ -1,0 +1,26 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..dbed91c0 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2498,0 +2499 @@ xmlFreeID(xmlIDPtr id) {
++    /* Zero out the structure before freeing to prevent use-after-free */
+@@ -2502,0 +2504,2 @@ xmlFreeID(xmlIDPtr id) {
++    id->value = NULL;
++    id->name = NULL;
+diff --git a/xinclude.c b/xinclude.c
+index 72a88c99..0eb99281 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2135,2 +2135,3 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-    for (i = start; i < ctxt->incNr; i++) {
+-	if (ctxt->incTab[i]->replace != 0) {
++// FIXME: Crash CWE-416: Use After Free
++     for (i = start; i < ctxt->incNr; i++) {
++	if (i >= 0 && i < ctxt->incNr && ctxt->incTab[i] != NULL && ctxt->incTab[i]->replace != 0) {
+@@ -2144 +2145 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            if (ctxt->incTab[i]->inc != NULL) {
++            if (i >= 0 && i < ctxt->incNr && ctxt->incTab[i] != NULL && ctxt->incTab[i]->inc != NULL) {
+@@ -2159 +2160,2 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            xmlXIncludeFreeRef(ctxt->incTab[i]);
++            if (i >= 0 && i < ctxt->incNr && ctxt->incTab[i] != NULL)
++                xmlXIncludeFreeRef(ctxt->incTab[i]);

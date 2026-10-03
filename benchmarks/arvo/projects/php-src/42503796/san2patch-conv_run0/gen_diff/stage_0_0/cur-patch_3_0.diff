@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..24a41c6c248 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16750,2 +16750,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op2.var));
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++	/* Check if container is still valid before decrementing refcount */
++	if (container && Z_REFCOUNTED_P(container)) {
++		zval_ptr_dtor_nogc(EX_VAR(opline->op2.var));
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++	} else {
++		zval_ptr_dtor_nogc(EX_VAR(opline->op2.var));
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++	}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..47397af0e13 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p && GC_TYPE(p) <= IS_CONSTANT_AST) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

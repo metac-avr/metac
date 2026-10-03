@@ -1,0 +1,25 @@
+diff --git a/ext/date/lib/timelib.c b/ext/date/lib/timelib.c
+index d42c69bbd6f..4acaec3716e 100644
+--- a/ext/date/lib/timelib.c
++++ b/ext/date/lib/timelib.c
+@@ -156,0 +157 @@ void timelib_error_container_dtor(timelib_error_container *errors)
++// FIXME: Crash CWE-416: Use After Free
+@@ -159 +160,3 @@ void timelib_error_container_dtor(timelib_error_container *errors)
+-	for (i = 0; i < errors->warning_count; i++) {
++	if (!errors) return;
++
++	for (i = 0; i < errors->warning_count && errors->warning_messages; i++) {
+@@ -162,2 +165,5 @@ void timelib_error_container_dtor(timelib_error_container *errors)
+-	timelib_free(errors->warning_messages);
+-	for (i = 0; i < errors->error_count; i++) {
++	if (errors->warning_messages) {
++		timelib_free(errors->warning_messages);
++		errors->warning_messages = NULL;
++	}
++	for (i = 0; i < errors->error_count && errors->error_messages; i++) {
+@@ -166 +172,4 @@ void timelib_error_container_dtor(timelib_error_container *errors)
+-	timelib_free(errors->error_messages);
++	if (errors->error_messages) {
++		timelib_free(errors->error_messages);
++		errors->error_messages = NULL;
++	}

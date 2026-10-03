@@ -1,0 +1,19 @@
+diff --git a/src/media_tools/route_dmx.c b/src/media_tools/route_dmx.c
+index 15ebed31d..7514e2739 100644
+--- a/src/media_tools/route_dmx.c
++++ b/src/media_tools/route_dmx.c
+@@ -1957 +1957,13 @@ GF_Err gf_route_dmx_process(GF_ROUTEDmx *routedmx)
+-				e = gf_route_dmx_process_service(routedmx, s, rsess);
++				if (rsess->gather && rsess->gather_len) {
++					char *safe_buf = gf_malloc(rsess->gather_len + 1);
++					if (!safe_buf) {
++						e = GF_OUT_OF_MEM;
++						return e;
++					}
++					memcpy(safe_buf, rsess->gather, rsess->gather_len);
++					safe_buf[rsess->gather_len] = 0;
++					e = gf_route_dmx_process_service(routedmx, s, rsess);
++					gf_free(safe_buf);
++				} else {
++					e = gf_route_dmx_process_service(routedmx, s, rsess);
++				}

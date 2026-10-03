@@ -1,0 +1,52 @@
+diff --git a/ext/standard/string.c b/ext/standard/string.c
+index 70743f4db70..32e497803a1 100644
+--- a/ext/standard/string.c
++++ b/ext/standard/string.c
+@@ -5126 +5126,2 @@ PHP_FUNCTION(str_getcsv)
+-	char delim = ',', enc = '"';
++	char delim = ',';
++	char enc = '"';
+@@ -5128,2 +5129,6 @@ PHP_FUNCTION(str_getcsv)
+-	char *delim_str = NULL, *enc_str = NULL, *esc_str = NULL;
+-	size_t delim_len = 0, enc_len = 0, esc_len = 0;
++	char *delim_str = NULL;
++	char *enc_str = NULL;
++	char *esc_str = NULL;
++	size_t delim_len = 0;
++	size_t enc_len = 0;
++	size_t esc_len = 0;
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..e11451a0d5b 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2140,7 +2140,7 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-						}
+-						break;
+-					default:
+-						break;
+-				}
+-				bptr += inc_len;
+-				inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
++quit_loop_3:
++			if (bptr >= hunk_begin) {
++				memcpy(tptr, hunk_begin, bptr - hunk_begin);
++				tptr += (bptr - hunk_begin);
++			} else {
++				/* Handle invalid case where bptr < hunk_begin */
++				/* This prevents negative size parameter to memcpy */
+@@ -2148,4 +2147,0 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-
+-		quit_loop_3:
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-			tptr += (bptr - hunk_begin);
+@@ -2153,9 +2149 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			comp_end = tptr;
+-		} else {
+-			/* 2B. Handle non-enclosure field */
+-
+-			hunk_begin = bptr;
+-
+-			for (;;) {
+-				switch (inc_len) {
+-					case 0:
++			comp_end = tptr;					case 0:

@@ -1,0 +1,41 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..702388be178 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267 +2267,4 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
++	timelib_error_container *local_errors = NULL;
++
+@@ -2277,5 +2280 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-	if ((*last_errors)->warning_count || (*last_errors)->error_count) {
+-		DATEG(last_errors) = *last_errors;
+-	}
+-
+-	timelib_error_container_dtor(*last_errors);
++	local_errors = *last_errors;
+@@ -2282,0 +2282,6 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++
++	if (local_errors->warning_count || local_errors->error_count) {
++		DATEG(last_errors) = local_errors;
++	} else {
++		timelib_error_container_dtor(local_errors);
++	}
+@@ -2333 +2338,2 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	update_errors_warnings(&err);
++	timelib_error_container *temp_err = err;
++	update_errors_warnings(&temp_err);
+@@ -2336 +2342 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	if ((flags & PHP_DATE_INIT_CTOR) && err && err->error_count) {
++	if ((flags & PHP_DATE_INIT_CTOR) && temp_err && temp_err->error_count) {
+@@ -2339 +2345 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-			err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
++			temp_err->error_messages[0].position, temp_err->error_messages[0].character, temp_err->error_messages[0].message);
+@@ -2341 +2347 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	if (err && err->error_count) {
++	if (temp_err && temp_err->error_count) {
+@@ -2343,2 +2349 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = 0;
+-		return 0;
++		dateobj->time = 0;		return 0;

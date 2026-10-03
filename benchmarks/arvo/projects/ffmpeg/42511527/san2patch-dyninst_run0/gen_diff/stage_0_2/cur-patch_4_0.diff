@@ -1,0 +1,26 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..e7aba5dd5d 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -144,0 +145 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    int ret;
+@@ -152,0 +154,13 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Properly handle reallocation with av_reallocp and check for failure
++    ret = av_reallocp(&s->tmpblock, s->block_size * 3);
++    if (ret < 0) {
++        s->tmpblock = NULL; // Ensure pointer is NULL after failed realloc
++        return ret;
++    }
++    
++    ret = av_reallocp(&s->deflate_block, s->block_size * 3);
++    if (ret < 0) {
++        s->deflate_block = NULL; // Ensure pointer is NULL after failed realloc
++        return ret;
++    }
++
+@@ -164 +178 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    zs.avail_out = s->deflate_block_size;
++    zs.avail_out = s->block_size * 3;
+@@ -174 +188 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    s->zstream.avail_in  = s->deflate_block_size - zs.avail_out;
++    s->zstream.avail_in  = s->block_size * 3 - zs.avail_out;

@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..e595d67d2af 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -67 +67,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
++	/* Fix: Clear the pointer before freeing to avoid dangling references */
++	zend_string *str_to_free = str;
++	str = NULL;
++	efree(str_to_free);
+@@ -76,3 +79 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-}
+-
+-static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
++}static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..8e46ad6027e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -19575,0 +19576 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
++				memset(rope, 0, sizeof(zend_string*) * (opline->extended_value + 1));
+@@ -19582 +19583,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-		len += ZSTR_LEN(rope[i]);
++		if (rope[i]) {
++			len += ZSTR_LEN(rope[i]);
++		}
+@@ -19588,3 +19591,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-		memcpy(target, ZSTR_VAL(rope[i]), ZSTR_LEN(rope[i]));
+-		target += ZSTR_LEN(rope[i]);
+-		zend_string_release_ex(rope[i], 0);
++		if (rope[i]) {
++			memcpy(target, ZSTR_VAL(rope[i]), ZSTR_LEN(rope[i]));
++			target += ZSTR_LEN(rope[i]);
++			zend_string_release_ex(rope[i], 0);
++		}

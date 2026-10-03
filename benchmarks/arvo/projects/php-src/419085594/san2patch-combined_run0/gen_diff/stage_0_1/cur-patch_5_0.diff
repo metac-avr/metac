@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..753d402b903 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45992,0 +45993,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++// FIXME: Crash CWE-416: Use After Free
++			/* Validate zval before use to prevent use-after-free */
++			if (UNEXPECTED(!var_ptr || Z_TYPE_P(var_ptr) == IS_NULL)) {
++				ZVAL_NULL(var_ptr);
++			}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..31abac015ca 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1657,0 +1658,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++		/* Initialize bucket values to prevent use-after-free */
++		Bucket *init_p = p;
++		while (init_p != end) {
++			ZVAL_UNDEF(&init_p->val);
++			init_p++;
++		}
++

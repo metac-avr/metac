@@ -1,0 +1,84 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..76a82324326 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,7 +6770,4 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
+-		}
+-	}
++static void attr_free(zval *v)
++{
++	zend_attribute *attr = Z_PTR_P(v);
++	bool persistent = attr->flags & ZEND_ATTRIBUTE_PERSISTENT;
+@@ -6778 +6775,2 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	zval obj;
++	zend_string_release(attr->name);
++	zend_string_release(attr->lcname);
+@@ -6780,2 +6778,9 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
+-		RETURN_THROWS();
++	for (uint32_t i = 0; i < attr->argc; i++) {
++		if (attr->args[i].name) {
++			zend_string_release(attr->args[i].name);
++		}
++		if (persistent) {
++			zval_internal_ptr_dtor(&attr->args[i].value);
++		} else {
++			zval_ptr_dtor(&attr->args[i].value);
++		}
+@@ -6784,8 +6789,2 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	RETURN_COPY_VALUE(&obj);
+-}
+-
+-ZEND_METHOD(ReflectionEnum, __construct)
+-{
+-	reflection_class_object_ctor(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++	pefree(attr, persistent);
++}		RETURN_THROWS();
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..3a1302f1017 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -345,4 +345,7 @@ ZEND_API bool zend_is_attribute_repeated(HashTable *attributes, zend_attribute *
+-static void attr_free(zval *v)
+-{
+-	zend_attribute *attr = Z_PTR_P(v);
+-	bool persistent = attr->flags & ZEND_ATTRIBUTE_PERSISTENT;
++		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
++			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
++				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
++				RETURN_THROWS();
++			}
++		}
++	}
+@@ -350,2 +353 @@ static void attr_free(zval *v)
+-	zend_string_release(attr->name);
+-	zend_string_release(attr->lcname);
++	zval obj;
+@@ -353,9 +355,2 @@ static void attr_free(zval *v)
+-	for (uint32_t i = 0; i < attr->argc; i++) {
+-		if (attr->args[i].name) {
+-			zend_string_release(attr->args[i].name);
+-		}
+-		if (persistent) {
+-			zval_internal_ptr_dtor(&attr->args[i].value);
+-		} else {
+-			zval_ptr_dtor(&attr->args[i].value);
+-		}
++	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
++		RETURN_THROWS();
+@@ -364 +359 @@ static void attr_free(zval *v)
+-	pefree(attr, persistent);
++	RETURN_COPY_VALUE(&obj);
+@@ -366,0 +362,5 @@ static void attr_free(zval *v)
++ZEND_METHOD(ReflectionEnum, __construct)
++{
++	reflection_class_object_ctor(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
++	if (EG(exception)) {
++

@@ -1,0 +1,29 @@
+diff --git a/src/utils/list.c b/src/utils/list.c
+index 52693a415..97ccd0bcf 100644
+--- a/src/utils/list.c
++++ b/src/utils/list.c
+@@ -671,0 +672,5 @@ void *gf_list_get(GF_List *ptr, u32 itemNumber)
++	
++	// Validate pointer before dereferencing - CWE-825 mitigation
++	if (!ptr->slots)
++		return NULL;
++		
+@@ -681,2 +685,0 @@ void *gf_list_last(GF_List *ptr)
+-
+-
+diff --git a/src/media_tools/isom_tools.c b/src/media_tools/isom_tools.c
+index a41e51a0d..f5e9f470b 100644
+--- a/src/media_tools/isom_tools.c
++++ b/src/media_tools/isom_tools.c
+@@ -1405,0 +1406 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
++		GF_AVCConfig *avc_config = NULL;
+@@ -1416 +1417,2 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
+@@ -1418 +1420,4 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-			gf_odf_avc_cfg_write(((GF_AVCConfigurationBox *)props.config)->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			avc_config = ((GF_AVCConfigurationBox *)props.config)->config;
++			if (avc_config) {
++				gf_odf_avc_cfg_write(avc_config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			}

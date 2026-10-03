@@ -1,0 +1,29 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..48346d8b7 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -791,0 +792,4 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  
++  // Validate object pointer before use
++  if (obj->tt >= MRB_TT_MAXDEFINE || obj->tt < 0) return;
++  
+@@ -799,2 +803 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1237 +1240,8 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      return incremental_marking_phase(mrb, gc, limit);
++      /* Validate gray_list before use to prevent expired pointer dereference */
++      if (gc->gray_list && is_valid_heap_object(gc->gray_list)) {
++        return incremental_marking_phase(mrb, gc, limit);
++      } else {
++        /* Clear invalid gray_list entry */
++        gc->gray_list = NULL;
++        return 0;
++      }

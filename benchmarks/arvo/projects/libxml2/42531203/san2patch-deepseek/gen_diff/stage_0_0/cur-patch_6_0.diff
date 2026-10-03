@@ -1,0 +1,26 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..6722a64e 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -6435 +6435,20 @@ htmlDoRead(htmlParserCtxtPtr ctxt, const char *URL, const char *encoding,
+-    htmlParseDocument(ctxt);
++    {
++        const xmlChar *content = NULL;
++        int size = 0;
++
++        if ((ctxt->input != NULL) && (ctxt->input->buf != NULL)) {
++            content = xmlBufContent(ctxt->input->buf->buffer);
++            size = xmlBufUse(ctxt->input->buf->buffer);
++        }
++        htmlParseDocument(ctxt);
++        if ((ctxt->input != NULL) && (ctxt->input->buf != NULL) &&
++            (content != NULL)) {
++            const xmlChar *new_content = xmlBufContent(ctxt->input->buf->buffer);
++            int new_size = xmlBufUse(ctxt->input->buf->buffer);
++            if ((new_content != content) || (new_size != size)) {
++                /* Buffer was reallocated; all stale references must be refreshed */
++                content = new_content;
++                size = new_size;
++            }
++        }
++    }

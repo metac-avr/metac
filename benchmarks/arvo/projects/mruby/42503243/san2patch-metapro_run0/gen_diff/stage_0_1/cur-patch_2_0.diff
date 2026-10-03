@@ -1,0 +1,22 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..753773791 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515,2 +515,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++      if (argc > 0) {
++        if (argc <= MRB_INT_MAX - 1 && ci->stack + argc + 1 <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_raise(mrb, E_ARGUMENT_ERROR, "argument count too large");
++        }
++      }
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..81e8630c1 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -775,0 +776 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  if (!base) return mrb_nil_value();
+@@ -790,0 +792 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  if (mrb_type(mrb_obj_value(base)) <= MRB_TT_CPTR) return mrb_nil_value();

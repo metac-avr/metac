@@ -1,0 +1,51 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..c77f06408d3 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -558,11 +558,17 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
+-#define IS_PTR						13
+-#define IS_ALIAS_PTR				14
+-#define _IS_ERROR					15
+-
+-/* used for casts */
+-#define _IS_BOOL					18
+-#define _IS_NUMBER					19
+-
+-static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-	return pz->u1.v.type;
++static void gc_mark_roots(gc_stack *stack)
++{
++	gc_root_buffer *current, *last;
++
++	gc_compact();
++
++	current = GC_IDX2PTR(GC_FIRST_ROOT);
++	last = GC_IDX2PTR(GC_G(first_unused));
++	while (current != last) {
++		if (GC_IS_ROOT(current->ref)) {
++			if (GC_REF_CHECK_COLOR(current->ref, GC_PURPLE)) {
++				GC_REF_SET_COLOR(current->ref, GC_GREY);
++				gc_mark_grey(current->ref, stack);
++			}
++		}
++		current++;
++	}
+@@ -570,10 +575,0 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-
+-#define ZEND_SAME_FAKE_TYPE(faketype, realtype) ( \
+-	(faketype) == (realtype) \
+-	|| ((faketype) == _IS_BOOL && ((realtype) == IS_TRUE || (realtype) == IS_FALSE)) \
+-)
+-
+-/* we should never set just Z_TYPE, we should set Z_TYPE_INFO */
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
+-
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..59f36271299 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -984 +984 @@ static void gc_mark_roots(gc_stack *stack)
+-			if (GC_REF_CHECK_COLOR(current->ref, GC_PURPLE)) {
++			if (GC_REF_GET_COLOR(current->ref) == GC_PURPLE) {

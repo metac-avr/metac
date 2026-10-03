@@ -1,0 +1,137 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..726c83fc1d7 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1019,15 +1019,5 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-		if ((flag & (HASH_ADD_NEW|HASH_ADD_NEXT)) != (HASH_ADD_NEW|HASH_ADD_NEXT)
+-		 && h < ht->nNumUsed) {
+-			zv = ht->arPacked + h;
+-			if (Z_TYPE_P(zv) != IS_UNDEF) {
+-				if (flag & HASH_LOOKUP) {
+-					return zv;
+-				}
+-replace:
+-				if (flag & HASH_ADD) {
+-					return NULL;
+-				}
+-				if (ht->pDestructor) {
+-					ht->pDestructor(zv);
+-				}
+-				ZVAL_COPY_VALUE(zv, pData);
++	if ((flag & (HASH_ADD_NEW|HASH_ADD_NEXT)) != (HASH_ADD_NEW|HASH_ADD_NEXT)
++	 && h < ht->nNumUsed) {
++		zv = ht->arPacked + h;
++		if (Z_TYPE_P(zv) != IS_UNDEF) {
++			if (flag & HASH_LOOKUP) {
+@@ -1035,2 +1024,0 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-			} else { /* we have to keep the order :( */
+-				goto convert_to_hash;
+@@ -1038,12 +1026,3 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-		} else if (EXPECTED(h < ht->nTableSize)) {
+-add_to_packed:
+-			zv = ht->arPacked + h;
+-			/* incremental initialization of empty Buckets */
+-			if ((flag & (HASH_ADD_NEW|HASH_ADD_NEXT)) != (HASH_ADD_NEW|HASH_ADD_NEXT)) {
+-				if (h > ht->nNumUsed) {
+-					zval *q = ht->arPacked + ht->nNumUsed;
+-					while (q != zv) {
+-						ZVAL_UNDEF(q);
+-						q++;
+-					}
+-				}
++replace:
++			if (flag & HASH_ADD) {
++				return NULL;
+@@ -1051,6 +1030,2 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-			ht->nNextFreeElement = ht->nNumUsed = h + 1;
+-			ht->nNumOfElements++;
+-			if (flag & HASH_LOOKUP) {
+-				ZVAL_NULL(zv);
+-			} else {
+-				ZVAL_COPY_VALUE(zv, pData);
++			if (ht->pDestructor) {
++				ht->pDestructor(zv);
+@@ -1058 +1033 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-
++			ZVAL_COPY_VALUE(zv, pData);
+@@ -1060,7 +1035,14 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-		} else if ((h >> 1) < ht->nTableSize &&
+-		           (ht->nTableSize >> 1) < ht->nNumOfElements) {
+-			zend_hash_packed_grow(ht);
+-			goto add_to_packed;
+-		} else {
+-			if (ht->nNumUsed >= ht->nTableSize) {
+-				ht->nTableSize += ht->nTableSize;
++		} else { /* we have to keep the order :( */
++			goto convert_to_hash;
++		}
++	} else if (EXPECTED(h < ht->nTableSize)) {
++add_to_packed:
++		zv = ht->arPacked + h;
++		/* incremental initialization of empty Buckets */
++		if ((flag & (HASH_ADD_NEW|HASH_ADD_NEXT)) != (HASH_ADD_NEW|HASH_ADD_NEXT)) {
++			if (h > ht->nNumUsed) {
++				zval *q = ht->arPacked + ht->nNumUsed;
++				while (q != zv) {
++					ZVAL_UNDEF(q);
++					q++;
++				}
+@@ -1068,2 +1049,0 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-convert_to_hash:
+-			zend_hash_packed_to_hash(ht);
+@@ -1071,4 +1051,6 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-	} else if (HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED) {
+-		if (h < ht->nTableSize) {
+-			zend_hash_real_init_packed_ex(ht);
+-			goto add_to_packed;
++		ht->nNextFreeElement = ht->nNumUsed = h + 1;
++		ht->nNumOfElements++;
++		if (flag & HASH_LOOKUP) {
++			ZVAL_NULL(zv);
++		} else {
++			ZVAL_COPY_VALUE(zv, pData);
+@@ -1076 +1058,6 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-		zend_hash_real_init_mixed(ht);
++
++		return zv;
++	} else if ((h >> 1) < ht->nTableSize &&
++	           (ht->nTableSize >> 1) < ht->nNumOfElements) {
++		zend_hash_packed_grow(ht);
++		goto add_to_packed;
+@@ -1078,9 +1065,18 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-		if ((flag & HASH_ADD_NEW) == 0 || ZEND_DEBUG) {
+-			p = zend_hash_index_find_bucket(ht, h);
+-			if (p) {
+-				if (flag & HASH_LOOKUP) {
+-					return &p->val;
+-				}
+-				ZEND_ASSERT((flag & HASH_ADD_NEW) == 0);
+-				zv = &p->val;
+-				goto replace;
++		if (ht->nNumUsed >= ht->nTableSize) {
++			ht->nTableSize += ht->nTableSize;
++		}
++convert_to_hash:
++		zend_hash_packed_to_hash(ht);
++	}
++} else if (HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED) {
++	if (h < ht->nTableSize) {
++		zend_hash_real_init_packed_ex(ht);
++		goto add_to_packed;
++	}
++	zend_hash_real_init_mixed(ht);
++} else {
++	if ((flag & HASH_ADD_NEW) == 0 || ZEND_DEBUG) {
++		p = zend_hash_index_find_bucket(ht, h);
++		if (p) {
++			if (flag & HASH_LOOKUP) {
++				return &p->val;
+@@ -1087,0 +1084,3 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
++			ZEND_ASSERT((flag & HASH_ADD_NEW) == 0);
++			zv = &p->val;
++			goto replace;
+@@ -1089 +1087,0 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+-		ZEND_HASH_IF_FULL_DO_RESIZE(ht);		/* If the Hash table is full, resize it */
+@@ -1090,0 +1089,2 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
++	ZEND_HASH_IF_FULL_DO_RESIZE(ht);		/* If the Hash table is full, resize it */
++}

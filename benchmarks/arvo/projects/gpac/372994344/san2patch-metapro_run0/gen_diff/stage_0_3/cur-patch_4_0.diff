@@ -1,0 +1,22 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..57cf8b2bf 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -302,0 +303,8 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
++	
++	// Nullify the pointer in the ess array before freeing to prevent use-after-free
++	if (ts && es) {
++		u32 pid = es->pid;
++		if (pid < GF_M2TS_PID_MAX && ts->ess[pid] == es) {
++			ts->ess[pid] = NULL;
++		}
++	}
+@@ -3113 +3121,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++ 	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3116 +3125,3 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-			gf_m2ts_es_del(ts->ess[i], ts);
++			GF_M2TS_ES *temp_es = ts->ess[i]; // Store reference before deletion
++			ts->ess[i] = NULL; // Nullify pointer before deletion to prevent use-after-free
++			gf_m2ts_es_del(temp_es, ts);

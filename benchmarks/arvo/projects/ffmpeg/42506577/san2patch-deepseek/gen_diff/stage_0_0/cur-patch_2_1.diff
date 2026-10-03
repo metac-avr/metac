@@ -1,0 +1,27 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..43924f9834 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -718 +718 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
+-        }
++                }
+@@ -726,0 +727,15 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
++        for (i = 0; i < s->nb_components; i++) {
++            int max_h_count = 0;
++            int max_v_count = 0;
++            int j;
++            for (j = 0; j < s->nb_components; j++) {
++                if (s->h_count[j] > max_h_count) max_h_count = s->h_count[j];
++                if (s->v_count[j] > max_v_count) max_v_count = s->v_count[j];
++            }
++            if (max_h_count <= 0 || max_v_count <= 0 ||
++                (s->width  + max_h_count * 8 - 1) / (max_h_count * 8) > (s->width  + 7) / 8 ||
++                (s->height + max_v_count * 8 - 1) / (max_v_count * 8) > (s->height + 7) / 8) {
++                return AVERROR_INVALIDDATA;
++            }
++        }
++
+@@ -738,2 +753 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
+-        for (i = 0; i < 4; i++)
+-            s->linesize[i] = s->picture_ptr->linesize[i] << s->interlaced;
++        for (i = 0; i < 4; i++)            s->linesize[i] = s->picture_ptr->linesize[i] << s->interlaced;

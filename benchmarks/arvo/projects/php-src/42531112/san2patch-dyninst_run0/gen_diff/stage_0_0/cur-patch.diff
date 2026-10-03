@@ -1,0 +1,17 @@
+diff --git a/ext/pcre/php_pcre.c b/ext/pcre/php_pcre.c
+index 075d9fc5263..82bc7b8300a 100644
+--- a/ext/pcre/php_pcre.c
++++ b/ext/pcre/php_pcre.c
+@@ -658,2 +658,10 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-	if ((pp = strchr("([{< )]}>", delimiter)))
+-		delimiter = pp[5];
++	if ((pp = strchr("([{< )]}>", delimiter))) {
++		/* Prevent out-of-bounds access by checking if pp[5] is within string bounds */
++		char *delimiter_str = "([{< )]}>";
++		if (pp + 5 < delimiter_str + strlen(delimiter_str)) {
++			delimiter = pp[5];
++		} else {
++			php_error_docref(NULL, E_WARNING, "Delimiter out of bounds");
++			return NULL;
++		}
++	}

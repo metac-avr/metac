@@ -1,0 +1,36 @@
+diff --git a/Zend/zend_property_hooks.c b/Zend/zend_property_hooks.c
+index 9cfa15ecafa..a44a9900a8a 100644
+--- a/Zend/zend_property_hooks.c
++++ b/Zend/zend_property_hooks.c
+@@ -209,3 +209,8 @@ static void zho_it_dtor(zend_object_iterator *iter)
+-	zend_hooked_object_iterator *hooked_iter = (zend_hooked_object_iterator*)iter;
+-	zval_ptr_dtor(&iter->data);
+-	zval_ptr_dtor(&hooked_iter->declared_props);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	zend_hooked_object_iterator *hooked_iter = (zend_hooked_object_iterator*)iter;
++	if (Z_REFCOUNTED(iter->data) && Z_GC_INFO(iter->data)) {
++		zval_ptr_dtor(&iter->data);
++	}
++	if (Z_REFCOUNTED(hooked_iter->declared_props) && Z_GC_INFO(hooked_iter->declared_props)) {
++		zval_ptr_dtor(&hooked_iter->declared_props);
++	}
+@@ -213 +218,3 @@ static void zho_it_dtor(zend_object_iterator *iter)
+-	zval_ptr_dtor(&hooked_iter->current_data);
++	if (Z_REFCOUNTED(hooked_iter->current_data) && Z_GC_INFO(hooked_iter->current_data)) {
++		zval_ptr_dtor(&hooked_iter->current_data);
++	}
+diff --git a/Zend/zend_iterators.c b/Zend/zend_iterators.c
+index f67033b1116..b0229a97af3 100644
+--- a/Zend/zend_iterators.c
++++ b/Zend/zend_iterators.c
+@@ -56 +55,0 @@ static const zend_object_handlers iterator_object_handlers = {
+-
+@@ -64 +63,2 @@ static void iter_wrapper_free(zend_object *object)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -66 +66,3 @@ static void iter_wrapper_free(zend_object *object)
+-	iter->funcs->dtor(iter);
++	if (iter && iter->funcs && iter->funcs->dtor) {
++		iter->funcs->dtor(iter);
++	}

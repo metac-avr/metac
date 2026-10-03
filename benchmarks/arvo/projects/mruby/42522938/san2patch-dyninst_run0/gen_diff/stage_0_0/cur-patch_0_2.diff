@@ -1,0 +1,42 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..bd8a29c10 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1713 +1713,2 @@ static mrb_value
+-mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++// FIXME: Crash CWE-416: Use After Free
++ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+@@ -1715 +1716,5 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+-  mrb_int key = mrb_str_hash(mrb, self);
++  mrb_int key;
++  if (mrb_type(self) != MRB_TT_STRING || mrb_str_ptr(self) == NULL) {
++    return mrb_nil_value();
++  }
++  key = mrb_str_hash(mrb, self);
+@@ -1717,10 +1722 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+-}
+-
+-/* 15.2.10.5.21 */
+-/*
+- *  call-seq:
+- *     str.include? other_str   => true or false
+- *     str.include? int         => true or false
+- *
+- *  Returns <code>true</code> if <i>str</i> contains the given string or
+- *  character.
++} *  character.
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..5e417f009 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326,5 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    if (mrb_string_p(key) && RSTRING_PTR(key) != NULL) {
++      hash_code = mrb_str_hash(mrb, key);
++    } else {
++      hash_code = 0;
++    }
+@@ -343 +347,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-416: Use After Free
++     break;

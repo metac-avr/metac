@@ -1,0 +1,32 @@
+diff --git a/libavcodec/hevc_parser.c b/libavcodec/hevc_parser.c
+index 59f9a0ff3e..e5ff8ac662 100644
+--- a/libavcodec/hevc_parser.c
++++ b/libavcodec/hevc_parser.c
+@@ -329,3 +329,6 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-
+-    if (!is_dummy_buf)
+-        parse_nal_units(s, buf, buf_size, avctx);
++    
++    if (!is_dummy_buf) {
++        if (buf && buf_size > 0) {
++            parse_nal_units(s, buf, buf_size, avctx);
++        }
++    }
+diff --git a/libavutil/buffer.c b/libavutil/buffer.c
+index e4562a79b1..ffcd118a65 100644
+--- a/libavutil/buffer.c
++++ b/libavutil/buffer.c
+@@ -140,0 +141,2 @@ void av_buffer_unref(AVBufferRef **buf)
++    AVBufferRef *temp_ref;
++    
+@@ -144 +146,7 @@ void av_buffer_unref(AVBufferRef **buf)
+-    buffer_replace(buf, NULL);
++    temp_ref = *buf;
++    *buf = NULL;  // Immediate nulling for safety
++    
++    // Additional safety check before buffer replacement
++    if (temp_ref && temp_ref->buffer) {
++        buffer_replace(&temp_ref, NULL);
++    }
+@@ -154 +161,0 @@ int av_buffer_is_writable(const AVBufferRef *buf)
+-

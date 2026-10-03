@@ -1,0 +1,47 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..73575419 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -412,0 +413,10 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++static int
++htmlCheckEncoding(htmlParserCtxtPtr ctxt, unsigned int *len) {
++    const xmlChar *cur;
++    unsigned char c;
++    size_t avail;
++
++    if (ctxt->input->cur == NULL)
++        return(0);
++
++    /*
+@@ -425,2 +434,0 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        size_t avail;
+-
+@@ -434 +442,27 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        if ((c & 0xe0) == 0xe0) {
++
++        if ((c & 0xe0) == 0xc0) {
++            if ((c & 0x1e) == 0)
++                goto encoding_error;
++        } else if ((c & 0xf0) == 0xe0) {
++            if ((avail < 3) || ((cur[2] & 0xc0) != 0x80))
++                goto encoding_error;
++        } else if ((c & 0xf8) == 0xf0) {
++            if ((avail < 4) || ((cur[2] & 0xc0) != 0x80) ||
++                ((cur[3] & 0xc0) != 0x80))
++                goto encoding_error;
++        } else {
++            goto encoding_error;
++        }
++    }
++
++    if (len != NULL)
++        *len = 1;
++    return(c);
++
++encoding_error:
++    xmlCtxtErrIO(ctxt, XML_ERR_INVALID_ENCODING, NULL);
++    if ((ctxt->input->flags & XML_INPUT_HAS_ENCODING) == 0)
++        htmlCheckEncodingDecl(ctxt);
++    *len = 1;
++    return(*ctxt->input->cur);
++}        if ((c & 0xe0) == 0xe0) {

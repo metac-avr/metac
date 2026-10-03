@@ -1,0 +1,64 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..2dcf032a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -727,2 +727,4 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-        if (cur->href == NULL)
+-            goto error;
++        if (cur->href == NULL) {
++            xmlFree(cur);
++            return(NULL);
++        }
+@@ -732,2 +734,6 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-        if (cur->prefix == NULL)
+-            goto error;
++        if (cur->prefix == NULL) {
++            if (cur->href != NULL)
++                xmlFree((char *)cur->href);
++            xmlFree(cur);
++            return(NULL);
++        }
+@@ -746,2 +752,8 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-	    if (xmlStrEqual(prev->prefix, cur->prefix))
+-                goto error;
++	    if (xmlStrEqual(prev->prefix, cur->prefix)) {
++                if (cur->href != NULL)
++                    xmlFree((char *)cur->href);
++                if (cur->prefix != NULL)
++                    xmlFree((char *)cur->prefix);
++                xmlFree(cur);
++                return(NULL);
++            }
+@@ -750,2 +762,8 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-		if (xmlStrEqual(prev->prefix, cur->prefix))
+-                    goto error;
++		if (xmlStrEqual(prev->prefix, cur->prefix)) {
++                    if (cur->href != NULL)
++                        xmlFree((char *)cur->href);
++                    if (cur->prefix != NULL)
++                        xmlFree((char *)cur->prefix);
++                    xmlFree(cur);
++                    return(NULL);
++                }
+@@ -757,4 +774,0 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-
+-error:
+-    xmlFreeNs(cur);
+-    return(NULL);
+@@ -792,2 +806,10 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++    /* Clear critical fields before freeing to mitigate use-after-free */
++    if (cur->href != NULL) {
++        xmlFree((char *) cur->href);
++        cur->href = NULL; /* Prevent dangling pointer access */
++    }
++    if (cur->prefix != NULL) {
++        xmlFree((char *) cur->prefix);
++        cur->prefix = NULL; /* Prevent dangling pointer access */
++    }
++    memset(cur, 0, sizeof(xmlNs)); /* Clear entire structure */
+@@ -804,2 +826 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;

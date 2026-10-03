@@ -1,0 +1,47 @@
+diff --git a/parser.c b/parser.c
+index 11bb5199..8bdf638d 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7502,8 +7502,17 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw != NULL) {
+-			if (nw->_private == NULL)
+-			    nw->_private = cur->_private;
+-			if (firstChild == NULL){
+-			    firstChild = nw;
+-			}
+-			nw = xmlAddChild(ctxt->node, nw);
++		    int skip_node = 0;
++		    if (cur->type == XML_NAMESPACE_DECL) {
++		        xmlNsPtr ns = (xmlNsPtr) cur;
++		        if ((ns->href == NULL) && (ns->prefix == NULL)) {
++			    skip_node = 1;
++		        }
++		    }
++		    if (!skip_node) {
++		        nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		        if (nw != NULL) {
++			    if (nw->_private == NULL)
++			        nw->_private = cur->_private;
++			    if (firstChild == NULL){
++			        firstChild = nw;
++			    }
++			    nw = xmlAddChild(ctxt->node, nw);
++		        }
+diff --git a/tree.c b/tree.c
+index fe02b414..7d080f25 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// Add safety check for namespace validity to prevent dangling pointer access
++         xmlNsPtr ns;
++
++	/* Validate that the namespace hasn't been freed */
++	if (((unsigned long)node->ns) & 0x1)  /* Basic sanity check */
++	    return(NULL);
+@@ -4217,2 +4222,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		} else {
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	    } else {
++		ret->ns = xmlNewReconciledNs(doc, ret, node->ns);

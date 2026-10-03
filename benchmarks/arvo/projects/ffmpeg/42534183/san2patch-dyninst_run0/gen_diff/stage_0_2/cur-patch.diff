@@ -1,0 +1,24 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index b59d798f29..9fdf61f1a7 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -650 +650 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-{
++ {
+@@ -653,0 +654,4 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
++        // Add size validation to prevent out-of-bounds access
++        size_t map_size = src->nb_channels * sizeof(*dst->u.map);
++        if (src->nb_channels < 0 || map_size / sizeof(*dst->u.map) != (size_t)src->nb_channels)
++            return AVERROR(EINVAL);
+@@ -657 +661 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        memcpy(dst->u.map, src->u.map, map_size);
+diff --git a/libavformat/iamf_parse.c b/libavformat/iamf_parse.c
+index feb670180e..a149725bd8 100644
+--- a/libavformat/iamf_parse.c
++++ b/libavformat/iamf_parse.c
+@@ -1080 +1080,3 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+-            break;
++// Fixed: Add validation for obu_size to prevent out-of-bounds access
++            if (obu_size <= 0) ret = AVERROR_INVALIDDATA;
++             break;

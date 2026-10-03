@@ -1,0 +1,117 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..8dfa6191 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1263,22 +1263,20 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-    if (reader->node->next != NULL) {
+-	if ((oldstate == XML_TEXTREADER_ELEMENT) &&
+-            (reader->node->type == XML_ELEMENT_NODE) &&
+-	    (reader->node->children == NULL) &&
+-	    ((reader->node->extra & NODE_IS_EMPTY) == 0)
+-#ifdef LIBXML_XINCLUDE_ENABLED
+-	    && (reader->in_xinclude <= 0)
+-#endif
+-	    ) {
+-	    reader->state = XML_TEXTREADER_END;
+-	    goto node_found;
+-	}
+-#ifdef LIBXML_REGEXP_ENABLED
+-	if ((reader->validate) &&
+-	    (reader->node->type == XML_ELEMENT_NODE))
+-	    xmlTextReaderValidatePop(reader);
+-#endif /* LIBXML_REGEXP_ENABLED */
+-        if ((reader->preserves > 0) &&
+-	    (reader->node->extra & NODE_IS_SPRESERVED))
+-	    reader->preserves--;
+-	reader->node = reader->node->next;
+-	reader->state = XML_TEXTREADER_ELEMENT;
++    xmlNsPtr
++xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
++    xmlNsPtr cur;
++
++    if ((node != NULL) && (node->type != XML_ELEMENT_NODE))
++	return(NULL);
++
++    if ((prefix != NULL) && (xmlStrEqual(prefix, BAD_CAST "xml"))) {
++        /* xml namespace is predefined, no need to add it */
++        if (xmlStrEqual(href, XML_XML_NAMESPACE))
++            return(NULL);
++
++        /*
++         * Problem, this is an attempt to bind xml prefix to a wrong
++         * namespace, which breaks
++         * Namespace constraint: Reserved Prefixes and Namespace Names
++         * from XML namespace. But documents authors may not care in
++         * their context so let's proceed.
++         */
++    }
+@@ -1286,16 +1284,38 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-	/*
+-	 * Cleanup of the old node
+-	 */
+-	if ((reader->preserves == 0) &&
+-#ifdef LIBXML_XINCLUDE_ENABLED
+-	    (reader->in_xinclude == 0) &&
+-#endif
+-	    (reader->entNr == 0) &&
+-	    (reader->node->prev != NULL) &&
+-            (reader->node->prev->type != XML_DTD_NODE)) {
+-	    xmlNodePtr tmp = reader->node->prev;
+-	    if ((tmp->extra & NODE_IS_PRESERVED) == 0) {
+-                if (oldnode == tmp)
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++    /*
++     * Allocate a new Namespace and fill the fields.
++     */
++    cur = (xmlNsPtr) xmlMalloc(sizeof(xmlNs));
++    if (cur == NULL) {
++	xmlTreeErrMemory("building namespace");
++	return(NULL);
++    }
++    memset(cur, 0, sizeof(xmlNs));
++    cur->type = XML_LOCAL_NAMESPACE;
++
++    if (href != NULL)
++	cur->href = xmlStrdup(href);
++    if (prefix != NULL)
++	cur->prefix = xmlStrdup(prefix);
++
++    /*
++     * Add it at the end to preserve parsing order ...
++     * and checks for existing use of the prefix
++     */
++    if (node != NULL) {
++	if (node->nsDef == NULL) {
++	    node->nsDef = cur;
++	} else {
++	    xmlNsPtr prev = node->nsDef;
++
++	    if (((prev->prefix == NULL) && (cur->prefix == NULL)) ||
++		(xmlStrEqual(prev->prefix, cur->prefix))) {
++		xmlFreeNs(cur);
++		return(NULL);
++	    }
++	    while (prev->next != NULL) {
++	        prev = prev->next;
++		if (((prev->prefix == NULL) && (cur->prefix == NULL)) ||
++		    (xmlStrEqual(prev->prefix, cur->prefix))) {
++		    xmlFreeNs(cur);
++		    return(NULL);
++		}
+@@ -1302,0 +1323 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
++	    prev->next = cur;
+@@ -1304,2 +1324,0 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-
+-	goto node_found;
+@@ -1306,0 +1326,2 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
++    return(cur);
++}
+diff --git a/tree.c b/tree.c
+index fe02b414..dde380f4 100644
+--- a/tree.c
++++ b/tree.c
+@@ -737 +737 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-        /*
++        /

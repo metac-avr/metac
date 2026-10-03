@@ -1,0 +1,24 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..026e6acd0 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1031 +1031 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-			     "Basic", packet->authorization_line.len))
++		     "Basic", packet->authorization_line.len))
+@@ -1033 +1033 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-				"Digest", packet->authorization_line.len))) {
++			"Digest", packet->authorization_line.len))) {
+@@ -1039,2 +1039,11 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      if(content != NULL) {
+-	char *double_dot = strchr((char*)content, ':');
++      if(content != NULL && content_len > 0) {
++	char *double_dot;
++	/* Ensure null termination for string operations */
++	if(content_len < 64) {
++	  content[content_len] = '\0';
++	  double_dot = strchr((char*)content, ':');
++	} else {
++	  /* Handle case where content_len >= 64 */
++	  content[63] = '\0';
++	  double_dot = strchr((char*)content, ':');
++	}

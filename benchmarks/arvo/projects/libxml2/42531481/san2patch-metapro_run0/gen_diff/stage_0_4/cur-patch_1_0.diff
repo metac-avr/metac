@@ -1,0 +1,24 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..066ee538 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++	 xmlNsPtr ns;
+@@ -4283 +4283 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    if (ns != NULL) {
++	    if ((ns != NULL) && (ns->href != NULL)) {
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..29e9f7ea 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346,3 +1346,6 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Validate node before freeing to prevent use-after-free */
++		if (tmp != NULL) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		}

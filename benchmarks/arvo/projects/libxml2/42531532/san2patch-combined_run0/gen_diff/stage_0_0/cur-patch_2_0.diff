@@ -1,0 +1,29 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..baf695fb 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2745,7 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    /* Validate ID structure before removal to prevent dangling pointer access */
++    if (attr->id != NULL) {
++        if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0) {
++            /* Only return error if the ID was actually present */
++            if (errno != ENOENT) return(-1);
++        }
++    }
+diff --git a/hash.c b/hash.c
+index 33e8581e..9d1e6b92 100644
+--- a/hash.c
++++ b/hash.c
+@@ -1274 +1274,6 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
++    /* Validate entry is still valid before accessing */
++    if (entry->hashValue == 0) /* Already removed */
++        return(-1);
++        

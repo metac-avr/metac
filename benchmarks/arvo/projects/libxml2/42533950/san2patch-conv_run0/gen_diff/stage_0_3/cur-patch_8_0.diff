@@ -1,0 +1,33 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..5ead9645 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4247 +4247,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }
++// FIXME: Crash CWE-416: Use After Free
++     }
+@@ -4249,3 +4250,21 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        ret->properties = xmlCopyPropList(ret, node->properties);
+-        if (ret->properties == NULL)
+-            goto error;
++        /* Add null check and validation for namespace before copying properties */
++        if (ret->ns != NULL) {
++            /* Create a defensive copy to avoid referencing freed memory */
++            xmlNsPtr safe_ns = xmlCopyNamespace(ret->ns);
++            if (safe_ns != NULL || ret->ns == NULL) { /* Allow NULL namespaces */
++                ret->properties = xmlCopyPropList(ret, node->properties);
++                if (ret->properties == NULL) {
++                    if (safe_ns) xmlFreeNs(safe_ns);
++                    goto error;
++                }
++                /* Update namespace reference to safe copy */
++                if (safe_ns != NULL) {
++                    xmlFreeNs(ret->ns);
++                    ret->ns = safe_ns;
++                }
++            }
++        } else {
++            ret->properties = xmlCopyPropList(ret, node->properties);
++            if (ret->properties == NULL)
++                goto error;
++        }

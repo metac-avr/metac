@@ -1,0 +1,34 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..f550b9d04 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1713 +1713,2 @@ static mrb_value
+-mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++// FIXME: Crash CWE-416: Use After Free
++ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+@@ -1715,2 +1716,5 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+-  mrb_int key = mrb_str_hash(mrb, self);
+-  return mrb_int_value(mrb, key);
++  if (!mrb_immediate_p(self) && mrb_type(self) == MRB_TT_STRING) {
++    mrb_int key = mrb_str_hash(mrb, self);
++    return mrb_int_value(mrb, key);
++  }
++  return mrb_fixnum_value(0);
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..ca1cdfa39 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326,8 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    {
++      mrb_value safe_key = key;
++      if (mrb_type(safe_key) == MRB_TT_STRING) {
++        hash_code = mrb_str_hash(mrb, safe_key);
++      } else {
++        hash_code = U32(mrb_obj_id(safe_key));
++      }
++    }
+@@ -343 +350,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-416: Use After Free
++     break;

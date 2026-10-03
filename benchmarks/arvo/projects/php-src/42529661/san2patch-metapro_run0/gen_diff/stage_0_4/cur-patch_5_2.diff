@@ -1,0 +1,22 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..d1f1da35d4e 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -650,2 +650,5 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
++				HashTable *ht = Z_ARRVAL_P(zv);
++				if (ht && GC_REFCOUNT(ht) > 0) {
++					if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
++						flags |= IS_TRACE_PACKED;
++					}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..c69cd5d8df5 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2495 +2495,4 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-		efree(HT_GET_DATA_ADDR(ht));
++		void *data_ptr = HT_GET_DATA_ADDR(ht);
++		/* Nullify data pointer before freeing to prevent dangling references */
++		HT_SET_DATA_ADDR(ht, NULL);
++		efree(data_ptr);

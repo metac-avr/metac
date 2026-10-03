@@ -1,0 +1,24 @@
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..6c2b572284 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -524 +524,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+-
++ 
++        // Check size limits before allocation to prevent buffer overflow
++        if (size < 0 || num_descr < 0 || num_descr > size / 20) {
++            av_log(s, AV_LOG_ERROR, "invalid channel description size or count\n");
++            return AVERROR_INVALIDDATA;
++        }
++ 
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..55022c9026 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -406 +406,5 @@ int av_channel_layout_custom_init(AVChannelLayout *channel_layout, int nb_channe
+-        return AVERROR(EINVAL);
++         return AVERROR(EINVAL);
++
++    // Validate channel count to reasonable limits
++    if (nb_channels > 1024)
++        nb_channels = 1024;

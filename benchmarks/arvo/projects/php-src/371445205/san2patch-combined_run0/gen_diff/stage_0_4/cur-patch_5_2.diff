@@ -1,0 +1,49 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..6a1aa555452 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,4 +6770,10 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
++static zend_always_inline void zend_string_release_ex(zend_string *s, bool persistent)
++{
++	if (!ZSTR_IS_INTERNED(s)) {
++		if (GC_DELREF(s) == 0) {
++			if (persistent) {
++				ZEND_ASSERT(GC_FLAGS(s) & IS_STR_PERSISTENT);
++				free(s);
++			} else {
++				ZEND_ASSERT(!(GC_FLAGS(s) & IS_STR_PERSISTENT));
++				efree(s);
+@@ -6777,15 +6783 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-
+-	zval obj;
+-
+-	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
+-		RETURN_THROWS();
+-	}
+-
+-	RETURN_COPY_VALUE(&obj);
+-}
+-
+-ZEND_METHOD(ReflectionEnum, __construct)
+-{
+-	reflection_class_object_ctor(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++}		RETURN_THROWS();
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..87f9bc446a3 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -359,2 +359,3 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-				free(s);
+-			} else {
++				if (s) free(s);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			} else {
+@@ -362 +363 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-				efree(s);
++				if (s) efree(s);

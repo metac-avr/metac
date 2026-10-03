@@ -1,0 +1,60 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..728e188dea1 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1680,0 +1681,17 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++
++ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
++{
++	Bucket *p, *end;
++
++	if (HT_FLAGS(ht) & HASH_FLAG_PACKED) {
++		goto free_ht;
++	}
++
++	end = HT_GET_HASH_SIZE(ht);
++	for (p = ht->arData; p != end; p++) {
++		if (p->key) {
++			zend_string_release(p->key);
++		}
++		if (Z_TYPE(p->val) != IS_UNDEF) {
++			zval_ptr_dtor(&p->val);
++		}
+@@ -1682,2 +1698,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	SET_INCONSISTENT(HT_DESTROYED);
+-	efree(HT_GET_DATA_ADDR(ht));
+@@ -1684,0 +1700 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	SET_INCONSISTENT(HT_DESTROYED);
+@@ -1685,0 +1702 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	efree(HT_GET_DATA_ADDR(ht));
+@@ -1689,4 +1705,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..67591834937 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,6 +46,0 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+-	/* IS_OBJECT       */ (zend_rc_dtor_func_t)zend_objects_store_del,
+-	/* IS_RESOURCE     */ (zend_rc_dtor_func_t)zend_list_free,
+-	/* IS_REFERENCE    */ (zend_rc_dtor_func_t)zend_reference_destroy,
+-	/* IS_CONSTANT_AST */ (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+@@ -57 +51,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p && GC_TYPE(p) <= IS_CONSTANT_AST) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+@@ -59,9 +54,0 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-{
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);

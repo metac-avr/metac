@@ -1,0 +1,42 @@
+diff --git a/parser.c b/parser.c
+index c3068cad..8938e37e 100644
+--- a/parser.c
++++ b/parser.c
+@@ -13425,3 +13425,3 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-		oldctxt->valid &= xmlValidateElement(&oldctxt->vctxt,
+-			oldctxt->myDoc, cur);
+-	    }
++	oldctxt->valid &= xmlValidateElement(&oldctxt->vctxt,
++	    oldctxt->myDoc, cur);
++	}
+@@ -13429,2 +13429,2 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-	    cur->parent = NULL;
+-	    cur = cur->next;
++	cur->parent = NULL;
++	cur = cur->next;
+@@ -13433 +13433,2 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-    }
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     }
+@@ -13435,2 +13436,4 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-	xmlFreeNode(ctxt->myDoc->children);
+-        ctxt->myDoc->children = content;
++	if (ctxt->myDoc->children != NULL) {
++	    xmlFreeNode(ctxt->myDoc->children);
++	}
++	ctxt->myDoc->children = content;
+@@ -13446 +13448,0 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-
+diff --git a/tree.c b/tree.c
+index e4425f10..5036191b 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3749,2 +3749,6 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
++		(cur->type != XML_COMMENT_NODE)) {
++		if ((cur->doc != NULL) && (xmlDictOwns(cur->doc->dict, cur->name)))
++		    DICT_FREE(cur->name)
++		else if ((cur->doc == NULL) && (xmlDictOwns(xmlDictDefaultDict(), cur->name)))
++		    DICT_FREE(cur->name)
++	    }

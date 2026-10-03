@@ -1,0 +1,19 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 2752aa55f..5b78f0feb 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -9688 +9688,2 @@ char *ndpi_strnstr(const char *s, const char *find, size_t slen) {
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -9690 +9691,2 @@ char *ndpi_strnstr(const char *s, const char *find, size_t slen) {
+-    return (char *)memchr(s, c, slen);
++    // Ensure we don't read beyond buffer boundaries
++    return (slen > 0) ? (char *)memchr(s, c, slen) : NULL;
+@@ -9695 +9697 @@ char *ndpi_strnstr(const char *s, const char *find, size_t slen) {
+-  if (find_len > slen) {
++  if (find_len > slen || find_len == 0) {  // Additional safety check
+@@ -9707 +9709,2 @@ char *ndpi_strnstr(const char *s, const char *find, size_t slen) {
+-    s = (char *)memchr(s + 1, c, remaining_length);
++    if (remaining_length < 1) return NULL;  // Prevent overflow
++    s = (char *)memchr(s + 1, c, remaining_length - 1);  // Adjust search range

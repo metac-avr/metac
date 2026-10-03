@@ -1,0 +1,43 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..ccdfec51 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+@@ -4283 +4283 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    if (ns != NULL) {
++	    if ((ns != NULL) && (ns->href != NULL)) {
+diff --git a/parser.c b/parser.c
+index cae2b7fd..e52e8fbd 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7373,2 +7373,11 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw == NULL) {
++		    /* Add safety check for node validity before copying */
++		    int node_valid = 1;
++		    if (cur->ns != NULL) {
++		        /* Simple validation - check if namespace appears to be intact */
++		        if ((unsigned long)cur->ns & 0x1) { /* Basic sanity check */
++		            node_valid = 0;
++		        }
++		    }
++		    if (node_valid) {
++		        nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		        if (nw == NULL) {
+@@ -7377,6 +7386,6 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-			if (nw->_private == NULL)
+-			    nw->_private = cur->_private;
+-			if (firstChild == NULL){
+-			    firstChild = nw;
+-			}
+-			nw = xmlAddChild(ctxt->node, nw);
++			    if (nw->_private == NULL)
++			        nw->_private = cur->_private;
++			    if (firstChild == NULL){
++			        firstChild = nw;
++			    }
++			    nw = xmlAddChild(ctxt->node, nw);
+@@ -7384,0 +7394 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++		        }

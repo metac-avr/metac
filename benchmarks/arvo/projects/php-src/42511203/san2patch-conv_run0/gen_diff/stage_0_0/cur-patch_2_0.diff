@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..35f6fe03dcf 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -23839,3 +23839,9 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_U
+-	value = zend_assign_to_variable(variable_ptr, value, IS_CONST, EX_USES_STRICT_TYPES());
+-	if (UNEXPECTED(0)) {
+-		ZVAL_COPY(EX_VAR(opline->result.var), value);
++	/* Defensive check to prevent accessing freed memory */
++	if (variable_ptr && !Z_IS_RECURSIVE_P(variable_ptr)) {
++		value = zend_assign_to_variable(variable_ptr, value, IS_CONST, EX_USES_STRICT_TYPES());
++		if (UNEXPECTED(0)) {
++			ZVAL_COPY(EX_VAR(opline->result.var), value);
++		}
++	} else {
++		/* Skip assignment if pointer is potentially invalid */
++		value = RT_CONSTANT(opline, opline->op2);
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..16d5194c1fe 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p && GC_TYPE(p) >= 0) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

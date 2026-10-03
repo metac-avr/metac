@@ -1,0 +1,39 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..3751601911 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -427 +427,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
++
++    if (nb_codes <= 0 || nb_elems <= 0 || numbits <= 0 ||
++        table == NULL || single == NULL || buf == NULL) {
++        av_log(logctx, AV_LOG_ERROR, "Invalid VLC table arguments\n");
++        return -1;
++    }
+@@ -460,0 +467 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    int fail_count = 0;
+@@ -475 +482,5 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-
++            if (j >= nb_codes) {
++                av_log(logctx, AV_LOG_ERROR, "Invalid VLC code count\n");
++                fail_count++;
++                break;
++            }
+@@ -489 +500,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-            goto fail;
++            fail_count++;
++            break;
+@@ -494 +506,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-            goto fail;
++            fail_count++;
++            break;
+@@ -496,0 +510,6 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    if (fail_count) {
++        vlc_common_end(vlc, 0, 0, buf, flags, localbuf);
++        if (buf != localbuf)
++            av_free(buf);
++        return AVERROR_INVALIDDATA;
++    }
+@@ -501,0 +521 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    vlc_common_end(vlc, 0, 0, buf, flags, localbuf);

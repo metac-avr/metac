@@ -1,0 +1,37 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..c1bbe31a5 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -188,0 +189 @@ ucmp(mpz_t *y, mpz_t *x)
++  if (x->sz == 0 || !x->p || !y->p) return 0;
+@@ -189,0 +191 @@ ucmp(mpz_t *y, mpz_t *x)
++    if (i >= x->sz) return 0;
+@@ -245 +247,2 @@ mpz_add(mrb_state *mrb, mpz_t *zz, mpz_t *x, mpz_t *y)
+-  else {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   else {
+@@ -247 +250,5 @@ mpz_add(mrb_state *mrb, mpz_t *zz, mpz_t *x, mpz_t *y)
+-    if ((mg = ucmp(x,y)) == 0) {
++    mg = 0;
++    if (x && y && x->p && y->p && x->sz >= 0 && y->sz >= 0) {
++      mg = ucmp(x,y);
++    }
++    if (mg == 0) {
+@@ -251,2 +258,6 @@ mpz_add(mrb_state *mrb, mpz_t *zz, mpz_t *x, mpz_t *y)
+-      usub(mrb, &z, x, y);
+-      z.sn = (x->sn > 0 && y->sn < 0) ? 1 : (-1);
++      if (x && y && x->p && y->p && x->sz >= 0 && y->sz >= 0) {
++        usub(mrb, &z, x, y);
++        z.sn = (x->sn > 0 && y->sn < 0) ? 1 : (-1);
++      } else {
++        zero(&z);
++      }
+@@ -255,2 +266,6 @@ mpz_add(mrb_state *mrb, mpz_t *zz, mpz_t *x, mpz_t *y)
+-      usub(mrb, &z, y, x);
+-      z.sn = (x->sn < 0 && y->sn > 0) ? 1 : (-1);
++      if (x && y && x->p && y->p && x->sz >= 0 && y->sz >= 0) {
++        usub(mrb, &z, y, x);
++        z.sn = (x->sn < 0 && y->sn > 0) ? 1 : (-1);
++      } else {
++        zero(&z);
++      }

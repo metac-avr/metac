@@ -1,0 +1,54 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..b41127644 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -268 +268 @@ static void gf_m2ts_metadata_descriptor_del(GF_M2TS_MetadataDescriptor *metad)
+-static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
++static void gf_m2ts_es_del(GF_M2TS_ES **es, GF_M2TS_Demuxer *ts)
+@@ -271,2 +271,2 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
+-	if (es->flags & GF_M2TS_ES_IS_PCR_REUSE) {
+-		es->flags &= ~GF_M2TS_ES_IS_PCR_REUSE;
++	if ((*es)->flags & GF_M2TS_ES_IS_PCR_REUSE) {
++		(*es)->flags &= ~GF_M2TS_ES_IS_PCR_REUSE;
+@@ -275 +275 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
+-	gf_list_del_item(es->program->streams, es);
++	gf_list_del_item((*es)->program->streams, *es);
+@@ -278 +278 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
+-		ts->on_event(ts, GF_M2TS_EVT_STREAM_REMOVED, es);
++		ts->on_event(ts, GF_M2TS_EVT_STREAM_REMOVED, *es);
+@@ -280,2 +280,2 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
+-	if (es->flags & GF_M2TS_ES_IS_SECTION) {
+-		GF_M2TS_SECTION_ES *ses = (GF_M2TS_SECTION_ES *)es;
++	if ((*es)->flags & GF_M2TS_ES_IS_SECTION) {
++		GF_M2TS_SECTION_ES *ses = (GF_M2TS_SECTION_ES *)(*es);
+@@ -285,2 +285,2 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
+-		if (es->flags & GF_M2TS_ES_IS_MPE)
+-			gf_dvb_mpe_section_del(es);
++		if ((*es)->flags & GF_M2TS_ES_IS_MPE)
++			gf_dvb_mpe_section_del(*es);
+@@ -289,2 +289,2 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
+-	} else if (es->pid!=es->program->pmt_pid) {
+-		GF_M2TS_PES *pes = (GF_M2TS_PES *)es;
++	} else if ((*es)->pid!=(*es)->program->pmt_pid) {
++		GF_M2TS_PES *pes = (GF_M2TS_PES *)(*es);
+@@ -292,2 +292,2 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
+-		if ((pes->flags & GF_M2TS_INHERIT_PCR) && ts->ess[es->program->pcr_pid]==es)
+-			ts->ess[es->program->pcr_pid] = NULL;
++		if ((pes->flags & GF_M2TS_INHERIT_PCR) && ts->ess[(*es)->program->pcr_pid]==*es)
++			ts->ess[(*es)->program->pcr_pid] = NULL;
+@@ -302,2 +302,3 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
+-	if (es->slcfg) gf_free(es->slcfg);
+-	gf_free(es);
++	if ((*es)->slcfg) gf_free((*es)->slcfg);
++	gf_free(*es);
++	*es = NULL;
+@@ -3113 +3114,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++  	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3116 +3118 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-			gf_m2ts_es_del(ts->ess[i], ts);
++			gf_m2ts_es_del(&ts->ess[i], ts);
+@@ -3129 +3131 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-			gf_m2ts_es_del(es, ts);
++			gf_m2ts_es_del(&es, ts);

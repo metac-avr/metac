@@ -1,0 +1,28 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..903085038 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -165 +165,4 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
+-DEFINE_INCREMENTER(ht, size)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++// Patched for null pointer dereference - validate pointer before use
++#define SAFE_HT_ACCESS(ptr, default_val) ((ptr) ? (ptr) : (default_val))
++ DEFINE_INCREMENTER(ht, size)
+@@ -177 +179,0 @@ DEFINE_SWITCHER(ht, HT)
+-
+@@ -1567 +1569 @@ mrb_hash_aset(mrb_state *mrb, mrb_value self)
+-  const mrb_value *argv = mrb_get_argv(mrb);
++const mrb_value *argv = mrb_get_argv(mrb);
+@@ -1575 +1577,2 @@ MRB_API mrb_int
+-mrb_hash_size(mrb_state *mrb, mrb_value hash)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ mrb_hash_size(mrb_state *mrb, mrb_value hash)
+@@ -1577 +1580,3 @@ mrb_hash_size(mrb_state *mrb, mrb_value hash)
+-  return (mrb_int)h_size(mrb_hash_ptr(hash));
++  struct RHash *h = mrb_hash_ptr(hash);
++  if (!h) return 0;
++  return (mrb_int)h_size(h);
+@@ -1587,2 +1592 @@ mrb_hash_size(mrb_state *mrb, mrb_value hash)
+- *  Returns the number of key-value pairs in the hash.
+- *
++ *  Returns the number of key-value pairs in the hash. *

@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..2370da5a4b8 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -35 +35,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref != NULL && !GC_DELREF(ref)) {
++			rc_dtor_func(ref);
++		}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..37aab7e277d 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -262,9 +262,2 @@ static zend_always_inline void _zend_hash_init_int(HashTable *ht, uint32_t nSize
+-	ht->nTableSize = zend_hash_check_size(nSize);
+-}
+-
+-ZEND_API void ZEND_FASTCALL _zend_hash_init(HashTable *ht, uint32_t nSize, dtor_func_t pDestructor, bool persistent)
+-{
+-	_zend_hash_init_int(ht, nSize, pDestructor, persistent);
+-}
+-
+-ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
+@@ -272,0 +266 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
++	if (!ht) return NULL;
+@@ -279,0 +274 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
++	if (!ht) return NULL;
+@@ -283 +277,0 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
+-

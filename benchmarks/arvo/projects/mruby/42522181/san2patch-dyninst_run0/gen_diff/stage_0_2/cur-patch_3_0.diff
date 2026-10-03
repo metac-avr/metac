@@ -1,0 +1,20 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..268935c7b 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -189 +189 @@ iv_foreach(mrb_state *mrb, iv_tbl *t, mrb_iv_foreach_func *func, void *p)
+-    if (IV_KEY_P(keys[i])) {
++    if (IV_KEY_P(keys[i]) && !mrb_nil_p(vals[i])) {
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..bbb11a1a8 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -698 +698,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-416: Use After Free
++   case MRB_TT_OBJECT:
+@@ -700 +701,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (obj->tt != MRB_TT_FREE) {
++      mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    }

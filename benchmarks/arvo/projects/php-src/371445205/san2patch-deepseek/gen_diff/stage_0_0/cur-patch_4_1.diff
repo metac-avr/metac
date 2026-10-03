@@ -1,0 +1,61 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..379e15920a0 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,7 +6770,7 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
+-		}
+-	}
++        if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
++            if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
++                zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
++                RETURN_THROWS();
++            }
++        }
++    }
+@@ -6778 +6778 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	zval obj;
++    zval obj;
+@@ -6780,3 +6780,9 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
+-		RETURN_THROWS();
+-	}
++    if (SUCCESS != zend_get_attribute_object(&obj, ce, attr->data, attr->scope, attr->filename)) {
++        RETURN_THROWS();
++    }
++
++    zval *name_zval = zend_hash_str_find(Z_OBJPROP_P(&obj), "name", sizeof("name")-1);
++    if (name_zval != NULL && Z_TYPE_P(name_zval) == IS_STRING) {
++        zend_string *name_copy = zend_string_copy(Z_STR_P(name_zval));
++        ZVAL_STR(name_zval, name_copy);
++    }
+@@ -6784 +6790,18 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-	RETURN_COPY_VALUE(&obj);
++    zval *arguments = zend_hash_str_find(Z_OBJPROP_P(&obj), "arguments", sizeof("arguments")-1);
++    if (arguments != NULL && Z_TYPE_P(arguments) == IS_ARRAY) {
++        zend_string *str_key;
++        zval *val;
++        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(arguments), str_key, val) {
++            if (str_key != NULL) {
++                zend_string *arg_name_copy = zend_string_copy(str_key);
++                zend_hash_update(Z_ARRVAL_P(arguments), arg_name_copy, val);
++                zend_string_release(str_key);
++            }
++            if (Z_TYPE_P(val) == IS_STRING) {
++                zend_string *arg_val_copy = zend_string_copy(Z_STR_P(val));
++                ZVAL_STR(val, arg_val_copy);
++            }
++        } ZEND_HASH_FOREACH_END();
++    }
++
++    RETURN_COPY_VALUE(&obj);
+@@ -6789,3 +6812,2 @@ ZEND_METHOD(ReflectionEnum, __construct)
+-	reflection_class_object_ctor(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++    reflection_class_object_ctor(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
++    if (EG(exception)) {		RETURN_THROWS();

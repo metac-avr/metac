@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..5bc638e146c 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
++/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p || GC_TYPE(p) > IS_CONSTANT_AST) return; // Check bounds and null pointer
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..2d7181c83d7 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2328 +2328,6 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-fetch_from_array:
++// Validate array reference count before proceeding - Fix for heap-use-after-free
++		if (UNEXPECTED(Z_ARRVAL_P(container)->gc.u.v.refcount == 0)) {
++			ZVAL_UNDEF(result);
++			return;
++		}
++ fetch_from_array:

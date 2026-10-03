@@ -1,0 +1,57 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..2b0df3f810a 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3258,16 +3258,20 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-		switch (throw_op->opcode) {
+-			case ZEND_ADD_ARRAY_ELEMENT:
+-			case ZEND_ADD_ARRAY_UNPACK:
+-			case ZEND_ROPE_INIT:
+-			case ZEND_ROPE_ADD:
+-				break; /* exception while building structures, live range handling will free those */
+-
+-			case ZEND_FETCH_CLASS:
+-			case ZEND_DECLARE_ANON_CLASS:
+-				break; /* return value is zend_class_entry pointer */
+-
+-			default:
+-				/* smart branch opcodes may not initialize result */
+-				if (!zend_is_smart_branch(throw_op)) {
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+-				}
++		zval *result = EX_VAR(throw_op->result.var);
++		if (Z_REFCOUNTED_P(result) && GC_REFCOUNT(Z_COUNTED_P(result)) > 0) {
++			switch (throw_op->opcode) {
++				case ZEND_ADD_ARRAY_ELEMENT:
++				case ZEND_ADD_ARRAY_UNPACK:
++				case ZEND_ROPE_INIT:
++				case ZEND_ROPE_ADD:
++					break; /* exception while building structures, live range handling will free those */
++
++				case ZEND_FETCH_CLASS:
++				case ZEND_DECLARE_ANON_CLASS:
++					break; /* return value is zend_class_entry pointer */
++
++				default:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 				/* smart branch opcodes may not initialize result */
++					if (!zend_is_smart_branch(throw_op)) {
++						zval_ptr_dtor_nogc(result);
++					}
++			}
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..28b76eebd91 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// Skip destruction of zvals that are not owned by the current VM frame or are UNDEF.
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -34,0 +36,3 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++	if (UNEXPECTED(Z_TYPE_P(zval_ptr) == IS_UNDEF) || UNEXPECTED(Z_REFCOUNT_P(zval_ptr) == 0)) {
++		return;
++	}
+@@ -45,2 +49 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-			rc_dtor_func(ref);
+-		} else {
++			rc_dtor_func(ref);		} else {

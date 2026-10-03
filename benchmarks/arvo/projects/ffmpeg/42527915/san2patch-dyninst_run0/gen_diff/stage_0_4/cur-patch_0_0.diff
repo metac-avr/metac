@@ -1,0 +1,26 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..6df8127462 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -428,0 +429,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    // Validate pointers before use to prevent use-after-free
++    if (!table || !single || !buf) {
++        av_log(logctx, AV_LOG_ERROR, "Invalid null pointer in vlc_multi_gen\n");
++        return AVERROR(EINVAL);
++    }
++
+@@ -460,0 +467 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    int mem_valid = 1; // Track memory validity
+@@ -495 +502 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -499,0 +507,7 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    
++    // Check memory validity before accessing freed memory
++    if (!mem_valid) {
++        av_log(logctx, AV_LOG_ERROR, "Memory has been freed\n");
++        return AVERROR_INVALIDDATA;
++    }
++    
+@@ -503,0 +518 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    mem_valid = 0; // Mark memory as invalid

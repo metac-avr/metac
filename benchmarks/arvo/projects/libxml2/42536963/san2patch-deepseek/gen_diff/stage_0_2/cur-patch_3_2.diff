@@ -1,0 +1,99 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..4be9dd0b 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -413,22 +413,72 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     * From rfc2044: encoding of the Unicode values on UTF-8:
+-     *
+-     * UCS-4 range (hex.)           UTF-8 octet sequence (binary)
+-     * 0000 0000-0000 007F   0xxxxxxx
+-     * 0000 0080-0000 07FF   110xxxxx 10xxxxxx
+-     * 0000 0800-0000 FFFF   1110xxxx 10xxxxxx 10xxxxxx
+-     *
+-     * Check for the 0x110000 limit too
+-     */
+-    cur = ctxt->input->cur;
+-    c = *cur;
+-    if (c & 0x80) {
+-        size_t avail;
+-
+-        if ((c & 0x40) == 0)
+-            goto encoding_error;
+-
+-        avail = ctxt->input->end - ctxt->input->cur;
+-
+-        if ((avail < 2) || ((cur[1] & 0xc0) != 0x80))
+-            goto encoding_error;
+-        if ((c & 0xe0) == 0xe0) {
++        /*
++         * From rfc2044: encoding of the Unicode values on UTF-8:
++         *
++         * UCS-4 range (hex.)           UTF-8 octet sequence (binary)
++         * 0000 0000-0000 007F   0xxxxxxx
++         * 0000 0080-0000 07FF   110xxxxx 10xxxxxx
++         * 0000 0800-0000 FFFF   1110xxxx 10xxxxxx 10xxxxxx
++         *
++         * Check for the 0x110000 limit too
++         */
++        cur = ctxt->input->cur;
++        if ((cur == NULL) || (cur >= ctxt->input->end))
++            return(0);
++        c = *cur;
++        if (c & 0x80) {
++            size_t avail;
++
++            if ((c & 0x40) == 0)
++                goto encoding_error;
++
++            avail = ctxt->input->end - ctxt->input->cur;
++
++            if ((avail < 2) || ((cur[1] & 0xc0) != 0x80))
++                goto encoding_error;
++
++            if ((c & 0xe0) == 0xc0) {
++                if ((avail < 2) || ((cur[1] & 0xc0) != 0x80))
++                    goto encoding_error;
++                *len = 2;
++                val = (cur[0] & 0x1f) << 6;
++                val |= (cur[1] & 0x3f);
++                if (!IS_CHAR(val))
++                    goto encoding_error;
++                return(val);
++            } else if ((c & 0xf0) == 0xe0) {
++                if ((avail < 3) || ((cur[1] & 0xc0) != 0x80) ||
++                    ((cur[2] & 0xc0) != 0x80))
++                    goto encoding_error;
++                *len = 3;
++                val = (cur[0] & 0xf) << 12;
++                val |= (cur[1] & 0x3f) << 6;
++                val |= (cur[2] & 0x3f);
++                if (!IS_CHAR(val))
++                    goto encoding_error;
++                return(val);
++            } else if ((c & 0xf8) == 0xf0) {
++                if ((avail < 4) || ((cur[1] & 0xc0) != 0x80) ||
++                    ((cur[2] & 0xc0) != 0x80) || ((cur[3] & 0xc0) != 0x80))
++                    goto encoding_error;
++                *len = 4;
++                val = (cur[0] & 0x7) << 18;
++                val |= (cur[1] & 0x3f) << 12;
++                val |= (cur[2] & 0x3f) << 6;
++                val |= (cur[3] & 0x3f);
++                if (!IS_CHAR(val))
++                    goto encoding_error;
++                return(val);
++            } else {
++                goto encoding_error;
++            }
++        } else {
++            *len = 1;
++            return(c);
++        }
++
++    encoding_error:
++        xmlCtxtErrIO(ctxt, XML_ERR_INVALID_ENCODING, NULL);
++        if ((ctxt->input->flags & XML_INPUT_HAS_ENCODING) == 0)
++            ctxt->input->flags |= XML_INPUT_HAS_ENCODING;
++        *len = 1;
++        return(*ctxt->input->cur);
++    }        if ((c & 0xe0) == 0xe0) {

@@ -1,0 +1,36 @@
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..90f9fc72130 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -218,2 +218,3 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-			zend_hash_index_update(ht, i, &intern->array.elements[i]);
+-			Z_TRY_ADDREF(intern->array.elements[i]);
++			zval tmp;
++			ZVAL_COPY(&tmp, &intern->array.elements[i]);
++			zend_hash_index_update(ht, i, &tmp);
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 6e809c87341..41ecc0a2c2f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -296,3 +295,0 @@ ZEND_API HashTable* ZEND_FASTCALL zend_new_pair(zval *val1, zval *val2)
+-	return ht;
+-}
+-
+@@ -304,0 +302,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_packed_grow(HashTable *ht)
++	if (UNEXPECTED(ht->nNumUsed != ht->nNumOfElements)) {
++		zend_hash_real_init_ex(ht, 0);
++		return;
++	}
+@@ -307,11 +308 @@ ZEND_API void ZEND_FASTCALL zend_hash_packed_grow(HashTable *ht)
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_real_init(HashTable *ht, bool packed)
+-{
+-	IS_CONSISTENT(ht);
+-
+-	HT_ASSERT_RC1(ht);
+-	zend_hash_real_init_ex(ht, packed);
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_real_init_packed(HashTable *ht)
++}ZEND_API void ZEND_FASTCALL zend_hash_real_init_packed(HashTable *ht)

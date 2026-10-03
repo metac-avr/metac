@@ -1,0 +1,32 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..9815ee2c87 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -200 +200 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
+-                                     &fpc->wrap_buf,
++                                      &fpc->wrap_buf,
+@@ -202 +202 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
+-    if (frame_header_is_valid(fpc->avctx, header_buf, &fi)) {
++    if (header_buf && frame_header_is_valid(fpc->avctx, header_buf, &fi)) {
+@@ -225,0 +226,2 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
++    } else {
++        size = 0;
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index d4e9276da1..64c23d3c09 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -401,0 +402,5 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++    // Prevent out-of-bounds access by validating buffer size
++    if (!s->buffer || n <= 0 || n > 25) {
++        return 0;
++    }
++    
+@@ -403,0 +409,8 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++    
++    // Check remaining buffer size before reading
++    ptrdiff_t remaining_bytes = s->buffer_end - (s->buffer + (re.index >> 3));
++    if (remaining_bytes < 4) {  // Need at least 4 bytes for safe operation
++        CLOSE_READER(re, s);
++        return 0;
++    }
++    

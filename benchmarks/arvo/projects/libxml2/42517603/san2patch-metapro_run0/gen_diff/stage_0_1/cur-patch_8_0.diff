@@ -1,0 +1,22 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..8ce4369b 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2053,0 +2054,6 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++    
++    /* Validate node integrity to prevent use-after-free - check key fields */
++    if ((cur->doc == NULL) || 
++        (cur->_private == (void*)0xdeadbeef)) { /* Simple freed marker check */
++        return(-1);
++    }
+@@ -2279,3 +2285,7 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            if ((ctxt->incTab[i]->inc != NULL) ||
+-                (ctxt->incTab[i]->emptyFb != 0)) {	/* (empty fallback) */
+-                xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++// FIXME: Crash CWE-416: Use After Free
++             if ((ctxt->incTab[i]->inc != NULL) ||
++                (ctxt->incTab[i]->emptyFb != 0)) {    /* (empty fallback) */
++                xmlNodePtr elem = ctxt->incTab[i]->elem;
++                if ((elem != NULL) && (elem->doc != NULL)) {
++                    xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++                }

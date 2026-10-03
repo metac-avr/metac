@@ -1,0 +1,26 @@
+diff --git a/libavcodec/vp9_superframe_bsf.c b/libavcodec/vp9_superframe_bsf.c
+index 57681e29e4..376a0a1a55 100644
+--- a/libavcodec/vp9_superframe_bsf.c
++++ b/libavcodec/vp9_superframe_bsf.c
+@@ -109,8 +109,13 @@ static int vp9_superframe_filter(AVBSFContext *ctx, AVPacket *pkt)
+-        return res;
+-
+-    marker = pkt->data[pkt->size - 1];
+-    if ((marker & 0xe0) == 0xc0) {
+-        int nbytes = 1 + ((marker >> 3) & 0x3);
+-        int n_frames = 1 + (marker & 0x7), idx_sz = 2 + n_frames * nbytes;
+-
+-        uses_superframe_syntax = pkt->size >= idx_sz && pkt->data[pkt->size - idx_sz] == marker;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         return res;
++
++    if (pkt->size > 0) {
++        marker = pkt->data[pkt->size - 1];
++        if ((marker & 0xe0) == 0xc0) {
++            int nbytes = 1 + ((marker >> 3) & 0x3);
++            int n_frames = 1 + (marker & 0x7), idx_sz = 2 + n_frames * nbytes;
++
++            if (pkt->size >= idx_sz) {
++                uses_superframe_syntax = pkt->data[pkt->size - idx_sz] == marker;
++            }
++        }

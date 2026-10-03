@@ -1,0 +1,40 @@
+diff --git a/libavcodec/hevc_parser.c b/libavcodec/hevc_parser.c
+index 59f9a0ff3e..6c768d801c 100644
+--- a/libavcodec/hevc_parser.c
++++ b/libavcodec/hevc_parser.c
+@@ -216 +216,2 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
+-            break;
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++             break;
+@@ -218 +219,3 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
+-            ff_hevc_decode_nal_pps(gb, avctx, ps);
++            if (ps->pps) {
++                ff_hevc_decode_nal_pps(gb, avctx, ps);
++            }
+@@ -302 +305 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-                      const uint8_t *buf, int buf_size)
++                      const uint8_t *buf, int *buf_size)
+@@ -307 +310 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-    int is_dummy_buf = !buf_size;
++    int is_dummy_buf = !*buf_size;
+@@ -318 +321 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        next = buf_size;
++        next = *buf_size;
+@@ -320,2 +323,2 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        next = hevc_find_frame_end(s, buf, buf_size);
+-        if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
++        next = hevc_find_frame_end(s, buf, *buf_size);
++        if (ff_combine_frame(pc, next, &buf, buf_size) < 0) {
+@@ -324 +327 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-            return buf_size;
++            return *buf_size;
+@@ -329 +332,2 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ 
+@@ -331 +335 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        parse_nal_units(s, buf, buf_size, avctx);
++        parse_nal_units(s, buf, *buf_size, avctx);
+@@ -334 +338 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-    *poutbuf_size = buf_size;
++    *poutbuf_size = *buf_size;

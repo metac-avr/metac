@@ -1,0 +1,107 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index af5f3821723..1aaecbce118 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1260,8 +1259,0 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc) {
+-	p->refcount = rc;
+-	return p->refcount;
+-}
+-
+@@ -1270,7 +1262,2 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
+-}
+-
+-static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		++p->refcount;
++	if (p && (p->u.type_info & (GC_IMMUTABLE|IS_OBJ_DESTRUCTOR_CALLED)) != IS_OBJ_DESTRUCTOR_CALLED) {
++		return ++(p->refcount);
+@@ -1278,4 +1265,2 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
++	return 0;
++}	if (!(p->u.type_info & GC_IMMUTABLE)) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..2da7c294524 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -10464,39 +10464,5 @@ static ZEND_VM_HOT ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_SEND_VAL_EX_SPEC_C
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_NEW_SPEC_CONST_UNUSED_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	zval *result;
+-	zend_function *constructor;
+-	zend_class_entry *ce;
+-	zend_execute_data *call;
+-
+-	SAVE_OPLINE();
+-	if (IS_CONST == IS_CONST) {
+-		ce = CACHED_PTR(opline->op2.num);
+-		if (UNEXPECTED(ce == NULL)) {
+-			ce = zend_fetch_class_by_name(Z_STR_P(RT_CONSTANT(opline, opline->op1)), Z_STR_P(RT_CONSTANT(opline, opline->op1) + 1), ZEND_FETCH_CLASS_DEFAULT | ZEND_FETCH_CLASS_EXCEPTION);
+-			if (UNEXPECTED(ce == NULL)) {
+-				ZVAL_UNDEF(EX_VAR(opline->result.var));
+-				HANDLE_EXCEPTION();
+-			}
+-			CACHE_PTR(opline->op2.num, ce);
+-		}
+-	} else if (IS_CONST == IS_UNUSED) {
+-		ce = zend_fetch_class(NULL, opline->op1.num);
+-		if (UNEXPECTED(ce == NULL)) {
+-			ZVAL_UNDEF(EX_VAR(opline->result.var));
+-			HANDLE_EXCEPTION();
+-		}
+-	} else {
+-		ce = Z_CE_P(EX_VAR(opline->op1.var));
+-	}
+-
+-	result = EX_VAR(opline->result.var);
+-	if (UNEXPECTED(object_init_ex(result, ce) != SUCCESS)) {
+-		ZVAL_UNDEF(result);
+-		HANDLE_EXCEPTION();
+-	}
+-
+-	constructor = Z_OBJ_HT_P(result)->get_constructor(Z_OBJ_P(result));
+-	if (constructor == NULL) {
+-		if (UNEXPECTED(EG(exception))) {
+-			HANDLE_EXCEPTION();
++static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
++	if (!(p->u.type_info & GC_IMMUTABLE)) {
++		ZEND_RC_MOD_CHECK(p);
++		if (p && (p->u.type_info & IS_OBJ_DESTRUCTOR_CALLED) != IS_OBJ_DESTRUCTOR_CALLED) {
++			++p->refcount;
+@@ -10504,22 +10469,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_NEW_SPEC_CONST_UNUSED_HANDLER(
+-
+-		/* If there are no arguments, skip over the DO_FCALL opcode. We check if the next
+-		 * opcode is DO_FCALL in case EXT instructions are used. */
+-		if (EXPECTED(opline->extended_value == 0 && (opline+1)->opcode == ZEND_DO_FCALL)) {
+-			ZEND_VM_NEXT_OPCODE_EX(1, 2);
+-		}
+-
+-		/* Perform a dummy function call */
+-		call = zend_vm_stack_push_call_frame(
+-			ZEND_CALL_FUNCTION, (zend_function *) &zend_pass_function,
+-			opline->extended_value, NULL);
+-	} else {
+-		if (EXPECTED(constructor->type == ZEND_USER_FUNCTION) && UNEXPECTED(!RUN_TIME_CACHE(&constructor->op_array))) {
+-			init_func_run_time_cache(&constructor->op_array);
+-		}
+-		/* We are not handling overloaded classes right now */
+-		call = zend_vm_stack_push_call_frame(
+-			ZEND_CALL_FUNCTION | ZEND_CALL_RELEASE_THIS | ZEND_CALL_HAS_THIS,
+-			constructor,
+-			opline->extended_value,
+-			Z_OBJ_P(result));
+-		Z_ADDREF_P(result);
+@@ -10527,4 +10470,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_NEW_SPEC_CONST_UNUSED_HANDLER(
+-
+-	call->prev_execute_data = EX(call);
+-	EX(call) = call;
+-	ZEND_VM_NEXT_OPCODE();

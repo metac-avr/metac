@@ -1,0 +1,14 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..5a204ef87 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -4500 +4500,8 @@ static GF_Err inspect_process(GF_Filter *filter)
+-					inspect_dump_packet_fmt(filter, ctx, pctx->tmp, pck, pctx, pctx->pck_num);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++					int pps_id = pctx->idx;
++					if (pps_id >= 0 && pps_id < 32) { // Validate PPS ID against array size limits
++						inspect_dump_packet_fmt(filter, ctx, pctx->tmp, pck, pctx, pctx->pck_num);
++					} else {
++						GF_LOG(GF_LOG_ERROR, GF_LOG_MEDIA, ("[Inspect] Out-of-bounds PPS ID detected: %d. Skipping packet dump.\n", pps_id));
++						continue;
++					}

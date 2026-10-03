@@ -1,0 +1,29 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..daee1b6d9 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1252 +1252 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    /* unknown state */
++/* unknown state */
+@@ -1260,0 +1261 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
++  /* Ensure complete GC cycle to prevent accessing freed objects */
+@@ -1263,0 +1265,4 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
++  /* Additional safety check to ensure no pending sweeps */
++  if (gc->sweeps > 0) {
++    incremental_gc(mrb, gc, SIZE_MAX);
++  }
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..475bf906a 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -266 +266,5 @@ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+-  mark_tbl(mrb, obj->iv);
++  if (obj != NULL) {
++    if (obj->iv != NULL) {
++      mark_tbl(mrb, obj->iv);
++    }
++  }
+@@ -276,2 +280 @@ void
+-mrb_gc_free_iv(mrb_state *mrb, struct RObject *obj)
+-{
++mrb_gc_free_iv(mrb_state *mrb, struct RObject *obj){

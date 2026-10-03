@@ -1,0 +1,48 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index eee917756..513c2f2a0 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -350,0 +351,2 @@ static GF_Err gsfdmx_read_prop(GF_BitStream *bs, GF_PropertyValue *p)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			if (p->value.string_list.vals == NULL) return GF_OUT_OF_MEM;
+@@ -351,0 +354 @@ static GF_Err gsfdmx_read_prop(GF_BitStream *bs, GF_PropertyValue *p)
++			if (!str) return GF_OUT_OF_MEM;
+@@ -996,4 +999,23 @@ static GF_Err gsfdmx_process_packets(GF_Filter *filter, GSF_DemuxCtx *ctx, GSF_S
+-			if (!gpck->corrupted)
+-				e = gsfdmx_parse_pid_info(filter, ctx, gst, gpck, (gpck->pck_type==GFS_PCKTYPE_PID_INFO_UPDATE) ? GF_TRUE : GF_FALSE);
+-			else
+-				e = GF_CORRUPTED_DATA;
++			if (!gpck->corrupted) {
++				if (p) {
++					if ((p->value.string_list.nb_items > 0) && (p->value.string_list.vals != NULL)) {
++						u32 valid_count = 0;
++						for (i=0; i<p->value.string_list.nb_items; i++) {
++							if (p->value.string_list.vals[i] != NULL) {
++								valid_count++;
++							}
++						}
++						if (valid_count > 0) {
++							e = gsfdmx_parse_pid_info(filter, ctx, gst, gpck, (gpck->pck_type==GFS_PCKTYPE_PID_INFO_UPDATE) ? GF_TRUE : GF_FALSE);
++						} else {
++							e = GF_OK; // No valid strings to process
++						}
++					} else {
++						e = gsfdmx_parse_pid_info(filter, ctx, gst, gpck, (gpck->pck_type==GFS_PCKTYPE_PID_INFO_UPDATE) ? GF_TRUE : GF_FALSE);
++					}
++				} else {
++					e = GF_BAD_PARAM;
++				}
++			} else {
++					e = GF_CORRUPTED_DATA;
++				}
+@@ -1019,3 +1041,7 @@ static GF_Err gsfdmx_process_packets(GF_Filter *filter, GSF_DemuxCtx *ctx, GSF_S
+-			if (gpck->corrupted) gf_filter_pck_set_corrupted(gpck->pck, GF_TRUE);
+-			e = gf_filter_pck_send(gpck->pck);
+-			gpck->pck = NULL;
++			if (gpck->pck) {
++				gf_filter_pck_set_corrupted(gpck->pck, gpck->corrupted ? GF_TRUE : GF_FALSE);
++				e = gf_filter_pck_send(gpck->pck);
++				gpck->pck = NULL;
++			} else {
++				e = GF_OK;
++			}

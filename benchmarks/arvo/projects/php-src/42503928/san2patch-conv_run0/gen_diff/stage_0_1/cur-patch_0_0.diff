@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..26402159dd1 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -45 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref && !GC_HAS_DESTRUCTORS(ref)) {
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..d29db5e0b27 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74,2 +74,6 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
++i_zval_ptr_dtor(&ref->val);
++	if (ref && !GC_HAS_DESTRUCTORS(ref)) {
++		efree_size(ref, sizeof(zend_reference));
++	} else if (ref) {
++		zend_objects_store_del(ref);
++	}
+@@ -82 +86,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// Fixed CWE-825: Expired Pointer Dereference - Added validation before efree_size
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -94,2 +99 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

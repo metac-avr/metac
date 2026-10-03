@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..46b8435d901 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -64 +64 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
++ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+@@ -72 +72,2 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -74 +75,4 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++	/* Clear the reference value before destruction to prevent use-after-free */
++	zend_value old_val = ref->val;  /* Copy the value to local storage */
++	ZVAL_UNDEF(&ref->val);          /* Invalidate the reference immediately */
++	i_zval_ptr_dtor(&old_val);      /* Safely destroy the copied value */
+@@ -84,2 +88 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
+-}
++	i_zval_ptr_dtor(zval_ptr);}

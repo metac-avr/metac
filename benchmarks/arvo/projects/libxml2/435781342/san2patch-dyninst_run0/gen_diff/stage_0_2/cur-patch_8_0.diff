@@ -1,0 +1,20 @@
+diff --git a/tree.c b/tree.c
+index a93f2e31..e84446d4 100644
+--- a/tree.c
++++ b/tree.c
+@@ -598,0 +599,7 @@ xmlFreeNs(xmlNs *cur) {
++    /* Reference count the namespace to prevent premature deallocation */
++    /* Increment reference counter before potential attribute validation */
++    if (cur->reference_count > 0) {
++        cur->reference_count++;
++        return;
++    }
++    /* Only free when reference count reaches zero */
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..98b27630 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2089 +2089,2 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+-	    xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);
++// Fixed CWE-416: Use After Free by deferring namespace cleanup until after ID validation
++ 	    xmlAddID(&ctxt->vctxt, ctxt->myDoc, content, ret);

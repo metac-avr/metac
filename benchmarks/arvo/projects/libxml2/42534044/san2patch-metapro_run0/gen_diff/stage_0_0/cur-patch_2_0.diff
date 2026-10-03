@@ -1,0 +1,28 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..f506c424 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -593 +593 @@ isDtdChild(xmlNodePtr child) {
+-    if (child == NULL)
++if (child == NULL)
+@@ -601 +601,4 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     if (node == NULL)
++        return NULL;
++     xmlNodePtr cur = node;
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..987cb247 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6882 +6882 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6884,2 +6884,5 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	prop->children = NULL;
+-	prop->last = NULL;
++	    prop->children = NULL;
++	    prop->last = NULL;  /* Also clear last pointer to prevent dangling references */
++	} else {
++	    prop->last = NULL;  /* Ensure last is also NULL when children is NULL */
++	}

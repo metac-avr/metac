@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..92de7d478 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515 +515,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       if (argc > 0)
+@@ -517 +518,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[argc+1] = blk;
++      if (argc + 1 < MRB_STACK_MAX) {
++        ci->stack[argc+1] = blk;
++      }
+@@ -1381,0 +1385,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      /* Validate stack index before accessing to prevent buffer overflow */
++      if (a >= mrb->c->stend - mrb->c->ci->stack) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "invalid stack access in constant lookup");
++      }
++      
+@@ -1392,2 +1400 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-    CASE(OP_GETMCNST, BB) {
+-      mrb_value val;
++    CASE(OP_GETMCNST, BB) {      mrb_value val;

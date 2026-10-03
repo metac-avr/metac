@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..33657163bbb 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *target_ptr = EX_VAR(opline->op1.var);
++		if (target_ptr) {
++			if (Z_TYPE_P(target_ptr) == IS_ARRAY) {
++				zend_array *array_ptr = Z_ARR_P(target_ptr);
++				if (array_ptr && !GC_DEL_DATA(array_ptr)) {
++					zval_ptr_dtor_nogc(target_ptr);
++				}
++			} else if (Z_TYPE_P(target_ptr) != IS_UNDEF) {
++				zval_ptr_dtor_nogc(target_ptr);
++			}
++		}
+@@ -29957 +29966,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+@@ -29959,10 +29968 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	ZEND_VM_NEXT_OPCODE_EX(1, 2);
+-}
+-
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA_TMP_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	zval *object_ptr, *orig_object_ptr;
+-	zval *value;
+-	zval *variable_ptr;
+-	zval *dim;
++	ZEND_VM_NEXT_OPCODE_EX(1, 2);	zval *dim;
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..a120f04167d 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -35 +35,4 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && !GC_INFO(ref)) {
++			rc_dtor_func(ref);
++		}

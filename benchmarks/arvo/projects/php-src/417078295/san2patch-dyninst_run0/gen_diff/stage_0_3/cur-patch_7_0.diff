@@ -1,0 +1,54 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index af5f3821723..d83e60cfd58 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1260 +1260 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++return p->refcount;
+@@ -1268 +1268,3 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (!p || (p->gc.u.type_info & GC_INVALID)) return 0; // Check for invalid/expired pointer
+@@ -1273,9 +1275 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		++p->refcount;
+-	}
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
++static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {	if (!(p->u.type_info & GC_IMMUTABLE)) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..713345a81fc 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40398 +40398,14 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZVAL_COPY(&ref->val, get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R));
++				zval *temp_val = get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R);
++				if (temp_val) {
++					if (Z_REFCOUNTED_P(temp_val)) {
++						if (GC_DELREF(Z_COUNTED_P(temp_val)) == 0) {
++							FREE_OP(opline->op2_type, opline->op2.var);
++							ZVAL_UNDEF(temp_val);
++							goto skip_copy;
++						}
++					}
++					ZVAL_COPY(&ref->val, temp_val);
++				} else {
++					ZVAL_UNDEF(&ref->val);
++				}
++				skip_copy:
+@@ -40406 +40419,9 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
++			if (value && Z_REFCOUNTED_P(value)) {
++				if (GC_DELREF(Z_COUNTED_P(value)) == 0) {
++					/* Object was deallocated, don't increment */
++				} else {
++					Z_ADDREF_P(value);
++				}
++			} else {
++				Z_ADDREF_P(value);
++			}

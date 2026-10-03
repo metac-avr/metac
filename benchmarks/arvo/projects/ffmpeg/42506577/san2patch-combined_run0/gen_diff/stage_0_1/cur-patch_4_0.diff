@@ -1,0 +1,19 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..0a1409d080 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -1622,2 +1622,4 @@ static void mjpeg_idct_scan_progressive_ac(MJpegDecodeContext *s)
+-            int16_t (*block)[64] = &s->blocks[c][block_idx];
+-            for (mb_x = 0; mb_x < mb_width; mb_x++, block++) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             int16_t (*block)[64] = &s->blocks[c][block_idx];
++            int max_blocks = s->blocks_size[c] - block_idx * 64;
++            for (mb_x = 0; mb_x < mb_width && mb_x * 64 < max_blocks; mb_x++, block++) {
+diff --git a/libavcodec/faanidct.c b/libavcodec/faanidct.c
+index 3921f82dae..68489342f7 100644
+--- a/libavcodec/faanidct.c
++++ b/libavcodec/faanidct.c
+@@ -143 +143,2 @@ void ff_faanidct_add(uint8_t *dest, ptrdiff_t line_size, int16_t block[64])
+-    int i;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     int i;

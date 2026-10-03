@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..79ddf922850 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -1486 +1485,0 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
+@@ -1494 +1493,2 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
++// Security fix: Validate heap boundaries before GC operations
++ 
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..624a18854bb 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -216,2 +216,4 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		}
+-		for (zend_long i = 0; i < intern->array.size; i++) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		}
++		zend_long safe_size = intern->array.size < intern->array.capacity ? intern->array.size : intern->array.capacity;
++		for (zend_long i = 0; i < safe_size; i++) {

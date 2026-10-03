@@ -1,0 +1,58 @@
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..f24d3f74 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1064,15 +1064,35 @@ xmlSnprintfElementContent(char *buf, int size, xmlElementContent *content, int e
+-static void
+-xmlFreeElement(xmlElementPtr elem) {
+-    if (elem == NULL) return;
+-    xmlUnlinkNode((xmlNodePtr) elem);
+-    xmlFreeDocElementContent(elem->doc, elem->content);
+-    if (elem->name != NULL)
+-	xmlFree((xmlChar *) elem->name);
+-    if (elem->prefix != NULL)
+-	xmlFree((xmlChar *) elem->prefix);
+-#ifdef LIBXML_REGEXP_ENABLED
+-    if (elem->contModel != NULL)
+-	xmlRegFreeRegexp(elem->contModel);
+-#endif
+-    xmlFree(elem);
+-}
++    else {
++        int res;
++
++	ret = (xmlElementPtr) xmlMalloc(sizeof(xmlElement));
++	if (ret == NULL)
++            goto mem_error;
++	memset(ret, 0, sizeof(xmlElement));
++	ret->type = XML_ELEMENT_DECL;
++
++	/*
++	 * fill the structure.
++	 */
++	ret->name = xmlStrdup(localName);
++	if (ret->name == NULL) {
++	    xmlFree(ret);
++	    goto mem_error;
++	}
++	ret->prefix = prefix;
++        prefix = NULL;
++
++	/*
++	 * Validity Check:
++	 * Insertion must not fail
++	 */
++        res = xmlHashAdd2(table, localName, ret->prefix, ret);
++        if (res <= 0) {
++	    xmlFreeElement(ret);
++            goto mem_error;
++	}
++	/*
++	 * For new element, may have attributes from earlier
++	 * definition in internal subset
++	 */
++	ret->attributes = oldAttributes;
++    }
+@@ -1172 +1192 @@ xmlAddElementDecl(xmlValidCtxt *ctxt,
+-    } else {
++    }     else {

@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..2e6a4acdb9a 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -42 +42 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
+@@ -44,4 +44,6 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
+-			gc_check_possible_root(ref);
++		if (ref && GC_REFCOUNT(ref) > 0) {
++			if (!GC_DELREF(ref)) {
++				rc_dtor_func(ref);
++			} else {
++				gc_check_possible_root(ref);
++			}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 8f012868dda..673527d30af 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1345,0 +1346,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	// FIXME: Crash CWE-825: Expired Pointer Dereference
++	if (!p) return 0;
++	if (p->refcount == 0) return 0;

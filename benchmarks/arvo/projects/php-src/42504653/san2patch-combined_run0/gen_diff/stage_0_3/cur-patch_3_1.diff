@@ -1,0 +1,76 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..6d0f0fb0865 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30018 +30018,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	} else {
++	} void zend_assign_dim_handler(zend_execute_data *execute_data)
++{
++	// ... existing code ...
++	else {
+@@ -30070,0 +30074 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++}
+@@ -49605 +49609,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-	} else {
++	} void zend_assign_dim_handler(zend_execute_data *execute_data)
++{
++	// ... existing code ...
++	else {
+@@ -49657,0 +49665 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
++}
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..755488c81d2 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -854,3 +854,25 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-#ifdef HAVE_GCC_GLOBAL_REGS
+-		handler();
+-		if (UNEXPECTED(opline == zend_jit_halt_op)) {
++void zend_jit_trace_handler(zend_execute_data *execute_data)
++{
++	// ... existing code ...
++	#ifdef HAVE_GCC_GLOBAL_REGS
++	handler();
++	if (UNEXPECTED(opline == zend_jit_halt_op)) {
++		stop = ZEND_JIT_TRACE_STOP_RETURN;
++		opline = NULL;
++		halt = ZEND_JIT_TRACE_HALT;
++		break;
++	}
++	if (UNEXPECTED(execute_data != prev_execute_data)) {
++		/* Check for expired pointer before proceeding */
++		if (execute_data && execute_data->This.ptr) {
++			zend_object *obj = Z_OBJ(execute_data->This);
++			if (obj && GC_DELREF(obj) < 0) {
++				/* Prevent use-after-free by validating object state */
++				GC_ADDREF(obj);
++			}
++		}
++	}
++#else
++	rc = handler(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++	if (rc != 0) {
++		if (rc < 0) {
+@@ -860,0 +883,3 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++		} else if (execute_data == EG(current_execute_data)) {
++			/* return after interrupt handler */
++			rc = 0;
+@@ -862,14 +887,4 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		if (UNEXPECTED(execute_data != prev_execute_data)) {
+-#else
+-		rc = handler(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-		if (rc != 0) {
+-			if (rc < 0) {
+-				stop = ZEND_JIT_TRACE_STOP_RETURN;
+-				opline = NULL;
+-				halt = ZEND_JIT_TRACE_HALT;
+-				break;
+-			} else if (execute_data == EG(current_execute_data)) {
+-				/* return after interrupt handler */
+-				rc = 0;
+-			}
+-			execute_data = EG(current_execute_data);
++	}
++	// ... existing code ...
++#endif
++}			execute_data = EG(current_execute_data);

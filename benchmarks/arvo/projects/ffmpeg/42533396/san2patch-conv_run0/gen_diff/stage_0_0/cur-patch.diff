@@ -1,0 +1,23 @@
+diff --git a/libavcodec/codec_par.c b/libavcodec/codec_par.c
+index abaac63841..d3a1e92ae3 100644
+--- a/libavcodec/codec_par.c
++++ b/libavcodec/codec_par.c
+@@ -271 +271,2 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        } else {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         } else {
+@@ -272,0 +274,5 @@ FF_ENABLE_DEPRECATION_WARNINGS
++        // Validate channel layout size before copying to prevent buffer overflow
++        if (par->ch_layout.nb_channels > 32 || 
++            (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE && par->ch_layout.u.mask > 0xFFFFFFFF)) {
++            return AVERROR(EINVAL);
++        }
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..15c56aa3fa 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -405,2 +405,2 @@ int av_channel_layout_custom_init(AVChannelLayout *channel_layout, int nb_channe
+-    if (nb_channels <= 0)
+-        return AVERROR(EINVAL);
++    if (nb_channels <= 0 || nb_channels > 32)
++         return AVERROR(EINVAL);

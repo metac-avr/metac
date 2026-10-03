@@ -1,0 +1,34 @@
+diff --git a/src/media_tools/m3u8.c b/src/media_tools/m3u8.c
+index 5f570e30a..8c9053a00 100644
+--- a/src/media_tools/m3u8.c
++++ b/src/media_tools/m3u8.c
+@@ -327 +327,4 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-	if (!safe_start_equals(name, line))
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	if (!safe_start_equals(name, line))
++		return NULL;
++	if (num_attributes <= 0)
+@@ -329,0 +333,2 @@ static char** extract_attributes(const char *name, const char *line, const int n
++	if (!ret)
++		return NULL;
+@@ -345,4 +350,6 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-					ret[curr_attribute] = gf_calloc( (1+sz-spaces), sizeof(char));
+-					strncpy(ret[curr_attribute], &(line[start+spaces]), sz-spaces);
+-					curr_attribute++;
+-					if (curr_attribute >= num_attributes)
++					if (curr_attribute < num_attributes) {
++						ret[curr_attribute] = gf_calloc( (1+sz-spaces), sizeof(char));
++						if (ret[curr_attribute])
++							strncpy(ret[curr_attribute], &(line[start+spaces]), sz-spaces);
++						curr_attribute++;
++					} else {
+@@ -349,0 +357 @@ static char** extract_attributes(const char *name, const char *line, const int n
++					}
+@@ -369,0 +378 @@ static char** extract_attributes(const char *name, const char *line, const int n
++	ret[curr_attribute] = NULL;
+@@ -1255 +1264,2 @@ GF_Err gf_m3u8_parse_sub_playlist(const char *m3u8_file, MasterPlaylist **playli
+-					GF_LOG(GF_LOG_DEBUG, GF_LOG_DASH, ("[M3U8] Directive at line %d: \"%s\", attributes=", currentLineNumber, currentLine));
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 					GF_LOG(GF_LOG_DEBUG, GF_LOG_DASH, ("[M3U8] Directive at line %d: \"%s\", attributes=", currentLineNumber, currentLine));
+@@ -1261,0 +1272 @@ GF_Err gf_m3u8_parse_sub_playlist(const char *m3u8_file, MasterPlaylist **playli
++						if (i >= attribs.num_attributes) break;

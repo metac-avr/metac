@@ -1,0 +1,18 @@
+diff --git a/ext/pcre/php_pcre.c b/ext/pcre/php_pcre.c
+index 075d9fc5263..341aeee24db 100644
+--- a/ext/pcre/php_pcre.c
++++ b/ext/pcre/php_pcre.c
+@@ -658,2 +658,11 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-	if ((pp = strchr("([{< )]}>", delimiter)))
+-		delimiter = pp[5];
++	if ((pp = strchr("([{< )]}>", delimiter))) {
++		/* Safe access to pp[5] by ensuring we don't go beyond string bounds */
++		size_t offset = pp - "([{< )]}>";
++		if (offset <= 4) {  /* String length is 10, so max valid offset for pp[5] is 4 */
++			delimiter = pp[5];
++		} else {
++			/* For delimiters at positions 5-9, pp[5] would be out of bounds */
++			php_error_docref(NULL, E_WARNING, "Invalid delimiter position");
++			return NULL;
++		}
++	}

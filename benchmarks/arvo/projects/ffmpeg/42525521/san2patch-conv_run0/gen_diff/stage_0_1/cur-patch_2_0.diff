@@ -1,0 +1,18 @@
+diff --git a/libavcodec/mpv_reconstruct_mb_template.c b/libavcodec/mpv_reconstruct_mb_template.c
+index 6f7a5fb1b4..0a94181874 100644
+--- a/libavcodec/mpv_reconstruct_mb_template.c
++++ b/libavcodec/mpv_reconstruct_mb_template.c
+@@ -236 +236,2 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
+-                /* s->codec_id == AV_CODEC_ID_MPEG4 && */
++// FIXME: Crash CWE-787: Out-of-bounds Write
++                 /* s->codec_id == AV_CODEC_ID_MPEG4 && */
+@@ -238 +239,6 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
+-                ff_mpeg4_decode_studio(s, dest_y, dest_cb, dest_cr, block_size,
++                // Prevent out-of-bounds write by validating pointers
++                if (dest_y && dest_cb && dest_cr &&
++                    ((uintptr_t)dest_y < (uintptr_t)s->current_picture_ptr->data[0] + s->current_picture_ptr->linesize[0] * s->height) &&
++                    ((uintptr_t)dest_cb < (uintptr_t)s->current_picture_ptr->data[1] + s->current_picture_ptr->linesize[1] * (s->height >> s->chroma_y_shift)) &&
++                    ((uintptr_t)dest_cr < (uintptr_t)s->current_picture_ptr->data[2] + s->current_picture_ptr->linesize[2] * (s->height >> s->chroma_y_shift))) {
++                    ff_mpeg4_decode_studio(s, dest_y, dest_cb, dest_cr, block_size,
+@@ -239,0 +246 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
++                }

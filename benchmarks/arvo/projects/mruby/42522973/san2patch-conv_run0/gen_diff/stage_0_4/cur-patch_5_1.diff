@@ -1,0 +1,45 @@
+diff --git a/src/variable.c b/src/variable.c
+index 3088783ec..e5b466abb 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -233,2 +233,6 @@ iv_free(mrb_state *mrb, iv_tbl *t)
+-  mrb_free(mrb, t->ptr);
+-  mrb_free(mrb, t);
++  if (t) {
++    if (t->ptr) {
++      mrb_free(mrb, t->ptr);
++    }
++    mrb_free(mrb, t);
++  }
+@@ -240 +244,3 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (mrb_basic_ptr(v) != NULL) {
++    mrb_gc_mark_value(mrb, v);
++  }
+@@ -247,5 +253,4 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
+-  iv_foreach(mrb, t, iv_mark_i, 0);
+-}
+-
+-void
+-mrb_gc_mark_gv(mrb_state *mrb)
++  if (t && t->size > 0) {
++    iv_foreach(mrb, t, iv_mark_i, 0);
++  }
++}mrb_gc_mark_gv(mrb_state *mrb)
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..47c036fcf 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -732,6 +731,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
+-    break;
+-  }
+-}
+-
+@@ -743,0 +738 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (MRB_FROZEN_P(obj) && is_dead(&mrb->gc, obj)) return;
+@@ -752,2 +747 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:

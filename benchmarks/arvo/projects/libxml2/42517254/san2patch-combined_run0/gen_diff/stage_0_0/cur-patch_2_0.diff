@@ -1,0 +1,22 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..78b8d92f 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1161,0 +1162,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		/* Defensive check: validate node before accessing to prevent UAF */
++		if (set->nodeTab[i] && set->nodeTab[i]->type <= 0)
++		    continue;
+@@ -1178,0 +1182,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			    /* Additional safety check for node validity */
++			    if (cur->type <= 0)
++			        break;
+@@ -2275 +2281,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-         */
++// FIXME: Crash CWE-416: Use After Free
++          */
+@@ -2309 +2316 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	    cur = list;
++	    xmlNodePtr temp_node = list;  /* Store reference to prevent use-after-free */
+@@ -2312 +2319 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	    xmlAddPrevSibling(end, cur);
++	    xmlAddPrevSibling(end, temp_node);

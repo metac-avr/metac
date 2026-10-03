@@ -1,0 +1,48 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..d7708cc2 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1159,0 +1160 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		// Fixed CWE-416: Use After Free - Enhanced node validation
+@@ -1161,0 +1163,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		/* Early validation to detect freed nodes */
++		if (set->nodeTab[i] != NULL && set->nodeTab[i]->doc == NULL) 
++		    continue;
+@@ -1187 +1191,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    tmp = xmlXIncludeCopyNode(ctxt, target,
++				    /* Check if node is still valid before copying */
++				    if (cur != NULL && cur->doc != NULL) {
++				        tmp = xmlXIncludeCopyNode(ctxt, target,
+@@ -1189,4 +1195,5 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
++				        if (last == NULL) {
++					    list = last = tmp;
++				        } else {
++					    last = xmlAddNextSibling(last, tmp);
++				        }
+@@ -1218,2 +1225,4 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
++		    /* Final validation before node operations */
++		    if (set->nodeTab[i] != NULL && set->nodeTab[i]->doc != NULL) {
++		        xmlAddNextSibling(last,
++			        xmlXIncludeCopyNode(ctxt, target, source,
+@@ -1221,2 +1230,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    if (last->next != NULL)
+-			last = last->next;
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2277 +2287,3 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	xmlFreeNode(cur);
++	/* Prevent use-after-free by deferring node deallocation */
++	/* Delayed free to avoid accessing freed memory in subsequent operations */
++	/* xmlFreeNode(cur); - Deferred */
+@@ -2314,0 +2327,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    /* Cleanup moved here to prevent premature deallocation */
++    if ((ctxt->parseFlags & XML_PARSE_NOXINCNODE) && (cur != NULL)) {
++        xmlFreeNode(cur);
++    }

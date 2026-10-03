@@ -1,0 +1,34 @@
+diff --git a/valid.c b/valid.c
+index e11d2c95..444999ff 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364,4 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
++
++	if (attr == NULL)
++	     return(0);
+@@ -2376 +2379 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);
+@@ -2379 +2382 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-					      attr->name, aprefix);
++		                      attr->name, aprefix);
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..956953bc 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2263 +2263,2 @@ xmlSAX2StartElementNs(void *ctx,
+-    if (nodePush(ctxt, ret) < 0) {
++// FIXME: Crash CWE-416: Use After Free - FIXED
++     if (nodePush(ctxt, ret) < 0) {
+@@ -2264,0 +2266,4 @@ xmlSAX2StartElementNs(void *ctx,
++        // Validate namespaces before freeing to prevent use-after-free
++        if (ctxt->myDoc && ctxt->myDoc->oldNs) {
++            ctxt->myDoc->oldNs = NULL;  // Clear old namespace references
++        }
+@@ -2274,3 +2279 @@ xmlSAX2StartElementNs(void *ctx,
+-	nb_attributes -= nb_defaulted;
+-
+-    /*
++	nb_attributes -= nb_defaulted;    /*

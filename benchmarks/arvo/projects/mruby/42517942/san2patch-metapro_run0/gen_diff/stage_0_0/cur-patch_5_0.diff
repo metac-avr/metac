@@ -1,0 +1,26 @@
+diff --git a/src/string.c b/src/string.c
+index 1b5aecff2..c25ae2bac 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -138 +138 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-{
++ {
+@@ -139,0 +140,3 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
++    if (len > EMBED_LEN_MAX_RETURN) {
++      return str_init_normal(mrb, mrb_obj_alloc_string(mrb), p, len);
++    }
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..a85bfbb96 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -817,2 +817,8 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-  if (count == -1)
+-    count = slen * 2;
++  if (count == -1) {
++    // Guard against integer overflow
++    if (slen > 0 && slen > (INT_MAX / 2)) {
++      count = INT_MAX;
++    } else {
++      count = slen * 2;
++    }
++  }

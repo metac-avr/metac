@@ -1,0 +1,33 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..4b541b56661 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -8981,8 +8981,3 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+-			} else if (!zend_jit_traces[parent_num].polymorphism) {
+-				polymorphism = 1;
+-			} else if (exit_num == 0) {
+-				polymorphism = zend_jit_traces[parent_num].polymorphism + 1;
+-			}
+-		}
+-	}
++FIXME: Crash CWE-825: Expired Pointer Dereference
++	zend_jit_trace_buffer *buffer = trace_buffer;
++	if (!buffer) return -1;
+@@ -8991 +8986 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
++	stop = zend_jit_trace_execute(execute_data, EX(opline), buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
+@@ -8999 +8994 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	if (UNEXPECTED(trace_buffer->start != ZEND_JIT_TRACE_START_SIDE)) {
++	if (UNEXPECTED(buffer->start != ZEND_JIT_TRACE_START_SIDE)) {
+@@ -9001,2 +8996 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-			const zend_op_array *op_array = trace_buffer[0].op_array;
+-			const zend_op *opline = trace_buffer[1].opline;
++			const zend_op_array *op_array = buffer[0].op_array;			const zend_op *opline = trace_buffer[1].opline;
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..3bf1384dfa1 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2496,0 +2497,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++	/* Clear JIT trace references before freeing */
++	zend_jit_trace_cleanup(ht);

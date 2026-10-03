@@ -1,0 +1,60 @@
+diff --git a/dict.c b/dict.c
+index 67b2a2ea..f0a1bc4d 100644
+--- a/dict.c
++++ b/dict.c
+@@ -441 +441 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-        value += name[namelen - 1];
++        value += (name != NULL) ? name[namelen - 1] : 0;
+@@ -445 +445 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-        case 10: value += name[9];
++        case 10: value += (namelen > 9 && name != NULL) ? name[9] : 0;
+@@ -447 +447 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-        case 9: value += name[8];
++        case 9: value += (namelen > 8 && name != NULL) ? name[8] : 0;
+@@ -449 +449 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-        case 8: value += name[7];
++        case 8: value += (namelen > 7 && name != NULL) ? name[7] : 0;
+@@ -451 +451 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-        case 7: value += name[6];
++        case 7: value += (namelen > 6 && name != NULL) ? name[6] : 0;
+@@ -453 +453 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-        case 6: value += name[5];
++        case 6: value += (namelen > 5 && name != NULL) ? name[5] : 0;
+@@ -455 +455 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-        case 5: value += name[4];
++        case 5: value += (namelen > 4 && name != NULL) ? name[4] : 0;
+@@ -457 +457 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-        case 4: value += name[3];
++        case 4: value += (namelen > 3 && name != NULL) ? name[3] : 0;
+@@ -459 +459 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-        case 3: value += name[2];
++        case 3: value += (namelen > 2 && name != NULL) ? name[2] : 0;
+@@ -461 +461 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-        case 2: value += name[1];
++        case 2: value += (namelen > 1 && name != NULL) ? name[1] : 0;
+diff --git a/parser.c b/parser.c
+index 0f225fb0..d1fc4143 100644
+--- a/parser.c
++++ b/parser.c
+@@ -3260 +3260,9 @@ xmlParseNCName(xmlParserCtxtPtr ctxt) {
+-            if (count > maxLength) {
++            if (count > 0 && count <= maxLength) {
++	        ret = xmlDictLookup(ctxt->dict, ctxt->input->cur, count);
++	        ctxt->input->cur = in;
++	        ctxt->input->col += count;
++	        if (ret == NULL) {
++	            xmlErrMemory(ctxt, NULL);
++	        }
++	        return(ret);
++            } else if (count > maxLength) {
+@@ -3262,0 +3271,2 @@ xmlParseNCName(xmlParserCtxtPtr ctxt) {
++            } else {
++                return(NULL);
+@@ -3264,7 +3273,0 @@ xmlParseNCName(xmlParserCtxtPtr ctxt) {
+-	    ret = xmlDictLookup(ctxt->dict, ctxt->input->cur, count);
+-	    ctxt->input->cur = in;
+-	    ctxt->input->col += count;
+-	    if (ret == NULL) {
+-	        xmlErrMemory(ctxt, NULL);
+-	    }
+-	    return(ret);

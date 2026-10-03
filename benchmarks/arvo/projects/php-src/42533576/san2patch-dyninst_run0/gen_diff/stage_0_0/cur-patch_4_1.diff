@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 4714ab37101..86bda03f3ce 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3218,8 +3218,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-	for (i = 0; i < EX(func)->op_array.last_try_catch; i++) {
+-		zend_try_catch_element *try_catch = &EX(func)->op_array.try_catch_array[i];
+-		if (try_catch->try_op > throw_op_num) {
+-			/* further blocks will not be relevant... */
+-			break;
+-		}
+-		if (throw_op_num < try_catch->catch_op || throw_op_num < try_catch->finally_end) {
+-			current_try_catch_offset = i;
++	/* Add validation to prevent expired pointer dereference */
++	if (EX(func) && EX(func)->op_array.try_catch_array) {
++		for (i = 0; i < EX(func)->op_array.last_try_catch; i++) {
++			zend_try_catch_element *try_catch = &EX(func)->op_array.try_catch_array[i];
++			if (try_catch->try_op > throw_op_num) {
++				/* further blocks will not be relevant... */
++				break;
++			}
++			if (throw_op_num < try_catch->catch_op || throw_op_num < try_catch->finally_end) {
++				current_try_catch_offset = i;
++			}

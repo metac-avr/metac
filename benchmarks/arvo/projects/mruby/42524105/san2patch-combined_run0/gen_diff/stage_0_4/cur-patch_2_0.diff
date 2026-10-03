@@ -1,0 +1,31 @@
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..e9d2138de 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326,7 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    {
++      if (mrb_string_p(key) && RSTRING_LEN(key) > 0 && RSTRING_PTR(key) != NULL) {
++        hash_code = mrb_str_hash(mrb, key);
++      } else {
++        hash_code = 0;
++      }
++    }
+@@ -343 +349,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     break;
+diff --git a/src/gc.c b/src/gc.c
+index 823297612..ebb387a3d 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -252,0 +253,5 @@ mrb_free(mrb_state *mrb, void *p)
++  /* Fix CWE-825: Expired Pointer Dereference by clearing references before deallocation */
++  if (p) {
++    /* Remove dangling pointers from hash tables before freeing memory */
++    mrb_gc_cleanup_hash_references(mrb, p);
++  }
+@@ -265,2 +270 @@ static mrb_bool
+-heap_p(mrb_gc *gc, struct RBasic *object)
+-{
++heap_p(mrb_gc *gc, struct RBasic *object){

@@ -1,0 +1,18 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..0bceeafc9 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1342 +1342,2 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-		case GF_M2TS_HLS_EC3_CRYPT:
++// CWE-416: Use After Free vulnerability addressed
++ 		case GF_M2TS_HLS_EC3_CRYPT:
+@@ -2814,3 +2815,6 @@ GF_Err gf_m2ts_process_data(GF_M2TS_Demuxer *ts, u8 *data, u32 data_size)
+-		GF_Err pck_e = gf_m2ts_process_packet(ts, (unsigned char *)data + pos);
+-		if (pck_e==GF_NOT_SUPPORTED) pck_e = GF_OK;
+-		e |= pck_e;
++		GF_Err pck_e = GF_OK;
++		if (data && ts) {  // Additional check for both data and ts validity
++			pck_e = gf_m2ts_process_packet(ts, (unsigned char *)data + pos);
++			if (pck_e==GF_NOT_SUPPORTED) pck_e = GF_OK;
++			e |= pck_e;
++		}

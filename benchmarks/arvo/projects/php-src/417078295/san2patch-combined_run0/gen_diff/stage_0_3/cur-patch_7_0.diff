@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..81d402ded9e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40396,3 +40396,14 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			} else {
+-				ZEND_ASSERT(!Z_REFCOUNTED_P(value));
+-				ZVAL_COPY(&ref->val, get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R));
++// FIXME: Crash CWE-416: Use After Free
++ 			} else {
++				zval *src_val = get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R);
++				if (src_val) {
++					if (Z_REFCOUNTED_P(src_val) && !Z_ISREF_P(src_val) && Z_COUNTED_P(src_val) && GC_DEL_CHECK(Z_COUNTED_P(src_val))) {
++						/* Skip copying if object has been marked for deletion */
++						ZVAL_UNDEF(&ref->val);
++					} else {
++						ZEND_ASSERT(!Z_REFCOUNTED_P(value));
++						ZVAL_COPY(&ref->val, src_val);
++					}
++				} else {
++					ZVAL_UNDEF(&ref->val);
++				}

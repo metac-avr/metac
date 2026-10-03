@@ -1,0 +1,49 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..efa12e650 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -618,0 +619,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++    // Early exit if remaining bytes are insufficient
++    if (n - i < sizeof(bitint)) break;
+@@ -625,3 +627,6 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-        const char* substr = (char*)s0 + j + 1;
+-        if (memcmp(substr, xs + 1, m - 2) == 0) {
+-          return i + j;
++        // Validate that substr doesn't exceed buffer bounds
++        if (i + j + 1 + (m - 2) <= n) {
++          const char* substr = (char*)s0 + j + 1;
++          if (memcmp(substr, xs + 1, m - 2) == 0) {
++            return i + j;
++          }
+@@ -636,0 +642,2 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
++      // Prevent j from causing out-of-bounds access
++      if (j >= sizeof(bitint) || i + j >= n) break;
+@@ -1237 +1244,7 @@ mrb_str_aref(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen)
+-      return str_subseq(mrb, str, beg, len);
++      /* Add bounds validation to prevent out-of-bounds access */
++      if (RSTRING_LEN(str) > 0 && beg >= 0 && len >= 0 && 
++          beg <= RSTRING_LEN(str) && beg + len <= RSTRING_LEN(str)) {
++        return str_subseq(mrb, str, beg, len);
++      } else {
++        return mrb_nil_value();
++      }
+@@ -1239,3 +1252,8 @@ mrb_str_aref(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen)
+-      str = str_substr(mrb, str, beg, len);
+-      if (mrb_undef_p(alen) && !mrb_nil_p(str) && RSTRING_LEN(str) == 0) return mrb_nil_value();
+-      return str;
++      if (RSTRING_LEN(str) > 0 && beg >= 0 && len >= 0 && 
++          beg <= RSTRING_LEN(str) && beg + len <= RSTRING_LEN(str)) {
++        str = str_substr(mrb, str, beg, len);
++        if (mrb_undef_p(alen) && !mrb_nil_p(str) && RSTRING_LEN(str) == 0) return mrb_nil_value();
++        return str;
++      } else {
++        return mrb_nil_value();
++      }
+@@ -1247 +1265,6 @@ mrb_str_aref(mrb_state *mrb, mrb_value str, mrb_value indx, mrb_value alen)
+-        return mrb_str_byte_subseq(mrb, str, beg, len);
++        if (RSTRING_LEN(str) > 0 && beg >= 0 && len >= 0 && 
++            beg <= RSTRING_LEN(str) && beg + len <= RSTRING_LEN(str)) {
++          return mrb_str_byte_subseq(mrb, str, beg, len);
++        } else {
++          return mrb_nil_value();
++        }

@@ -1,0 +1,61 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..12fa3745311 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1838 +1838,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++// FIXME: Crash CWE-416: Use After Free
++ 					i_zval_ptr_dtor(&p->val);
+@@ -1840,0 +1842,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++						#if defined(__SANITIZE_ADDRESS__) || defined(ADDRESS_SANITIZER)
++						__builtin_unreachable(); /* Help ASan detect UAF */
++						#endif
++						p->key = NULL;
+@@ -1848,0 +1854,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++							#if defined(__SANITIZE_ADDRESS__) || defined(ADDRESS_SANITIZER)
++							__builtin_unreachable(); /* Help ASan detect UAF */
++							#endif
++							p->key = NULL;
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..76f12a860a5 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -3190,15 +3190,19 @@ ZEND_METHOD(ReflectionUnionType, getTypes)
+-		append_type_mask(return_value, MAY_BE_LONG);
+-	}
+-	if (type_mask & MAY_BE_DOUBLE) {
+-		append_type_mask(return_value, MAY_BE_DOUBLE);
+-	}
+-	if ((type_mask & MAY_BE_BOOL) == MAY_BE_BOOL) {
+-		append_type_mask(return_value, MAY_BE_BOOL);
+-	} else if (type_mask & MAY_BE_TRUE) {
+-		append_type_mask(return_value, MAY_BE_TRUE);
+-	} else if (type_mask & MAY_BE_FALSE) {
+-		append_type_mask(return_value, MAY_BE_FALSE);
+-	}
+-	if (type_mask & MAY_BE_NULL) {
+-		append_type_mask(return_value, MAY_BE_NULL);
+-	}
++        append_type_mask(return_value, MAY_BE_LONG);
++    }
++    if (type_mask & MAY_BE_DOUBLE) {
++        append_type_mask(return_value, MAY_BE_DOUBLE);
++    }
++    if ((type_mask & MAY_BE_BOOL) == MAY_BE_BOOL) {
++        append_type_mask(return_value, MAY_BE_BOOL);
++    } else if (type_mask & MAY_BE_TRUE) {
++        // Fixed CWE-416: Use After Free - Defensive programming approach
++        zval *rv = return_value;
++        if (rv && Z_PTR_P(rv)) {
++            append_type_mask(rv, MAY_BE_TRUE);
++        }
++    } else if (type_mask & MAY_BE_FALSE) {
++        append_type_mask(return_value, MAY_BE_FALSE);
++    }
++    if (type_mask & MAY_BE_NULL) {
++        append_type_mask(return_value, MAY_BE_NULL);
++    }
+@@ -3210,2 +3214 @@ ZEND_METHOD(ReflectionIntersectionType, getTypes)
+-{
+-	reflection_object *intern;
++{	reflection_object *intern;

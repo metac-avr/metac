@@ -1,0 +1,28 @@
+diff --git a/parser.c b/parser.c
+index 11bb5199..b4d328e4 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7501,0 +7502,6 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++		    if ((cur->type == XML_NAMESPACE_DECL) && 
++		        (((xmlNsPtr)cur)->href == NULL) && 
++		        (((xmlNsPtr)cur)->prefix == NULL)) {
++		        cur = cur->next;
++		        continue;
++		    }
+diff --git a/tree.c b/tree.c
+index fe02b414..5117ccd8 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// Validate namespace pointer before use to prevent use-after-free
++         xmlNsPtr ns;
++
++	/* Check if the namespace node is still valid */
++	if (node->ns->href == NULL && node->ns->prefix == NULL)
++	    return(NULL);
+@@ -4217,2 +4222,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		} else {
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	    } else {
++		ret->ns = xmlNewReconciledNs(doc, ret, node->ns);

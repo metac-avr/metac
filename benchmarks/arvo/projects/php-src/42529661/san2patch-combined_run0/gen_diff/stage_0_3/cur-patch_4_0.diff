@@ -1,0 +1,74 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..eaff9a78288 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2495 +2495,3 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-		efree(HT_GET_DATA_ADDR(ht));
++		if (HT_GET_DATA_ADDR(ht) != NULL) {
++			efree(HT_GET_DATA_ADDR(ht));
++		}
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..5a4e857094b 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -1511 +1511,3 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-			ssa_vars_count = zend_ssa_rename_op(op_array, opline, idx, build_flags, ssa_vars_count, ssa_ops, (int*)stack);
++			if (op_array && opline) {  // Add validity check before accessing
++				ssa_vars_count = zend_ssa_rename_op(op_array, opline, idx, build_flags, ssa_vars_count, ssa_ops, (int*)stack);
++			}
+@@ -1515 +1517,2 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-				opline++;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 				opline++;
+@@ -1517 +1520 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-				if (opline->opcode != ZEND_OP_DATA) {
++				if (op_array && opline && opline->opcode != ZEND_OP_DATA) {  // Add validity check
+@@ -1525,15 +1528,4 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-			stack = frame->stack;
+-			op_array = p->op_array;
+-			level++;
+-			if (ssa_vars_count >= ZEND_JIT_TRACE_MAX_SSA_VAR) {
+-				return NULL;
+-			}
+-			ZEND_JIT_TRACE_SET_FIRST_SSA_VAR(p->info, ssa_vars_count);
+-			for (i = 0; i < op_array->last_var; i++) {
+-				SET_STACK_VAR(stack, i, ssa_vars_count++);
+-			}
+-		} else if (p->op == ZEND_JIT_TRACE_BACK) {
+-			op_array = p->op_array;
+-			frame = zend_jit_trace_ret_frame(frame, op_array);
+-			stack = frame->stack;
+-			if (level == 0) {
++			if (frame) {  // Add null check
++				stack = frame->stack;
++				op_array = p->op_array;
++				level++;
+@@ -1544,2 +1536,23 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-				for (i = 0; i < op_array->last_var + op_array->T; i++) {
+-					SET_STACK_VAR(stack, i, ssa_vars_count++);
++				if (op_array) {  // Add null check
++					for (i = 0; i < op_array->last_var; i++) {
++						SET_STACK_VAR(stack, i, ssa_vars_count++);
++					}
++				}
++			}
++		} else if (p->op == ZEND_JIT_TRACE_BACK) {
++			op_array = p->op_array;
++			if (op_array) {  // Add null check
++				frame = zend_jit_trace_ret_frame(frame, op_array);
++				if (frame) {  // Add null check
++					stack = frame->stack;
++					if (level == 0) {
++						if (ssa_vars_count >= ZEND_JIT_TRACE_MAX_SSA_VAR) {
++							return NULL;
++						}
++						ZEND_JIT_TRACE_SET_FIRST_SSA_VAR(p->info, ssa_vars_count);
++						for (i = 0; i < op_array->last_var + op_array->T; i++) {
++							SET_STACK_VAR(stack, i, ssa_vars_count++);
++						}
++					} else {
++						level--;
++					}
+@@ -1547,2 +1559,0 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-			} else {
+-				level--;

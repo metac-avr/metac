@@ -1,0 +1,30 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index b8b6bd23..29a83334 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -2987 +2987 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
+-    if ((CUR != '"') && (CUR != '\'')) {
++    if ((CUR != '"') && (CUR != '\''')) {
+@@ -3013,3 +3013,7 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
+-        NEXT;
+-        if (err == 0)
+-            ret = xmlStrndup((BASE_PTR+startPosition), len);
++         NEXT;
++        if (err == 0) {
++            if (BASE_PTR != NULL && startPosition + len <= ctxt->input->end - ctxt->input->base)
++                ret = xmlStrndup((BASE_PTR+startPosition), len);
++            else
++                ret = NULL;
++        }
+diff --git a/xmlstring.c b/xmlstring.c
+index 54734724..81199cee 100644
+--- a/xmlstring.c
++++ b/xmlstring.c
+@@ -48,0 +49,4 @@ xmlStrndup(const xmlChar *cur, int len) {
++    if (len > 0 && cur != NULL) {
++        /* Check for potential overflow before malloc */
++        if (len >= INT_MAX) return(NULL);
++    }
+@@ -51 +55 @@ xmlStrndup(const xmlChar *cur, int len) {
+-        return(NULL);
++         return(NULL);

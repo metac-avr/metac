@@ -1,0 +1,36 @@
+diff --git a/src/media_tools/dash_client.c b/src/media_tools/dash_client.c
+index 6b1f874df..382ca7a78 100644
+--- a/src/media_tools/dash_client.c
++++ b/src/media_tools/dash_client.c
+@@ -3525 +3525,2 @@ static GF_Err gf_dash_resolve_url(GF_MPD *mpd, GF_MPD_Representation *rep, GF_DA
+-	if (group->dash->is_m3u8 && out_start_number && ! *out_start_number) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 	if (group->dash->is_m3u8 && out_start_number && ! *out_start_number) {
+@@ -3528 +3529,6 @@ static GF_Err gf_dash_resolve_url(GF_MPD *mpd, GF_MPD_Representation *rep, GF_DA
+-			if (template) gf_free(template);
++			if (template) {
++				// Validate template before freeing
++				if (gf_malloc_size(template) > 0) {
++					gf_free(template);
++				}
++			}
+diff --git a/src/utils/error.c b/src/utils/error.c
+index 23c5105d6..430f770ff 100644
+--- a/src/utils/error.c
++++ b/src/utils/error.c
+@@ -2172,2 +2172,7 @@ GF_Err gf_dynstrcat(char **str, const char *to_append, const char *sep)
+-	if (l1) (*str) = gf_realloc((*str), sizeof(char)*(l1+l2+lsep+1));
+-	else (*str) = gf_realloc((*str), sizeof(char)*(l2+lsep+1));
++	
++	char *old_str = *str;
++	if (l1) {
++		*str = gf_realloc((*str), sizeof(char)*(l1+l2+lsep+1));
++	} else {
++		*str = gf_realloc(NULL, sizeof(char)*(l2+lsep+1));
++	}
+@@ -2175 +2180,2 @@ GF_Err gf_dynstrcat(char **str, const char *to_append, const char *sep)
+-	if (! (*str) )
++	if (! (*str) ) {
++		*str = old_str;
+@@ -2176,0 +2183 @@ GF_Err gf_dynstrcat(char **str, const char *to_append, const char *sep)
++	}

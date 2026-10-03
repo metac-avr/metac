@@ -1,0 +1,30 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index cf1e6282b..565c5e209 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -726 +726,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-		  packet->authorization_line.len, packet->authorization_line.ptr);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		  packet->authorization_line.len, packet->authorization_line.ptr);
+@@ -728,4 +729,5 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-    if(ndpi_strncasestr((const char*)packet->authorization_line.ptr,
+-			"Basic", packet->authorization_line.len)
+-       || ndpi_strncasestr((const char*)packet->authorization_line.ptr,
+-			   "Digest", packet->authorization_line.len)) {
++    if(packet->authorization_line.len >= 5 && ndpi_strncasestr((const char*)packet->authorization_line.ptr,
++			"Basic", packet->authorization_line.len))
++      ndpi_set_risk(ndpi_struct, flow, NDPI_CLEAR_TEXT_CREDENTIALS);
++    else if(packet->authorization_line.len >= 6 && ndpi_strncasestr((const char*)packet->authorization_line.ptr,
++			   "Digest", packet->authorization_line.len))
+@@ -733 +734,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-    }
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index d14c8086b..0739f40b9 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -7111 +7111,4 @@ const char * ndpi_strncasestr(const char *str1, const char *str2, size_t len) {
+-  for(i = 0; i < (str1_len - str2_len + 1); i++){
++  if(str1_len < str2_len)
++    return NULL;
++
++  for(i = 0; i <= (str1_len - str2_len); i++){

@@ -1,0 +1,13 @@
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index be826527f..3593f0ada 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -2435 +2435,7 @@ GF_Err gf_av1_parse_obu_header(GF_BitStream *bs, ObuType *obu_type, Bool *obu_ex
+-		*spatial_id = gf_bs_read_int(bs, 2);
++// Fixed: Added validation check before reading spatial_id to prevent invalid memory access
++		if (gf_bs_bits_available(bs) >= 5) {  // Check if enough bits available for spatial_id (2 bits) + reserved (3 bits)
++			*spatial_id = gf_bs_read_int(bs, 2);
++		} else {
++			gf_bs_seek(bs, pos);
++			return GF_BUFFER_TOO_SMALL;
++		}

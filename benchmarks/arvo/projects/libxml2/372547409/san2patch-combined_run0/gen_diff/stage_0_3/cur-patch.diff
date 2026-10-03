@@ -1,0 +1,48 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..35399cf0 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1866,9 +1866,2 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-
+-mem_error:
+-    xmlVErrMemory(ctxt);
+-    xmlFreeEnumeration(tree);
+-    xmlFreeAttribute(ret);
+-    return(NULL);
+-}
+-
+-static void
++// FIXME: Crash CWE-416: Use After Free
++ static void
+@@ -1876,12 +1869,4 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeAttribute((xmlAttributePtr) attr);
+-}
+-
+-/**
+- * xmlFreeAttributeTable:
+- * @table:  An attribute table
+- *
+- * Deallocate the memory used by an entities hash table.
+- */
+-void
+-xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++    if (attr) {
++        xmlFreeAttribute((xmlAttributePtr) attr);
++    }
++}    xmlHashFree(table, xmlFreeAttributeTableEntry);
+@@ -5982,7 +5966,0 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
+-
+@@ -5990 +5968,2 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    attr = elemDecl->attributes;
++// FIXME: Crash CWE-416: Use After Free
++     attr = elemDecl->attributes;
+@@ -5992 +5971 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	if (attr->def == XML_ATTRIBUTE_REQUIRED) {
++	if (attr && (attr->def == XML_ATTRIBUTE_REQUIRED)) {

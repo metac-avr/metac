@@ -1,0 +1,50 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..324d44fdb0f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40406,2 +40406,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
+-			ZVAL_REF(variable_ptr, Z_REF_P(value));
++			if (Z_REF_P(value) != NULL) {
++				zend_reference *ref = Z_REF_P(value);
++				if (ref && !(GC_TYPE_INFO(ref) & GC_IMMUTABLE)) {
++					Z_ADDREF_P(value);
++					ZVAL_REF(variable_ptr, ref);
++				} else {
++					ZVAL_NULL(variable_ptr);
++				}
++			} else {
++				ZVAL_NULL(variable_ptr);
++			}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index af5f3821723..93658fc754f 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1260,9 +1260,2 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc) {
+-	p->refcount = rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+@@ -1270,12 +1263,3 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	return ++(p->refcount);
+-}
+-
+-static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		++p->refcount;
+-	}
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
++	if (p) return ++(p->refcount);
++	return 0;
++}	if (!(p->u.type_info & GC_IMMUTABLE)) {

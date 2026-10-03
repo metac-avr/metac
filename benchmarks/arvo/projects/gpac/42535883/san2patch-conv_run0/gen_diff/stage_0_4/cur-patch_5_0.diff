@@ -1,0 +1,40 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..0fa820292 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1209,0 +1210,11 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			// Bounds checking for constraint info buffer access
++			if (cfg->num_constraint_info > 0) {
++				if (cfg->general_constraint_info == NULL) {
++					return GF_BAD_PARAM;
++				}
++				// Ensure we don't exceed 64-byte buffer limit
++				if (cfg->num_constraint_info > 64) {
++					return GF_OUT_OF_MEM;
++				}
++			}
++
+@@ -1220,2 +1231,12 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				// Additional bounds check before accessing last element
++				if (cfg->num_constraint_info > 1) {
++					if (cfg->num_constraint_info - 1 >= 64) {
++						return GF_OUT_OF_MEM;
++					}
++					gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
++				}
++				if (cfg->num_constraint_info - 1 < 64) {
++					gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				} else {
++					return GF_OUT_OF_MEM;
++				}
+@@ -1234 +1255,5 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				if (cfg->ptl_sublayer_present_mask & (1<<idx))
++				if (cfg->ptl_sublayer_present_mask & (1<<idx)) {
++					// Validate sublayer level IDC array bounds
++					if (idx < 0 || idx >= 8) {
++						continue;
++					}
+@@ -1235,0 +1261 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++				}

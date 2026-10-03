@@ -1,0 +1,24 @@
+diff --git a/src/range.c b/src/range.c
+index fc126be80..a1f54fb43 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -397 +397,4 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      else {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       else {
++        mrb_value boxed_start = mrb_int_value(mrb, (mrb_int)b);
++        mrb_gc_protect(mrb, boxed_start);
+@@ -402,0 +406 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
++        mrb_gc_unprotect(mrb, boxed_start);
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..73714143e 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -743 +743,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-        mrb_gc_mark_value(mrb, p[i]);
++        if (!mrb_immediate_p(p[i])) {
++          struct RBasic *child = mrb_ptr(p[i]);
++          if (child && child->tt != MRB_TT_FREE) {
++            mrb_gc_mark_value(mrb, p[i]);
++          }
++        }

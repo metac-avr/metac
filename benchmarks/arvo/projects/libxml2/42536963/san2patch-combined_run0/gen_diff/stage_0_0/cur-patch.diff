@@ -1,0 +1,23 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..58184120 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -421,0 +422,4 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++    if (ctxt->input->end - ctxt->input->cur < 1) {
++        *len = 0;
++        return(0);
++    }
+@@ -3918,2 +3922,7 @@ htmlParseStartTag(htmlParserCtxtPtr ctxt) {
+-    if (meta && (nbatts != 0))
+-	htmlCheckMeta(ctxt, atts);
++    if (meta && (nbatts != 0)) {
++        /* Bounds check to prevent heap-buffer-overflow */
++        if (ctxt && ctxt->input && 
++            ctxt->input->cur < ctxt->input->end) {
++            htmlCheckMeta(ctxt, atts);
++        }
++    }
+@@ -3929,2 +3938 @@ htmlParseStartTag(htmlParserCtxtPtr ctxt) {
+-	    else
+-		ctxt->sax->startElement(ctxt->userData, name, NULL);
++	    else		ctxt->sax->startElement(ctxt->userData, name, NULL);

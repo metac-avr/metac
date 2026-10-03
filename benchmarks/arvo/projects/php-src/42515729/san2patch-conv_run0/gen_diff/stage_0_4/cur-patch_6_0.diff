@@ -1,0 +1,30 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..35307bb00d4 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267 +2267,2 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-{
++// Fixed CWE-825: Expired Pointer Dereference - prevent double free and use-after-free
++ {
+@@ -2278,0 +2280,2 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++	} else {
++		timelib_error_container_dtor(*last_errors);
+@@ -2280,2 +2282,0 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-
+-	timelib_error_container_dtor(*last_errors);
+@@ -2332,2 +2333,9 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	/* update last errors and warnings */
+-	update_errors_warnings(&err);
++	/* Clone the error container before updating to prevent use-after-free */
++	if (err) {
++		timelib_error_container *temp_err = timelib_error_container_ctor();
++		*temp_err = *err;  /* Shallow copy of error container */
++		update_errors_warnings(&temp_err);
++		timelib_error_container_dtor(temp_err);  /* Safe cleanup of temporary */
++	} else {
++		update_errors_warnings(&err);
++	}
+@@ -2343,2 +2351 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = 0;
+-		return 0;
++		dateobj->time = 0;		return 0;

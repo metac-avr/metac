@@ -1,0 +1,24 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..8e37e4e8d 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -349,0 +351 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    ptrdiff_t ci_index = ci - c->cibase;
+@@ -351 +353 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    c->ci = ci = c->cibase + ci_index;
+@@ -2710 +2712,7 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
++      /* Check for valid call info pointer before use */
++      struct mrb_context *ctx = mrb->c;
++      if (ctx->ci == NULL || ctx->cibase == NULL || ctx->ciend == NULL) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "null call info pointers");
++      }
+@@ -2722 +2729,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

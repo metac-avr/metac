@@ -1,0 +1,66 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..372ff141f 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -485 +485,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if (n + 1 < mrb->c->stend - mrb->c->stbase) {
++        ci->stack[n+1] = args;
++      } else {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in funcall");
++      }
+@@ -498 +502,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[n+1] = args;
++      if (n + 1 < mrb->c->stend - mrb->c->stbase) {
++        ci->stack[n+1] = args;
++      } else {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in method_missing");
++      }
+@@ -513 +521,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    ci->stack[0] = self;
++    if (mrb->c->stbase <= ci->stack && ci->stack < mrb->c->stend) {
++      ci->stack[0] = self;
++    } else {
++      mrb_raise(mrb, E_RUNTIME_ERROR, "invalid stack access");
++    }
+@@ -515,3 +527,12 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
+-      ci->stack[argc+1] = blk;
++      if (argc > 0) {
++        if (ci->stack + 1 + argc <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in argument copy");
++        }
++      }
++      if (ci->stack + argc + 1 < mrb->c->stend) {
++        ci->stack[argc+1] = blk;
++      } else {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in block assignment");
++      }
+@@ -520 +541,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[2] = blk;
++      if (ci->stack + 2 < mrb->c->stend) {
++        ci->stack[2] = blk;
++      } else {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in block assignment");
++      }
+@@ -523 +548 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    if (MRB_METHOD_CFUNC_P(m)) {
++     if (MRB_METHOD_CFUNC_P(m)) {
+@@ -1611 +1636 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        }
++         }
+@@ -1612,0 +1638,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++          /* Add bounds checking before function call */
++          if (mrb->c->ci >= mrb->c->cibase + mrb->c->cisize - 1) {
++            mrb_raise(mrb, E_RUNTIME_ERROR, "stack level too deep");
++            goto L_RAISE;
++          }
+@@ -1636,0 +1667,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Add bounds check before stack write */
++        if (ci->stack + 0 >= mrb->c->stend) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow");
++          goto L_RAISE;
++        }

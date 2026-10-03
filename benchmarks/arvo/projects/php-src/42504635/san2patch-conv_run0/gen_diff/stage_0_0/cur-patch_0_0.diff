@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..5f8a9426dfb 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -65 +65,3 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++	if (GC_REFCOUNT(str) > 0) {
++		ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++	}
+@@ -77 +78,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index a473c84d2d4..580c571ce05 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -322 +322,4 @@ static void gc_stack_free(gc_stack *stack)
+-		efree(p);
++		/* Validate pointer before freeing to prevent use-after-free */
++		if (p != NULL) {
++			efree(p);
++		}

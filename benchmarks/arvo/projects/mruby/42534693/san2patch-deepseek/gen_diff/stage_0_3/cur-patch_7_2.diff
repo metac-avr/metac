@@ -1,0 +1,63 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..ebf0c5b3a 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -1567,7 +1566,0 @@ mrb_hash_aset(mrb_state *mrb, mrb_value self)
+-  const mrb_value *argv = mrb_get_argv(mrb);
+-  mrb_value val = argv[1];
+-
+-  mrb_hash_set(mrb, self, argv[0], argv[1]);
+-  return val;
+-}
+-
+@@ -1577,12 +1570,4 @@ mrb_hash_size(mrb_state *mrb, mrb_value hash)
+-  return (mrb_int)h_size(mrb_hash_ptr(hash));
+-}
+-
+-/* 15.2.13.4.20 */
+-/* 15.2.13.4.25 */
+-/*
+- *  call-seq:
+- *     hsh.length    ->  integer
+- *     hsh.size      ->  integer
+- *
+- *  Returns the number of key-value pairs in the hash.
+- *
++  struct RHash *h = mrb_hash_ptr(hash);
++  if (h == NULL || h->ht == NULL) return 0;
++  return (mrb_int)h->ht->size;
++} *
+diff --git a/src/vm.c b/src/vm.c
+index d933be05e..7243ccf21 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -2154,13 +2154,16 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        if (!mrb_nil_p(kdict) && mrb_hash_size(mrb, kdict) > 0) {
+-          if (argc < 14) {
+-            ci->n++;
+-            argc++;    /* include kdict in normal arguments */
+-          }
+-          else if (argc == 14) {
+-            /* pack arguments and kdict */
+-            regs[1] = ary_new_from_regs(mrb, argc+1, 1);
+-            argc = ci->n = 15;
+-          }
+-          else {/* argc == 15 */
+-            /* push kdict to packed arguments */
+-            mrb_ary_push(mrb, regs[1], kdict);
++        if (!mrb_nil_p(kdict)) {
++          mrb_value kd_sz = mrb_hash_size(mrb, kdict);
++          if (mrb_fixnum(kd_sz) && mrb_fixnum(kd_sz) > 0) {
++            if (argc < 14) {
++              ci->n++;
++              argc++;    /* include kdict in normal arguments */
++            }
++            else if (argc == 14) {
++              /* pack arguments and kdict */
++              regs[1] = ary_new_from_regs(mrb, argc+1, 1);
++              argc = ci->n = 15;
++            }
++            else {/* argc == 15 */
++              /* push kdict to packed arguments */
++              mrb_ary_push(mrb, regs[1], kdict);
++            }

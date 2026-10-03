@@ -1,0 +1,32 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..9f562fe8a37 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267 +2267,2 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -2278,0 +2280,7 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++		*last_errors = NULL; // Clear pointer to prevent reuse
++	}
++	
++	// Only call dtor if pointer is still valid and not stored in global
++	if (*last_errors != NULL) {
++		timelib_error_container_dtor(*last_errors);
++		*last_errors = NULL;
+@@ -2280,3 +2287,0 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-
+-	timelib_error_container_dtor(*last_errors);
+-	*last_errors = NULL;
+@@ -2506 +2511 @@ PHP_METHOD(DateTime, __construct)
+-	zval *timezone_object = NULL;
++zval *timezone_object = NULL;
+@@ -2513,0 +2519,6 @@ PHP_METHOD(DateTime, __construct)
++	// Fixed CWE-416: Use After Free - Safely handle error container destruction
++	timelib_error_container *errors_to_free = DATEG(last_errors);
++	DATEG(last_errors) = NULL;
++	if (errors_to_free) {
++		timelib_error_container_dtor(errors_to_free);
++	}
+@@ -2526 +2536,0 @@ PHP_METHOD(DateTimeImmutable, __construct)
+-

@@ -1,0 +1,73 @@
+diff --git a/valid.c b/valid.c
+index 897a368d..b01cda2d 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5011,2 +5011,6 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-			if ((size - len > 4) && (buf[len - 1] != '.'))
+-			    strcat(buf, " ...");
++			if ((size - len > 4) && (buf[len - 1] != '.')) {
++			    int remaining = size - len - 1;
++			    if (remaining > 0) {
++			        strncat(buf, " ...", remaining);
++			    }
++			}
+@@ -5015,2 +5019,5 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-		    strcat(buf, (char *) cur->ns->prefix);
+-		    strcat(buf, ":");
++		    int remaining = size - len - 1;
++		    if (remaining > 0) {
++		        strncat(buf, (char *) cur->ns->prefix, remaining);
++		        strncat(buf, ":", remaining);
++		    }
+@@ -5019,2 +5026,6 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-		    if ((size - len > 4) && (buf[len - 1] != '.'))
+-			strcat(buf, " ...");
++		    if ((size - len > 4) && (buf[len - 1] != '.')) {
++			int remaining = size - len - 1;
++			if (remaining > 0) {
++			    strncat(buf, " ...", remaining);
++			}
++		    }
+@@ -5021,0 +5033,13 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		}
++                if (cur->name != NULL) {
++	            int remaining = size - len - 1;
++		    if (remaining > 0) {
++	                strncat(buf, (char *) cur->name, remaining);
++		    }
++		}
++		if (cur->next != NULL) {
++		    int remaining = size - len - 1;
++		    if (remaining > 0) {
++		        strncat(buf, " ", remaining);
++		    }
+@@ -5023,4 +5046,0 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-                if (cur->name != NULL)
+-	            strcat(buf, (char *) cur->name);
+-		if (cur->next != NULL)
+-		    strcat(buf, " ");
+@@ -5034,3 +5054,8 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-	        strcat(buf, "CDATA");
+-		if (cur->next != NULL)
+-		    strcat(buf, " ");
++	        {
++		    int remaining = size - len - 1;
++		    if (remaining > 0) {
++	                strncat(buf, "CDATA", remaining);
++		        if (cur->next != NULL)
++		            strncat(buf, " ", remaining);
++		    }
++		}
+@@ -5045,3 +5070,8 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-	        strcat(buf, "???");
+-		if (cur->next != NULL)
+-		    strcat(buf, " ");
++	        {
++		    int remaining = size - len - 1;
++		    if (remaining > 0) {
++	                strncat(buf, "???", remaining);
++		        if (cur->next != NULL)
++		            strncat(buf, " ", remaining);
++		    }
++		}

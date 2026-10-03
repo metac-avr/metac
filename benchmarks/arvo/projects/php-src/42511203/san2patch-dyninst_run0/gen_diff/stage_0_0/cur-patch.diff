@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..8dd6a926cc3 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -154,0 +155,6 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++			
++			/* Defensive check to prevent use-after-free */
++			if (UNEXPECTED(!variable_ptr)) {
++				return NULL;
++			}
++			
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..6e2341cc6f2 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p != NULL && zend_rc_dtor_func[GC_TYPE(p)] != NULL) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

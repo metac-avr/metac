@@ -1,0 +1,32 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..8668ec81ffb 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2278,0 +2279,6 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++		*last_errors = NULL;
++		timelib_error_container_dtor(DATEG(last_errors));
++		DATEG(last_errors) = NULL;
++	} else {
++		timelib_error_container_dtor(*last_errors);
++		*last_errors = NULL;
+@@ -2280,3 +2285,0 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-
+-	timelib_error_container_dtor(*last_errors);
+-	*last_errors = NULL;
+@@ -2331 +2334 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-
++ 
+@@ -2333 +2336,8 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	update_errors_warnings(&err);
++	{
++		timelib_error_container *temp_err = err;
++		err = NULL; /* Prevent double free/use after free */
++		if (temp_err) {
++			update_errors_warnings(&temp_err);
++			timelib_error_container_dtor(temp_err);
++		}
++	}
+@@ -2343,2 +2353 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-		dateobj->time = 0;
+-		return 0;
++		dateobj->time = 0;		return 0;

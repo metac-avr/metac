@@ -1,0 +1,34 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..5389b59f 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -343 +343 @@ xmlXIncludeURLPush(xmlXIncludeCtxtPtr ctxt,
+-                                      sizeof(ctxt->urlTab[0]));
++                                       sizeof(ctxt->urlTab[0]));
+@@ -349 +349,5 @@ xmlXIncludeURLPush(xmlXIncludeCtxtPtr ctxt,
+-    ctxt->url = ctxt->urlTab[ctxt->urlNr] = xmlStrdup(value);
++    if (value != NULL) {
++        ctxt->url = ctxt->urlTab[ctxt->urlNr] = xmlStrdup(value);
++    } else {
++        ctxt->url = ctxt->urlTab[ctxt->urlNr] = NULL;
++    }
+@@ -1162 +1166,4 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		switch (set->nodeTab[i]->type) {
++		/* Validate node pointer before use to prevent use-after-free */
++		xmlNodePtr node = set->nodeTab[i];
++		if (node != NULL) {
++		switch (node->type) {
+@@ -1175 +1182 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-	                xmlNodePtr tmp, cur = set->nodeTab[i];
++	                xmlNodePtr tmp, cur = node;
+@@ -1178,0 +1186,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			    /* Validate current node in loop */
++			    if (cur == NULL) break;
+@@ -1216 +1225 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-			                              set->nodeTab[i]);
++			                              node);
+@@ -1220 +1229 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				                set->nodeTab[i]));
++				                node));
+@@ -1223,0 +1233 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		}

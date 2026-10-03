@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index d13087a5b02..7bdb8bfb19c 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -155,0 +156 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++// FIXME: Crash CWE-416: Use After Free
+@@ -158 +159,3 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-				rc_dtor_func(garbage);
++				/* Ensure garbage is not accessed after being freed */
++				zend_refcounted *temp_garbage = garbage;
++				rc_dtor_func(temp_garbage);
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index acf98a2f74a..efe8b0aa05d 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -23866,0 +23867,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_U
++	/* Check if variable_ptr is valid before use - prevent use-after-free */
++	if (UNEXPECTED(variable_ptr == NULL || Z_ISERROR_P(variable_ptr))) {
++		ZEND_VM_NEXT_OPCODE();
++	}
++

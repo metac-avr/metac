@@ -1,0 +1,43 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index c3c18764d..466fc5dda 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -2100,8 +2100,20 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
+-	      tunnel_type = ndpi_capwap_tunnel;
+-	      goto iph_check;
+-	    }
+-	  }
+-	}
+-      }
+-    }
+-  }
++static struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow *workflow, const struct pcap_pkthdr *header, const u_int64_t time_ms, struct ndpi_flow *flow, u_int32_t flow_risk, u_int8_t *packet)
++{
++  // FIXME: Crash CWE-825: Expired Pointer Dereference
++  /* null pointer checks */
++  if(!workflow || !header || !packet) {
++    struct ndpi_proto nproto = { NDPI_PROTOCOL_UNKNOWN, NDPI_PROTOCOL_UNKNOWN };
++    return nproto;
++  }
++
++  struct ndpi_flow *flow_ptr;
++  struct ndpi_id *src_id, *dst_id;
++  struct ndpi_id *src_id_ptr, *dst_id_ptr;
++  u_int8_t *iph;
++  struct ndpi_iphdr *iph_ptr;
++  struct ndpi_ipv6hdr *iph6_ptr;
++  u_int8_t ip_offset;
++  u_int8_t iph_proto;
++  u_int16_t vlan_id = 0;
++  u_int8_t tunnel_type = NDPI_NO_TUNNEL;
++  struct ndpi_iphdr *iph6;
+@@ -2114,8 +2126 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
+-}
+-
+-/* ********************************************************** */
+-/*       http://home.thep.lu.se/~bjorn/crc/crc32_fast.c       */
+-/* ********************************************************** */
+-
+-static uint32_t crc32_for_byte(uint32_t r) {
+-  int j;
++}  int j;

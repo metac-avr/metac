@@ -1,0 +1,36 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..629782cc5d0 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29932 +29932,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			}
++// FIXME: Crash CWE-416: Use After Free
++ 			}
+@@ -30282 +30283,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			}
++// FIXME: Crash CWE-416: Use After Free
++ 			}
+@@ -49519 +49521,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			}
++// FIXME: Crash CWE-416: Use After Free
++ 			}
+@@ -49869 +49872,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-			}
++// FIXME: Crash CWE-416: Use After Free
++ 			}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..51bd0bf126b 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2433,2 +2432,0 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-				zend_use_scalar_as_array();
+-				ZVAL_UNDEF(result);
+@@ -2442,0 +2441,4 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
++	if (UNEXPECTED(container_ptr == NULL || Z_TYPE_P(container_ptr) == IS_UNDEF)) {
++		zend_throw_error(NULL, "Cannot use uninitialized variable in assignment");
++		return;
++	}
+@@ -2453,2 +2455 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(z
+-{
+-	zval *result = EX_VAR(opline->result.var);
++{	zval *result = EX_VAR(opline->result.var);

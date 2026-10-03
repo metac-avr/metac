@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..a792e97f18f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1829 +1829,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		p--;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		p--;
+@@ -1831,0 +1833,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++		// Fix: Set zval type to IS_UNDEF to prevent expired pointer dereference
++		p->val.u1.v.type = IS_UNDEF;
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..9866b2774fc 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43,4 +43,6 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
+-			gc_check_possible_root(ref);
++		if (ref) {
++			if (!GC_DELREF(ref)) {
++				rc_dtor_func(ref);
++			} else {
++				gc_check_possible_root(ref);
++			}

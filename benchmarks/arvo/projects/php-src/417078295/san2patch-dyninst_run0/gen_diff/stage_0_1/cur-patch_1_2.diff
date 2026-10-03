@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..d2784dfffb4 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40398 +40398,14 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZVAL_COPY(&ref->val, get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R));
++				zval *src_val = get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R);
++				if (src_val) {
++					if (Z_REFCOUNTED_P(src_val) && !GC_DELREF(Z_COUNTED_P(src_val))) {
++						/* Object already freed, don't copy */
++						ZVAL_NULL(&ref->val);
++					} else {
++						ZVAL_COPY(&ref->val, src_val);
++						if (Z_REFCOUNTED_P(src_val)) {
++							GC_ADDREF(Z_COUNTED_P(src_val));
++						}
++					}
++				} else {
++					ZVAL_NULL(&ref->val);
++				}
+@@ -40406 +40419,9 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
++			if (value && Z_REFCOUNTED_P(value)) {
++				if (!GC_DELREF(Z_COUNTED_P(value))) {
++					/* Object already freed, avoid use-after-free */
++					ZVAL_NULL(variable_ptr);
++					return;
++				} else {
++					GC_ADDREF(Z_COUNTED_P(value));
++				}
++			}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..22c1437fd62 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,3 +202,9 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++		/* Validate object before accessing its members */
++		if (object != NULL) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++		} else {
++			return;
++		}

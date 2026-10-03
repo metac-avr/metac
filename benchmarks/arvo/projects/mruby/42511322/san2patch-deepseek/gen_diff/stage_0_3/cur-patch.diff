@@ -1,0 +1,33 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..07774d5fa 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -181 +181 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-  newstack = (mrb_value *)mrb_realloc_simple(mrb, mrb->c->stbase, sizeof(mrb_value) * size);
++  newstack = (mrb_value *)mrb_realloc_simple(mrb, oldbase, sizeof(mrb_value) * size);
+@@ -185,4 +185,10 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-  stack_clear(&(newstack[oldsize]), size - oldsize);
+-  envadjust(mrb, oldbase, newstack, oldsize);
+-  mrb->c->stbase = newstack;
+-  mrb->c->stend = mrb->c->stbase + size;
++  if (newstack != oldbase) {
++    stack_clear(&(newstack[oldsize]), size - oldsize);
++    envadjust(mrb, oldbase, newstack, oldsize);
++    mrb->c->stbase = newstack;
++    mrb->c->stend = mrb->c->stbase + size;
++  }
++  else {
++    stack_clear(&(newstack[oldsize]), size - oldsize);
++    mrb->c->stend = mrb->c->stbase + size;
++  }
+@@ -525 +531 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++     c = mrb_class(mrb, self);
+@@ -527,0 +534,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    if (voff >= 0) {
++      argv = mrb->c->stbase + voff;
++    }
+@@ -553,3 +561,0 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    if (voff >= 0) {
+-      argv = mrb->c->stbase + voff;
+-    }

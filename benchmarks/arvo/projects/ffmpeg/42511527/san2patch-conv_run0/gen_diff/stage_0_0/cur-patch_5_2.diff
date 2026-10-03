@@ -1,0 +1,172 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..9e34e6959e 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -182,38 +182,9 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-                                GetBitContext *gb, int block_size,
+-                                int width, int height, int x_pos, int y_pos,
+-                                int blk_idx)
+-{
+-    struct FlashSVContext *s = avctx->priv_data;
+-    uint8_t *line = s->tmpblock;
+-    int k;
+-    int ret = inflateReset(&s->zstream);
+-    if (ret != Z_OK) {
+-        av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", ret);
+-        return AVERROR_UNKNOWN;
+-    }
+-    if (s->zlibprime_curr || s->zlibprime_prev) {
+-        ret = flashsv2_prime(s,
+-                             s->blocks[blk_idx].pos,
+-                             s->blocks[blk_idx].size);
+-        if (ret < 0)
+-            return ret;
+-    }
+-    s->zstream.next_in   = avpkt->data + get_bits_count(gb) / 8;
+-    s->zstream.avail_in  = block_size;
+-    s->zstream.next_out  = s->tmpblock;
+-    s->zstream.avail_out = s->block_size * 3;
+-    ret = inflate(&s->zstream, Z_FINISH);
+-    if (ret == Z_DATA_ERROR) {
+-        av_log(avctx, AV_LOG_ERROR, "Zlib resync occurred\n");
+-        inflateSync(&s->zstream);
+-        ret = inflate(&s->zstream, Z_FINISH);
+-    }
+-
+-    if (ret != Z_OK && ret != Z_STREAM_END) {
+-        //return -1;
+-    }
+-
+-    if (s->is_keyframe) {
+-        s->blocks[blk_idx].pos  = s->keyframedata + (get_bits_count(gb) / 8);
+-        s->blocks[blk_idx].size = block_size;
++    /* we care for keyframes only in Screen Video v2 */
++    s->is_keyframe = (avpkt->flags & AV_PKT_FLAG_KEY) && (s->ver == 2);
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
++        int err;
++        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
++            return err;
++        if (avpkt->data && s->keyframedata)
++            memcpy(s->keyframedata, avpkt->data, avpkt->size);
+@@ -220,0 +192,3 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++    if(s->ver == 2 && !s->blocks)
++        s->blocks = av_mallocz((v_blocks + !!v_part) * (h_blocks + !!h_part) *
++                               sizeof(s->blocks[0]));
+@@ -222 +196,3 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    y_pos += s->diff_start;
++    ff_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
++            s->image_width, s->image_height, s->block_width, s->block_height,
++            h_blocks, v_blocks, h_part, v_part);
+@@ -224,25 +199,0 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    if (!s->color_depth) {
+-        /* Flash Screen Video stores the image upside down, so copy
+-         * lines to destination in reverse order. */
+-        for (k = 1; k <= s->diff_height; k++) {
+-            memcpy(s->frame->data[0] + x_pos * 3 +
+-                   (s->image_height - y_pos - k) * s->frame->linesize[0],
+-                   line, width * 3);
+-            /* advance source pointer to next line */
+-            line += width * 3;
+-        }
+-    } else {
+-        /* hybrid 15-bit/palette mode */
+-        ret = decode_hybrid(s->tmpblock, s->zstream.next_out,
+-                      s->frame->data[0],
+-                      s->image_height - (y_pos + 1 + s->diff_height),
+-                      x_pos, s->diff_height, width,
+-                      s->frame->linesize[0], s->pal);
+-        if (ret < 0) {
+-            av_log(avctx, AV_LOG_ERROR, "decode_hybrid failed\n");
+-            return ret;
+-        }
+-    }
+-    skip_bits_long(gb, 8 * block_size); /* skip the consumed bits */
+-    return 0;
+-}
+@@ -349,4 +300,33 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
++static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++                                GetBitContext *gb, int block_size,
++                                int width, int height, int x_pos, int y_pos,
++                                int blk_idx)
++{
++    struct FlashSVContext *s = avctx->priv_data;
++    uint8_t *line = s->tmpblock;
++    int k;
++    int ret = inflateReset(&s->zstream);
++    if (ret != Z_OK) {
++        av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", ret);
++        return AVERROR_UNKNOWN;
++    }
++    if (s->zlibprime_curr || s->zlibprime_prev) {
++        ret = flashsv2_prime(s,
++                             s->blocks[blk_idx].pos,
++                             s->blocks[blk_idx].size);
++        if (ret < 0)
++            return ret;
++    }
++    s->zstream.next_in   = avpkt->data + get_bits_count(gb) / 8;
++    s->zstream.avail_in  = block_size;
++    s->zstream.next_out  = s->tmpblock;
++    s->zstream.avail_out = s->block_size * 3;
++    ret = inflate(&s->zstream, Z_FINISH);
++    if (ret == Z_DATA_ERROR) {
++        av_log(avctx, AV_LOG_ERROR, "Zlib resync occurred\n");
++        inflateSync(&s->zstream);
++        ret = inflate(&s->zstream, Z_FINISH);
++    }
++
++    if (ret != Z_OK && ret != Z_STREAM_END) {
++        //return -1;
+@@ -355,2 +334,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    /* we care for keyframes only in Screen Video v2 */
+-    s->is_keyframe = (avpkt->flags & AV_PKT_FLAG_KEY) && (s->ver == 2);
+@@ -358,4 +336,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        int err;
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
+-            return err;
+-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        s->blocks[blk_idx].pos  = s->keyframedata + (get_bits_count(gb) / 8);
++        s->blocks[blk_idx].size = block_size;
+@@ -363,3 +338,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if(s->ver == 2 && !s->blocks)
+-        s->blocks = av_mallocz((v_blocks + !!v_part) * (h_blocks + !!h_part) *
+-                               sizeof(s->blocks[0]));
+@@ -367,3 +340 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    ff_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
+-            s->image_width, s->image_height, s->block_width, s->block_height,
+-            h_blocks, v_blocks, h_part, v_part);
++    y_pos += s->diff_start;
+@@ -370,0 +342,27 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++    if (!s->color_depth) {
++        /* Flash Screen Video stores the image upside down, so copy
++         * lines to destination in reverse order. */
++        if (line) {
++            for (k = 1; k <= s->diff_height; k++) {
++                memcpy(s->frame->data[0] + x_pos * 3 +
++                       (s->image_height - y_pos - k) * s->frame->linesize[0],
++                       line, width * 3);
++                /* advance source pointer to next line */
++                line += width * 3;
++            }
++        }
++    } else {
++        /* hybrid 15-bit/palette mode */
++        ret = decode_hybrid(s->tmpblock, s->zstream.next_out,
++                      s->frame->data[0],
++                      s->image_height - (y_pos + 1 + s->diff_height),
++                      x_pos, s->diff_height, width,
++                      s->frame->linesize[0], s->pal);
++        if (ret < 0) {
++            av_log(avctx, AV_LOG_ERROR, "decode_hybrid failed\n");
++            return ret;
++        }
++    }
++    skip_bits_long(gb, 8 * block_size); /* skip the consumed bits */
++    return 0;
++}

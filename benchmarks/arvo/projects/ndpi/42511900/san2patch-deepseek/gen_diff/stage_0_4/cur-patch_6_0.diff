@@ -1,0 +1,18 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 9f1dd9cf5..345474c5d 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -100 +100,2 @@ static int ndpi_search_http_tcp_again(struct ndpi_detection_module_struct *ndpi_
+-				      struct ndpi_flow_struct *flow) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 				      struct ndpi_flow_struct *flow) {
+@@ -107,0 +109,9 @@ static int ndpi_search_http_tcp_again(struct ndpi_detection_module_struct *ndpi_
++  if(flow->l4.tcp && flow->l4.tcp->http_setup_url && flow->l4.tcp->http_setup_url[0] != '\0') {
++    u_int avail = flow->l4.tcp->http_setup_url_len;
++    if(avail > 0) {
++      if(avail >= sizeof(flow->host_server_name)) avail = sizeof(flow->host_server_name) - 1;
++      if(strnlen(flow->host_server_name, avail) == avail)
++        flow->host_server_name[avail] = '\0';
++    }
++  }
++

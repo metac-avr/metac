@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..23d691addca 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -275 +275,2 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-				zend_hash_add_new(named_params, attribute_data->args[i].name, &val);
++				zend_string *safe_name = zend_string_copy(attribute_data->args[i].name);
++				zend_hash_add_new(named_params, safe_name, &val);
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..e17f644a89b 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -355,0 +356 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
++		/* Add reference count validation to prevent premature deallocation */
+@@ -360 +361 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-			} else {
++ 			} else {
+@@ -362 +363,4 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-				efree(s);
++				/* Additional safety check before freeing */
++				if (s != NULL) {
++					efree(s);
++				}

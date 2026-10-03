@@ -1,0 +1,49 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..01ed18b6e06 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40388,3 +40388,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-	if (opline->extended_value & ZEND_BIND_REF) {
+-		i_zval_ptr_dtor(variable_ptr);
+-		if (UNEXPECTED(!Z_ISREF_P(value))) {
++	        if (opline->extended_value & ZEND_BIND_REF) {
++		zval *new_value = value;
++		if (UNEXPECTED(!Z_ISREF_P(new_value))) {
+@@ -40395 +40395 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZVAL_COPY_VALUE(&ref->val, value);
++				ZVAL_COPY_VALUE(&ref->val, new_value);
+@@ -40397 +40397 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZEND_ASSERT(!Z_REFCOUNTED_P(value));
++				ZEND_ASSERT(!Z_REFCOUNTED_P(new_value));
+@@ -40402,2 +40402,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_REF_P(value) = ref;
+-			Z_TYPE_INFO_P(value) = IS_REFERENCE_EX;
++			Z_REF_P(new_value) = ref;
++			Z_TYPE_INFO_P(new_value) = IS_REFERENCE_EX;
++			Z_ADDREF_P(new_value);
++			i_zval_ptr_dtor(variable_ptr);
+@@ -40406,2 +40408,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			Z_ADDREF_P(value);
+-			ZVAL_REF(variable_ptr, Z_REF_P(value));
++			Z_ADDREF_P(new_value);
++			i_zval_ptr_dtor(variable_ptr);
++			ZVAL_REF(variable_ptr, Z_REF_P(new_value));
+@@ -40412,0 +40416 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
++		Z_TRY_ADDREF_P(value);
+@@ -40415,0 +40420 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
++    
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..72f900cb27c 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -39 +39 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++        static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+@@ -43,3 +43,2 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
++		if (GC_REFCOUNT(ref) > 1) {
++			GC_DELREF(ref);
+@@ -49,0 +49 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++    

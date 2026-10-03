@@ -1,0 +1,25 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..c4eea367 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2053,0 +2054,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++    
++    /* Check if the node has been freed */
++    if (cur->doc == NULL)
++        return(-1);
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..f37bc95e 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1364 +1364,8 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++#ifdef LIBXML_XINCLUDE_ENABLED
++                /* Check if node is being used by XInclude before freeing */
++                if (reader->xinclude < 0 || reader->in_xinclude == 0) {
++                    xmlUnlinkNode(tmp);
++                    xmlTextReaderFreeNode(reader, tmp);
++                }
++#else
+@@ -1366,0 +1374 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
++#endif

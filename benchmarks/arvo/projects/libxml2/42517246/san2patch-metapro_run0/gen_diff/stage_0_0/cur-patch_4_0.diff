@@ -1,0 +1,24 @@
+diff --git a/tree.c b/tree.c
+index 6a42f118..8d1b980e 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4310,2 +4310,3 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    else if (node->name != NULL) {
+-        if ((doc != NULL) && (doc->dict != NULL))
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     else if (node->name != NULL) {
++        if ((doc != NULL) && (doc->dict != NULL) && (xmlValidateNameValue(node->name) == 1))
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..ed8e7e70 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -848,2 +848,7 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-    else
+-        result = xmlDocCopyNode(elem, target, 1);
++    else {
++        if (elem->name == NULL) {
++            result = xmlDocCopyNode(elem, target, 1);
++        } else {
++            result = xmlDocCopyNode(elem, target, 1);
++        }
++    }

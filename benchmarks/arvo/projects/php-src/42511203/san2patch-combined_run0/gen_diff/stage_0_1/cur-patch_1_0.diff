@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..a94127090a2 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -154,0 +155 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++			
+@@ -155,0 +157,10 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++			
++			/* Validate that garbage pointer is still valid before use */
++			if (UNEXPECTED(!garbage || GC_REFCOUNT(garbage) == 0)) {
++				ZVAL_COPY_VALUE(variable_ptr, value);
++				if (Z_REFCOUNTED_P(variable_ptr)) {
++					GC_ADDREF(Z_COUNTED_P(variable_ptr));
++				}
++				return variable_ptr;
++			}
++			
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..7c116e78a27 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -27157,0 +27158 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
++// FIXME: Crash CWE-416: Use After Free
+@@ -27163 +27164,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_REF_SPEC_VAR_VAR_HANDLE
+-		zend_assign_to_variable_reference(variable_ptr, value_ptr);
++		/* Check for null pointers to prevent use-after-free vulnerability */
++		if (variable_ptr != NULL && value_ptr != NULL) {
++			zend_assign_to_variable_reference(variable_ptr, value_ptr);
++		}

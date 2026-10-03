@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..3d9251578db 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352 +1352,2 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
++		// Prevent use-after-free by ensuring zval is fully copied before destruction
++		ZVAL_COPY(&tmp, &p->val);
+@@ -1354,0 +1356 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
++		zval_ptr_dtor(&tmp);
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..47f9e8bd5bf 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -218 +218,9 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-		zv = Z_INDIRECT_P(zv);
++		zval *real_zv = Z_INDIRECT_P(zv);
++		if (real_zv != NULL) {
++			zv = real_zv;
++		} else {
++			return;
++		}
++	}
++	if (zv != NULL && Z_TYPE_P(zv) != IS_UNDEF) {
++		i_zval_ptr_dtor(zv);
+@@ -220 +227,0 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-	i_zval_ptr_dtor(zv);

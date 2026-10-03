@@ -1,0 +1,31 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..210477a1 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6844,0 +6845,8 @@ xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value) {
++    /*
++     * Validate node before use - check if it's been freed
++     */
++    if (node->doc == NULL && node->parent == NULL && node->children == NULL) {
++        /* Node appears to be orphaned/freed, do not proceed */
++        return(NULL);
++    }
++
+@@ -6926 +6934 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	return(prop);
++    return(prop);
+@@ -6929 +6937,2 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-    * No equal attr found; create a new one.
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     * No equal attr found; create a new one.
+@@ -6930,0 +6940,6 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++    
++    /* Check if node is valid before proceeding to prevent expired pointer dereference */
++    if ((node == NULL) || (node->type == XML_ATTRIBUTE_NODE)) {
++        return(NULL);
++    }
++    
+@@ -6936,2 +6951 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-/**
+- * xmlNodeIsText:
++/** * xmlNodeIsText:

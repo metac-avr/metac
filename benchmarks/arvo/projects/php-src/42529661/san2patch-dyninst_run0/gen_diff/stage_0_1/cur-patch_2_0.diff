@@ -1,0 +1,62 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..52ba93a4905 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2493,0 +2494,5 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++	/* Add reference count check to prevent premature deallocation */
++	if (GC_REFCOUNT(ht) > 1) {
++		GC_DELREF(ht);
++		return;
++	}
+@@ -2494,0 +2500 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Safe to free only when no JIT references exist */
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..1a228410c45 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -634,10 +634 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			op1_type = Z_TYPE_P(zv);
+-			uint8_t flags = 0;
+-
+-			if (op1_type == IS_INDIRECT) {
+-				zv = Z_INDIRECT_P(zv);
+-				op1_type = Z_TYPE_P(zv);
+-				flags |= IS_TRACE_INDIRECT;
+-			}
+-			if (op1_type == IS_REFERENCE) {
+-				zv = Z_REFVAL_P(zv);
++			if (zv && GC_DELREF(&zv->value.counted->gc) >= 0) {
+@@ -645,7 +636,20 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				flags |= IS_TRACE_REFERENCE;
+-			}
+-			if (Z_TYPE_P(zv) == IS_OBJECT) {
+-				ce1 = Z_OBJCE_P(zv);
+-			} else if (Z_TYPE_P(zv) == IS_ARRAY) {
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
++				uint8_t flags = 0;
++
++				if (op1_type == IS_INDIRECT) {
++					zv = Z_INDIRECT_P(zv);
++					if (!zv) return;
++					op1_type = Z_TYPE_P(zv);
++					flags |= IS_TRACE_INDIRECT;
++				}
++				if (op1_type == IS_REFERENCE) {
++					zv = Z_REFVAL_P(zv);
++					if (!zv) return;
++					op1_type = Z_TYPE_P(zv);
++					flags |= IS_TRACE_REFERENCE;
++				}
++				if (Z_TYPE_P(zv) == IS_OBJECT) {
++					ce1 = Z_OBJCE_P(zv);
++				} else if (Z_TYPE_P(zv) == IS_ARRAY) {
++					if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
++						flags |= IS_TRACE_PACKED;
++					}
+@@ -652,0 +657,3 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++				op1_type |= flags;
++			} else {
++				return;
+@@ -654 +660,0 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-			op1_type |= flags;

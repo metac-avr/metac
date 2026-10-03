@@ -1,0 +1,24 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..bdf8f13f5 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -753 +753,7 @@ mpz_get_int(mpz_t *y, mrb_int *v)
+-    i = (y->sn * (y->p[0] | (y->p[1] & 1) << DIGITBITS));
++    if (digits(y) < 1) return FALSE;
++    if (digits(y) == 1) {
++      i = (y->sn * y->p[0]);
++    }
++    else {
++      i = (y->sn * (y->p[0] | (y->p[1] & 1) << DIGITBITS));
++    }
+@@ -861,2 +867,8 @@ mpz_xor(mrb_state *mrb, mpz_t *z, mpz_t *x, mpz_t *y)  /* not the most efficient
+-  sz = imax(x->sz, y->sz);
+-  mpz_realloc(mrb,z,(size_t)sz);
++  if (x->sz > SIZE_MAX - y->sz) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "overflow in mpz_xor limb count");
++  }
++  sz = (x->sz > y->sz) ? x->sz : y->sz;
++  if (sz > SIZE_MAX / sizeof(mp_limb)) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "mpz_xor allocation overflow");
++  }
++  mpz_realloc(mrb,z,sz);

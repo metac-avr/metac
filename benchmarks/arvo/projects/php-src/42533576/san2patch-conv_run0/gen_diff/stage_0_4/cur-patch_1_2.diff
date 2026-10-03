@@ -1,0 +1,59 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 888c35482a4..f4340142779 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1256,13 +1255,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_DELREF(Z_COUNTED_P(pz));
+-}
+-
+@@ -1271 +1258 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	do {												\
++	do {								\
+@@ -1273,3 +1260,3 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
++		Z_COUNTED_P(z) = gc;						\
++		z->value.ww.w2 = _w2;						\
++		Z_TYPE_INFO_P(z) = t;						\
+@@ -1277,0 +1265,10 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
++	do {								\
++		uint64_t _w2 = v->value.ww.w2;					\
++		Z_COUNTED_P(z) = gc;						\
++		z->value.ww.w2 = _w2;						\
++		Z_TYPE_INFO_P(z) = t;						\
++	} while (0)
++#else
++# error "Unknown SIZEOF_SIZE_T"
++#endif#elif SIZEOF_SIZE_T == 8
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..2a3040fa78f 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -294,12 +294,3 @@ static zend_always_inline void zend_vm_stack_free_extra_args(zend_execute_data *
+-static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-{
+-	uint32_t num_args = ZEND_CALL_NUM_ARGS(call);
+-
+-	if (EXPECTED(num_args > 0)) {
+-		zval *p = ZEND_CALL_ARG(call, 1);
+-
+-		do {
+-			zval_ptr_dtor_nogc(p);
+-			p++;
+-		} while (--num_args);
+-	}
++static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
++	return GC_DELREF(Z_COUNTED_P(pz));

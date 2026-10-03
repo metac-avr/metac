@@ -1,0 +1,47 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..e91342ec9b 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -349,3 +349,13 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
++static int flashsv_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
++{
++    FlashSVContext *s = avctx->priv_data;
++    const uint8_t *buf = avpkt->data;
++    const uint8_t *buf_end = buf + avpkt->size;
++    int frame_size;
++    int ret;
++    int h_blocksize, v_blocksize;
++    int h_blocks, v_blocks;
++    int h_part, v_part;
++    int i, j;
++
++    if (buf_end - buf < 4)
+@@ -352,0 +363,25 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++
++    /* no cursor decoding yet */
++    s->decode_cursor = 0;
++
++    /* set pointer to the start of the input buffer */
++    s->blocks = NULL;
++    s->keyframedata = NULL;
++
++    /* get the width and height of the frame */
++    s->image_width  = AV_RB16(buf);
++    s->image_height = AV_RB16(buf + 2);
++    buf += 4;
++
++    /* sanity check */
++    if (s->image_width && s->image_height) {
++        if (s->image_width != avctx->width || s->image_height != avctx->height) {
++            av_log(avctx, AV_LOG_ERROR,
++                   "Frame width or height differs from first frame!\n");
++            av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
++                   avctx->height, avctx->width, s->image_height, s->image_width);
++            return AVERROR_INVALIDDATA;
++        }
++    } else {
++        s->image_width  = avctx->width;
++        s->image_height = avctx->height;

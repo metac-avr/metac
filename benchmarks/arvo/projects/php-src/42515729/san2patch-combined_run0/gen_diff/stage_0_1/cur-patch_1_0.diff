@@ -1,0 +1,26 @@
+diff --git a/ext/date/lib/timelib.c b/ext/date/lib/timelib.c
+index d42c69bbd6f..7579d8d4665 100644
+--- a/ext/date/lib/timelib.c
++++ b/ext/date/lib/timelib.c
+@@ -158,0 +159,2 @@ void timelib_error_container_dtor(timelib_error_container *errors)
++	if (errors == NULL) return;
++	
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..568c796879d 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267 +2267,2 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-{
++// Fixed CWE-416: Use After Free
++ {
+@@ -2277,0 +2279 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++		timelib_error_container_dtor(*last_errors); // Free the source first
+@@ -2278,0 +2281,4 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++		*last_errors = NULL; // Clear pointer to prevent UAF
++	} else {
++		timelib_error_container_dtor(*last_errors);
++		*last_errors = NULL;
+@@ -2280,3 +2285,0 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-
+-	timelib_error_container_dtor(*last_errors);
+-	*last_errors = NULL;

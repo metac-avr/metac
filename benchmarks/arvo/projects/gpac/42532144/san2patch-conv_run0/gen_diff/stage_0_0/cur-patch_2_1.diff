@@ -1,0 +1,54 @@
+diff --git a/src/filter_core/filter_props.c b/src/filter_core/filter_props.c
+index f507546bf..401485c9f 100644
+--- a/src/filter_core/filter_props.c
++++ b/src/filter_core/filter_props.c
+@@ -1063,0 +1064,5 @@ GF_Err gf_props_insert_property(GF_PropertyMap *map, u32 hash, u32 p4cc, const c
++		// Validate size parameter to prevent buffer overflow
++		if (value->value.data.size == 0 || value->value.data.size > 1000000) { // Reasonable upper limit
++			GF_LOG(GF_LOG_ERROR, GF_LOG_FILTER, ("Invalid data property size: %u\n", value->value.data.size));
++			return GF_BAD_PARAM;
++		}
+diff --git a/src/filters/reframe_adts.c b/src/filters/reframe_adts.c
+index 43531ca54..fa42e69aa 100644
+--- a/src/filters/reframe_adts.c
++++ b/src/filters/reframe_adts.c
+@@ -459,16 +458,0 @@ static void adts_dmx_check_pid(GF_Filter *filter, GF_ADTSDmxCtx *ctx)
+-	if (ctx->ovsbr) timescale = 2*sr;
+-
+-	gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_TIMESCALE, & PROP_UINT(ctx->timescale ? ctx->timescale : timescale));
+-	gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_NUM_CHANNELS, & PROP_UINT(ctx->nb_ch) );
+-
+-	if (ctx->bitrate) {
+-		gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_BITRATE, & PROP_UINT(ctx->bitrate));
+-	}
+-
+-	if (ctx->id3_buffer_size) {
+-		id3dmx_flush(filter, ctx->id3_buffer, ctx->id3_buffer_size, ctx->opid, ctx->expart ? &ctx->vpid : NULL);
+-		ctx->id3_buffer_size = 0;
+-	}
+-
+-}
+-
+@@ -480,0 +465,22 @@ static Bool adts_dmx_process_event(GF_Filter *filter, const GF_FilterEvent *evt)
++	switch (evt->base.type) {
++	case GF_FEVT_PLAY:
++		if (ctx->is_playing) return GF_TRUE;
++		ctx->is_playing = GF_TRUE;
++		return GF_FALSE;
++	case GF_FEVT_STOP:
++		ctx->is_playing = GF_FALSE;
++		return GF_FALSE;
++	case GF_FEVT_SET_SPEED:
++		ctx->speed = evt->play.speed;
++		return GF_FALSE;
++	case GF_FEVT_PAUSE:
++		ctx->is_playing = GF_FALSE;
++		return GF_FALSE;
++	case GF_FEVT_RESUME:
++		ctx->is_playing = GF_TRUE;
++		return GF_FALSE;
++	default:
++		break;
++	}
++	return GF_FALSE;
++}

@@ -1,0 +1,34 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..a4727c10d 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -534 +534,2 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
+-      origin_hostname = ptr + 3;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       origin_hostname = ptr + 3;
+@@ -536,3 +537,7 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
+-      ptr = ndpi_strnstr(origin_hostname, ":", origin_hostname_len);
+-      if(ptr) {
+-        origin_hostname_len = ptr - origin_hostname;
++      if(origin_hostname_len > 0 && origin_hostname >= (char*)packet->http_origin.ptr && origin_hostname < (char*)packet->http_origin.ptr + packet->http_origin.len) {
++        ptr = ndpi_strnstr(origin_hostname, ":", origin_hostname_len);
++        if(ptr && ptr >= origin_hostname && ptr < origin_hostname + origin_hostname_len) {
++          origin_hostname_len = ptr - origin_hostname;
++        }
++      } else {
++        origin_hostname_len = 0;
+@@ -541 +546 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
+-		    (int)origin_hostname_len, origin_hostname);
++	    (int)origin_hostname_len, origin_hostname);
+@@ -543 +548 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
+-      if(strncmp(origin_hostname, flow->host_server_name, origin_hostname_len) != 0) {
++      if(origin_hostname_len > 0 && strncmp(origin_hostname, flow->host_server_name, origin_hostname_len) != 0) {
+@@ -545,4 +550,4 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
+-				    origin_hostname,
+-				    origin_hostname_len,
+-				    &ret_match,
+-				    master_protocol);
++				     origin_hostname,
++				     origin_hostname_len,
++				     &ret_match,
++				     master_protocol);

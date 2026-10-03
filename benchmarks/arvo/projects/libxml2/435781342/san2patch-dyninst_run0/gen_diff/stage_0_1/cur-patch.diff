@@ -1,0 +1,27 @@
+diff --git a/tree.c b/tree.c
+index a93f2e31..cf84050a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -599,2 +599,9 @@ xmlFreeNs(xmlNs *cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++    // Clear content before freeing to prevent use-after-free
++    if (cur->href != NULL) {
++        xmlFree((char *) cur->href);
++        cur->href = NULL;
++    }
++    if (cur->prefix != NULL) {
++        xmlFree((char *) cur->prefix);
++        cur->prefix = NULL;
++    }
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..f2a81ff7 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2226 +2226,2 @@ xmlSAX2StartElementNs(void *ctx,
+-        pref = namespaces[i++];
++// FIXME: Crash CWE-416: Use After Free
++	 pref = namespaces[i++];
+@@ -2247 +2248 @@ xmlSAX2StartElementNs(void *ctx,
+-	    ctxt->myDoc && ctxt->myDoc->intSubset) {
++	    ctxt->myDoc && ctxt->myDoc->intSubset && ns != NULL) {

@@ -1,0 +1,21 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..288acb29bcc 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1524,0 +1525 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
++	filename = NULL;
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..0cf1cfdcc17 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -373 +373,5 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
+-						zend_incompatible_string_to_long_error(Z_STR_P(op));
++						zend_string *orig_str = Z_STR_P(op);
++						if (Z_REFCOUNTED_P(op)) {
++							GC_ADDREF(orig_str);
++						}
++						zend_incompatible_string_to_long_error(orig_str);
+@@ -375,0 +380,3 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
++						}
++						if (Z_REFCOUNTED_P(op) && GC_DELREF(orig_str) == 0) {
++							zend_string_free(orig_str);

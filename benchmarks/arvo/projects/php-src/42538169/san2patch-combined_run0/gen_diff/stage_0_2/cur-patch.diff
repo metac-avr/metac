@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_iterators.c b/Zend/zend_iterators.c
+index f67033b1116..5a3b18999bb 100644
+--- a/Zend/zend_iterators.c
++++ b/Zend/zend_iterators.c
+@@ -56 +55,0 @@ static const zend_object_handlers iterator_object_handlers = {
+-
+@@ -64 +63,2 @@ static void iter_wrapper_free(zend_object *object)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -66 +66,6 @@ static void iter_wrapper_free(zend_object *object)
+-	iter->funcs->dtor(iter);
++	if (iter && iter->funcs) {
++		void (*dtor_func)(zend_object_iterator *) = iter->funcs->dtor;
++		if (dtor_func) {
++			dtor_func(iter);
++		}
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 733ce54dc24..3b2bc1ec50f 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -5165 +5165 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-		if (iter) {
++		if (iter && EG(exit_status) != 0) {
+@@ -5179 +5179,3 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			if (EG(exit_status) != 0) {
++				OBJ_RELEASE(&iter->std);
++			}
+@@ -5188 +5190,3 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-		OBJ_RELEASE(&iter->std);
++		if (EG(exit_status) != 0) {
++			OBJ_RELEASE(&iter->std);
++		}

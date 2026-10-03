@@ -1,0 +1,74 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..789decf51 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -148,0 +150 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  if (t->ptr == NULL) return 0;  /* Validate ptr before use */
+@@ -156,5 +158,7 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-    mrb_sym key = keys[pos];
+-    if (key) {
+-      if (MT_KEY_SYM(key) == sym) {
+-        *pp = vals[pos];
+-        return key;
++    if (pos >= 0 && keys[pos] != MT_EMPTY) {  /* Validate array access */
++      mrb_sym key = keys[pos];
++      if (key) {
++        if (MT_KEY_SYM(key) == sym) {
++          *pp = vals[pos];
++          return key;
++        }
+@@ -167,3 +171,4 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-    mrb_sym key = keys[pos];
+-    if (MT_KEY_SYM(key) == sym) {
+-      *pp = vals[pos];
++    if (pos >= 0 && pos < t->alloc) {  /* Validate array bounds */
++      mrb_sym key = keys[pos];
++      if (MT_KEY_SYM(key) == sym) {
++        *pp = vals[pos];
+@@ -171,3 +176,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      if (pos < 0x100) {
+-        mt_cache[cpos] = pos;
+-      }
++        if (pos < 0x100) {
++          mt_cache[cpos] = pos;
++        }
+@@ -175,4 +180,7 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      return key;
+-    }
+-    else if (key == MT_EMPTY) {
+-      return 0;
++        return key;
++      }
++      else if (key == MT_EMPTY) {
++        return 0;
++      }
++    } else {
++      return 0;  /* Out of bounds access */
+diff --git a/src/vm.c b/src/vm.c
+index 6f6b9b001..18cde8693 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1763 +1763,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      recv = regs[0];
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++       recv = regs[0];
++      if (mrb == NULL) goto L_RAISE;  /* validate mrb state */
++      if (ci == NULL) goto L_RAISE;   /* validate call info */
+@@ -1764,0 +1768 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      if (ci->u.target_class == NULL) goto L_RAISE;  /* validate target class */
+@@ -1777,0 +1782 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++          if (p == NULL) goto L_RAISE;  /* validate procedure */
+@@ -1797,0 +1803 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++            if (proc == NULL) goto L_RAISE;  /* validate procedure */
+@@ -1798,0 +1805 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++            if (irep == NULL) goto L_RAISE;   /* validate irep */
+@@ -1805,0 +1813 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        if (ci == NULL) goto L_RAISE;  /* validate call info after pop */
+@@ -1810,0 +1819 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        if (proc == NULL) goto L_RAISE;  /* validate procedure */
+@@ -1812,0 +1822 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        if (irep == NULL) goto L_RAISE;   /* validate irep */

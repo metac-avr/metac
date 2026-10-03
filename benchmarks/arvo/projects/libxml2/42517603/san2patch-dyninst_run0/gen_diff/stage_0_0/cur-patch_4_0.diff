@@ -1,0 +1,29 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..01f00a22 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2053,0 +2054,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++    
++    /* Additional validation to prevent use-after-free */
++    if ((cur->doc != NULL) && (cur->name == NULL))
++        return(-1);
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..9be8b623 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -442,3 +442,7 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	cur->next = reader->ctxt->freeElems;
+-	reader->ctxt->freeElems = cur;
+-	reader->ctxt->freeElemsNr++;
++	if (cur != NULL) {
++	    cur->next = reader->ctxt->freeElems;
++	    reader->ctxt->freeElems = cur;
++	    reader->ctxt->freeElemsNr++;
++	} else {
++	    return;
++	}
+@@ -446 +450,3 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	xmlFree(cur);
++	if (cur != NULL) {
++	    xmlFree(cur);
++	}

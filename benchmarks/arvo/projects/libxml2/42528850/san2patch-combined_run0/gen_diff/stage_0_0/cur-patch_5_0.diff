@@ -1,0 +1,42 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..92293a5f 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4367 +4367 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4375 +4375 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++     xmlNodePtr ret;
+@@ -4377,0 +4378,12 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    /* Fix for CVE-XXXX: Check for and handle namespace copying to prevent use-after-free */
++    if (ret != NULL && extended == 2 && node->nsDef != NULL) {
++        /* Create a fresh copy of namespaces to avoid referencing freed memory */
++        xmlNsPtr newNsDef = xmlCopyNamespaceList(node->nsDef);
++        if (newNsDef == NULL) {
++            xmlFreeNode(ret);
++            return NULL;
++        }
++        /* Replace potentially dangling namespace references */
++        xmlFreeNsList(ret->nsDef);
++        ret->nsDef = newNsDef;
++    }
+@@ -4387,2 +4399 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
++ * * Returns: a new #xmlNodePtr, or NULL in case of error.
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..6c28763c 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -420,0 +421 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
++// FIXME: Crash CWE-416: Use After Free
+@@ -422,2 +423,6 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Set namespace definition to NULL before freeing to prevent use-after-free */
++        xmlNsPtr nsDef = cur->nsDef;
++        cur->nsDef = NULL;
++        xmlFreeNsList(nsDef);
++    }

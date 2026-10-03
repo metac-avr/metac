@@ -1,0 +1,27 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..7d280533b 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -114,2 +114,2 @@ stack_init(mrb_state *mrb)
+-
+-  /* mrb_assert(mrb->stack == NULL); */
++  
++  /* Secure stack initialization with explicit bounds validation */
+@@ -117,0 +118,3 @@ stack_init(mrb_state *mrb)
++  
++  /* Validate stack allocation */
++  if (c->stbase == NULL || c->stend <= c->stbase) return;
+@@ -119 +122 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++  /* Secure callinfo initialization */
+@@ -1707 +1710,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1711 +1715,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      recv = regs[a];
++      if (a >= 0 && a < (mrb->c->stend - mrb->c->stack)) {
++        recv = regs[a];
++      } else {
++        mrb_raise(mrb, E_RANGE_ERROR, "register index out of range");
++      }

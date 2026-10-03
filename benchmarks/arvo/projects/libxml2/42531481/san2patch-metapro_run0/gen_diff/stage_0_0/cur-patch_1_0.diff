@@ -1,0 +1,25 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..c6d1a454 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+@@ -4297 +4297,3 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    ret->ns = ns;
++	    if (ns != NULL) { 
++	        ret->ns = ns;
++	    }
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..dae0531f 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -403,2 +403,6 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Nullify the reference before freeing to prevent dangling pointers */
++        xmlNsPtr temp_nsDef = cur->nsDef;
++        cur->nsDef = NULL;
++        xmlFreeNsList(temp_nsDef);
++    }

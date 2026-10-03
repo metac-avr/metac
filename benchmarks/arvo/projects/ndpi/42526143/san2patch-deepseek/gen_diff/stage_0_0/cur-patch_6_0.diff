@@ -1,0 +1,21 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..97ad58011 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -306 +306,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -308,3 +309,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++	      size_t safe_len = packet->content_disposition_line.len - attachment_len - 2;
++	      memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, safe_len);
++	      flow->http.filename[safe_len] = '\0';
+@@ -319,2 +320,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    size_t safe_len = packet->content_disposition_line.len - attachment_len;
++	    memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, safe_len);
++	    flow->http.filename[safe_len] = '\0';

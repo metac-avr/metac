@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 9efe205abe0..b803b39e339 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -215 +215 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
++	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) != 0 && Z_REFCOUNT_P(zv) == 1) {
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..188c4e0cf94 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		// Check object validity before accessing members to prevent use-after-free
++		if (GC_TYPE(object) == IS_NULL || !IS_OBJ_VALID(object)) {
++			return;
++		}

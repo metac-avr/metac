@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..e6362a31f5a 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1229 +1229 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
+-	} else if (ht->nTableSize < HT_MAX_SIZE) {	/* Let's double the table size */
++	} else if (ht->nTableSize < HT_MAX_SIZE) { /* Let's double the table size */
+@@ -1237,4 +1237,13 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
+-		HT_SET_DATA_ADDR(ht, new_data);
+-		memcpy(ht->arData, old_buckets, sizeof(Bucket) * ht->nNumUsed);
+-		pefree(old_data, GC_FLAGS(ht) & IS_ARRAY_PERSISTENT);
+-		zend_hash_rehash(ht);
++// FIXME: Crash CWE-416: Use After Free
++		if (new_data != NULL) {
++			HT_SET_DATA_ADDR(ht, new_data);
++			if (ht->arData && old_buckets) {
++				memcpy(ht->arData, old_buckets, sizeof(Bucket) * ht->nNumUsed);
++			}
++			pefree(old_data, GC_FLAGS(ht) & IS_ARRAY_PERSISTENT);
++			zend_hash_rehash(ht);
++		} else {
++			/* Restore previous state */
++			ht->nTableSize /= 2;
++			ht->nTableMask = HT_SIZE_TO_MASK(ht->nTableSize);
++		}
+@@ -1429,0 +1439,4 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++			if (i >= ht->nNumUsed || prev == HT_HASH_TO_BUCKET(ht, i)) {
++				prev = NULL;
++				break;
++			}
+@@ -1433 +1446 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-
++ 

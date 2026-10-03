@@ -1,0 +1,61 @@
+diff --git a/src/lib/protocols/bittorrent.c b/src/lib/protocols/bittorrent.c
+index cdb62e8db..f9724885c 100644
+--- a/src/lib/protocols/bittorrent.c
++++ b/src/lib/protocols/bittorrent.c
+@@ -496,0 +497,2 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
++	size_t bt_search_len = strlen(bt_search);
++	size_t bt_search1_len = strlen(bt_search1);
+@@ -498,2 +500,2 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-	   (strncmp((const char*)packet->payload, bt_search, strlen(bt_search)) == 0)
+-	   || (strncmp((const char*)packet->payload, bt_search1, strlen(bt_search1)) == 0)
++	   (packet->payload_packet_len >= bt_search_len && strncmp((const char*)packet->payload, bt_search, bt_search_len) == 0)
++	   || (packet->payload_packet_len >= bt_search1_len && strncmp((const char*)packet->payload, bt_search1, bt_search1_len) == 0)
+@@ -505,2 +507,3 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-	  u_int8_t v0_extension = packet->payload[17];
+-	  u_int8_t v0_flags     = packet->payload[18];
++	  if(packet->payload_packet_len > 18) { 
++	    u_int8_t v0_extension = packet->payload[17];
++	    u_int8_t v0_flags     = packet->payload[18];
+@@ -508,4 +511,4 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-	  if(is_utpv1_pkt(packet->payload, packet->payload_packet_len)) {
+-	    bt_proto = ndpi_strnstr((const char *)&packet->payload[20], BITTORRENT_PROTO_STRING, packet->payload_packet_len-20);
+-	    goto bittorrent_found;
+-	  } else if((packet->payload[0]== 0x60)
++	    if(is_utpv1_pkt(packet->payload, packet->payload_packet_len)) {
++	      bt_proto = ndpi_strnstr((const char *)&packet->payload[20], BITTORRENT_PROTO_STRING, packet->payload_packet_len-20);
++	      goto bittorrent_found;
++	    } else if((packet->payload_packet_len >= 5) && (packet->payload[0]== 0x60)
+@@ -516,11 +519 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-	    /* Heuristic */
+-	    bt_proto = ndpi_strnstr((const char *)&packet->payload[20], BITTORRENT_PROTO_STRING, packet->payload_packet_len-20);
+-	    goto bittorrent_found;
+-	    /* CSGO/DOTA conflict */
+-	  } else if((v0_flags < 6 /* ST_NUM_STATES */) && (v0_extension < 3 /* EXT_NUM_EXT */)) {
+-	    u_int32_t ts = ntohl(*((u_int32_t*)&(packet->payload[4])));
+-	    u_int32_t now;
+-
+-	    now = (u_int32_t)(packet->current_time_ms / 1000);
+-
+-	    if((ts < (now+86400)) && (ts > (now-86400))) {
++	      /* Heuristic */
+@@ -529,2 +522,12 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-	    }
+-	  } else if(ndpi_strnstr((const char *)&packet->payload[20], BITTORRENT_PROTO_STRING, packet->payload_packet_len-20)
++	      /* CSGO/DOTA conflict */
++	    } else if((v0_flags < 6 /* ST_NUM_STATES */) && (v0_extension < 3 /* EXT_NUM_EXT */)) {
++	      u_int32_t ts = ntohl(*((u_int32_t*)&(packet->payload[4])));
++	      u_int32_t now;
++
++	      now = (u_int32_t)(packet->current_time_ms / 1000);
++
++	      if((ts < (now+86400)) && (ts > (now-86400))) {
++	        bt_proto = ndpi_strnstr((const char *)&packet->payload[20], BITTORRENT_PROTO_STRING, packet->payload_packet_len-20);
++	        goto bittorrent_found;
++	      }
++	    } else if(ndpi_strnstr((const char *)&packet->payload[20], BITTORRENT_PROTO_STRING, packet->payload_packet_len-20)
+@@ -532 +535,2 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-	    goto bittorrent_found;
++	      goto bittorrent_found;
++	    }
+@@ -534 +537,0 @@ static void ndpi_search_bittorrent(struct ndpi_detection_module_struct *ndpi_str
+-

@@ -1,0 +1,46 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..696812f79 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -531,7 +530,0 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
+-  }
+-  mrb_gc_arena_restore(mrb, ai);
+-  mrb_gc_protect(mrb, val);
+-  return val;
+-}
+-
+@@ -540,0 +534,9 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
++  mrb_int stack_size;
++  if (mrb == NULL) return mrb_nil_value();
++  
++  // Check stack bounds before function call
++  stack_size = mrb->c->stend - mrb->c->stbase;
++  if (stack_size < 0 || stack_size > 1000000) {  // Reasonable upper limit
++    return mrb_nil_value();
++  }
++  
+@@ -542,11 +544 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
+-}
+-
+-static mrb_value
+-exec_irep(mrb_state *mrb, mrb_value self, struct RProc *p)
+-{
+-  mrb_callinfo *ci = mrb->c->ci;
+-  int keep, nregs;
+-
+-  ci->stack[0] = self;
+-  mrb_vm_ci_proc_set(ci, p);
+-  if (MRB_PROC_CFUNC_P(p)) {
++}  if (MRB_PROC_CFUNC_P(p)) {
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..c34c4ca2e 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -790,0 +791,6 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  if (mrb->c && mrb->c->stbase && mrb->c->stend) {
++    ptrdiff_t stack_size = mrb->c->stend - mrb->c->stbase;
++    if (stack_size < 0 || stack_size > 1024) {
++      stack_size = 1024;
++    }
++  }

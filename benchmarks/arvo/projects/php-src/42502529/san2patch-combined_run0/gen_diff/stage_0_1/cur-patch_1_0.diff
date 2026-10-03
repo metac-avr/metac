@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..96d72ad9d14 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1371,0 +1372 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++				if (!prev || i >= ht->nTableSize) return; // Early exit if invalid
+@@ -1374 +1375 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}
+@@ -1377,0 +1379,2 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++	// Clear the bucket after deletion to prevent dangling pointer access
++	if (p) memset(p, 0, sizeof(Bucket));
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..f0ba0f4977c 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -200,0 +201,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++			// Prevent further access to freed object
++			return; // Exit immediately after free to avoid UAF
+@@ -201,0 +204 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		// This section should not be reached due to early return

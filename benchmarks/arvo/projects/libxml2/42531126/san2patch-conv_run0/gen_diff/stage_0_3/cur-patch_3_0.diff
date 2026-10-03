@@ -1,0 +1,32 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..8312bd4b 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -6433 +6433 @@ htmlDoRead(htmlParserCtxtPtr ctxt, const char *URL, const char *encoding,
+-        (ctxt->input->filename == NULL))
++         (ctxt->input->filename == NULL))
+diff --git a/buf.c b/buf.c
+index 9dc9400f..e78283c8 100644
+--- a/buf.c
++++ b/buf.c
+@@ -370,0 +371,2 @@ xmlBufGrowInternal(xmlBufPtr buf, size_t len) {
++    xmlChar *old_content = NULL;
++    xmlChar *old_contentIO = NULL;
+@@ -400,0 +403,9 @@ xmlBufGrowInternal(xmlBufPtr buf, size_t len) {
++    
++    // Store old pointers before reallocation to detect use-after-free
++    if (buf->alloc == XML_BUFFER_ALLOC_IO && buf->contentIO != NULL) {
++        old_contentIO = buf->contentIO;
++        old_content = buf->content;
++    } else {
++        old_content = buf->content;
++    }
++    
+@@ -410 +421,6 @@ xmlBufGrowInternal(xmlBufPtr buf, size_t len) {
+-	buf->content = newbuf + start_buf;
++        // Validate that pointer hasn't changed or update accordingly
++        if (old_contentIO != NULL && old_contentIO != newbuf) {
++            buf->content = newbuf + start_buf;
++        } else {
++	    buf->content = newbuf + start_buf;
++	}

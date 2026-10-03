@@ -1,0 +1,16 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..bea795e5a 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1040 +1040,10 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
++	char *double_dot = NULL;
++	/* Check bounds before calling strchr to prevent out-of-bounds read */
++	if(content_len > 0 && content_len <= 63) {
++	  content[content_len] = '\0'; /* Ensure null termination */
++	  double_dot = strchr((char*)content, ':');
++	} else if(content_len > 0) {
++	  /* Handle case where content might exceed expected bounds */
++	  content[63] = '\0'; /* Force termination at buffer boundary */
++	  double_dot = strchr((char*)content, ':');
++	}

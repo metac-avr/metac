@@ -1,0 +1,22 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..c2801c54a 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1200 +1200,8 @@ int_mod(mrb_state *mrb, mrb_value x)
+-    mrb_int mod = a % b;
++    mrb_int mod;
++    
++    // Use safe modulo operation with overflow checking
++    if (__builtin_mul_overflow(a, 1, &mod)) {
++      mrb_raise(mrb, E_RANGE_ERROR, "integer overflow in modulo");
++    }
++    
++    mod = a % b;
+@@ -1202 +1209,6 @@ int_mod(mrb_state *mrb, mrb_value x)
+-      mod += b;
++      mrb_int adjusted_mod;
++      // Check for overflow before performing addition
++      if (__builtin_add_overflow(mod, b, &adjusted_mod)) {
++        mrb_raise(mrb, E_RANGE_ERROR, "integer overflow in modulo adjustment");
++      }
++      mod = adjusted_mod;

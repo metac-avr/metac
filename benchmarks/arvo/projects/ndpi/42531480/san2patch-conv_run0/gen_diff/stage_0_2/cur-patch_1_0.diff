@@ -1,0 +1,57 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..af83e0744 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -1269 +1269,2 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-          packet->payload = &block[13];
++// FIXME: Crash CWE-125: Out-of-bounds Read
++           packet->payload = &block[13];
+@@ -1294,0 +1296,8 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
++	  
++          /* Bounds check before proceeding */
++          if ((handshake_frag_off == 0 && (13 + handshake_frag_len + 12) > block_len) ||
++              (handshake_frag_off != 0 && (13 + 12 + handshake_frag_len) > block_len)) {
++              no_dtls = 1;
++              break;
++          }
++          
+@@ -2381,2 +2390,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
++                        &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
++                }
+@@ -2385 +2394 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++                ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+@@ -2387,8 +2396,12 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
+-
+-		  if(rc < 0) break;
+-		}
++                for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
++                  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                                         sizeof(ja.client.signature_algorithms_str)-i*2,
++                                         "%02X", packet->payload[s_offset+i]);
++                  
++                  /* Prevent out-of-bounds read by checking bounds before accessing payload */
++                  if(s_offset+i*2 < packet->payload_packet_len && s_offset+i*2+1 < packet->payload_packet_len) {
++                    ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++                  } else {
++                    break;
++                  }
+@@ -2396,2 +2409,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++                  if(rc < 0) break;
++                }
+@@ -2399,4 +2412 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++                for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {		    continue;

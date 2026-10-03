@@ -1,0 +1,46 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..3f6fd8ade 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -297,4 +297,8 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    flow->http.filename = ndpi_malloc(filename_len);
+-	    if(flow->http.filename != NULL) {
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++// FIXME: Crash CWE-131: Incorrect Calculation of Buffer Size
++	    if(filename_len > 1) {
++	      size_t copy_len = (size_t)filename_len;
++	      flow->http.filename = ndpi_malloc(copy_len);
++	      if(flow->http.filename != NULL) {
++	        strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, copy_len-1);
++	        flow->http.filename[copy_len-1] = '\0';
++	      }
+@@ -305,6 +309,9 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    flow->http.filename = ndpi_malloc(filename_len-1);
+-
+-	    if(flow->http.filename != NULL) {
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++	    if(filename_len > 2) {
++	      size_t copy_len = (size_t)filename_len;
++	      flow->http.filename = ndpi_malloc(copy_len-1);
++
++	      if(flow->http.filename != NULL) {
++	        strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
++		      copy_len-2);
++	        flow->http.filename[copy_len-2] = '\0';
++	      }
+@@ -316 +323,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	  flow->http.filename = ndpi_malloc(filename_len+1);
++	  if(filename_len >= 0) {
++	    size_t copy_len = (size_t)filename_len;
++	    flow->http.filename = ndpi_malloc(copy_len+1);
+@@ -318,3 +327,4 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	  if(flow->http.filename != NULL) {
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    if(flow->http.filename != NULL) {
++	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, copy_len);
++	      flow->http.filename[copy_len] = '\0';
++	    }

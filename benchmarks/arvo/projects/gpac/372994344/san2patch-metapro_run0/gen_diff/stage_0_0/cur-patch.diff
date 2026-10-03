@@ -1,0 +1,48 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..b6e09874f 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -651 +651,3 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-			sec->section = (char*)gf_realloc(sec->section, sizeof(char)*sec->length);
++			if (sec->section) {
++				sec->section = (char*)gf_realloc(sec->section, sizeof(char)*sec->length);
++			}
+@@ -656,5 +658,7 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-			memcpy(sec->section + sec->received, data+1, sizeof(char)*len);
+-			sec->received += len;
+-			if (ptr_field > len)
+-				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Invalid pointer field (@ptr_field=%d, @remaining=%d)\n", ptr_field, len) );
+-			gf_m2ts_section_complete(ts, sec, ses);
++			if (sec->section) {
++				memcpy(sec->section + sec->received, data+1, sizeof(char)*len);
++				sec->received += len;
++				if (ptr_field > len)
++					GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Invalid pointer field (@ptr_field=%d, @remaining=%d)\n", ptr_field, len) );
++				gf_m2ts_section_complete(ts, sec, ses);
++			}
+@@ -684 +688 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-		if (sec->length) {
++		if (sec->length && sec->section) {
+@@ -686 +690 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-		} else {
++		} else if (!sec->length && sec->section) {
+@@ -693 +697 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-	if (!sec->length && (sec->received >= 3)) {
++	if (!sec->length && (sec->received >= 3) && sec->section) {
+@@ -703 +707 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-
++ 
+@@ -705 +709 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-	gf_m2ts_section_complete(ts, sec, ses);
++	if (sec->section) gf_m2ts_section_complete(ts, sec, ses);
+@@ -2719,0 +2724 @@ static GF_Err gf_m2ts_process_packet(GF_M2TS_Demuxer *ts, unsigned char *data)
++// FIXME: Crash CWE-416: Use After Free
+@@ -2726 +2731,3 @@ static GF_Err gf_m2ts_process_packet(GF_M2TS_Demuxer *ts, unsigned char *data)
+-		if (pes->reframe && payload_size) gf_m2ts_process_pes(ts, pes, &hdr, data, payload_size, paf);
++		if (pes->reframe && payload_size) {
++			if (pes->pes_data) gf_m2ts_process_pes(ts, pes, &hdr, data, payload_size, paf);
++		}
+@@ -2732,2 +2739 @@ static GF_Err gf_m2ts_process_packet(GF_M2TS_Demuxer *ts, unsigned char *data)
+-GF_EXPORT
+-GF_Err gf_m2ts_process_data(GF_M2TS_Demuxer *ts, u8 *data, u32 data_size)
++GF_EXPORTGF_Err gf_m2ts_process_data(GF_M2TS_Demuxer *ts, u8 *data, u32 data_size)

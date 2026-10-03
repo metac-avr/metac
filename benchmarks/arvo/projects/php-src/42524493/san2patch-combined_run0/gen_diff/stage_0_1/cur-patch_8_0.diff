@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..5ccac9eb78c 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1250 +1250,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1252 +1253,2 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	if (p && (ZEND_GC_TYPE_MASK(p->gc.u.type_info) != 0)) return p->refcount;
++	return 0;
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..6ed0cdf296e 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -213,0 +214,5 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++		if (zv && EG(objects_store).object_buckets && 
++		    (Z_OBJ_HANDLE_P(zv) >= EG(objects_store).top || 
++		     !EG(objects_store).object_buckets[Z_OBJ_HANDLE_P(zv)])) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}

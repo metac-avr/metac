@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..39acf292b26 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1237 +1237,2 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
+-		HT_SET_DATA_ADDR(ht, new_data);
++// FIXME: Crash CWE-416: Use After Free
++ 		HT_SET_DATA_ADDR(ht, new_data);
+@@ -1239,0 +1241 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
++		memset(&old_buckets, 0, sizeof(old_buckets));  /* Clear the pointer to prevent reuse */
+@@ -1433 +1435,2 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1435,3 +1438,7 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	if (p->key) {
+-		zend_string_release(p->key);
+-		p->key = NULL;
++	/* Prevent use-after-free by clearing pointer after use */
++	if (p) {
++		if (p->key) {
++			zend_string_release(p->key);
++			p->key = NULL;
++		}
++		p = NULL; /* Invalidate pointer after use */

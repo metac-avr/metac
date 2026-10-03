@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 3eb2930205e..2dc0df801fd 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3846,4 +3845,0 @@ static void zend_check_symbol(zval *pz)
+-	}
+-}
+-
+-
+@@ -3854 +3850,2 @@ static void zend_check_symbol(zval *pz)
+-ZEND_API void execute_internal(zend_execute_data *execute_data, zval *return_value)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API void execute_internal(zend_execute_data *execute_data, zval *return_value)
+@@ -3856 +3853,3 @@ ZEND_API void execute_internal(zend_execute_data *execute_data, zval *return_val
+-	execute_data->func->internal_function.handler(execute_data, return_value);
++	if (execute_data && execute_data->func) {
++		execute_data->func->internal_function.handler(execute_data, return_value);
++	}
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..2e2e93c1b68 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -122 +122,4 @@ ZEND_METHOD(SensitiveParameterValue, __construct)
+-	zend_update_property_ex(zend_ce_sensitive_parameter_value, Z_OBJ_P(ZEND_THIS), ZSTR_KNOWN(ZEND_STR_VALUE), value);
++	// Add defensive check to prevent use-after-free
++	if (value && Z_TYPE_P(value) != IS_NULL) {
++		zend_update_property_ex(zend_ce_sensitive_parameter_value, Z_OBJ_P(ZEND_THIS), ZSTR_KNOWN(ZEND_STR_VALUE), value);
++	}
+@@ -131 +133,0 @@ ZEND_METHOD(SensitiveParameterValue, getValue)
+-

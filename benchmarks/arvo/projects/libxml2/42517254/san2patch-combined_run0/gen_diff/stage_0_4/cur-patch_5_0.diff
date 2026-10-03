@@ -1,0 +1,33 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..6472ed3f 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1159,0 +1160 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		// Fixed CWE-416: Use After Free - Implement defensive node validation
+@@ -1161,0 +1163,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		// Validate node before type checking
++		if (set->nodeTab[i] != NULL && set->nodeTab[i]->type == 0) continue;
+@@ -1178,0 +1182,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			    // Defensive programming: validate current node
++			    if (cur == NULL || cur->type == 0) break;
+@@ -1192,0 +1198,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++					// Validate after operation
++					if (last == NULL) break;
+@@ -1213,0 +1221,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		// Final validation before node operations
++		if (set->nodeTab[i] == NULL) continue;
+@@ -1218 +1227,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
++		    if (set->nodeTab[i] != NULL) {
++		        xmlAddNextSibling(last,
+@@ -1221,2 +1231,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    if (last->next != NULL)
+-			last = last->next;
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2557 +2568,3 @@ xmlXIncludeProcessTreeFlagsData(xmlNodePtr tree, int flags, void *data) {
+-    ctxt->base = xmlStrdup((xmlChar *)tree->doc->URL);
++    /* Prevent potential use-after-free by checking URL validity */
++    if (tree->doc && tree->doc->URL)
++        ctxt->base = xmlStrdup((xmlChar *)tree->doc->URL);

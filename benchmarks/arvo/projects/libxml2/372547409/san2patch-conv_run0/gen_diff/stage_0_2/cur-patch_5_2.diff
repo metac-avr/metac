@@ -1,0 +1,207 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..b45f3cdb 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5982,4 +5982,18 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
++static int
++xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
++                  xmlNodePtr elem) {
++    xmlAttrPtr attr;
++    xmlNsPtr ns;
++    xmlChar * value;
++    int ret = 1;
++
++    CHECK_DTD;
++
++    /*
++     * Check attributes, namespace declarations and their values
++     */
++    if (elem->type == XML_ATTRIBUTE_NODE) {
++	xmlErrValidNode(ctxt, elem, XML_ERR_INTERNAL_ERROR,
++			"xmlValidateOneElement called with an attribute"
++			NULL, NULL, NULL, 0, NULL, NULL);
++	return(0);
+@@ -5987 +6001,10 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    } /* not continuous */
++    while (1) {
++        if ((doc != NULL) && (doc->intSubset != NULL)) {
++            int isValidDTD = (doc->intSubset->attributes != NULL);
++            if (isValidDTD)
++                ret &= xmlValidateOneElement(ctxt, doc, elem);
++            else
++                ret &= 0;
++        } else {
++            ret &= xmlValidateOneElement(ctxt, doc, elem);
++        }
+@@ -5989,5 +6012,13 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    /* [ VC: Required Attribute ] */
+-    attr = elemDecl->attributes;
+-    while (attr != NULL) {
+-	if (attr->def == XML_ATTRIBUTE_REQUIRED) {
+-	    int qualified = -1;
++        if (elem->type == XML_ELEMENT_NODE) {
++            attr = elem->properties;
++            while (attr != NULL) {
++                value = xmlNodeListGetString(doc, attr->children, 0);
++                if (value == NULL) {
++                    xmlVErrMemory(ctxt);
++                    ret = 0;
++                } else {
++                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                    xmlFree((char *)value);
++                }
++                attr= attr->next;
++            }
+@@ -5995,3 +6026,11 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    if ((attr->prefix == NULL) &&
+-		(xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
+-		xmlNsPtr ns;
++            ns = elem->nsDef;
++            while (ns != NULL) {
++                if (elem->ns == NULL)
++                    ret &= xmlValidateOneNamespace(ctxt, doc, elem, NULL,
++                                                   ns, ns->href);
++                else
++                    ret &= xmlValidateOneNamespace(ctxt, doc, elem,
++                                                   elem->ns->prefix, ns,
++                                                   ns->href);
++                ns = ns->next;
++            }
+@@ -5999,4 +6038,15 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-		ns = elem->nsDef;
+-		while (ns != NULL) {
+-		    if (ns->prefix == NULL)
+-			goto found;
++            if (elem->children != NULL) {
++                elem = elem->children;
++                continue;
++            }
++        }
++
++        while (1) {
++            if (elem == root)
++                goto done;
++            if (elem->next != NULL)
++                break;
++            elem = elem->parent;
++        }
++        elem = elem->next;
++    }
+@@ -6214,2 +6264,7 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-    while (1) {
+-        ret &= xmlValidateOneElement(ctxt, doc, elem);
++    static int
++xmlValidateElementContent(xmlValidCtxtPtr ctxt, xmlNodePtr elem,
++                       xmlElementPtr elemDecl, int warn,
++                       xmlNodePtr prevelem) {
++    int ret = 1, tmp;
++    xmlNodePtr cur;
++    xmlNodePtr child;
+@@ -6217,13 +6272 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-        if (elem->type == XML_ELEMENT_NODE) {
+-            attr = elem->properties;
+-            while (attr != NULL) {
+-                value = xmlNodeListGetString(doc, attr->children, 0);
+-                if (value == NULL) {
+-                    xmlVErrMemory(ctxt);
+-                    ret = 0;
+-                } else {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
+-                    xmlFree((char *)value);
+-                }
+-                attr= attr->next;
+-            }
++    if (elemDecl == NULL) return(1);
+@@ -6231,10 +6274,6 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-            ns = elem->nsDef;
+-            while (ns != NULL) {
+-                if (elem->ns == NULL)
+-                    ret &= xmlValidateOneNamespace(ctxt, doc, elem, NULL,
+-                                                   ns, ns->href);
+-                else
+-                    ret &= xmlValidateOneNamespace(ctxt, doc, elem,
+-                                                   elem->ns->prefix, ns,
+-                                                   ns->href);
+-                ns = ns->next;
++    if (elemDecl->etype == XML_ELEMENT_TYPE_EMPTY) {
++        if (elem->children != NULL) {
++            if (warn) {
++                xmlErrValidNode(ctxt, elem, XML_DTD_EMPTY_NOT_ALLOWED,
++                    "Element %s was declared EMPTY this one has content\n",
++                    elem->name, NULL, NULL, 0, NULL, NULL);
+@@ -6241,0 +6281,13 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
++            return(0);
++        }
++        return(1);
++    }
++    if (elemDecl->etype == XML_ELEMENT_TYPE_ANY) {
++        return(1);
++    }
++    if (elemDecl->content == NULL) {
++        xmlErrValidNode(ctxt, elem, XML_ERR_INTERNAL_ERROR,
++	        "Internal: ELEMENT content is NULL even though the element is not ANY or EMPTY\n",
++	        NULL, NULL, NULL, 0, NULL, NULL);
++        return(0);
++    }
+@@ -6243,4 +6295,9 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-            if (elem->children != NULL) {
+-                elem = elem->children;
+-                continue;
+-            }
++    /*
++     * Do the validation only if the element structure is built
++     */
++    if (elem->children == NULL) {
++        if (elemDecl->etype == XML_ELEMENT_TYPE_ELEMENT) {
++            xmlErrValidNode(ctxt, elem, XML_DTD_CONTENT_NOT_DETERMINISTIC,
++                "Element %s was declared but no content was found\n",
++                elem->name, NULL, NULL, 0, NULL, NULL);
++            return(0);
+@@ -6247,0 +6305,2 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
++        return(1);
++    }
+@@ -6249,6 +6308,32 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-        while (1) {
+-            if (elem == root)
+-                goto done;
+-            if (elem->next != NULL)
+-                break;
+-            elem = elem->parent;
++    child = elem->children;
++    while (child != NULL) {
++        if (child->type == XML_ELEMENT_NODE) {
++            tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
++            if (tmp <= 0)
++                ret = 0;
++            break;
++        }
++        child = child->next;
++    } /* not continuous */
++
++    /* [ VC: Required Attribute ] */
++    // FIXME: Crash CWE-416: Use After Free
++    if (elemDecl != NULL) {
++        attr = elemDecl->attributes;
++        while (attr != NULL) {
++            if (attr->def == XML_ATTRIBUTE_REQUIRED) {
++                int qualified = -1;
++
++                if ((attr->prefix == NULL) &&
++                    (xmlStrEqual(attr->name, BAD_CAST "xmlns"))) {
++                    xmlNsPtr ns;
++
++                    ns = elem->nsDef;
++                    while (ns != NULL) {
++                        if (ns->prefix == NULL)
++                            goto found;
++                        ns = ns->next;
++                    }
++                }
++            }
++            attr = attr->next;
+@@ -6256 +6340,0 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-        elem = elem->next;

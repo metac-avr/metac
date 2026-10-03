@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..8281191e9c6 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1352 +1352,2 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
++		// Two-phase cleanup: copy value, undefine original, then destroy copy
++		memcpy(&tmp, &p->val, sizeof(zval));
+@@ -1353,0 +1355,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
++		if (Z_TYPE(tmp) == IS_STRING && Z_STR(tmp)) {
++			zend_string_addref(Z_STR(tmp));
++		}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..34a0ff06601 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -218 +218,6 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-		zv = Z_INDIRECT_P(zv);
++		zval *indirect = Z_INDIRECT_P(zv);
++		if (indirect && !Z_ISUNDEF_P(indirect)) {
++			i_zval_ptr_dtor(indirect);
++		}
++	} else {
++		i_zval_ptr_dtor(zv);
+@@ -220 +224,0 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-	i_zval_ptr_dtor(zv);

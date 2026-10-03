@@ -1,0 +1,16 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..e33bdebd3 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -2834 +2834,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_STRCAT, B) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_STRCAT, B) {
+@@ -2836 +2837,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      mrb_str_concat(mrb, regs[a], regs[a+1]);
++      if (!mrb_object_dead_p(mrb, mrb_obj_ptr(regs[a]))) {
++        mrb_str_concat(mrb, regs[a], regs[a+1]);
++      }
++      else {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "expired string object");
++      }

@@ -1,0 +1,24 @@
+diff --git a/src/variable.c b/src/variable.c
+index 3088783ec..98322653d 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -238 +238,2 @@ static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++// FIXME: Crash CWE-416: Use After Free
++ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+@@ -240 +241,3 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (!mrb->gc.during_compacting) {
++    mrb_gc_mark_value(mrb, v);
++  }
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..45ae6f7bc 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1313 +1313,5 @@ mrb_full_gc(mrb_state *mrb)
+-  }
++    if (gc->state != MRB_GC_STATE_ROOT) {
++      gc->threshold = (gc->live_after_mark/100) * gc->interval_ratio;
++      return;
++    }
++   }

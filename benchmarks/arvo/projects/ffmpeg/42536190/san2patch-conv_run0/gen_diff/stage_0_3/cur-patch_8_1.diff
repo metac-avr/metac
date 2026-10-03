@@ -1,0 +1,70 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..63f60b433a 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -44,17 +43,0 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
+-        ff_refstruct_unref(&frame->rpl_tab);
+-        frame->refPicList = NULL;
+-
+-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+-    }
+-}
+-
+-const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
+-{
+-    int x_cb         = x0 >> s->ps.sps->log2_ctb_size;
+-    int y_cb         = y0 >> s->ps.sps->log2_ctb_size;
+-    int pic_width_cb = s->ps.sps->ctb_width;
+-    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
+-    return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
+-}
+-
+@@ -65 +48 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-        ff_hevc_unref_frame(&s->DPB[i],
++        ff_hevc_unref_frame(&s->DPB[i],        ff_hevc_unref_frame(&s->DPB[i],
+diff --git a/libavcodec/hevc/filter.c b/libavcodec/hevc/filter.c
+index 56e354b486..9bf21b13ba 100644
+--- a/libavcodec/hevc/filter.c
++++ b/libavcodec/hevc/filter.c
+@@ -764,26 +764,14 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *
+-    if (boundary_upper) {
+-        const RefPicList *rpl_top = (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ?
+-                                    ff_hevc_get_ref_list(s, s->cur_frame, x0, y0 - 1) :
+-                                    s->cur_frame->refPicList;
+-        int yp_pu = (y0 - 1) >> log2_min_pu_size;
+-        int yq_pu =  y0      >> log2_min_pu_size;
+-        int yp_tu = (y0 - 1) >> log2_min_tu_size;
+-        int yq_tu =  y0      >> log2_min_tu_size;
+-
+-            for (i = 0; i < (1 << log2_trafo_size); i += 4) {
+-                int x_pu = (x0 + i) >> log2_min_pu_size;
+-                int x_tu = (x0 + i) >> log2_min_tu_size;
+-                const MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
+-                const MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
+-                uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * min_tu_width + x_tu];
+-                uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * min_tu_width + x_tu];
+-
+-                if (curr->pred_flag == PF_INTRA || top->pred_flag == PF_INTRA)
+-                    bs = 2;
+-                else if (curr_cbf_luma || top_cbf_luma)
+-                    bs = 1;
+-                else
+-                    bs = boundary_strength(s, curr, top, rpl_top);
+-                s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = bs;
+-            }
+-    }
++    const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++                                        const HEVCFrame *ref, int x0, int y0)
++{
++    int x_cb         = x0 >> s->ps.sps->log2_ctb_size;
++    int y_cb         = y0 >> s->ps.sps->log2_ctb_size;
++    int pic_width_cb = s->ps.sps->ctb_width;
++    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
++    
++    // Check if ref is valid and rpl_tab entry exists before accessing
++    if (!ref || !ref->rpl_tab || ctb_addr_ts < 0 || ctb_addr_ts >= (s->ps.sps->ctb_width * s->ps.sps->ctb_height) || !ref->rpl_tab[ctb_addr_ts])
++        return NULL;
++    return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
++}

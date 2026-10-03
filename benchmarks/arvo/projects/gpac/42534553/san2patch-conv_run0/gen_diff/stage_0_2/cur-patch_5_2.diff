@@ -1,0 +1,61 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..7c7c1f92d 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -811,0 +812,3 @@ void gf_net_close_capture()
++		// Validate network capture context before any operations
++		if (!nf || !nf->cap_bs) continue;
++
+@@ -1466,12 +1469,7 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-	if (!nf->dst_port) {
+-		nf->pck_flags=0;
+-		nf->read_sock_selected = NULL;
+-
+-		if (nf->loops && !gf_bs_available(nf->cap_bs)) {
+-			if (nf->loops>0)
+-				nf->loops--;
+-
+-			gf_bs_seek(nf->cap_bs, 0);
+-			nf->init_time = 0;
+-			if (nf->cap_mode==NETCAP_PCAP)
+-				gf_bs_skip_bytes(nf->cap_bs, 24);
++	while (gf_list_count(netcap_filters)) {
++		GF_NetcapFilter *nf = gf_list_pop_back(netcap_filters);
++
++		// Validate network capture context before any operations
++		if (!nf || !nf->cap_bs) {
++			if (nf) gf_free(nf);
++			continue;
+@@ -1480,12 +1478,15 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
+-			gf_netcap_load_pck_pcap(nf);
+-
+-		//eof
+-		if (!nf->dst_port) return;
+-		//force discard
+-		if ((nf->pck_flags & NETCAP_DROP)) {
+-			gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);
+-			nf->dst_port = 0;
+-			goto refetch;
++		if (nf->cap_bs) gf_bs_del(nf->cap_bs);
++
++#ifdef GPAC_HAS_FD
++		if (nf->fd>=0) close(nf->fd);
++#endif
++		if (nf->file) gf_fclose(nf->file);
++		if (nf->read_socks) gf_list_del(nf->read_socks);
++
++		if (nf->rules) {
++			while (1) {
++				NetFilterRule *r = gf_list_pop_back(nf->rules);
++				if (!r) break;
++				gf_free(r);
++			}
++			gf_list_del(nf->rules);
+@@ -1492,0 +1494,4 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
++		if (nf->id) gf_free(nf->id);
++		if (nf->src) gf_free(nf->src);
++		if (nf->dst) gf_free(nf->dst);
++		gf_free(nf);

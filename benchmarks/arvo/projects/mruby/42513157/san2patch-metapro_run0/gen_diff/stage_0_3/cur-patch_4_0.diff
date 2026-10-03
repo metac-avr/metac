@@ -1,0 +1,21 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..caa289f0a 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -519,0 +520,7 @@ mpz_mdiv(mrb_state *mrb, mpz_t *q, mpz_t *x, mpz_t *y)
++  
++  // Validate inputs to prevent invalid operations
++  if (!x || !y || !q) return;
++  
++  // Check for zero divisor
++  if (uzero(y)) return;
++  
+@@ -526,2 +533,6 @@ mpz_mdiv(mrb_state *mrb, mpz_t *q, mpz_t *x, mpz_t *y)
+-  if (!uzero(&r) && qsign < 0)
+-    mpz_sub_int(mrb,q,q,1);
++  if (!uzero(&r) && qsign < 0) {
++    // Prevent underflow in subtraction
++    if (q->sn > INT16_MIN) {
++      mpz_sub_int(mrb,q,q,1);
++    }
++  }

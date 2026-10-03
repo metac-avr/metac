@@ -1,0 +1,37 @@
+diff --git a/libavformat/iamf_parse.c b/libavformat/iamf_parse.c
+index feb670180e..97983e2148 100644
+--- a/libavformat/iamf_parse.c
++++ b/libavformat/iamf_parse.c
+@@ -1080 +1080,2 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+-            break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             break;
+@@ -1082 +1083,7 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+-            ret = mix_presentation_obu(log_ctx, c, pb, obu_size);
++            // Prevent integer overflow and validate size before processing
++            if (obu_size > 0 && obu_size <= (unsigned)max_size && obu_size <= INT_MAX) {
++                ret = mix_presentation_obu(log_ctx, c, pb, obu_size);
++            } else {
++                av_log(log_ctx, AV_LOG_ERROR, "OBU size validation failed for mix presentation\n");
++                ret = AVERROR_INVALIDDATA;
++            }
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index b59d798f29..ceaebb6f95 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -650 +650 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-{
++ {
+@@ -654,4 +654,8 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
+-        if (!dst->u.map)
+-            return AVERROR(ENOMEM);
+-        memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        if (src->nb_channels < 0)
++            return AVERROR(EINVAL);
++        if (src->nb_channels > 0) {
++            dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
++            if (!dst->u.map)
++                return AVERROR(ENOMEM);
++            memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        }

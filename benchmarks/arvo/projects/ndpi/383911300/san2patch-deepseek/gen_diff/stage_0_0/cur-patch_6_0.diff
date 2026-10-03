@@ -1,0 +1,21 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 11d6a24a3..c5eef47c0 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -2465,0 +2466,14 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
++  /*
++   * Before processing the packet, ensure the serializer used by
++   * packet_processing() is properly initialized and aligned.
++   * packet_processing() may dereference a partially initialized
++   * ndpi_private_serializer, causing an access of an uninitialized
++   * pointer (CWE-824). We avoid creating such an object on the stack
++   * with unknown alignment; instead, use a dedicated initializer that
++   * guarantees correct alignment and initializes all fields.
++   */
++  ndpi_serializer serializer;
++  if (ndpi_init_serializer_ll(&serializer, flow) != 0) {
++    return(nproto);
++  }
++
+@@ -2477,0 +2492 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
++

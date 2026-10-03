@@ -1,0 +1,66 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..310767cd 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3936 +3936,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      int res;
++// FIXME: Crash CWE-416: Use After Free
++       int res;
+@@ -3938 +3939,15 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      res = xmlSearchNsSafe(target, cur->ns->prefix, &ns);
++      /* Validate namespace pointer before use to prevent use-after-free */
++      if (cur->ns == NULL) {
++          ret->ns = NULL;
++          goto error;
++      }
++      /* Create a local copy of the prefix to avoid accessing freed memory */
++      xmlChar *prefix_copy = NULL;
++      if (cur->ns->prefix != NULL) {
++          prefix_copy = xmlStrdup(cur->ns->prefix);
++          if (prefix_copy == NULL)
++              goto error;
++      }
++      res = xmlSearchNsSafe(target, prefix_copy, &ns);
++      if (prefix_copy != NULL)
++          xmlFree(prefix_copy);
+@@ -3947 +3962,9 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-        res = xmlSearchNsSafe(cur->parent, cur->ns->prefix, &ns);
++        xmlChar *orig_prefix = NULL;
++        if (cur->ns != NULL && cur->ns->prefix != NULL) {
++            orig_prefix = xmlStrdup(cur->ns->prefix);
++            if (orig_prefix == NULL)
++                goto error;
++        }
++        res = xmlSearchNsSafe(cur->parent, orig_prefix, &ns);
++        if (orig_prefix != NULL)
++            xmlFree(orig_prefix);
+@@ -3972,10 +3995,14 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-        if (xmlStrEqual(ns->href, cur->ns->href)) {
+-          /* this is the nice case */
+-          ret->ns = ns;
+-        } else {
+-          /*
+-           * we are in trouble: we need a new reconciled namespace.
+-           * This is expensive
+-           */
+-          ret->ns = xmlNewReconciledNs(target, cur->ns);
+-          if (ret->ns == NULL)
++        if (cur->ns != NULL && ns != NULL) {
++          if (xmlStrEqual(ns->href, cur->ns->href)) {
++            /* this is the nice case */
++            ret->ns = ns;
++          } else {
++            /*
++             * we are in trouble: we need a new reconciled namespace.
++             * This is expensive
++             */
++            if (cur->ns != NULL) {
++              ret->ns = xmlNewReconciledNs(target, cur->ns);
++              if (ret->ns == NULL)
++                  goto error;
++            } else {
+@@ -3982,0 +4010,4 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
++            }
++          }
++        } else {
++          goto error;

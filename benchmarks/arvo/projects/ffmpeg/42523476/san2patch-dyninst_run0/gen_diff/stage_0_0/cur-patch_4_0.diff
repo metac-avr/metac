@@ -1,0 +1,29 @@
+diff --git a/libavutil/buffer.c b/libavutil/buffer.c
+index e4562a79b1..c9112d942c 100644
+--- a/libavutil/buffer.c
++++ b/libavutil/buffer.c
+@@ -120,0 +121,3 @@ static void buffer_replace(AVBufferRef **dst, AVBufferRef **src)
++    if (!dst || !(*dst))
++        return;
++
+@@ -131 +134,2 @@ static void buffer_replace(AVBufferRef **dst, AVBufferRef **src)
+-         * so we have to read the flag now to avoid use-after-free. */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++          * so we have to read the flag now to avoid use-after-free. */
+@@ -133 +137,2 @@ static void buffer_replace(AVBufferRef **dst, AVBufferRef **src)
+-        b->free(b->opaque, b->data);
++        if (b->free)
++            b->free(b->opaque, b->data);
+diff --git a/libavcodec/hevc_parser.c b/libavcodec/hevc_parser.c
+index 59f9a0ff3e..bc60d7b4c6 100644
+--- a/libavcodec/hevc_parser.c
++++ b/libavcodec/hevc_parser.c
+@@ -216 +216,2 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
+-            break;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++             break;
+@@ -218 +219,3 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
+-            ff_hevc_decode_nal_pps(gb, avctx, ps);
++            if (gb && avctx && ps) {
++                ff_hevc_decode_nal_pps(gb, avctx, ps);
++            }

@@ -1,0 +1,37 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 4fcb5b26e..e743dacab 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -1644,2 +1644,3 @@ int ndpi_dpi2json(struct ndpi_detection_module_struct *ndpi_struct,
+-    ndpi_serialize_start_of_block(serializer, "sip");
+-    if(flow->protos.sip.from)
++// FIXME: Crash CWE-416: Use After Free
++     ndpi_serialize_start_of_block(serializer, "sip");
++    if(flow->protos.sip.from != NULL)
+@@ -1649 +1650 @@ int ndpi_dpi2json(struct ndpi_detection_module_struct *ndpi_struct,
+-    if(flow->protos.sip.to)
++    if(flow->protos.sip.to != NULL)
+@@ -1656,2 +1657 @@ int ndpi_dpi2json(struct ndpi_detection_module_struct *ndpi_struct,
+-  case NDPI_PROTOCOL_TLS:
+-    ndpi_tls2json(serializer, flow);
++  case NDPI_PROTOCOL_TLS:    ndpi_tls2json(serializer, flow);
+diff --git a/src/lib/ndpi_serializer.c b/src/lib/ndpi_serializer.c
+index 3cda728bd..34ab2d00e 100644
+--- a/src/lib/ndpi_serializer.c
++++ b/src/lib/ndpi_serializer.c
+@@ -2113 +2113 @@ int ndpi_serialize_string_string_len(ndpi_serializer *_serializer,
+-				      value, value_len));
++                                      value, value_len));
+@@ -2121 +2121,2 @@ int ndpi_serialize_string_string(ndpi_serializer *_serializer,
+-  const char *value = _value ? _value : "";
++// FIXME: Crash CWE-416: Use After Free
++   const char *value = _value ? _value : "";
+@@ -2123 +2124,5 @@ int ndpi_serialize_string_string(ndpi_serializer *_serializer,
+-  return(ndpi_serialize_string_string_len(_serializer, key, value, strlen(value)));
++  /* Check if the pointer is valid before using strlen */
++  if (value && strlen(value) >= 0) /* This check ensures value is accessible */
++    return(ndpi_serialize_string_string_len(_serializer, key, value, strlen(value)));
++  else
++    return(ndpi_serialize_string_string_len(_serializer, key, "", 0)); /* Use empty string if invalid */
+@@ -2133 +2137,0 @@ int ndpi_serialize_string_raw(ndpi_serializer *_serializer,
+-

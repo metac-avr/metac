@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..f6063736db1 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1368,9 +1368,2 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+@@ -1377,0 +1371 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++	if (UNEXPECTED(Z_COUNTED_P(pz) == NULL)) return 0;
+@@ -1379,11 +1373 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-}
+-
+-#if SIZEOF_SIZE_T == 4
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++}#elif SIZEOF_SIZE_T == 8
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..61f65194094 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3190 +3190,4 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-		zend_observer_fcall_end(execute_data, NULL);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		if (execute_data != NULL) {
++			zend_observer_fcall_end(execute_data, NULL);
++		}

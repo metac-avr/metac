@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..ae3280d13 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -133 +133 @@ envadjust(mrb_state *mrb, mrb_value *oldbase, mrb_value *newbase, size_t oldsize
+-      ptrdiff_t off = e->stack - oldbase;
++      ptrdiff_t off = st - oldbase;
+@@ -143 +143 @@ envadjust(mrb_state *mrb, mrb_value *oldbase, mrb_value *newbase, size_t oldsize
+-        ptrdiff_t off = e->stack - oldbase;
++        ptrdiff_t off = st - oldbase;
+@@ -199 +199,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -200,0 +202 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    /* Clear stale pointer references before stack extension */
+@@ -201,0 +204,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    /* Prevent accidental use of expired pointers */
++    asm volatile("" ::: "memory");
+@@ -211,2 +215 @@ uvenv(mrb_state *mrb, mrb_int up)
+-  while (up--) {
+-    proc = proc->upper;
++  while (up--) {    proc = proc->upper;

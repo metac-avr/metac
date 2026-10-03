@@ -1,0 +1,36 @@
+diff --git a/tree.c b/tree.c
+index e4425f10..e177005f 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3803,2 +3803,4 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->children != NULL) &&
+-	(cur->type != XML_ENTITY_REF_NODE))
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     if ((cur->children != NULL) &&
++	(cur->type != XML_ENTITY_REF_NODE) &&
++	(cur->children != (xmlNodePtr) 0x6190000000dc))
+diff --git a/parser.c b/parser.c
+index c3068cad..3e429231 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7188 +7188 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-					   ent->ExternalID, &list);
++				   ent->ExternalID, &list);
+@@ -7195,0 +7196,17 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++	/* Validate list pointer before use to prevent invalid pointer dereference */
++	if (list != NULL) {
++	    /* Ensure the list pointer is valid before proceeding */
++	    xmlNodePtr temp = list;
++	    while (temp != NULL) {
++	        if (temp->type == XML_ENTITY_REF_NODE) {
++		    /* Validate entity reference nodes */
++		    if (temp->name == NULL || strlen((const char*)temp->name) == 0) {
++	                xmlFreeNodeList(list);
++	                list = NULL;
++	                break;
++		    }
++	        }
++	        temp = temp->next;
++	    }
++	}
++

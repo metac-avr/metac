@@ -1,0 +1,23 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..c4d76c217 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -830,0 +831,3 @@ void gf_net_close_capture()
++		
++		// Zero out the structure before freeing to prevent UAF
++		memset(nf, 0, sizeof(GF_NetcapFilter));
+@@ -1480 +1483,2 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
++		if (nf->cap_mode==NETCAP_GPAC) {
++			if (!nf->cap_bs) return; // Validate before GPAC load
+@@ -1482 +1486,2 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		else
++		} else {
++			if (!nf->cap_bs) return; // Validate before PCAP load
+@@ -1484 +1489,3 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-
++		}
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1488,0 +1496 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
++			if (!nf->cap_bs) return; // Validate before skip

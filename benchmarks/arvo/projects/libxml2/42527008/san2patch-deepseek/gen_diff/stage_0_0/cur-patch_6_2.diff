@@ -1,0 +1,75 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index ba3eb16d..8bf36777 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3247,7 +3247,50 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
+- * @ctxt:  an HTML parser context
+- *
+- * parse a CharData section.
+- * if we are within a CDATA section ']]>' marks an end of section.
+- *
+- * [14] CharData ::= [^<&]* - ([^<&]* ']]>' [^<&]*)
+- */
++static void
++htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
++    xmlChar *buf = NULL;
++    int len = 0;
++    int size = HTML_PARSER_BIG_BUFFER_SIZE;
++    int c;
++
++    if (CUR == 0)
++        return;
++
++    SHRINK;
++    buf = (xmlChar *) xmlMallocAtomic(size * sizeof(xmlChar));
++    if (buf == NULL) {
++        htmlErrMemory(ctxt, "htmlParseCharDataInternal");
++        return;
++    }
++
++    if (!readahead) {
++        GROW;
++    }
++
++    while ((ctxt->input->cur < ctxt->input->end) &&
++           (IS_CHAR(c = CUR))) {
++        if ((len + 5) >= size) {
++            xmlChar *tmp;
++            size *= 2;
++            tmp = (xmlChar *) xmlRealloc(buf, size * sizeof(xmlChar));
++            if (tmp == NULL) {
++                xmlFree(buf);
++                htmlErrMemoryBuffer(ctxt, "htmlParseCharDataInternal");
++                return;
++            }
++            buf = tmp;
++        }
++        COPY_BUF(len, buf, c);
++        NEXT;
++        len++;
++    }
++
++    if (len > 0) {
++        buf[len] = 0;
++    }
++
++    if (ctxt->sax != NULL) {
++        if (ctxt->sax->characters != NULL)
++            ctxt->sax->characters(ctxt->userData, buf, len);
++    }
++    if (buf != NULL)
++        xmlFree(buf);
++}
+@@ -3258,11 +3301 @@ htmlParseCharData(htmlParserCtxtPtr ctxt) {
+-}
+-
+-/**
+- * htmlParseExternalID:
+- * @ctxt:  an HTML parser context
+- * @publicID:  a xmlChar** receiving PubidLiteral
+- *
+- * Parse an External ID or a Public ID
+- *
+- * [75] ExternalID ::= 'SYSTEM' S SystemLiteral
+- *                   | 'PUBLIC' S PubidLiteral S SystemLiteral
++} *                   | 'PUBLIC' S PubidLiteral S SystemLiteral

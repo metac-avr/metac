@@ -1,0 +1,37 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..e8b74673 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1866 +1865,0 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-
+@@ -1874 +1873,2 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-static void
++// Fixed CWE-416: Use After Free - Safe free with null check
++ static void
+@@ -1876 +1876,3 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeAttribute((xmlAttributePtr) attr);
++    if (attr != NULL) {
++        xmlFreeAttribute((xmlAttributePtr) attr);
++    }
+@@ -1886,2 +1888 @@ void
+-xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++xmlFreeAttributeTable(xmlAttributeTablePtr table) {    xmlHashFree(table, xmlFreeAttributeTableEntry);
+@@ -6220,7 +6221,10 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                value = xmlNodeListGetString(doc, attr->children, 0);
+-                if (value == NULL) {
+-                    xmlVErrMemory(ctxt);
+-                    ret = 0;
+-                } else {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
+-                    xmlFree((char *)value);
++                /* Validate attribute pointer before use */
++                if (attr != NULL && attr->children != NULL) {
++                    value = xmlNodeListGetString(doc, attr->children, 0);
++                    if (value == NULL) {
++                        xmlVErrMemory(ctxt);
++                        ret = 0;
++                    } else {
++                        ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                        xmlFree((char *)value);
++                    }

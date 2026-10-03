@@ -1,0 +1,46 @@
+diff --git a/libavcodec/mpv_reconstruct_mb_template.c b/libavcodec/mpv_reconstruct_mb_template.c
+index 6f7a5fb1b4..ff032a9d46 100644
+--- a/libavcodec/mpv_reconstruct_mb_template.c
++++ b/libavcodec/mpv_reconstruct_mb_template.c
+@@ -201,4 +201,5 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
+-                add_dct(s, block[0], 0, dest_y                          , dct_linesize);
+-                add_dct(s, block[1], 1, dest_y              + block_size, dct_linesize);
+-                add_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize);
+-                add_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                 if (block[0] && dest_y) add_dct(s, block[0], 0, dest_y                          , dct_linesize);
++                if (block[1] && dest_y) add_dct(s, block[1], 1, dest_y              + block_size, dct_linesize);
++                if (block[2] && dest_y) add_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize);
++                if (block[3] && dest_y) add_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize);
+@@ -208,2 +209,2 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
+-                        add_dct(s, block[4], 4, dest_cb, uvlinesize);
+-                        add_dct(s, block[5], 5, dest_cr, uvlinesize);
++                        if (block[4] && dest_cb) add_dct(s, block[4], 4, dest_cb, uvlinesize);
++                        if (block[5] && dest_cr) add_dct(s, block[5], 5, dest_cr, uvlinesize);
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 7216afb094..3e0207da8f 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -148 +148 @@ void ff_add_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-                             ptrdiff_t line_size)
++                              ptrdiff_t line_size)
+@@ -154,8 +154,11 @@ void ff_add_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-        pixels[0] = av_clip_uint8(pixels[0] + block[0]);
+-        pixels[1] = av_clip_uint8(pixels[1] + block[1]);
+-        pixels[2] = av_clip_uint8(pixels[2] + block[2]);
+-        pixels[3] = av_clip_uint8(pixels[3] + block[3]);
+-        pixels[4] = av_clip_uint8(pixels[4] + block[4]);
+-        pixels[5] = av_clip_uint8(pixels[5] + block[5]);
+-        pixels[6] = av_clip_uint8(pixels[6] + block[6]);
+-        pixels[7] = av_clip_uint8(pixels[7] + block[7]);
++        // Validate pointer arithmetic won't overflow
++        if (pixels && (line_size >= 8 || i == 0)) {  // Basic sanity check
++            pixels[0] = av_clip_uint8(pixels[0] + block[0]);
++            pixels[1] = av_clip_uint8(pixels[1] + block[1]);
++            pixels[2] = av_clip_uint8(pixels[2] + block[2]);
++            pixels[3] = av_clip_uint8(pixels[3] + block[3]);
++            pixels[4] = av_clip_uint8(pixels[4] + block[4]);
++            pixels[5] = av_clip_uint8(pixels[5] + block[5]);
++            pixels[6] = av_clip_uint8(pixels[6] + block[6]);
++            pixels[7] = av_clip_uint8(pixels[7] + block[7]);
++        }

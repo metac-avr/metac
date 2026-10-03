@@ -1,0 +1,25 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..4edd1a99fa 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -88,4 +88,9 @@ static int init_default_huffman_tables(MJpegDecodeContext *s)
+-            memcpy(s->raw_huffman_lengths[ht[i].class][ht[i].index],
+-                   ht[i].bits + 1, 16);
+-            memcpy(s->raw_huffman_values[ht[i].class][ht[i].index],
+-                   ht[i].values, ht[i].length);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             if (ht[i].bits && s->raw_huffman_lengths[ht[i].class][ht[i].index]) {
++                 memcpy(s->raw_huffman_lengths[ht[i].class][ht[i].index],
++                       ht[i].bits + 1, 16);
++             }
++             if (ht[i].values && s->raw_huffman_values[ht[i].class][ht[i].index]) {
++                 memcpy(s->raw_huffman_values[ht[i].class][ht[i].index],
++                       ht[i].values, ht[i].length);
++             }
+@@ -2561,2 +2566,4 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
+-                s->progressive && s->cur_scan && s->got_picture)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
++                s->progressive && s->cur_scan && s->got_picture &&
++                s->mb_width > 0 && s->mb_height > 0)

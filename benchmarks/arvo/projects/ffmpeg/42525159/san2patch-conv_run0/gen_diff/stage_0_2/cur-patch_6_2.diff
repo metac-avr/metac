@@ -1,0 +1,46 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..19ea90e325 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,9 +2017,14 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
++#define WRITE_FRAME(bits, PIXEL)
++static void write_frame_##bits##bit(AVFrame *picture, Jpeg2000Tile *tile, \
++                                   int compno, int pixelsize, int apply_cblk_style, \
++                                   int x, int y, int w, int h, int stepx, int stepy, \
++                                   int flags, int *i_datap, uint8_t *datap, \
++                                   int cblk_style, int transform_type, int roi_shift, \
++                                   int cblk_use_mdc, int cblk_use_mqc, int cblk_use_arith, \
++                                   int cblk_use_seg, int cblk_use_term, int cblk_use_reset, \
++                                   int cblk_use_caud, int cblk_use_plt, int cblk_use_ppt, \
++                                   int cblk_use_dph, int cblk_use_eph, int cblk_use_sop, \
++                                   int cblk_use_eph, int cblk_use_seg_mark, int cblk_use_mag_bits)
++{
++    /* Function body */
++}
+@@ -2040,0 +2046,17 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
++    if (tile->codsty[0].mct)
++        mct_decode(s, tile);
++
++    if (s->precision <= 8) {
++        write_frame_8bit(picture, tile, 0, 1, 0, 0, 0,
++                         tile->comp[0].width, tile->comp[0].height,
++                         1, 1, 0, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
++    } else {
++        write_frame_16bit(picture, tile, 0, 2, 0, 0, 0,
++                          tile->comp[0].width, tile->comp[0].height,
++                          1, 1, 0, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
++    }
++
++    return 0;
++}
++    tile_codeblocks(s, tile);
++

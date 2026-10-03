@@ -1,0 +1,73 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..532ee6546e8 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2135 +2135 @@ ZEND_API void zend_hash_apply_with_arguments(HashTable *ht, apply_func_args_t ap
+-ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t apply_func)
++ZEND_API void ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+@@ -2137,43 +2137,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-	uint32_t idx;
+-	int result;
+-
+-	IS_CONSISTENT(ht);
+-
+-	idx = ht->nNumUsed;
+-	if (HT_IS_PACKED(ht)) {
+-		zval *zv;
+-
+-		while (idx > 0) {
+-			idx--;
+-			zv = ht->arPacked + idx;
+-			if (UNEXPECTED(Z_TYPE_P(zv) == IS_UNDEF)) continue;
+-
+-			result = apply_func(zv);
+-
+-			if (result & ZEND_HASH_APPLY_REMOVE) {
+-				HT_ASSERT_RC1(ht);
+-				_zend_hash_packed_del_val(ht, HT_IDX_TO_HASH(idx), zv);
+-			}
+-			if (result & ZEND_HASH_APPLY_STOP) {
+-				break;
+-			}
+-		}
+-	} else {
+-		Bucket *p;
+-
+-		while (idx > 0) {
+-			idx--;
+-			p = ht->arData + idx;
+-			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
+-
+-			result = apply_func(&p->val);
+-
+-			if (result & ZEND_HASH_APPLY_REMOVE) {
+-				HT_ASSERT_RC1(ht);
+-				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
+-			}
+-			if (result & ZEND_HASH_APPLY_STOP) {
+-				break;
+-			}
+-		}
+-	}
++	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
++	zend_rc_dtor_func[GC_TYPE(p)](p);
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..881d8ecbdc2 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,13 +46,0 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+-	[IS_OBJECT] =       (zend_rc_dtor_func_t)zend_objects_store_del,
+-	[IS_RESOURCE] =     (zend_rc_dtor_func_t)zend_list_free,
+-	[IS_REFERENCE] =    (zend_rc_dtor_func_t)zend_reference_destroy,
+-	[IS_CONSTANT_AST] = (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
+-}
+-
+@@ -68,0 +56 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++#endif}

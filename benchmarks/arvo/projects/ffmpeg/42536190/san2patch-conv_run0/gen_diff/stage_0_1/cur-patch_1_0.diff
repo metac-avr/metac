@@ -1,0 +1,30 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..9dd29e2304 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -52 +52,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -57,0 +59,4 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++    
++    if (ref == NULL || ref->rpl_tab == NULL || ctb_addr_ts < 0)
++        return NULL;
++        
+@@ -64,2 +69 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)        ff_hevc_unref_frame(&s->DPB[i],
+diff --git a/libavcodec/hevc/filter.c b/libavcodec/hevc/filter.c
+index 56e354b486..dddf0b0c00 100644
+--- a/libavcodec/hevc/filter.c
++++ b/libavcodec/hevc/filter.c
+@@ -772,0 +773,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *
++        // Validate rpl_top pointer before proceeding
++        if (rpl_top == NULL) {
++            // Skip processing if reference list is invalid
++            memset(&s->horizontal_bs[(x0 + y0 * s->bs_width) >> 2], 0, 
++                   (1 << (log2_trafo_size - 2)) * sizeof(uint8_t));
++            return;
++        }
++

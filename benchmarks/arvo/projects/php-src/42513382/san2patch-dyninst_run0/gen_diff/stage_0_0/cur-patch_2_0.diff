@@ -1,0 +1,75 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..db14487c4e3 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -276,0 +277,14 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
++	zend_object *result;
++	
++	if (intern == NULL) {
++		*gc_data = NULL;
++		*gc_data_count = 0;
++		return NULL;
++	}
++	
++	if (intern->obj == NULL) {
++		*gc_data = NULL;
++		*gc_data_count = 0;
++		return NULL;
++	}
++	
+@@ -279 +293,9 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
+-	return zend_std_get_properties(obj);
++	result = zend_std_get_properties(obj);
++	
++	if (result == NULL) {
++		*gc_data = NULL;
++		*gc_data_count = 0;
++		return NULL;
++	}
++	
++	return result;
+@@ -285 +307,11 @@ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{
+-	reflection_object *intern = zend_object_alloc(sizeof(reflection_object), class_type);
++	reflection_object *intern;
++	
++	if (class_type == NULL) {
++		return NULL;
++	}
++	
++	intern = zend_object_alloc(sizeof(reflection_object), class_type);
++	
++	if (intern == NULL) {
++		return NULL;
++	}
+@@ -295,2 +327 @@ static zval *reflection_instantiate(zend_class_entry *pce, zval *object) /* {{{
+-{
+-	object_init_ex(object, pce);
++{	object_init_ex(object, pce);
+@@ -6964 +6995 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
++if (zend_parse_parameters_none() == FAILURE) {
+@@ -6972 +7003,15 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-
++	// Fixed CWE-125: Out-of-bounds Read - Added comprehensive safety checks before enum case value access
++	zend_object *obj = NULL;
++	if (EXPECTED(Z_TYPE(ref->value) == IS_OBJECT)) {
++		obj = Z_OBJ(ref->value);
++		if (UNEXPECTED(obj == NULL)) {
++			RETURN_NULL();
++		}
++	} else {
++		RETURN_NULL();
++	}
++	
++	if (UNEXPECTED(obj->ce == NULL || obj->handlers == NULL)) {
++		RETURN_NULL();
++	}
++	
+@@ -6974 +7019 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	zval *member_p = zend_enum_fetch_case_value(Z_OBJ(ref->value));
++	zval *member_p = zend_enum_fetch_case_value(obj);
+@@ -6983,3 +7028 @@ ZEND_METHOD(ReflectionFiber, __construct)
+-	reflection_object *intern;
+-
+-	object = ZEND_THIS;
++	reflection_object *intern;	object = ZEND_THIS;

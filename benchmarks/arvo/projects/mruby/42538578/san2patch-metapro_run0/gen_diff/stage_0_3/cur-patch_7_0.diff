@@ -1,0 +1,18 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..d22604afa 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -349,0 +350 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    ptrdiff_t ci_index = ci - c->cibase;
+@@ -351 +352 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    c->ci = ci = c->cibase + ci_index;
+@@ -2710,2 +2711,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     CASE(OP_ARYCAT, B) {
++      mrb_value arg_val = regs[a+1];  // Save argument value before potential GC
++      mrb_value splat = mrb_ary_splat(mrb, arg_val);
+@@ -2722 +2724,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

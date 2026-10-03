@@ -1,0 +1,30 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..7871a150 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1256,4 +1256,15 @@ xmlFreeDoc(xmlDocPtr cur) {
+-    DICT_FREE(cur->version)
+-    DICT_FREE(cur->name)
+-    DICT_FREE(cur->encoding)
+-    DICT_FREE(cur->URL)
++    if (dict) {
++        if (cur->version && xmlDictOwns(dict, cur->version) == 0)
++            xmlFree((char *)cur->version);
++        if (cur->name && xmlDictOwns(dict, cur->name) == 0)
++            xmlFree((char *)cur->name);
++        if (cur->encoding && xmlDictOwns(dict, cur->encoding) == 0)
++            xmlFree((char *)cur->encoding);
++        if (cur->URL && xmlDictOwns(dict, cur->URL) == 0)
++            xmlFree((char *)cur->URL);
++    } else {
++        if (cur->version) xmlFree((char *)cur->version);
++        if (cur->name) xmlFree((char *)cur->name);
++        if (cur->encoding) xmlFree((char *)cur->encoding);
++        if (cur->URL) xmlFree((char *)cur->URL);
++    }
+@@ -3433 +3444,4 @@ xmlAddChild(xmlNodePtr parent, xmlNodePtr cur) {
+-		xmlFreeProp(lastattr);
++		if (lastattr->atype != XML_ATTRIBUTE_DECL && 
++		    !((parent->doc != NULL) && (parent->doc->dict != NULL) && 
++		      xmlDictOwns(parent->doc->dict, (const xmlChar*)lastattr->name)))
++		    xmlFreeProp(lastattr);

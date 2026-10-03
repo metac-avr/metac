@@ -1,0 +1,25 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..c4e200560 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -790,0 +791,3 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (obj->tt == MRB_TT_FREE) {
++    return;
++  }
+@@ -799,2 +802 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1202,0 +1205 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Move page to delayed free list instead of immediate deallocation */
+@@ -1204,2 +1207,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      page->next = gc->delayed_free_list;
++      gc->delayed_free_list = page;

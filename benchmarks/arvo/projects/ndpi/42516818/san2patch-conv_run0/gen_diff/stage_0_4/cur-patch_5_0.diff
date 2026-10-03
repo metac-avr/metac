@@ -1,0 +1,24 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 34c6f5594..66dfea563 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -656 +656 @@ static void ndpi_check_http_server(struct ndpi_detection_module_struct *ndpi_str
+-      for(i=off, j=0; (i<server_len) && (server[i] != ' ') && (j<sizeof(buf)); i++)
++      for(i=off, j=0; (i<server_len) && (server[i] != ' ') && (j<sizeof(buf)-1); i++)
+@@ -657,0 +658 @@ static void ndpi_check_http_server(struct ndpi_detection_module_struct *ndpi_str
++      buf[j] = '\0'; // Ensure proper null termination
+@@ -668 +669,2 @@ static void ndpi_check_http_server(struct ndpi_detection_module_struct *ndpi_str
+-	  char msg[64];
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	  char msg[64];
+@@ -1463 +1465,9 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
+-  ndpi_check_http_tcp(ndpi_struct, flow);
++  
++  /* Add bounds checking before HTTP processing to prevent buffer overflow */
++  if(flow->packet.payload_packet_len <= 65535 && flow->packet.payload_packet_len > 0) {
++    ndpi_check_http_tcp(ndpi_struct, flow);
++  } else {
++    NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++    http_bitmask_exclude_other(flow);
++    return;
++  }

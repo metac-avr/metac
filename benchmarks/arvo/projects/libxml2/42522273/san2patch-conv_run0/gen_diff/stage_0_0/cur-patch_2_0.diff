@@ -1,0 +1,42 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index 1c3fb812..21bc3228 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -498 +498,3 @@ xmlNextChar(xmlParserCtxtPtr ctxt)
+-                cur = ctxt->input->cur;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                 cur = ctxt->input->cur;
++                 if (ctxt->input->cur >= ctxt->input->end) goto encoding_error;
+@@ -507,0 +510 @@ xmlNextChar(xmlParserCtxtPtr ctxt)
++                    if (ctxt->input->cur >= ctxt->input->end) goto encoding_error;
+@@ -514,0 +518 @@ xmlNextChar(xmlParserCtxtPtr ctxt)
++                        if (ctxt->input->cur >= ctxt->input->end) goto encoding_error;
+diff --git a/HTMLparser.c b/HTMLparser.c
+index a4e691f0..43c5a89e 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -5855 +5855 @@ htmlParseTryOrFinish(htmlParserCtxtPtr ctxt, int terminate) {
+-		    goto done;
++                    goto done;
+@@ -5863,8 +5863,13 @@ htmlParseTryOrFinish(htmlParserCtxtPtr ctxt, int terminate) {
+-
+-
+-		failed = htmlParseStartTag(ctxt);
+-		name = ctxt->name;
+-		if ((failed == -1) ||
+-		    (name == NULL)) {
+-		    if (CUR == '>')
+-			NEXT;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++		if ((ctxt->input != NULL) && 
++		    ((ctxt->input->cur >= ctxt->input->base) && (ctxt->input->cur < ctxt->input->end))) {
++		    failed = htmlParseStartTag(ctxt);
++		    name = ctxt->name;
++		    if ((failed == -1) ||
++		        (name == NULL)) {
++		        if (CUR == '>')
++			    NEXT;
++		        break;
++		    }
++		} else {

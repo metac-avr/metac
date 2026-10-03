@@ -1,0 +1,38 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..57e0f784a 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -565,8 +565,13 @@ mpz_cmp(mrb_state *mrb, mpz_t *x, mpz_t *y)
+-  if (x->sn < 0 && y->sn > 0)
+-    return (-1);
+-  if (x->sn > 0 && y->sn < 0)
+-    return 1;
+-  abscmp=ucmp(x,y);
+-  if (x->sn >=0 && y->sn >=0)
+-    return abscmp;
+-  return (-abscmp);          // if (x->sn <=0 && y->sn <=0)
++  if (x && y) {
++    if (x->sn < 0 && y->sn > 0)
++      return (-1);
++    if (x->sn > 0 && y->sn < 0)
++      return 1;
++    if (x->p && y->p) {
++      abscmp=ucmp(x,y);
++      if (x->sn >=0 && y->sn >=0)
++        return abscmp;
++      return (-abscmp);          // if (x->sn <=0 && y->sn <=0)
++    }
++  }
++  return 0;
+diff --git a/src/range.c b/src/range.c
+index 34ae7e451..b594409a7 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -38,0 +39,7 @@ r_check(mrb_state *mrb, mrb_value a, mrb_value b)
++  /* Check for expired/invalid bigint pointers before dereferencing */
++  if ((ta == MRB_TT_BIGINT && mrb_bigint_expired(a)) || 
++      (tb == MRB_TT_BIGINT && mrb_bigint_expired(b))) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "expired bigint reference");
++    return;
++  }
++

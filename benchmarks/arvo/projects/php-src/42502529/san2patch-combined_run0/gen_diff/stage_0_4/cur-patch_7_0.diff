@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..71e54cda44f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1830,0 +1831,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++		if (Z_TYPE(p->val) == IS_OBJECT && Z_COUNTED(p->val)) {
++			GC_DELREF(Z_COUNTED(p->val));
++			ZVAL_UNDEF(&p->val);
++		}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 481105d14c3..44927f2b5c9 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -272 +271,0 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
+@@ -275 +274,3 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-
++	/* Fix CWE-416: Use After Free - Nullify symbol table references before cleanup */
++	zend_hash_apply(&EG(symbol_table), zend_hash_clean_placeholder);
++ 

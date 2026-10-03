@@ -1,0 +1,22 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..431e119c3 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -115 +115 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(mrb->stack == NULL); */
++  /* Initialize stack with bounds checking */
+@@ -117,0 +118,5 @@ stack_init(mrb_state *mrb)
++  
++  /* Add bounds validation */
++  if (c->stbase == NULL || c->stend <= c->stbase) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "Stack initialization failed");
++  }
+@@ -1707 +1712,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1710,0 +1717,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      /* Bounds check to prevent out-of-bounds write */
++      if (regs + a >= mrb->c->stend || regs + a < mrb->c->stbase) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack access out of bounds");
++      }

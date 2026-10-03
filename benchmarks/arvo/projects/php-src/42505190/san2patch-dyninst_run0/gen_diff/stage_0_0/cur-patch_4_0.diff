@@ -1,0 +1,47 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..7242edda17f 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2433,7 +2432,0 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-				zend_use_scalar_as_array();
+-				ZVAL_UNDEF(result);
+-			}
+-		}
+-	}
+-}
+-
+@@ -2441 +2434,2 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -2442,0 +2437,7 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
++	if (container_ptr && Z_TYPE_P(container_ptr) == IS_INDIRECT) {
++		container_ptr = Z_INDIRECT_P(container_ptr);
++		if (UNEXPECTED(!container_ptr || Z_TYPE_P(container_ptr) == IS_UNDEF)) {
++			zend_throw_error(NULL, "Cannot use [] for reading");
++			return;
++		}
++	}
+@@ -2444,11 +2445 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-}
+-
+-static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_RW(zval *container_ptr, zval *dim, int dim_type OPLINE_DC EXECUTE_DATA_DC)
+-{
+-	zval *result = EX_VAR(opline->result.var);
+-	zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_RW EXECUTE_DATA_CC);
+-}
+-
+-static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(zval *container_ptr, zval *dim, int dim_type OPLINE_DC EXECUTE_DATA_DC)
+-{
+-	zval *result = EX_VAR(opline->result.var);
++}	zval *result = EX_VAR(opline->result.var);
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..63d457a163e 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -48 +48 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_OBJECT       */ (zend_rc_dtor_func_t)zend_objects_store_del,
++	/* IS_OBJECT       */ (zend_rc_counted_func_t)zend_objects_store_del,
+@@ -55,0 +56,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	/* Validate pointer before use to prevent expired pointer dereference */
++	if (!p || GC_TYPE(p) > IS_CONSTANT_AST) return;

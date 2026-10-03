@@ -1,0 +1,34 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..db0fbac05 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -422 +422,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  if (uzero(yy)) return;        /* divided by zero */
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   if (uzero(yy)) return;        /* divided by zero */
+@@ -424 +424,0 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  mpz_realloc(mrb,&x,xx->sz+1);
+@@ -425,0 +426 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  mpz_realloc(mrb,&x,xx->sz+yd);
+@@ -432,2 +433,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  for (size_t j=(xd-yd);;j--) {
+-    mp_limb2 qhat = (((mp_limb2)x.p[j+yd] << DIG_SIZE) + x.p[j+yd-1]) / z;
++  for (size_t j=(xd-yd); j > 0; j--) {
++    mp_limb2 qhat = (((mp_limb2)x.p[j+yd-1] << DIG_SIZE) + (j+yd-2 >= 0 ? x.p[j+yd-2] : 0)) / z;
+@@ -438,2 +439,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-        mp_limb2s u = LOW(b)+x.p[i+j]-LOW(zz);
+-        x.p[i+j] = LOW(u);
++        mp_limb2s u = LOW(b)+x.p[i+j-1]-LOW(zz);
++        x.p[i+j-1] = LOW(u);
+@@ -442 +443 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      b += x.p[i+j-1];
+@@ -447,2 +448,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-        c += (mp_limb2)x.p[i+j] + (mp_limb2)y.p[i];
+-        x.p[i+j] = LOW(c);
++        c += (mp_limb2)x.p[i+j-1] + (mp_limb2)y.p[i];
++        x.p[i+j-1] = LOW(c);
+@@ -453,2 +454 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
+-    if (j == 0) break;
++    q.p[j-1] = qhat;

@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..7745804fbe3 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,0 +57,13 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	/* Fix for CVE-XXXX: Ensure no dangling pointers to objects in CVs */
++	if (EG(current_execute_data) && GC_TYPE(p) == IS_OBJECT) {
++		zval **cvs = EG(current_execute_data)->CVs;
++		if (cvs) {
++			zval **cv_ptr = cvs;
++			while (*cv_ptr) {
++				if (Z_TYPE_PP(cv_ptr) == IS_OBJECT && Z_OBJ_PP(cv_ptr) == (zend_object*)p) {
++					*cv_ptr = NULL;
++				}
++				cv_ptr++;
++			}
++		}
++	}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..f3235048315 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -195,0 +196,12 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		
++		/* Remove dangling pointers from compiled variables before object destruction */
++		if (EG(current_execute_data) && EG(current_execute_data)->CVs) {
++			zval ***cv_ptr = EG(current_execute_data)->CVs;
++			zval **cv;
++			while ((cv = *cv_ptr++)) {
++				if (cv && Z_TYPE_PP(cv) == IS_OBJECT && Z_OBJ_PP(cv) == object) {
++					*cv = NULL;
++				}
++			}
++		}
++		

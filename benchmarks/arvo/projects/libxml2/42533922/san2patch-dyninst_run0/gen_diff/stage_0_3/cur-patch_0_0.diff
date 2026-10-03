@@ -1,0 +1,37 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..39edffde 100644
+--- a/tree.c
++++ b/tree.c
+@@ -792,2 +792,9 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++    // Clear pointers before freeing to prevent use-after-free
++    if (cur->href != NULL) {
++        xmlFree((char *) cur->href);
++        cur->href = NULL;  // Prevent dangling pointer
++    }
++    if (cur->prefix != NULL) {
++        xmlFree((char *) cur->prefix);
++        cur->prefix = NULL;  // Prevent dangling pointer
++    }
+@@ -794,0 +802 @@ xmlFreeNs(xmlNsPtr cur) {
++    cur = NULL;  // Additional safety measure
+@@ -804,2 +812 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;
+@@ -3698,2 +3705,10 @@ xmlFreeNode(xmlNodePtr cur) {
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
++// FIXME: Crash CWE-416: Use After Free
++             xmlFreePropList(cur->properties);
++        if (cur->nsDef != NULL) {
++            /* Clear namespace references before freeing to prevent use-after-free */
++            xmlNsPtr ns = cur->nsDef;
++            while (ns != NULL) {
++                /* Nullify any potential references to this namespace */
++                if (cur->ns == ns) cur->ns = NULL;
++                ns = ns->next;
++            }
+@@ -3700,0 +3716 @@ xmlFreeNode(xmlNodePtr cur) {
++        }

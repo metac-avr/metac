@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..4d7e97781d6 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145 +1145,10 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
++#ifndef ZEND_TYPES_H
++#define ZEND_TYPES_H
++
++#if defined(HAVE_GC_BARRIERS) && defined(GC_BARRIERS)
++# define ZEND_RC_MOD_CHECK(p) \
++	zend_gc_check_possible_root((zend_refcounted_h*)p)
++# define GC_MAKE_PERSISTENT_LOCAL(p) \
++	do { \
++		ZEND_ASSERT(!((zend_refcounted_h*)p)-> guards); \
++		((zend_refcounted_h*)p)-> guards = GC_PERSISTENT_LOCAL; \
+@@ -1153,0 +1163 @@ extern ZEND_API bool zend_rc_debug;
++// Fixed null check for use-after-free vulnerability
+@@ -1154,0 +1165,3 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (p == NULL) {
++		return 0;
++	}
+@@ -1158,0 +1172,3 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
++	if (p == NULL) {
++		return 0;
++	}
+@@ -1163,0 +1180,3 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (p == NULL) {
++		return 0;
++	}
+@@ -1166 +1185 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-}
++}}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..27b8198ea91 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16750,2 +16750,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op2.var));
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++	zval *tmp_op2 = EX_VAR(opline->op2.var);
++	zval *tmp_op1 = EX_VAR(opline->op1.var);
++	if (tmp_op2 && Z_TYPE_P(tmp_op2) != IS_UNDEF) {
++		zval_ptr_dtor_nogc(tmp_op2);
++	}
++	if (tmp_op1 && Z_TYPE_P(tmp_op1) != IS_UNDEF) {
++		zval_ptr_dtor_nogc(tmp_op1);
++	}

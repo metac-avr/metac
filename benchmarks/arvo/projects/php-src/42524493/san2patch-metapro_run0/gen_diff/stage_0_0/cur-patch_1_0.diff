@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..8d28d9d17be 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -258 +258,2 @@ void shutdown_destructors(void) /* {{{ */
+-		do {
++// FIXME: Crash CWE-416: Use After Free
++ 		do {
+@@ -260 +261,3 @@ void shutdown_destructors(void) /* {{{ */
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			if (EG(symbol_table).nNumOfElements > 0) {
++				zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..c1bfec68728 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1301 +1301,5 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	zend_refcounted_h *counted = Z_COUNTED_P(pz);
++	if (!counted) {
++		return 0;
++	}
++	return GC_REFCOUNT(counted);
+@@ -1311,0 +1316 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++

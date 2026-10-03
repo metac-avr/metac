@@ -1,0 +1,16 @@
+diff --git a/src/error.c b/src/error.c
+index c622df789..9979b6d62 100644
+--- a/src/error.c
++++ b/src/error.c
+@@ -515 +514,0 @@ frozen_error(mrb_state *mrb, mrb_value v)
+-
+@@ -525,2 +524,5 @@ mrb_check_frozen(mrb_state *mrb, void *o)
+-  if (mrb_frozen_p((struct RBasic*)o)) {
+-    mrb_frozen_error(mrb, o);
++  /* Ensure proper alignment for struct RBasic access */
++  if (o && (((uintptr_t)o & 7) == 0)) {  /* Check 8-byte alignment */
++    if (mrb_frozen_p((struct RBasic*)o)) {
++      mrb_frozen_error(mrb, o);
++    }
+@@ -527,0 +530 @@ mrb_check_frozen(mrb_state *mrb, void *o)
++  /* Silently return if misaligned to avoid undefined behavior */

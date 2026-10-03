@@ -1,0 +1,89 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..e1043355d31 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -558,2 +558,2 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
+-#define IS_PTR						13
++#define IS_INDIRECT              	12
++#define IS_PTR				13
+@@ -566 +566,2 @@ struct _zend_ast_ref {
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -567,0 +569,3 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
++	if (pz == NULL) {
++		return IS_UNDEF;
++	}
+@@ -577,3 +581,2 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
+-
++#define Z_TYPE(zval)                zval_get_type(&(zval))
++#define Z_TYPE_P(zval_p)            Z_TYPE(*(zval_p))
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..8f0e41c8a4c 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -891,20 +891,34 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
+-			if (Z_TYPE_P(zv) == IS_INDIRECT) {
+-				zv = Z_INDIRECT_P(zv);
+-			}
+-			if (Z_REFCOUNTED_P(zv)) {
+-				ref = Z_COUNTED_P(zv);
+-				GC_DELREF(ref);
+-				if (!GC_REF_CHECK_COLOR(ref, GC_GREY)) {
+-					GC_REF_SET_COLOR(ref, GC_GREY);
+-					p++;
+-					while (--n) {
+-						zv = &p->val;
+-						if (Z_TYPE_P(zv) == IS_INDIRECT) {
+-							zv = Z_INDIRECT_P(zv);
+-						}
+-						if (Z_REFCOUNTED_P(zv)) {
+-							zend_refcounted *ref = Z_COUNTED_P(zv);
+-							GC_DELREF(ref);
+-							if (!GC_REF_CHECK_COLOR(ref, GC_GREY)) {
+-								GC_REF_SET_COLOR(ref, GC_GREY);
+-								GC_STACK_PUSH(ref);
++			if (zv && Z_TYPE_P(zv) != IS_UNDEF) {
++				if (Z_TYPE_P(zv) == IS_INDIRECT) {
++					zv = Z_INDIRECT_P(zv);
++					if (!zv || Z_TYPE_P(zv) == IS_UNDEF) {
++						p++;
++						continue;
++					}
++				}
++				if (Z_REFCOUNTED_P(zv)) {
++					ref = Z_COUNTED_P(zv);
++					GC_DELREF(ref);
++					if (!GC_REF_CHECK_COLOR(ref, GC_GREY)) {
++						GC_REF_SET_COLOR(ref, GC_GREY);
++						p++;
++						while (--n) {
++							zv = &p->val;
++							if (!zv || Z_TYPE_P(zv) == IS_UNDEF) {
++								p++;
++								continue;
++							}
++							if (Z_TYPE_P(zv) == IS_INDIRECT) {
++								zv = Z_INDIRECT_P(zv);
++								if (!zv || Z_TYPE_P(zv) == IS_UNDEF) {
++									p++;
++									continue;
++								}
++							}
++							if (Z_REFCOUNTED_P(zv)) {
++								zend_refcounted *ref = Z_COUNTED_P(zv);
++								GC_DELREF(ref);
++								if (!GC_REF_CHECK_COLOR(ref, GC_GREY)) {
++									GC_REF_SET_COLOR(ref, GC_GREY);
++									GC_STACK_PUSH(ref);
++								}
+@@ -911,0 +926 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
++							p++;
+@@ -913 +928 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
+-						p++;
++						goto tail_call;
+@@ -915 +929,0 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
+-					goto tail_call;

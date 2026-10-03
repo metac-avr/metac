@@ -1,0 +1,29 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..1f8f7abadc 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -460,0 +461 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    int vlc_initialized = 0; // Track VLC initialization state
+@@ -489 +490,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-            goto fail;
++            ret = AVERROR_INVALIDDATA;
++            goto early_fail;
+@@ -494,2 +496,3 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-            goto fail;
+-        }
++            ret = AVERROR_INVALIDDATA;
++            goto early_fail;
++         }
+@@ -497,0 +501 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    vlc_initialized = 1; // Mark as initialized after successful end
+@@ -499 +503 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        goto fail;
++        goto early_fail;
+@@ -501 +505 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-fail:
++early_fail:
+@@ -504 +508,3 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    return AVERROR_INVALIDDATA;
++    if (!vlc_initialized && ret != AVERROR(ENOMEM)) // Only cleanup VLC if not already ended
++        vlc_common_end(vlc, nb_bits, 0, buf, flags, localbuf); // Cleanup with minimal parameters
++    return ret;

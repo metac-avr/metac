@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..0e63303d212 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1351,0 +1352 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
++		// Ensure proper reference handling before destructor call
+@@ -1353,0 +1355,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
++		if (Z_TYPE(tmp) == IS_STRING && Z_STR(tmp)) {
++			zend_string_addref(Z_STR(tmp));
++		}
+@@ -1354,0 +1359,3 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
++		if (Z_TYPE(tmp) == IS_STRING && Z_STR(tmp)) {
++			zend_string_delref(Z_STR(tmp));
++		}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..51828faedb7 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -218 +218,6 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-		zv = Z_INDIRECT_P(zv);
++		zval *indirect_zv = Z_INDIRECT_P(zv);
++		if (indirect_zv && Z_TYPE_P(indirect_zv) != IS_UNDEF) {
++			i_zval_ptr_dtor(indirect_zv);
++		}
++	} else {
++		i_zval_ptr_dtor(zv);
+@@ -220 +224,0 @@ static void zend_unclean_zval_ptr_dtor(zval *zv) /* {{{ */
+-	i_zval_ptr_dtor(zv);

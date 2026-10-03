@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..8f70098ec18 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -23837,3 +23837,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_U
+-	variable_ptr = _get_zval_ptr_ptr_var(opline->op1.var EXECUTE_DATA_CC);
+-
+-	value = zend_assign_to_variable(variable_ptr, value, IS_CONST, EX_USES_STRICT_TYPES());
++	if (UNEXPECTED(Z_TYPE_P(value) == IS_FALSE)) {
++		zval tmp;
++		array_init(&tmp);
++		value = zend_assign_to_variable(_get_zval_ptr_ptr_var(opline->op1.var EXECUTE_DATA_CC), &tmp, IS_CONST, EX_USES_STRICT_TYPES());
++	} else {
++		variable_ptr = _get_zval_ptr_ptr_var(opline->op1.var EXECUTE_DATA_CC);
++		value = zend_assign_to_variable(variable_ptr, value, IS_CONST, EX_USES_STRICT_TYPES());
++	}

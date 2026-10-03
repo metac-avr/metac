@@ -1,0 +1,24 @@
+diff --git a/ext/pcre/php_pcre.c b/ext/pcre/php_pcre.c
+index 075d9fc5263..8db01d60121 100644
+--- a/ext/pcre/php_pcre.c
++++ b/ext/pcre/php_pcre.c
+@@ -657,3 +657,12 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-	start_delimiter = delimiter;
+-	if ((pp = strchr("([{< )]}>", delimiter)))
+-		delimiter = pp[5];
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	start_delimiter = delimiter;
++	if ((pp = strchr("([{< )]}>", delimiter))) {
++		/* Safe bounds check: ensure pp+5 doesn't exceed buffer */
++		if ((pp - "([{< )]}>" + 5) < 10)
++			delimiter = pp[5];
++		else {
++			php_error_docref(NULL, E_WARNING, "Malformed regular expression delimiter");
++			pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
++			return NULL;
++		}
++	}
+@@ -669,2 +678 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, bo
+-			if (*pp == '\\' && pp + 1 < end_p) pp++;
+-			else if (*pp == delimiter)
++			if (*pp == '\\' && pp + 1 < end_p) pp++;			else if (*pp == delimiter)

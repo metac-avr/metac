@@ -1,0 +1,19 @@
+diff --git a/src/filter_core/filter_session.c b/src/filter_core/filter_session.c
+index 01e4bcf92..6e9deb740 100644
+--- a/src/filter_core/filter_session.c
++++ b/src/filter_core/filter_session.c
+@@ -2103 +2103,2 @@ static u32 gf_fs_thread_proc(GF_SessionThread *sess_thread)
+-		task->requeue_request = GF_FALSE;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		task->requeue_request = GF_FALSE;
+@@ -2105 +2106,5 @@ static u32 gf_fs_thread_proc(GF_SessionThread *sess_thread)
+-		task->run_task(task);
++		// Add guard check before task execution
++		volatile void* task_guard = task;
++		if (task_guard && task->run_task) {
++			task->run_task(task);
++		}
+@@ -2115,2 +2120 @@ static u32 gf_fs_thread_proc(GF_SessionThread *sess_thread)
+-#ifdef CHECK_TASK_LIST_INTEGRITY
+-		prev_current_filter = task->filter;
++#ifdef CHECK_TASK_LIST_INTEGRITY		prev_current_filter = task->filter;

@@ -1,0 +1,34 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index 4c31ee0eae6..aab82a06105 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2177 +2177 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								bptr++;
++								if (bptr < buf + buf_len) bptr++;
+@@ -2180,0 +2181 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
++								if (bptr >= buf + buf_len) break;
+@@ -2190,2 +2191,8 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								bptr++;
+-								hunk_begin = bptr;
++								if (bptr + 1 < buf + buf_len) {
++									bptr++;
++									hunk_begin = bptr;
++								} else {
++									bptr = buf + buf_len;
++									hunk_begin = bptr;
++									goto quit_loop_2;
++								}
+@@ -2193 +2200,2 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 								break;
+@@ -2194,0 +2203 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
++								if (bptr >= buf + buf_len) break;
+@@ -2200 +2209,6 @@ PHPAPI void php_fgetcsv(php_stream *stream, char delimiter, char enclosure, int
+-								bptr++;
++								if (bptr + 1 < buf + buf_len) {
++									bptr++;
++								} else {
++									bptr = buf + buf_len;
++									goto quit_loop_2;
++								}

@@ -1,0 +1,23 @@
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index cdccbad35..1f7f056f6 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -16048 +16048,8 @@ Bool gf_ac4_parser_bs(GF_BitStream *bs, GF_AC4Config *hdr, Bool full_parse)
+-		hdr->media_time_scale = AC4_MEDIA_TIMESCALE_441[stream->frame_rate_index];
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		if (stream->frame_rate_index < sizeof(AC4_MEDIA_TIMESCALE_441)/sizeof(AC4_MEDIA_TIMESCALE_441[0])) {
++			hdr->media_time_scale = AC4_MEDIA_TIMESCALE_441[stream->frame_rate_index];
++		} else {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_CODING, ("[AC4] Frame rate index exceeds array bounds: %d\n", stream->frame_rate_index));
++			gf_bs_seek(bs, pos);
++			return GF_FALSE;
++		}
+@@ -16051 +16058,7 @@ Bool gf_ac4_parser_bs(GF_BitStream *bs, GF_AC4Config *hdr, Bool full_parse)
+-		hdr->media_time_scale = AC4_MEDIA_TIMESCALE_48[stream->frame_rate_index];
++		if (stream->frame_rate_index < sizeof(AC4_MEDIA_TIMESCALE_48)/sizeof(AC4_MEDIA_TIMESCALE_48[0])) {
++			hdr->media_time_scale = AC4_MEDIA_TIMESCALE_48[stream->frame_rate_index];
++		} else {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_CODING, ("[AC4] Frame rate index exceeds array bounds: %d\n", stream->frame_rate_index));
++			gf_bs_seek(bs, pos);
++			return GF_FALSE;
++		}

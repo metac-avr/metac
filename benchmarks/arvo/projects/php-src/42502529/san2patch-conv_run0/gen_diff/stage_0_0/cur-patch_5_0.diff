@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..8afc01f0f1f 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1182,0 +1184,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p == NULL || (p->u.type_info & GC_IMMUTABLE)) {
++		return 0;
++	}
+@@ -1193 +1196,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..a113b270b8f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1829 +1829,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		p--;
++// FIXME: Crash CWE-416: Use After Free
++ 		p--;
+@@ -1831 +1832,7 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		if (p->val.u1.type_flags & IS_TYPE_REFCOUNTED && Z_COUNTED(p->val)) {
++			if (GC_REFCOUNT(Z_COUNTED(p->val)) > 0) {
++				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++			}
++		} else {
++			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++		}

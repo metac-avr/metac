@@ -1,0 +1,26 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..3674e6405 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -164,0 +165,16 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
++// Fixed CWE-825: Expired Pointer Dereference - Added safety guard for null pointer
++#ifndef MRB_DISABLE_XXX
++#define SAFE_HT_ACCESS(type, func_name, member) \
++  type func_name(hash_table *hsh) { \
++    if (hsh) { \
++      return hsh->member; \
++    } \
++    return 0; \
++  }
++#else
++#define SAFE_HT_ACCESS(type, func_name, member) \
++  type func_name(hash_table *hsh) { \
++    return hsh->member; \
++  }
++#endif
++SAFE_HT_ACCESS(uint32_t, ht_size_safe, size)
+@@ -176,3 +192 @@ DEFINE_SWITCHER(ht, HT)
+-} while (0)
+-
+-#define ea_each(ea, size, entry_var, code) do {                               \
++} while (0)#define ea_each(ea, size, entry_var, code) do {                               \

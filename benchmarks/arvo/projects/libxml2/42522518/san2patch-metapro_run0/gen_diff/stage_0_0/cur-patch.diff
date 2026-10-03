@@ -1,0 +1,51 @@
+diff --git a/parser.c b/parser.c
+index f69231d5..bba34b9f 100644
+--- a/parser.c
++++ b/parser.c
+@@ -5360,7 +5360,12 @@ xmlParseEntityDecl(xmlParserCtxtPtr ctxt) {
+-	int inputid = ctxt->input->id;
+-	SHRINK;
+-	SKIP(6);
+-	if (SKIP_BLANKS == 0) {
+-	    xmlFatalErrMsg(ctxt, XML_ERR_SPACE_REQUIRED,
+-			   "Space required after '<!ENTITY'\n");
+-	}
++// FIXME: Crash CWE-125: Out-of-bounds Read
++        int inputid = ctxt->input->id;
++        SHRINK;
++        if ((ctxt->input->cur + 6) > ctxt->input->end) {
++            xmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR, "Buffer overflow protection triggered\n");
++            return;
++        }
++        SKIP(6);
++        if (SKIP_BLANKS == 0) {
++            xmlFatalErrMsg(ctxt, XML_ERR_SPACE_REQUIRED,
++                           "Space required after '<!ENTITY'\n");
++        }
+@@ -5368,5 +5373,9 @@ xmlParseEntityDecl(xmlParserCtxtPtr ctxt) {
+-	if (RAW == '%') {
+-	    NEXT;
+-	    if (SKIP_BLANKS == 0) {
+-		xmlFatalErrMsg(ctxt, XML_ERR_SPACE_REQUIRED,
+-			       "Space required after '%%'\n");
++        if (RAW == '%') {
++            NEXT;
++            if ((ctxt->input->cur + 1) > ctxt->input->end) {
++                xmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR, "Buffer boundary violation prevented\n");
++                return;
++            }
++            if (SKIP_BLANKS == 0) {
++                xmlFatalErrMsg(ctxt, XML_ERR_SPACE_REQUIRED,
++                               "Space required after '%'\n");
+@@ -6827,3 +6836,8 @@ xmlParseMarkupDecl(xmlParserCtxtPtr ctxt) {
+-			xmlParseElementDecl(ctxt);
+-		    else if (NXT(3) == 'N')
+-			xmlParseEntityDecl(ctxt);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 			xmlParseElementDecl(ctxt);
++		    else if (NXT(3) == 'N') {
++		        if (ctxt->input->cur + 3 < ctxt->input->end)
++			    xmlParseEntityDecl(ctxt);
++		        else
++			    SKIP(2);
++		    }

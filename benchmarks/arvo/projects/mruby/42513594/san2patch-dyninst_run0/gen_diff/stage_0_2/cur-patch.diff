@@ -1,0 +1,25 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..d4da2829e 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1199 +1199 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-
++ 
+@@ -1206 +1206,3 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-  stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++  if (stack_keep < nregs && (nregs - stack_keep) > 0) {
++    stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++  }
+@@ -1707 +1709,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1756 +1759,7 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        ci->stack[0] = recv;
++        /* Prevent out-of-bounds write by checking stack bounds */
++        if (ci->stack >= mrb->c->stbase && (ci->stack + 1) <= mrb->c->stend) {
++          ci->stack[0] = recv;
++        } else {
++          /* Handle stack overflow condition */
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow");
++        }

@@ -1,0 +1,42 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 797ac66c96d..a46b08b1f7e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40110,6 +40110,11 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_OBJ_W_SPEC_CV_CONST_HAND
+-	property = RT_CONSTANT(opline, opline->op2);
+-	result = EX_VAR(opline->result.var);
+-	zend_fetch_property_address(
+-		result, container, IS_CV, property, IS_CONST,
+-		((IS_CONST == IS_CONST) ? CACHE_ADDR(opline->extended_value & ~ZEND_FETCH_OBJ_FLAGS) : NULL),
+-		BP_VAR_W, opline->extended_value & ZEND_FETCH_OBJ_FLAGS, 1 OPLINE_CC EXECUTE_DATA_CC);
++	if (EXPECTED(Z_TYPE_P(container) == IS_OBJECT && Z_OBJ_P(container) != NULL)) {
++		property = RT_CONSTANT(opline, opline->op2);
++		result = EX_VAR(opline->result.var);
++		zend_fetch_property_address(
++			result, container, IS_CV, property, IS_CONST,
++			((IS_CONST == IS_CONST) ? CACHE_ADDR(opline->extended_value & ~ZEND_FETCH_OBJ_FLAGS) : NULL),
++			BP_VAR_W, opline->extended_value & ZEND_FETCH_OBJ_FLAGS, 1 OPLINE_CC EXECUTE_DATA_CC);
++	} else {
++		ZVAL_NULL(EX_VAR(opline->result.var));
++		ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++	}
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index dab57807796..3b4d96bbb71 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -280 +280,2 @@ static ZEND_COLD zend_never_inline void zend_forbidden_dynamic_property(
+-static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
++// Resolved: Crash CWE-416: Use After Free
++ static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
+@@ -282,2 +283,7 @@ static ZEND_COLD zend_never_inline void zend_deprecated_dynamic_property(
+-	zend_error(E_DEPRECATED, "Creation of dynamic property %s::$%s is deprecated",
+-		ZSTR_VAL(ce->name), ZSTR_VAL(member));
++	if (!ce || !member) {
++		return;
++	}
++	if (ZSTR_VAL(ce->name) && ZSTR_VAL(member)) {
++		zend_error(E_DEPRECATED, "Creation of dynamic property %s::$%s is deprecated",
++			ZSTR_VAL(ce->name), ZSTR_VAL(member));
++	}
+@@ -292 +297,0 @@ static ZEND_COLD zend_never_inline void zend_readonly_property_modification_scop
+-

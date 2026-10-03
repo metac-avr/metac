@@ -1,0 +1,27 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..ccab919ff 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1199 +1199 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-
++ 
+@@ -1206 +1206,3 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-  stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++  if (c->ci->stack && nregs > stack_keep) {
++    stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++  }
+@@ -1707 +1709,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1720,0 +1724,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      
++      /* Add stack boundary validation */
++      if (ci->stack == NULL || (uintptr_t)ci->stack % sizeof(mrb_value) != 0) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "invalid stack alignment");
++      }
+@@ -1755,0 +1764,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Validate stack bounds before writing */
++        if (ci->stack < mrb->c->stbase || ci->stack + 1 > mrb->c->stend) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack boundary violation");
++        }

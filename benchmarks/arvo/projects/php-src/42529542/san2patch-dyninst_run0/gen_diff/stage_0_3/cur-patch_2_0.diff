@@ -1,0 +1,46 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index feeff659bd5..d99dd91e031 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -653 +653,5 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return EG(opline_before_exception)->lineno;
++			/* Validate pointer and ensure it hasn't been invalidated by context switches */
++			zend_op *temp_opline = EG(opline_before_exception);
++			if (temp_opline != NULL && temp_opline->lineno != 0) {
++				return temp_opline->lineno;
++			}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..83c2fced063 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -333,5 +332,0 @@ static zval* ZEND_FASTCALL zend_jit_symtable_lookup_w(HashTable *ht, zend_string
+-	} while (0);
+-
+-	return zend_hash_lookup(ht, str);
+-}
+-
+@@ -341 +336 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++	zend_string *cv;
+@@ -343,3 +338,5 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
+-	return EG(exception) == NULL;
+-}
++	/* Validate execution context before accessing variables */
++	if (UNEXPECTED(!execute_data || !EX(func))) {
++		zend_error(E_WARNING, "Undefined variable");
++		return EG(exception) == NULL;
++	}
+@@ -347,4 +344 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint32_t var)
+-{
+-	const zend_execute_data *execute_data = EG(current_execute_data);
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++	cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+@@ -352,3 +346,3 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint3
+-	/* The array may be destroyed while throwing the notice.
+-	 * Temporarily increase the refcount to detect this situation. */
+-	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
++	zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++	return EG(exception) == NULL;
++}	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {

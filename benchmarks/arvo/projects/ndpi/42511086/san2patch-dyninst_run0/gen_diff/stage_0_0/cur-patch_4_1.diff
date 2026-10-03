@@ -1,0 +1,27 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 9432ce64b..217dea678 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -5051 +5051,2 @@ static u_int32_t check_ndpi_detection_func(struct ndpi_detection_module_struct *
+-                                 detection_bitmask) != 0)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                                  detection_bitmask) != 0)
+@@ -5053,7 +5054,11 @@ static u_int32_t check_ndpi_detection_func(struct ndpi_detection_module_struct *
+-	    callback_buffer[a].func(ndpi_str, flow);
+-	    num_calls++;
+-
+-	    if (flow->detected_protocol_stack[0] != NDPI_PROTOCOL_UNKNOWN)
+-	      {
+-		break; /* Stop after the first detected protocol. */
+-	      }
++	    // Prevent out-of-bounds read in ndpi_search_raknet by checking packet length
++	    if (!(callback_buffer[a].func == ndpi_search_raknet && 
++	          flow->packet.payload_packet_len < 72)) {
++	      callback_buffer[a].func(ndpi_str, flow);
++	      num_calls++;
++
++	      if (flow->detected_protocol_stack[0] != NDPI_PROTOCOL_UNKNOWN)
++	        {
++		  break; /* Stop after the first detected protocol. */
++	        }
++	    }

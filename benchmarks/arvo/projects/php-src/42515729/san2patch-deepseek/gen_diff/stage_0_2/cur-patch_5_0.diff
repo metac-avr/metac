@@ -1,0 +1,24 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..0bf19d1d169 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2333 +2333,8 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	update_errors_warnings(&err);
++	{
++		timelib_error_container *new_err = NULL;
++		update_errors_warnings(&err);
++		if (err) {
++			timelib_error_container_dtor(err);
++			err = NULL;
++		}
++	}
+@@ -2514 +2521,2 @@ PHP_METHOD(DateTime, __construct)
+-	ZEND_PARSE_PARAMETERS_END();
++// FIXME: Crash CWE-416: Use After Free
++ 	ZEND_PARSE_PARAMETERS_END();
+@@ -2516 +2524,2 @@ PHP_METHOD(DateTime, __construct)
+-	php_date_initialize(Z_PHPDATE_P(ZEND_THIS), time_str, time_str_len, NULL, timezone_object, PHP_DATE_INIT_CTOR);
++	php_date_initialize(Z_PHATE_P(ZEND_THIS), time_str, time_str_len, NULL, timezone_object, PHP_DATE_INIT_CTOR);
++	php_date_timezone_dtor(Z_PHATE_P(ZEND_THIS));
+@@ -2526 +2534,0 @@ PHP_METHOD(DateTimeImmutable, __construct)
+-

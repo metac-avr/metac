@@ -1,0 +1,33 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..5f679fc8d 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -4500 +4500,6 @@ static GF_Err inspect_process(GF_Filter *filter)
+-					inspect_dump_packet_fmt(filter, ctx, pctx->tmp, pck, pctx, pctx->pck_num);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++					if (gf_filter_pck_get_size(pck) > 0 && gf_filter_pck_get_size(pck) < 60) {
++						gf_filter_pid_drop_packet(pctx->src_pid);
++						continue;
++					}
++ 					inspect_dump_packet_fmt(filter, ctx, pctx->tmp, pck, pctx, pctx->pck_num);
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..7b5cab965 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -456 +456,2 @@ static u8 BS_ReadByte(GF_BitStream *bs)
+-			return 0;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 			return 0;
+@@ -461,4 +462,6 @@ static u8 BS_ReadByte(GF_BitStream *bs)
+-			if ((bs->nb_zeros==2) && (res==0x03) && (bs->position<bs->size) && (bs->original[bs->position]<0x04)) {
+-				bs->nb_zeros = 0;
+-				bs->nb_removed++;
+-				res = bs->original[bs->position++];
++			if ((bs->nb_zeros==2) && (res==0x03) && (bs->position<bs->size)) {
++				if (bs->original[bs->position]<0x04) {
++					bs->nb_zeros = 0;
++					bs->nb_removed++;
++					if (bs->position < bs->size) res = bs->original[bs->position++];
++				}
+@@ -470,0 +474 @@ static u8 BS_ReadByte(GF_BitStream *bs)
++

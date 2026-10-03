@@ -1,0 +1,20 @@
+diff --git a/src/filters/reframe_mpgvid.c b/src/filters/reframe_mpgvid.c
+index 29e961a07..6107fd1d3 100644
+--- a/src/filters/reframe_mpgvid.c
++++ b/src/filters/reframe_mpgvid.c
+@@ -739 +739,8 @@ GF_Err mpgviddmx_process(GF_Filter *filter)
+-			memcpy(ctx->hdr_store + ctx->bytes_in_header, start, MIN_HDR_STORE - ctx->bytes_in_header);
++			// Prevent buffer overflow by validating copy size
++			u32 copy_size = MIN_HDR_STORE - ctx->bytes_in_header;
++			if (copy_size > 0) {
++				// Additional check to ensure start pointer is valid
++				if (start != NULL) {
++					memcpy(ctx->hdr_store + ctx->bytes_in_header, start, copy_size);
++				}
++			}
+@@ -775 +782,4 @@ GF_Err mpgviddmx_process(GF_Filter *filter)
+-					forced_sc_type = start[hdr_offset-1];
++					// Bounds check before accessing start[hdr_offset-1]
++					if (hdr_offset > 0) {
++						forced_sc_type = start[hdr_offset-1];
++					}

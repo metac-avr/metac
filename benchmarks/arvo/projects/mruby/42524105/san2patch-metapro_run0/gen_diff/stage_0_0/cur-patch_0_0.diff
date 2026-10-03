@@ -1,0 +1,29 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..c4142dfe3 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1683 +1683,2 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1685 +1686,2 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-    hval ^= (uint32_t)*s++;
++    if (s) hval ^= (uint32_t)*s++;
++    else break;
+diff --git a/src/gc.c b/src/gc.c
+index 823297612..7c030ac05 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -816 +816 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-    else if (!ARY_EMBED_P(obj))
++else if (!ARY_EMBED_P(obj))
+@@ -824 +824,2 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -825,0 +827,5 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
++    // Clear any hash table references before freeing string memory
++    // This prevents use-after-free when hash functions access freed string data
++    if (((struct RString*)obj)->flags & MRB_STR_HASHED) {
++      ((struct RString*)obj)->flags &= ~MRB_STR_HASHED;
++    }

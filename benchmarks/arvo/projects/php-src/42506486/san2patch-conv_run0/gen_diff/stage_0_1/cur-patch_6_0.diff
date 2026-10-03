@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..28b45279793 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -389 +389,2 @@ void shutdown_executor(void) /* {{{ */
+-	} zend_end_try();
++// FIXME: Crash CWE-416: Use After Free
++ 	} zend_end_try();
+@@ -390,0 +392 @@ void shutdown_executor(void) /* {{{ */
++	/* Defer string releases until after GC operations to prevent use-after-free */
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..e98b9b6da2d 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1374 +1374,6 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}
++	}
++
++	/* Ensure proper reference counting before deletion to prevent use-after-free */
++	if (Z_TYPE(p->val) == IS_STRING && Z_COUNTED(p->val)) {
++		GC_ADDREF(Z_COUNTED(p->val));

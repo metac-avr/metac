@@ -1,0 +1,35 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index 9667ccb4..21420d36 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -1094 +1094,6 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	for ( ; bits >= 0; bits-= 6)
++	for ( ; bits >= 0; bits-= 6) {
++	    if (out - savedout >= 4) { 
++	        xmlErrEncodingInt(NULL, XML_ERR_INVALID_CHAR,
++		    "Buffer overflow in xmlCopyCharMultiByte\n", NULL);
++	        return(0);
++	    }
+@@ -1095,0 +1101 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
++	}
+diff --git a/parser.c b/parser.c
+index 14288713..c92835b4 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4953 +4953,15 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-
++ 
++	    new_size = size * 2;
++	    new_buf = (xmlChar *) xmlRealloc(buf, new_size);
++	    if (new_buf == NULL) {
++		xmlFree (buf);
++		xmlErrMemory(ctxt, NULL);
++		return;
++	    }
++	    buf = new_buf;
++            size = new_size;
++	}
++	if (len + ql >= size) {
++	    xmlChar *new_buf;
++            size_t new_size;
++ 

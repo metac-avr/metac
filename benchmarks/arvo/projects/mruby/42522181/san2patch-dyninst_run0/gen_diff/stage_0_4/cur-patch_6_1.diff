@@ -1,0 +1,25 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..e87ee4e70 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1203,3 +1203,6 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Add null check before unlinking to prevent UAF */
++      if (page != NULL) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }
+@@ -1252 +1255 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    /* unknown state */
++/* unknown state */
+@@ -1260 +1263,2 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -1263,0 +1268,3 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
++  
++  /* Ensure all pending marks are processed before finishing */
++  gc->busy = FALSE;

@@ -1,0 +1,24 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..569349188 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1095 +1095 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    struct RBasic *obj = gc->gray_list;
++     struct RBasic *obj = gc->gray_list;
+@@ -1097 +1097,3 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
++    if (!mrb_immediate_p(obj)) {
++      gc_mark_children(mrb, gc, obj);
++    }
+diff --git a/include/mruby/value.h b/include/mruby/value.h
+index 6666a9c14..c5adef19c 100644
+--- a/include/mruby/value.h
++++ b/include/mruby/value.h
+@@ -345 +345,2 @@ MRB_INLINE mrb_value mrb_int_value(struct mrb_state *mrb, mrb_int i)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -347,0 +349,3 @@ MRB_INLINE mrb_value mrb_int_value(struct mrb_state *mrb, mrb_int i)
++  if (!mrb_immediate_p(v)) {
++    SET_FIXNUM_VALUE(v, i);
++  }

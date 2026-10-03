@@ -1,0 +1,23 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..03e89af1e9 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -281,2 +281,6 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = 0; h < (16 >> (vsub + lowres)); h++){
+-                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
++            int width = 16 >> (hsub + lowres);
++            int height = 16 >> (vsub + lowres);
++            uint16_t *dest_limit = dest_pcm[i] + (linesize[i] / 2) * height;
++            for (int h = 0; h < height; h++){
++                uint16_t *row_start = dest_pcm[i];
++                for (int w = 0, idx = 0; w < width && row_start + w < dest_limit; w++, idx += step)
+@@ -297,0 +302,2 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
++            int width = 16 >> (hsub + lowres);
++            int height = 16 >> (vsub + lowres);
+@@ -299,2 +305,4 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
++            uint16_t *dest_limit = dest_pcm[i] - (linesize[i] / 2) * height;
++             for (int h = height - 1; h >= 0; h--){
++                uint16_t *row_start = dest_pcm[i];
++                for (int w = width - 1, idx = 0; w >= 0 && row_start + w > dest_limit; w--, idx += step)

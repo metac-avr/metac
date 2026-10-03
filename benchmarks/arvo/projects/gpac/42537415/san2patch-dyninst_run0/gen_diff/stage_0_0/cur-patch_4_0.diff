@@ -1,0 +1,22 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index eee917756..04f3902a5 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -1160 +1160 @@ static GF_Err gsfdmx_demux(GF_Filter *filter, GSF_DemuxCtx *ctx, char *data, u32
+-	 						append = GF_FALSE;
++							append = GF_FALSE;
+@@ -1171,5 +1171,9 @@ static GF_Err gsfdmx_demux(GF_Filter *filter, GSF_DemuxCtx *ctx, char *data, u32
+-						} else {
+-							//append fragment
+-							memcpy(gpck->output + block_offset, ctx->buffer + cur_pos, pck_len);
+-
+-							gsfdmx_packet_append_frag(gpck, pck_len, block_offset);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 						} else {
++							// Check for valid pck_len to prevent zero or negative length copies
++							if (pck_len > 0) {
++								//append fragment
++								memcpy(gpck->output + block_offset, ctx->buffer + cur_pos, pck_len);
++
++								gsfdmx_packet_append_frag(gpck, pck_len, block_offset);
++							}

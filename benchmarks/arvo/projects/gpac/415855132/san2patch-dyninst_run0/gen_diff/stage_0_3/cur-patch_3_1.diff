@@ -1,0 +1,63 @@
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..a494a9503 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -207 +207,2 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-		codecid = stream->stream_type;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		codecid = stream->stream_type;
+@@ -209 +210 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-		if (stream->gpac_meta_dsi)
++		if (stream->gpac_meta_dsi && stream->gpac_meta_dsi_len > 4)
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..a4ed9bf3d 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1439,21 +1439,26 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-			}
+-			break;
+-
+-		case GF_M2TS_13818_6_ANNEX_A:
+-		case GF_M2TS_13818_6_ANNEX_B:
+-		case GF_M2TS_13818_6_ANNEX_C:
+-		case GF_M2TS_13818_6_ANNEX_D:
+-		case GF_M2TS_PRIVATE_SECTION:
+-		case GF_M2TS_QUALITY_SEC:
+-		case GF_M2TS_MORE_SEC:
+-			GF_SAFEALLOC(ses, GF_M2TS_SECTION_ES);
+-			if (!ses) {
+-				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG2TS] Failed to allocate ES for pid %d\n", pid));
+-				return;
+-			}
+-			es = (GF_M2TS_ES *)ses;
+-			es->flags |= GF_M2TS_ES_IS_SECTION;
+-			es->pid = pid;
+-			es->service_id = pmt->program->number;
+-			if (stream_type == GF_M2TS_PRIVATE_SECTION) {
+-				GF_LOG(GF_LOG_INFO, GF_LOG_CONTAINER, ("AIT sections on pid %d\n", pid));
++                        }
++                        break;
++
++                case GF_M2TS_13818_6_ANNEX_A:
++                case GF_M2TS_13818_6_ANNEX_B:
++                case GF_M2TS_13818_6_ANNEX_C:
++                case GF_M2TS_13818_6_ANNEX_D:
++                case GF_M2TS_PRIVATE_SECTION:
++// FIXME: Crash CWE-125: Out-of-bounds Read - Fixed by adding bounds check
++                case GF_M2TS_QUALITY_SEC:
++                case GF_M2TS_MORE_SEC:
++                        if (stream_type == GF_M2TS_QUALITY_SEC || stream_type == GF_M2TS_MORE_SEC) {
++                                GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[MPEG2TS] Unsupported stream type %d on pid %d\n", stream_type, pid));
++                                return;
++                        }
++                        GF_SAFEALLOC(ses, GF_M2TS_SECTION_ES);
++                        if (!ses) {
++                                GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG2TS] Failed to allocate ES for pid %d\n", pid));
++                                return;
++                        }
++                        es = (GF_M2TS_ES *)ses;
++                        es->flags |= GF_M2TS_ES_IS_SECTION;
++                        es->pid = pid;
++                        es->service_id = pmt->program->number;
++                        if (stream_type == GF_M2TS_PRIVATE_SECTION) {
++                                GF_LOG(GF_LOG_INFO, GF_LOG_CONTAINER, ("AIT sections on pid %d\n", pid));

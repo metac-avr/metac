@@ -1,0 +1,46 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..730bb6c7c9 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -44,7 +43,0 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
+-        ff_refstruct_unref(&frame->rpl_tab);
+-        frame->refPicList = NULL;
+-
+-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+-    }
+-}
+-
+@@ -52 +45,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -57,0 +52,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++    if (!ref->rpl_tab || !ref->rpl_tab[ctb_addr_ts])
++        return NULL;
+@@ -65 +61,2 @@ void ff_hevc_clear_refs(HEVCContext *s)
+-        ff_hevc_unref_frame(&s->DPB[i],
++        ff_hevc_unref_frame(&s->DPB[i], ~0);
++}        ff_hevc_unref_frame(&s->DPB[i],
+diff --git a/libavcodec/hevc/filter.c b/libavcodec/hevc/filter.c
+index 56e354b486..feb1f971b3 100644
+--- a/libavcodec/hevc/filter.c
++++ b/libavcodec/hevc/filter.c
+@@ -768,4 +768,12 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *
+-        int yp_pu = (y0 - 1) >> log2_min_pu_size;
+-        int yq_pu =  y0      >> log2_min_pu_size;
+-        int yp_tu = (y0 - 1) >> log2_min_tu_size;
+-        int yq_tu =  y0      >> log2_min_tu_size;
++        
++        // Validate rpl_top pointer to prevent expired pointer dereference
++        if (!rpl_top) {
++            // Skip processing if reference list is invalid
++            for (i = 0; i < (1 << log2_trafo_size); i += 4) {
++                s->horizontal_bs[((x0 + i) + y0 * s->bs_width) >> 2] = 0;
++            }
++        } else {
++            int yp_pu = (y0 - 1) >> log2_min_pu_size;
++            int yq_pu =  y0      >> log2_min_pu_size;
++            int yp_tu = (y0 - 1) >> log2_min_tu_size;
++            int yq_tu =  y0      >> log2_min_tu_size;
+@@ -788,0 +797 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *
++        }

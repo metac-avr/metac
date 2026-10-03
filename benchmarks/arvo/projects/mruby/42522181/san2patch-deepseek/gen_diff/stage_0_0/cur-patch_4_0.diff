@@ -1,0 +1,24 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..db0e9c830 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1201 +1201,8 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      mrb_heap_page *next = page->next;
++      if (full && gc->state == MRB_GC_STATE_SWEEP && gc->marking) {
++        if (freed > 0) {
++          link_free_heap_page(gc, page);
++        }
++        page = page->next;
++      }
++      else {
++        mrb_heap_page *next = page->next;
+@@ -1203,4 +1210,5 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      }

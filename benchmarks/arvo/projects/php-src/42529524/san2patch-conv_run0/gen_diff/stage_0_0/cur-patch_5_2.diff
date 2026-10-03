@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..86339706904 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1332,9 +1331,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
+-	}
+-}
+-
+@@ -1341,0 +1333,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (__builtin_expect(!p, 0)) {
++		return 0;
++	}
+@@ -1345,9 +1339 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 1819d0b671d..b8505ce03e0 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4495 +4495,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zval_ptr_dtor_nogc(var);
++					if (var && !GC_IS_ACTIVE()) {
++						zval_ptr_dtor_nogc(var);
++					}
+@@ -4506 +4508,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zval_ptr_dtor_nogc(var);
++					if (var && !GC_IS_ACTIVE()) {
++						zval_ptr_dtor_nogc(var);
++					}

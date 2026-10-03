@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..48820844fc2 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1181 +1181,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1184,0 +1186,4 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	/* Check if object is still valid before dereferencing */
++	if ((p->u.type_info & (GC_MARKED_MASK | GC_PURGEABLE)) == (GC_MARKED | GC_PURGEABLE)) {
++		return 0; /* Object marked for deletion, skip refcount decrement */
++	}
+@@ -1193 +1197,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..1aa7d87778d 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-416: Use After Free
++		/* Ensure GC won't access this object again */
++		GC_SET_REFCOUNT(object, 0);
++		GC_TYPE_INFO(object) = IS_NULL | ((GC_TYPE_INFO(object) >> 4) << 4);
+@@ -203,0 +207 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		ptr = ((char*)object) - object->handlers->offset;

@@ -1,0 +1,23 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..aec3410b 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// Check for expired pointer - prevent heap-use-after-free
++         xmlNsPtr ns;
+@@ -4272 +4273,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	if (node->ns->prefix == NULL) {
++	    /* Handle case where prefix is NULL to avoid dereferencing invalid memory */
++	    ns = xmlSearchNs(doc, ret, NULL);
++	} else {
++	    ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	}
+@@ -4282 +4288,5 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	    if (node->ns->prefix != NULL) {
++	        ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	    } else {
++	        ns = xmlSearchNs(node->doc, node, NULL);
++	    }

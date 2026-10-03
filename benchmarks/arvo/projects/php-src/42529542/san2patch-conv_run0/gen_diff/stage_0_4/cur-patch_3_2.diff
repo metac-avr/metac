@@ -1,0 +1,45 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index feeff659bd5..0be140a8531 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -653 +653,4 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return EG(opline_before_exception)->lineno;
++			zend_op *opline_before_exception = EG(opline_before_exception);
++			if (opline_before_exception) {  /* Check if pointer is valid */
++				return opline_before_exception->lineno;
++			}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..a88fc491959 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -333,5 +332,0 @@ static zval* ZEND_FASTCALL zend_jit_symtable_lookup_w(HashTable *ht, zend_string
+-	} while (0);
+-
+-	return zend_hash_lookup(ht, str);
+-}
+-
+@@ -341,4 +336,10 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+-
+-	zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
+-	return EG(exception) == NULL;
++	
++	// Check if execution context is valid before accessing it
++	if (execute_data && EX(func)) {
++		zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++		zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++	} else {
++		// Fallback when context is invalid - use generic error message
++		zend_error(E_WARNING, "Undefined variable encountered in JIT compilation");
++	}
++	return (EG(exception) == NULL) ? 1 : 0;
+@@ -347,8 +348 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint32_t var)
+-{
+-	const zend_execute_data *execute_data = EG(current_execute_data);
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+-
+-	/* The array may be destroyed while throwing the notice.
+-	 * Temporarily increase the refcount to detect this situation. */
+-	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
++static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint32_t var)	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {

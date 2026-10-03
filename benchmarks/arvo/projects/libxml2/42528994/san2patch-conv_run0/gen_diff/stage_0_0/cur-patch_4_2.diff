@@ -1,0 +1,26 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index 9667ccb4..6a47d531 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -1084,0 +1085,7 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
++	// Pre-check buffer space for maximum UTF-8 sequence (4 bytes)
++	if (val < 0x110000) {
++	    int required_bytes = (val < 0x800) ? 2 : (val < 0x10000) ? 3 : 4;
++	    for (int i = 0; i < required_bytes; i++) {
++	        if (out[i] == '\0') return(0); // Not enough buffer space
++	    }
++	}
+diff --git a/parser.c b/parser.c
+index 14288713..e11052f8 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4962 +4962 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-            size = new_size;
++             size = new_size;
+@@ -4963,0 +4964,6 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
++	if (ql > 0 && len + ql > size) {
++	    xmlFatalErrMsgStr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
++                         "Comment too big found", NULL);
++            xmlFree (buf);
++            return;
++        }

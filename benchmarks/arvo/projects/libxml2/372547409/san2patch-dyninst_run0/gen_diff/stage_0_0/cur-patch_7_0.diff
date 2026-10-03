@@ -1,0 +1,38 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..3c6144aa 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5982,7 +5981,0 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
+-
+@@ -5990 +5983,2 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    attr = elemDecl->attributes;
++// FIXME: Crash CWE-416: Use After Free
++     attr = elemDecl->attributes;
+@@ -5991,0 +5986,4 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
++	if (attr == NULL) {
++	    attr = attr->nexth;
++	    continue;
++	}
+@@ -6220,7 +6218,9 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                value = xmlNodeListGetString(doc, attr->children, 0);
+-                if (value == NULL) {
+-                    xmlVErrMemory(ctxt);
+-                    ret = 0;
+-                } else {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
+-                    xmlFree((char *)value);
++                if (attr != NULL) {
++                    value = xmlNodeListGetString(doc, attr->children, 0);
++                    if (value == NULL) {
++                        xmlVErrMemory(ctxt);
++                        ret = 0;
++                    } else {
++                        ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                        xmlFree((char *)value);
++                    }

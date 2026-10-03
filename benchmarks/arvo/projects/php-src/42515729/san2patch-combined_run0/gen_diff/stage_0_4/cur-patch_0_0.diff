@@ -1,0 +1,28 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..911b79ab0ef 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267 +2267,2 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -2278,0 +2280,4 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
++		*last_errors = NULL; // Prevent double free by clearing the pointer immediately after assignment
++	} else {
++		timelib_error_container_dtor(*last_errors);
++		*last_errors = NULL;
+@@ -2280,3 +2284,0 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-
+-	timelib_error_container_dtor(*last_errors);
+-	*last_errors = NULL;
+@@ -2506 +2508 @@ PHP_METHOD(DateTime, __construct)
+-	zval *timezone_object = NULL;
++zval *timezone_object = NULL;
+@@ -2513,0 +2516,5 @@ PHP_METHOD(DateTime, __construct)
++	// Fixed CWE-416: Use After Free - Ensure proper error container management
++	if (DATEG(last_errors)) {
++		timelib_error_container_dtor(DATEG(last_errors));
++		DATEG(last_errors) = NULL;
++	}
+@@ -2526 +2532,0 @@ PHP_METHOD(DateTimeImmutable, __construct)
+-

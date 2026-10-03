@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..7180c87b1d1 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -1486 +1485,0 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
+@@ -1494 +1493,2 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
++// Fixed: Added bounds checking before garbage collection operations
++ 
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..1a22bdb9279 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -216 +216,2 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		}
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		}
+@@ -218,2 +219,4 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-			zend_hash_index_update(ht, i, &intern->array.elements[i]);
+-			Z_TRY_ADDREF(intern->array.elements[i]);
++			if (i < intern->array.capacity) {
++				zend_hash_index_update(ht, i, &intern->array.elements[i]);
++				Z_TRY_ADDREF(intern->array.elements[i]);
++			}

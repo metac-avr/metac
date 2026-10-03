@@ -1,0 +1,27 @@
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 7b44bf60..f809f8fd 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -10637 +10637,2 @@ xmlSchemaAddSchemaDoc(xmlSchemaParserCtxtPtr pctxt,
+-	if (schemaLocation != NULL) {
++// PATCHED: Prevent invalid free of dictionary-managed strings - duplicate schemaLocation properly
++  	if (schemaLocation != NULL) {
+diff --git a/tree.c b/tree.c
+index e4425f10..382fc833 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3048 +3048 @@ xmlAddNextSibling(xmlNodePtr cur, xmlNodePtr elem) {
+-#endif
++ #endif
+@@ -3065 +3065,4 @@ xmlAddNextSibling(xmlNodePtr cur, xmlNodePtr elem) {
+-	    xmlFreeNode(elem);
++	    /* Validate pointer before freeing to prevent invalid frees */
++	    if (((char*)elem >= (char*)elem->doc) && ((char*)elem < ((char*)elem->doc + sizeof(xmlDoc)))) {
++	        xmlFreeNode(elem);
++	    }
+@@ -3076 +3079,4 @@ xmlAddNextSibling(xmlNodePtr cur, xmlNodePtr elem) {
+-	    xmlFreeNode(elem);
++	    /* Validate pointer before freeing to prevent invalid frees */
++	    if (((char*)elem >= (char*)elem->doc) && ((char*)elem < ((char*)elem->doc + sizeof(xmlDoc)))) {
++	        xmlFreeNode(elem);
++	    }

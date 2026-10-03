@@ -1,0 +1,18 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..c467c068d9 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -664 +664,2 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-                       ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                        ((read_end - read_start) + (MAX_FRAME_HEADER_SIZE - 1));
+@@ -666 +667,8 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
+-        nb_headers   = find_new_headers(fpc, start_offset);
++        
++        /* Check that there's sufficient data available before calling find_new_headers */
++        if (start_offset + 4 <= av_fifo_size(fpc->fifo_buf)) {
++            nb_headers   = find_new_headers(fpc, start_offset);
++        } else {
++            /* Not enough data to safely call find_new_headers */
++            nb_headers = 0;
++        }

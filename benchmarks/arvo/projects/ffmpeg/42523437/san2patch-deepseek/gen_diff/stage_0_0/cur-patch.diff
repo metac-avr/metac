@@ -1,0 +1,27 @@
+diff --git a/libavformat/imf_cpl.c b/libavformat/imf_cpl.c
+index ad84a68b13..01f1132065 100644
+--- a/libavformat/imf_cpl.c
++++ b/libavformat/imf_cpl.c
+@@ -631,0 +632 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
++    size_t new_resource_count;
+@@ -673,3 +674 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
+-        || cpl->main_image_2d_track->resource_count > UINT32_MAX - resource_elem_count
+-        || (cpl->main_image_2d_track->resource_count + resource_elem_count)
+-            > INT_MAX / sizeof(FFIMFTrackFileResource))
++        || cpl->main_image_2d_track->resource_count > UINT32_MAX - resource_elem_count)
+@@ -677,4 +676,6 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
+-    tmp = av_fast_realloc(cpl->main_image_2d_track->resources,
+-                          &cpl->main_image_2d_track->resources_alloc_sz,
+-                          (cpl->main_image_2d_track->resource_count + resource_elem_count)
+-                              * sizeof(FFIMFTrackFileResource));
++    new_resource_count = cpl->main_image_2d_track->resource_count + resource_elem_count;
++    if (new_resource_count > INT_MAX / sizeof(FFIMFTrackFileResource))
++        return AVERROR(ENOMEM);
++    tmp = av_realloc_f(cpl->main_image_2d_track->resources,
++                       new_resource_count,
++                       sizeof(FFIMFTrackFileResource));
+@@ -685,0 +687 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
++    cpl->main_image_2d_track->resources_alloc_sz = new_resource_count * sizeof(FFIMFTrackFileResource);
+@@ -688 +690 @@ static int push_main_image_2d_sequence(xmlNodePtr image_sequence_elem, FFIMFCPL
+-    while (resource_elem) {
++    while (resource_elem && cpl->main_image_2d_track->resource_count < new_resource_count) {

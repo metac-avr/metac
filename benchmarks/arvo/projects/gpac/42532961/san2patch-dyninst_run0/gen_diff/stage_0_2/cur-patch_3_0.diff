@@ -1,0 +1,21 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..f4d285624 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -3321 +3321,2 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 			break;
+@@ -3323 +3324,6 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			gf_inspect_dump_opus_internal(dump, data, size, 0, ctx->crc, pctx);
++			if (size >= 8) {
++				gf_inspect_dump_opus_internal(dump, data, size, 0, ctx->crc, pctx);
++			} else {
++				// Handle insufficient data case
++				GF_LOG(GF_LOG_WARNING, GF_LOG_MEDIA, ("[OPUS] Insufficient data for packet header parsing: size=%u\n", size));
++			}
+@@ -3332,3 +3338 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-			inspect_printf(dump, " "name"=\"%u\"", val);
+-
+-			inspect_printf(dump, " <ALACSegment");
++			inspect_printf(dump, " "name"=\"%u\"", val);			inspect_printf(dump, " <ALACSegment");

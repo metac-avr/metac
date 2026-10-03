@@ -1,0 +1,149 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..498e925a7fa 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1251,2 +1251,14 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
++#ifndef ZEND_TYPES_H
++#define ZEND_TYPES_H
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#include "zend_portability.h"
++#include "zend_errors.h"
++
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1))
++# define ZEND_FASTCALL __attribute__((fastcall))
++#elif defined(_MSC_VER)
++# define ZEND_FASTCALL __fastcall
+@@ -1254,4 +1266 @@ extern ZEND_API bool zend_rc_debug;
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
++# define ZEND_FASTCALL
+@@ -1260,3 +1269,5 @@ extern ZEND_API bool zend_rc_debug;
+-static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p) {
+-	return p->refcount;
+-}
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
++# define ZEND_HOT __attribute__((hot))
++#else
++# define ZEND_HOT
++#endif
+@@ -1264,4 +1275,5 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc) {
+-	p->refcount = rc;
+-	return p->refcount;
+-}
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
++# define ZEND_COLD __attribute__((cold))
++#else
++# define ZEND_COLD
++#endif
+@@ -1269,4 +1281,35 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	ZEND_RC_MOD_CHECK(p);
+-	return ++(p->refcount);
+-}
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
++# define ZEND_OPT_SIZE __attribute__((optimize("Os")))
++#else
++# define ZEND_OPT_SIZE
++#endif
++
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
++# define ZEND_OPT_SPEED __attribute__((optimize("O3")))
++#else
++# define ZEND_OPT_SPEED
++#endif
++
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
++# define ZEND_HOT __attribute__((hot))
++#else
++# define ZEND_HOT
++#endif
++
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
++# define ZEND_COLD __attribute__((cold))
++#else
++# define ZEND_COLD
++#endif
++
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
++# define ZEND_OPT_SIZE __attribute__((optimize("Os")))
++#else
++# define ZEND_OPT_SIZE
++#endif
++
++#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
++# define ZEND_OPT_SPEED __attribute__((optimize("O3")))
++#else
++# define ZEND_OPT_SPEED
++#endif}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..a85466f34bf 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -164,3 +164,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+-ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
+-{
+-	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
++ZEND_API void static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p) {
++	return p ? p->refcount : 0;
++}
+@@ -168,4 +168,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	/* GC might have released this object already. */
+-	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
+-		return;
+-	}
++static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc) {
++	if (p) p->refcount = rc;
++	return p ? p->refcount : 0;
++}
+@@ -173,16 +173,5 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	/*	Make sure we hold a reference count during the destructor call
+-		otherwise, when the destructor ends the storage might be freed
+-		when the refcount reaches 0 a second time
+-	 */
+-	if (!(OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
+-		GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
+-
+-		if (object->handlers->dtor_obj != zend_objects_destroy_object
+-				|| object->ce->destructor) {
+-			zend_fiber_switch_block();
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->dtor_obj(object);
+-			GC_DELREF(object);
+-			zend_fiber_switch_unblock();
+-		}
+-	}
++static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	ZEND_RC_MOD_CHECK(p);
++	if (p) return ++(p->refcount);
++	return 0;
++}
+@@ -190,17 +179,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	if (GC_REFCOUNT(object) == 0) {
+-		uint32_t handle = object->handle;
+-		void *ptr;
+-
+-		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+-		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+-		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
+-		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
+-		}
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
+-	}
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p) return --(p->refcount);
++	return 0;

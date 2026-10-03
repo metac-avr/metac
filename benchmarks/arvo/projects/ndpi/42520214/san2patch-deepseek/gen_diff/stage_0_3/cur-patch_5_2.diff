@@ -1,0 +1,43 @@
+diff --git a/src/lib/protocols/bittorrent.c b/src/lib/protocols/bittorrent.c
+index cdb62e8db..447e10ce9 100644
+--- a/src/lib/protocols/bittorrent.c
++++ b/src/lib/protocols/bittorrent.c
+@@ -90 +90,25 @@ static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndp
+-	bt_hash = (const char*)&packet->payload[28];
++static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndpi_struct,
++					    struct ndpi_flow_struct *flow,
++					    int bt_offset) {
++  struct ndpi_packet_struct *packet = &ndpi_struct->packet;
++  const char *bt_magic = "BitTorrent protocol";
++  const char *bt_hash = NULL;
++
++  if(bt_offset >= 0) {
++    if((bt_offset + 19) < packet->payload_packet_len &&
++       memcmp(&packet->payload[bt_offset], bt_magic, 19) == 0)
++      bt_hash = (const char*)&packet->payload[bt_offset + 19];
++  } else {
++    u_int16_t i;
++
++    for(i = 0; (i + 19) < packet->payload_packet_len; i++) {
++      if(memcmp(&packet->payload[i], bt_magic, 19) == 0) {
++	bt_hash = (const char*)&packet->payload[i + 19];
++	break;
++      }
++    }
++
++    if(bt_hash == NULL && packet->payload_packet_len >= 28) {
++      if(memcmp(&packet->payload[0], "\x13", 1) == 0 &&
++	 memcmp(&packet->payload[1], bt_magic, 19) == 0)
++        bt_hash = (const char*)&packet->payload[28];
+@@ -94,5 +118,6 @@ static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndp
+-  } else
+-    bt_hash = (const char*)&packet->payload[28];
+-  
+-  if(bt_hash && (packet->payload_packet_len >= (20 + (bt_hash-(const char*)packet->payload))))
+-    memcpy(flow->protos.bittorrent.hash, bt_hash, 20);
++  }
++
++  if(bt_hash && (packet->payload_packet_len >= (20 + (bt_hash-(const char*)packet->payload)))) {
++    if((bt_hash + 20) <= ((const char*)packet->payload + packet->payload_packet_len))
++      memcpy(flow->protos.bittorrent.hash, bt_hash, 20);
++  }

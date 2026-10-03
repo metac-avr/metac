@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..92575a6c987 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1368,9 +1368,2 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++static zend_always_inline uint32_t zval_delref_p(zval* pz)
++{
+@@ -1378,12 +1371,5 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	return GC_DELREF(Z_COUNTED_P(pz));
+-}
+-
+-#if SIZEOF_SIZE_T == 4
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++	if (EXPECTED(pz != NULL) && EXPECTED(Z_COUNTED_P(pz) != NULL)) {
++		return GC_DELREF(Z_COUNTED_P(pz));
++	}
++	return 0;
++}#elif SIZEOF_SIZE_T == 8
+diff --git a/Zend/zend_exceptions.c b/Zend/zend_exceptions.c
+index 7dcf2ad65b7..1c1d0371212 100644
+--- a/Zend/zend_exceptions.c
++++ b/Zend/zend_exceptions.c
+@@ -723 +723,4 @@ ZEND_METHOD(Exception, __toString)
+-			break;
++			// FIXME: Crash CWE-825: Expired Pointer Dereference
++			if (exception != NULL && Z_PTR_P(exception) != NULL) {
++				break;
++			}
+@@ -730,2 +733 @@ ZEND_METHOD(Exception, __toString)
+-	while (exception && Z_TYPE_P(exception) == IS_OBJECT && (base_ce = i_get_exception_base(Z_OBJ_P(exception))) && instanceof_function(Z_OBJCE_P(exception), base_ce)) {
+-		if (Z_IS_RECURSIVE_P(exception)) {
++	while (exception && Z_TYPE_P(exception) == IS_OBJECT && (base_ce = i_get_exception_base(Z_OBJ_P(exception))) && instanceof_function(Z_OBJCE_P(exception), base_ce)) {		if (Z_IS_RECURSIVE_P(exception)) {

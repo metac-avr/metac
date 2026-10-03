@@ -1,0 +1,52 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..9619ea0bb 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -148,0 +150,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  /* Validate pointer before use */
++  if (t->ptr == NULL) return 0;
++  
+@@ -159,2 +163,6 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-        *pp = vals[pos];
+-        return key;
++        /* Check if vals[pos] is valid before assignment */
++        if (pos >= 0 && pos < t->alloc) {
++          *pp = vals[pos];
++          return key;
++        }
++        return 0;
+@@ -166,0 +175 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (pos < 0 || pos >= t->alloc) return 0; /* Boundary check */
+@@ -169 +178,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      *pp = vals[pos];
++      /* Check if vals[pos] is valid before assignment */
++      if (pos >= 0 && pos < t->alloc) {
++        *pp = vals[pos];
+@@ -171,3 +182,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      if (pos < 0x100) {
+-        mt_cache[cpos] = pos;
+-      }
++        if (pos < 0x100) {
++          mt_cache[cpos] = pos;
++        }
+@@ -175 +186,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      return key;
++        return key;
++      }
++      return 0;
+diff --git a/src/vm.c b/src/vm.c
+index 6f6b9b001..24bb7d399 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1273 +1273,6 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-  stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++  
++  // Validate pointer before use to prevent expired pointer dereference
++  if (c->ci && c->ci->stack) {
++    stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++  }
++  

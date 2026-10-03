@@ -1,0 +1,24 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..9b63652859b 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -757,0 +758,8 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
++	if (UNEXPECTED(ht == NULL || (ht->gc.u.type_info & GC_DTOR_DONE))) {
++		return NULL;
++	}
++	zend_refcounted_t *ref = &ht->gc;
++	if (UNEXPECTED(GC_IS_RECURSIVE(ref))) {
++		return NULL;
++	}
++	GC_PROTECT_RECURSION(ref);
+@@ -759 +767,2 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -763,5 +772 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
+-{
+-	zend_long offset;
++}	zend_long offset;

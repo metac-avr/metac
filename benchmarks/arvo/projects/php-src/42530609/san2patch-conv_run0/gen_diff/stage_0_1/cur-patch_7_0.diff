@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..884a12883b3 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
++[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -56,0 +57,16 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	/* Prevent use-after-free by clearing object references from CVs before destruction */
++	if (EG(current_execute_data)) {
++		zend_execute_data *ex = EG(current_execute_data);
++		while (ex) {
++			if (ex->CVs) {
++				uint32_t i;
++				for (i = 0; i < ZEND_CALL_NUM_ARGS(ex); i++) {
++					zval *cv = ZEND_CALL_VAR_NUM(ex, ex->func->common.num_args + i);
++					if (cv && Z_TYPE_P(cv) == IS_OBJECT && Z_OBJ_P(cv) == (zend_object*)p) {
++						ZVAL_UNDEF(cv);
++					}
++				}
++			}
++			ex = ex->prev_execute_data;
++		}
++	}
+@@ -67,2 +83 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
+-}
++	efree(str);}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..ee891981e37 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,10 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++// Nullify object references in CVs before freeing to prevent dangling pointers
++		if (EG(current_execute_data) && EG(current_execute_data)->CVs) {
++			zval **cv = EG(current_execute_data)->CVs;
++			while (*cv) {
++				if (Z_OBJ_P(*cv) == object) {
++					*cv = NULL;
++				}
++				cv++;
++			}
++		}

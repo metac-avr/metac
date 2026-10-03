@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..3b4b812fdcd 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++		/* Prevent use-after-free by invalidating object before freeing */
++		zend_object_handlers *handlers = object->handlers;
++		ptr = ((char*)object) - handlers->offset;
+@@ -203,0 +207 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		object = NULL; /* Invalidate object pointer */
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index d504b0f0f57..e9d3480b4fc 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -44 +44 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref != NULL && !GC_DELREF(ref)) {
+@@ -46 +46 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (ref != NULL) {

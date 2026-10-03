@@ -1,0 +1,36 @@
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..5568eae53 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -920,0 +921 @@ mrb_str_resize(mrb_state *mrb, mrb_value str, mrb_int len)
++
+@@ -921,0 +923,29 @@ mrb_str_resize(mrb_state *mrb, mrb_value str, mrb_int len)
++  slen = RSTR_LEN(s);
++  if (len != slen) {
++    if (slen < len) {
++      if (len > RSTR_CAPA(s)) {
++        str_resize_forbid_null_nul(mrb, s, len);
++      }
++    }
++    else {
++      int n = RSTR_EXT_LEN(s);
++      if (n > 0 && len >= RSTR_EMBED_LEN(s)) {
++        mrb_int new_capa = RSTR_EMBEDDABLE_P(s) ? RSTR_EMBED_LEN(s) : 0;
++        if (new_capa == RSTR_EMBED_LEN(s)) {
++          if (len == new_capa) {
++            new_capa++;
++          }
++          if (new_capa > RSTR_CAPA(s)) {
++            str_shrink(mrb, s, new_capa);
++          }
++        }
++      }
++      else if (RSTR_EMBEDDABLE_P(s)) {
++        str_shrink(mrb, s, len);
++      }
++    }
++    RSTR_SET_LEN(s, len);
++    RSTR_CHANGE_TYPE(s, STR_SHARED);
++  }
++  return str;
++}  mrb_str_modify(mrb, s);

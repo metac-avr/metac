@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..28959491758 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	// Add validation to prevent use-after-free
++	if (p && GC_TYPE(p) <= IS_CONSTANT_AST) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index dce0f32e835..f6688ee4228 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3500 +3500,10 @@ static zend_always_inline void i_free_compiled_variables(zend_execute_data *exec
+-		i_zval_ptr_dtor(cv);
++		if (Z_REFCOUNTED_P(cv) && Z_COUNTED_P(cv)) {
++			if (GC_FLAGS(Z_COUNTED_P(cv)) & GC_IMMUTABLE) {
++				cv++;
++				count--;
++				continue;
++			}
++			i_zval_ptr_dtor(cv);
++		} else {
++			i_zval_ptr_dtor(cv);
++		}

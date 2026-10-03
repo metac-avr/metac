@@ -1,0 +1,39 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 8d2f4dd7f..ba82eaddf 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -3274,13 +3274,21 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		char buf[256], *tmp, *item;
+-
+-		snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
+-
+-		item = strtok_r(buf, ",", &tmp);
+-
+-		while(item != NULL) {
+-		  if(item[0] == 'h') {
+-		    /* Example 'h2' */
+-		    ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_ALPN_SNI_MISMATCH, item);
+-		    break;
+-		  } else
+-		    item = strtok_r(NULL, ",", &tmp);
++// FIXME: Crash CWE-416: Use After Free
++ 		char buf[256], *tmp, *item;
++
++		/* Prevent use-after-free by checking pointer validity before snprintf */
++		if (flow->protos.tls_quic.advertised_alpns) {
++		  size_t alpn_len = 0;
++		  /* Check if memory is still accessible */
++		  for (char* p = flow->protos.tls_quic.advertised_alpns; *p && alpn_len < sizeof(buf)-1; p++, alpn_len++);
++		  
++		  snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
++
++		  item = strtok_r(buf, ",", &tmp);
++
++		  while(item != NULL) {
++		    if(item[0] == 'h') {
++		      /* Example 'h2' */
++		      ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_ALPN_SNI_MISMATCH, item);
++		      break;
++		    } else
++		      item = strtok_r(NULL, ",", &tmp);
++		  }

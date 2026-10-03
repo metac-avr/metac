@@ -1,0 +1,26 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..d00ba7c56 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1237 +1237,7 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      return incremental_marking_phase(mrb, gc, limit);
++      size_t marked = incremental_marking_phase(mrb, gc, limit);
++      if (gc->gray_list == NULL) {
++        final_marking_phase(mrb, gc);
++        prepare_incremental_sweep(mrb, gc);
++        gc->state = MRB_GC_STATE_SWEEP;
++      }
++      return marked;
+@@ -1241,0 +1248 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      gc->state = MRB_GC_STATE_SWEEP;
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..1ba23f880 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -238 +238,2 @@ static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+@@ -239,0 +241,2 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++  if (!mrb_basic_ptr(v)) return 0;
++  if (mrb_obj_dead_p(mrb, mrb_basic_ptr(v))) return 0;

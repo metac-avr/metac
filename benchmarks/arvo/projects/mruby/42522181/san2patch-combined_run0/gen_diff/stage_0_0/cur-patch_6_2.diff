@@ -1,0 +1,17 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..093fac8de 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1095,0 +1096 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++    if (obj == NULL) break;  // Check for expired pointer before use
+@@ -1097,2 +1098,4 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj->gcnext != NULL || obj->tt != MRB_TT_FREE) {  // Validate object before marking
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    }
+@@ -1202,0 +1206,3 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Clear page pointers before freeing to prevent use-after-free */
++      page->next = NULL;
++      page->free_next = NULL;

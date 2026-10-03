@@ -1,0 +1,37 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..5f7f5271 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2345 +2345,2 @@ xmlSAX2StartElementNs(void *ctx,
+-		}
++// FIXME: Crash CWE-416: Use After Free
++ 		}
+@@ -2352,0 +2354,6 @@ xmlSAX2StartElementNs(void *ctx,
++            /* Add validation check to prevent use-after-free on namespace pointers */
++            if (attr != NULL && !xmlValidateAttributeNamespace(attr)) {
++                xmlFreeProp(attr);
++                continue;
++            }
++
+@@ -2362,0 +2370 @@ xmlSAX2StartElementNs(void *ctx,
++
+diff --git a/valid.c b/valid.c
+index e11d2c95..cd212271 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
+@@ -2376 +2376 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);
+@@ -2385,2 +2385,7 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-        if ((attrDecl != NULL) && (attrDecl->atype == XML_ATTRIBUTE_ID))
+-	    return(1);
++        /* Additional safety check for attribute declaration */
++        if (attrDecl != NULL) {
++            /* Verify attrDecl points to valid memory before accessing */
++            if (attrDecl->atype == XML_ATTRIBUTE_ID)
++	        return(1);
++        }
++        return(0);

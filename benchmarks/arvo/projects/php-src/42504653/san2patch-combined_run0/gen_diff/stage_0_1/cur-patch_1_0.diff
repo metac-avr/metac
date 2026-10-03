@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..a97ff34ff4a 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,3 +1208,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+@@ -1217 +1214,2 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+@@ -1219 +1217,5 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	return GC_DELREF(Z_COUNTED_P(pz));
++	zval* checked_pz = pz;
++	if (UNEXPECTED(checked_pz == NULL)) return 0;
++	zend_refcounted* rc = Z_COUNTED_P(checked_pz);
++	if (UNEXPECTED(rc == NULL)) return 0;
++	return GC_DELREF(rc);
+@@ -1224 +1226 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	do {												\
++	do {								\
+@@ -1226,3 +1228,3 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
++		Z_COUNTED_P(z) = gc;						\
++		z->value.ww.w2 = _w2;						\
++		Z_TYPE_INFO_P(z) = t;						\
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..3ab86d80a3b 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++		/* Add safety check to prevent use-after-free during JIT execution */
+@@ -862,0 +864,7 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Ensure pointers are valid before proceeding to prevent memory corruption */
++			if ((void*)execute_data < (void*)0x1000 || (void*)prev_execute_data < (void*)0x1000) {
++				/* Invalid pointer detected, halt trace execution */
++				stop = ZEND_JIT_TRACE_STOP_ERROR;
++				halt = ZEND_JIT_TRACE_HALT;
++				break;
++			}

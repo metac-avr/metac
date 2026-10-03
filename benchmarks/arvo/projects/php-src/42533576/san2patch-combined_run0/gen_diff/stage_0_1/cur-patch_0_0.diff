@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..42b4508d79c 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -300 +300 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-
++		
+@@ -302 +302,3 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-			zval_ptr_dtor_nogc(p);
++			if (p && !Z_ISUNDEF_P(p)) {
++				zval_ptr_dtor_nogc(p);
++			}
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index c07fdfe7acf..1519ba87e0b 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -33 +33,2 @@ ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
++// FIXME: Crash CWE-416: Use After Free
++ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+@@ -35 +36 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {

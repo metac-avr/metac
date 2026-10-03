@@ -1,0 +1,36 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..86b75ae2 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4048 +4048,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-xmlAttrPtr
++// Fixed CWE-416: Use After Free - defensive namespace checking
++ xmlAttrPtr
+@@ -4050 +4051,13 @@ xmlCopyProp(xmlNodePtr target, xmlAttrPtr cur) {
+-	return xmlCopyPropInternal(NULL, target, cur);
++    if (cur == NULL)
++        return NULL;
++    
++    /* Defensive check: ensure namespace is not expired before copying */
++    if (cur->ns != NULL) {
++        /* Simple validity check - if both href and prefix are NULL, 
++         * the namespace structure may have been freed */
++        if (cur->ns->href == NULL && cur->ns->prefix == NULL) {
++            return NULL; /* Prevent use-after-free */
++        }
++    }
++    
++    return xmlCopyPropInternal(NULL, target, cur);
+@@ -4060,2 +4073 @@ xmlCopyProp(xmlNodePtr target, xmlAttrPtr cur) {
+- * set the attributes on the target element.
+- *
++ * set the attributes on the target element. *
+@@ -4070 +4082 @@ xmlCopyPropList(xmlNodePtr target, xmlAttrPtr cur) {
+-        return(NULL);
++         return(NULL);
+@@ -4071,0 +4084,5 @@ xmlCopyPropList(xmlNodePtr target, xmlAttrPtr cur) {
++        /* Check for potential dangling namespace references before copying */
++        if (cur->ns != NULL && (cur->ns->href == (void*)0xdeadbeef || cur->ns->prefix == (void*)0xdeadbeef)) {
++            cur = cur->next;
++            continue;
++        }

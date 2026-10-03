@@ -1,0 +1,20 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..ba820e882 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -698 +698,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-416: Use After Free
++   case MRB_TT_OBJECT:
+@@ -700 +701,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (is_gc_alive(mrb, gc, obj)) {
++      mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    }
+@@ -707,2 +710,4 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (is_gc_alive(mrb, gc, obj)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++        mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      }

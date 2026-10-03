@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..1d551d2c702 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -58975,5 +58975,8 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
+-	i_init_code_execute_data(execute_data, op_array, return_value);
+-	ZEND_OBSERVER_FCALL_BEGIN(execute_data);
+-	zend_execute_ex(execute_data);
+-	/* Observer end handlers are called from ZEND_RETURN */
+-	zend_vm_stack_free_call_frame(execute_data);
++	/* Validate memory state before initialization */
++	if (execute_data != NULL) {
++		i_init_code_execute_data(execute_data, op_array, return_value);
++		ZEND_OBSERVER_FCALL_BEGIN(execute_data);
++		zend_execute_ex(execute_data);
++		/* Observer end handlers are called from ZEND_RETURN */
++		zend_vm_stack_free_call_frame(execute_data);
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..3f9efd4d705 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1654 +1654,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_deprecated_function(const zend_functi
+-ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++// FIXME: Crash CWE-825: Expired Pointer Dereference - Fixed by nullifying freed pointers
++ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
+@@ -1656,0 +1658,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++	// Clear any dangling pointers that might reference freed memory
++	zend_hash_clean_unused_tags();
+@@ -1666,2 +1669 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
+-	/* Illegal offset assignment */
+-	if (UNEXPECTED(EG(exception) != NULL)) {
++	/* Illegal offset assignment */	if (UNEXPECTED(EG(exception) != NULL)) {

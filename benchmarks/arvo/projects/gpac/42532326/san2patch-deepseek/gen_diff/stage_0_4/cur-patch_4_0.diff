@@ -1,0 +1,31 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..76a0ff78a 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -801,5 +800,0 @@ GF_Err oggdmx_process(GF_Filter *filter)
+-				case GF_CODECID_THEORA:
+-					add_page = GF_TRUE;
+-					break;
+-				}
+-
+@@ -809 +804,2 @@ GF_Err oggdmx_process(GF_Filter *filter)
+-					gf_bs_write_data(st->dsi_bs, (char *) oggpacket.packet, oggpacket.bytes);
++// FIXME: Crash CWE-416: Use After Free
++ 					gf_bs_write_data(st->dsi_bs, (char *) oggpacket.packet, oggpacket.bytes);
+@@ -814,0 +811,3 @@ GF_Err oggdmx_process(GF_Filter *filter)
++					if (st->stream) {
++						st->stream = NULL;
++					}
+@@ -903,0 +903,9 @@ GF_Err oggdmx_process(GF_Filter *filter)
++	if (ctx->streams) {
++		u32 i, count = gf_list_count(ctx->streams);
++		for (i = 0; i < count; i++) {
++			GF_OGGStream *st = gf_list_get(ctx->streams, i);
++			if (st && st->stream_state) {
++				ogg_stream_clear(&st->stream_state);
++				st->stream_state = NULL;
++			}
++		}
+@@ -904,0 +913,2 @@ GF_Err oggdmx_process(GF_Filter *filter)
++// FIXME: Crash CWE-416: Use After Free
++ 	}

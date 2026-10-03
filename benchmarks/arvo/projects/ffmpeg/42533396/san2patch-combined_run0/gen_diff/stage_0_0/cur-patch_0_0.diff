@@ -1,0 +1,30 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..ca17d20758 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -405,2 +405,2 @@ int av_channel_layout_custom_init(AVChannelLayout *channel_layout, int nb_channe
+-    if (nb_channels <= 0)
+-        return AVERROR(EINVAL);
++    if (nb_channels <= 0 || nb_channels > 64)
++         return AVERROR(EINVAL);
+diff --git a/libavcodec/codec_par.c b/libavcodec/codec_par.c
+index abaac63841..e057b9980e 100644
+--- a/libavcodec/codec_par.c
++++ b/libavcodec/codec_par.c
+@@ -271 +271 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        } else {
++         } else {
+@@ -273,3 +273,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
+-        if (ret < 0)
+-            return ret;
++        // Check for valid channel layout before copying to prevent buffer overflow
++        if (par->ch_layout.nb_channels > 0 && par->ch_layout.nb_channels <= 64) {
++            ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++            if (ret < 0)
++                return ret;
++        } else {
++            // Handle invalid channel layout by setting default values
++            codec->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
++            codec->ch_layout.nb_channels = par->ch_layout.nb_channels > 0 ? par->ch_layout.nb_channels : 0;
++        }

@@ -1,0 +1,20 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..729b4399d 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -162 +162,2 @@ int_div(mrb_state *mrb, mrb_value x)
+-#ifdef MRB_USE_BIGINT
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ #ifdef MRB_USE_BIGINT
+@@ -179 +180,10 @@ int_div(mrb_state *mrb, mrb_value x)
+-    return mrb_float_value(mrb, mrb_div_float((mrb_float)a, mrb_as_float(mrb, y)));
++    /* Validate inputs before float division to prevent overflow */
++    mrb_float fa = (mrb_float)a;
++    mrb_float fy = mrb_as_float(mrb, y);
++    if (!isfinite(fa) || !isfinite(fy)) {
++      mrb_raise(mrb, E_FLOATDOMAIN_ERROR, "invalid float values");
++    }
++    if (fy == 0.0) {
++      mrb_raise(mrb, E_FLOATDOMAIN_ERROR, "divided by zero");
++    }
++    return mrb_float_value(mrb, mrb_div_float(fa, fy));

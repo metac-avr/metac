@@ -1,0 +1,34 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 69eaeb052..ce2ebbcae 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -199,3 +199,7 @@ void ndpi_twalk(const void *vroot, void (*action)(const void *, ndpi_VISIT, int,
+-
+-  if(root != (ndpi_node *)0 && action != (void (*)(const void *, ndpi_VISIT, int, void*))0)
+-    ndpi_trecurse(root, action, 0, user_data);
++ 
++  if(root != (ndpi_node *)0 && action != (void (*)(const void *, ndpi_VISIT, int, void*))0) {
++    /* Defensive check to prevent accessing invalid memory */
++    if(memcmp(&root, "\0\0\0\0\0\0\0\0", sizeof(void*)) != 0) {
++      ndpi_trecurse(root, action, 0, user_data);
++    }
++  }
+diff --git a/fuzz/fuzz_ndpi_reader.c b/fuzz/fuzz_ndpi_reader.c
+index 5f29664be..9fd825d4b 100644
+--- a/fuzz/fuzz_ndpi_reader.c
++++ b/fuzz/fuzz_ndpi_reader.c
+@@ -183,4 +183,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-  /* Free flow trees */
+-  for(i = 0; i < workflow->prefs.num_roots; i++) {
+-    ndpi_twalk(workflow->ndpi_flows_root[i], node_cleanup_walker, NULL);
+-    ndpi_tdestroy(workflow->ndpi_flows_root[i], ndpi_flow_info_freer);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   /* Free flow trees */
++  if(workflow->ndpi_flows_root) {
++    for(i = 0; i < workflow->prefs.num_roots; i++) {
++      ndpi_twalk(workflow->ndpi_flows_root[i], node_cleanup_walker, NULL);
++      ndpi_tdestroy(workflow->ndpi_flows_root[i], ndpi_flow_info_freer);
++    }
++    ndpi_free(workflow->ndpi_flows_root);
+@@ -188 +191,0 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-  ndpi_free(workflow->ndpi_flows_root);

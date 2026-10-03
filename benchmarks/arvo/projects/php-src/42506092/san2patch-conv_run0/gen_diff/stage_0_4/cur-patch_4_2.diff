@@ -1,0 +1,48 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..cead5584c86 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756,10 +756 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
+-	}
+-	return zend_hash_lookup(ht, offset_key);
+-
+-num_index:
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
++static zend_never_inline zval *zend_check_string_offset(zval *dim/*, int type*/)
+@@ -767,0 +759,31 @@ static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int typ
++	zval *retval;
++
++	retval = dim; /* default return value */
++
++try_again:
++	switch(Z_TYPE_P(dim)) {
++		case IS_LONG:
++			offset = Z_LVAL_P(dim);
++			break;
++		case IS_DOUBLE:
++			offset = (zend_long)Z_DVAL_P(dim);
++			break;
++		case IS_STRING:
++			offset = ZEND_STRTOL(Z_STRVAL_P(dim), NULL, 10);
++			break;
++		case IS_FALSE:
++			offset = 0;
++			break;
++		case IS_TRUE:
++			offset = 1;
++			break;
++		case IS_RESOURCE:
++			goto try_again;
++		default:
++			dim = zval_get_tmp_zval_ptr(dim, /* is_strict */ false);
++			goto try_again;
++	}
++	/* Convert the offset to a zval and return it */
++	ZVAL_LONG(retval, offset);
++	return retval;
++}	zend_long offset;

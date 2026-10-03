@@ -1,0 +1,12 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 2c4324f14..c7e7d4e75 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -3641 +3641,6 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-				gf_inspect_dump_nalu_internal(dump, data, nal_size, pctx->has_svcc ? 1 : 0, pctx->hevc_state, pctx->avc_state, pctx->vvc_state, pctx->nalu_size_length, ctx->crc, pctx->is_cenc_protected, ctx->analyze, pctx);
++				// Ensure we don't read beyond buffer boundaries
++				if (nal_size > 0 && size >= pctx->nalu_size_length + nal_size) {
++					gf_inspect_dump_nalu_internal(dump, data, nal_size, pctx->has_svcc ? 1 : 0, pctx->hevc_state, pctx->avc_state, pctx->vvc_state, pctx->nalu_size_length, ctx->crc, pctx->is_cenc_protected, ctx->analyze, pctx);
++				} else if (nal_size > 0) {
++					inspect_printf(dump, "   <!-- NALU data extends beyond buffer boundaries -->\n");
++				}

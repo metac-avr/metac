@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..c497a901c9d 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45992,0 +45993,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++			ZVAL_DEREF(var_ptr);
++			if (Z_TYPE_P(var_ptr) == IS_ARRAY || Z_TYPE_P(var_ptr) == IS_STRING) {
++				SEPARATE_ZVAL_NOREF(var_ptr);
++			}
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..14b976c6e18 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,5 +1894,5 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}
+@@ -1900 +1900,9 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			ZVAL_STR(&op1_copy, zval_get_string_func(op1));
++			/* Ensure op1 is safely copied before string conversion */
++			zval safe_op1;
++			if (Z_ISREF_P(op1)) {
++				ZVAL_COPY(&safe_op1, Z_REFVAL_P(op1));
++			} else {
++				ZVAL_COPY(&safe_op1, op1);
++			}
++			ZVAL_STR(&op1_copy, zval_get_string_func(&safe_op1));
++			zval_ptr_dtor(&safe_op1);

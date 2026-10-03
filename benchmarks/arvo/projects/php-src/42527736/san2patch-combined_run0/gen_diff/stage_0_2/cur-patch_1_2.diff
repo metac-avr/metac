@@ -1,0 +1,57 @@
+diff --git a/ext/standard/string.c b/ext/standard/string.c
+index 70743f4db70..2f3fb90eb8a 100644
+--- a/ext/standard/string.c
++++ b/ext/standard/string.c
+@@ -5137 +5137 @@ PHP_FUNCTION(str_getcsv)
+-	ZEND_PARSE_PARAMETERS_END();
++	ZEND_PARSE_PARAMETERS_END_EX({return;});
+@@ -5139,4 +5139,10 @@ PHP_FUNCTION(str_getcsv)
+-	delim = delim_len ? delim_str[0] : delim;
+-	enc = enc_len ? enc_str[0] : enc;
+-	if (esc_str != NULL) {
+-		esc = esc_len ? (unsigned char) esc_str[0] : PHP_CSV_NO_ESCAPE;
++	if (delim_len > 0) {
++		delim = delim_str[0];
++	}
++	if (enc_len > 0) {
++		enc = enc_str[0];
++	}
++	if (esc_len > 0) {
++		esc = (unsigned char) esc_str[0];
++	} else if (esc_str != NULL) {
++		esc = -1; /* PHP_CSV_NO_ESCAPE */
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..b1adf281355 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2140,4 +2140,7 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-						}
+-						break;
+-					default:
+-						break;
++		quit_loop_3:
++			/* Check for potential integer underflow before memcpy */
++			if (bptr >= hunk_begin) {
++				size_t copy_len = bptr - hunk_begin;
++				if (copy_len > 0) {
++					memcpy(tptr, hunk_begin, copy_len);
++					tptr += copy_len;
+@@ -2145,2 +2147,0 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-				bptr += inc_len;
+-				inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
+@@ -2148,4 +2148,0 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-
+-		quit_loop_3:
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-			tptr += (bptr - hunk_begin);
+@@ -2153,9 +2150 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			comp_end = tptr;
+-		} else {
+-			/* 2B. Handle non-enclosure field */
+-
+-			hunk_begin = bptr;
+-
+-			for (;;) {
+-				switch (inc_len) {
+-					case 0:
++			comp_end = tptr;					case 0:

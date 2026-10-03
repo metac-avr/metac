@@ -1,0 +1,47 @@
+diff --git a/tree.c b/tree.c
+index e2357131..4a7fdec0 100644
+--- a/tree.c
++++ b/tree.c
+@@ -5530 +5530 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-        return(1);
++         return(1);
+@@ -5539,0 +5540,2 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
++                    /* Validate namespace pointer before accessing */
++                    if (namespaces[i] == NULL) continue;
+@@ -5568,2 +5570,5 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-                    namespaces[nbns++] = cur;
+-                    namespaces[nbns] = NULL;
++                    /* Validate cur before adding to namespaces */
++                    if (cur != NULL) {
++                        namespaces[nbns++] = cur;
++                        namespaces[nbns] = NULL;
++                    }
+@@ -5575,0 +5581,4 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
++        /* Prevent circular reference traversal */
++        if (node != NULL && node->type != XML_ELEMENT_NODE && 
++            node->type != XML_DOCUMENT_NODE && node->type != XML_HTML_DOCUMENT_NODE)
++            break;
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..c688c766 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1069,4 +1069,8 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem->name != NULL)
+-	xmlFree((xmlChar *) elem->name);
+-    if (elem->prefix != NULL)
+-	xmlFree((xmlChar *) elem->prefix);
++    if (elem->name != NULL) {
++        xmlFree((xmlChar *) elem->name);
++        elem->name = NULL;  /* Prevent dangling pointer */
++    }
++    if (elem->prefix != NULL) {
++        xmlFree((xmlChar *) elem->prefix);
++        elem->prefix = NULL;  /* Prevent dangling pointer */
++    }
+@@ -1074,2 +1078,4 @@ xmlFreeElement(xmlElementPtr elem) {
+-    if (elem->contModel != NULL)
+-	xmlRegFreeRegexp(elem->contModel);
++    if (elem->contModel != NULL) {
++        xmlRegFreeRegexp(elem->contModel);
++        elem->contModel = NULL;  /* Prevent dangling pointer */
++    }

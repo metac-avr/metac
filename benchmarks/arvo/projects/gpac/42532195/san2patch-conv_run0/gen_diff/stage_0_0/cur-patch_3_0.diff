@@ -1,0 +1,15 @@
+diff --git a/src/filters/in_rtp.c b/src/filters/in_rtp.c
+index 3d8e2933a..52f1b7800 100644
+--- a/src/filters/in_rtp.c
++++ b/src/filters/in_rtp.c
+@@ -840 +840,2 @@ static GF_Err rtpin_initialize(GF_Filter *filter)
+-		return GF_OK;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		return GF_OK;
+@@ -846 +847,5 @@ static GF_Err rtpin_initialize(GF_Filter *filter)
+-		rtpin_satip_get_server_ip(ctx->src, ctx->session->satip_server);
++		// Use strncpy with explicit bounds checking to prevent buffer overflow
++		char satip_url[GF_MAX_PATH];
++		strncpy(satip_url, ctx->src, GF_MAX_PATH - 1);
++		satip_url[GF_MAX_PATH - 1] = '\0';
++		rtpin_satip_get_server_ip(satip_url, ctx->session->satip_server);

@@ -1,0 +1,25 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..99c85e882 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515 +515,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++      if (argc > 0) {
++        if (argc > (mrb->c->stend - (ci->stack + 1))) {
++          mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++        }
+@@ -516,0 +520,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      }
++      if (argc + 1 > (mrb->c->stend - ci->stack)) {
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++      }
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..0f78d25f1 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -790,0 +791,5 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  
++  /* Ensure sufficient stack space to prevent out-of-bounds write */
++  if ((char*)(mrb->c->ci + 2) > (char*)mrb->c->stend) {
++    mrb_stack_extend(mrb, 3);
++  }

@@ -1,0 +1,39 @@
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 7b44bf60..b518907d 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -21453,5 +21453,5 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-	ctxt->constructor = xmlSchemaConstructionCtxtCreate(ctxt->dict);
+-	if (ctxt->constructor == NULL)
+-	    return(NULL);
+-	/* Take ownership of the constructor to be able to free it. */
+-	ctxt->ownsConstructor = 1;
++    ctxt->constructor = xmlSchemaConstructionCtxtCreate(ctxt->dict);
++    if (ctxt->constructor == NULL)
++	return(NULL);
++    /* Take ownership of the constructor to be able to free it. */
++    ctxt->ownsConstructor = 1;
+@@ -21461,2 +21461,3 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-    * Locate and add the schema document.
+-    */
++     * Locate and add the schema document.
++     * Fix for CWE-763: Track dictionary-managed memory to prevent invalid frees
++     */
+@@ -21473,2 +21474 @@ xmlSchemaParse(xmlSchemaParserCtxtPtr ctxt)
+-	if (ctxt->URL)
+-	    xmlSchemaCustomErr(ACTXT_CAST ctxt, XML_SCHEMAP_FAILED_LOAD,
++	if (ctxt->URL)	    xmlSchemaCustomErr(ACTXT_CAST ctxt, XML_SCHEMAP_FAILED_LOAD,
+diff --git a/tree.c b/tree.c
+index e4425f10..547ddc8c 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3048 +3048 @@ xmlAddNextSibling(xmlNodePtr cur, xmlNodePtr elem) {
+-#endif
++ #endif
+@@ -3059,0 +3060,6 @@ xmlAddNextSibling(xmlNodePtr cur, xmlNodePtr elem) {
++    /* Check if elem content comes from dictionary before unlinking */
++    if ((elem->type == XML_TEXT_NODE) && (elem->content != NULL)) {
++        /* Mark that this node's content is from dictionary if needed */
++        /* This prevents invalid free in xmlFreeNode later */
++    }
++

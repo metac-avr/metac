@@ -1,0 +1,41 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..8d661dc53b 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -194 +194 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
++     }
+@@ -196,5 +196,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-        ret = flashsv2_prime(s,
+-                             s->blocks[blk_idx].pos,
+-                             s->blocks[blk_idx].size);
+-        if (ret < 0)
+-            return ret;
++        if (s->keyframedata) {
++            ret = flashsv2_prime(s,
++                                 s->blocks[blk_idx].pos,
++                                 s->blocks[blk_idx].size);
++            if (ret < 0)
++                return ret;
++        }
+@@ -217 +219 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    if (s->is_keyframe) {
++    if (s->is_keyframe && s->keyframedata) {
+@@ -349,6 +350,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -357 +353,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -359 +356,3 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
++        void *temp_keyframedata = s->keyframedata;
++        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0) {
++            s->keyframedata = temp_keyframedata; /* Restore previous pointer on error */
+@@ -360,0 +360 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        }

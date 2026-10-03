@@ -1,0 +1,33 @@
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..3bf501d97 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2878 +2878 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-    mrb_str_modify(mrb, mrb_str_ptr(str));
++     mrb_str_modify(mrb, mrb_str_ptr(str));
+@@ -2880 +2880,20 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-  return mrb_str_cat(mrb, str, RSTRING_PTR(str2), RSTRING_LEN(str2));
++  
++  /* Add safety checks to prevent expired pointer dereference */
++  mrb_check_type(mrb, str2, MRB_TT_STRING);
++  
++  /* Ensure the string object is properly initialized */
++  struct RString *s2 = mrb_str_ptr(str2);
++  if (s2 == NULL) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "null string object");
++  }
++  
++  /* Check for proper alignment and valid data */
++  const char *src = RSTRING_PTR(str2);
++  mrb_int len = RSTRING_LEN(str2);
++  
++  /* Validate memory alignment - prevent misaligned access */
++  if (((uintptr_t)src) % sizeof(void*) != 0 && src != NULL) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "misaligned string pointer");
++  }
++  
++  return mrb_str_cat(mrb, str, src, len);
+@@ -2890,2 +2909 @@ mrb_str_append(mrb_state *mrb, mrb_value str1, mrb_value str2)
+-/*
+- * call-seq:
++/* * call-seq:

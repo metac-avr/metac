@@ -1,0 +1,18 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..16a9c2c71 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -365,5 +365,8 @@ urshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-    mpz_init(mrb,&c); mpz_realloc(mrb,&c,(size_t)(a->sz));
+-    for (size_t i=a->sz-1; ; i--) {
+-      c.p[i] = ((a->p[i] >> n) | cc) & DIG_MASK;
+-      cc = (a->p[i] & rm) << (DIG_SIZE - n);
+-      if (i == 0) break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     mpz_init(mrb,&c); mpz_realloc(mrb,&c,(size_t)(a->sz));
++    if (a->sz > 0) {
++      size_t i = a->sz - 1;
++      do {
++        c.p[i] = ((a->p[i] >> n) | cc) & DIG_MASK;
++        cc = (a->p[i] & rm) << (DIG_SIZE - n);
++      } while (i-- > 0);

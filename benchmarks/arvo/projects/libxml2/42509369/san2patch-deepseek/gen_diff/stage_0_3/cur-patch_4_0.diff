@@ -1,0 +1,45 @@
+diff --git a/tree.c b/tree.c
+index e4425f10..dc1c3f0b 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3800,2 +3800,8 @@ xmlFreeNode(xmlNodePtr cur) {
+-	DICT_FREE(ent->SystemID);
+-	DICT_FREE(ent->ExternalID);
++	if (ent->SystemID != NULL) {
++	    if ((dict == NULL) || !xmlDictOwns(dict, ent->SystemID))
++	        xmlFree(ent->SystemID);
++	}
++	if (ent->ExternalID != NULL) {
++	    if ((dict == NULL) || !xmlDictOwns(dict, ent->ExternalID))
++	        xmlFree(ent->ExternalID);
++	}
+@@ -3803 +3809,2 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->children != NULL) &&
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     if ((cur->children != NULL) &&
+@@ -3817 +3824,2 @@ xmlFreeNode(xmlNodePtr cur) {
+-	DICT_FREE(cur->content)
++	if ((dict == NULL) || !xmlDictOwns(dict, cur->content))
++	    xmlFree(cur->content);
+@@ -3827,2 +3835,4 @@ xmlFreeNode(xmlNodePtr cur) {
+-        (cur->type != XML_COMMENT_NODE))
+-	DICT_FREE(cur->name)
++        (cur->type != XML_COMMENT_NODE)) {
++	if ((dict == NULL) || !xmlDictOwns(dict, cur->name))
++	    xmlFree(cur->name);
++    }
+diff --git a/parser.c b/parser.c
+index c3068cad..72a81a75 100644
+--- a/parser.c
++++ b/parser.c
+@@ -13433 +13433,2 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-    }
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     }
+@@ -13435 +13436,5 @@ xmlParseBalancedChunkMemoryInternal(xmlParserCtxtPtr oldctxt,
+-	xmlFreeNode(ctxt->myDoc->children);
++	if (ctxt->myDoc->children != NULL) {
++	    ctxt->myDoc->children->parent = NULL;
++	    ctxt->myDoc->children->next = NULL;
++	    ctxt->myDoc->children->prev = NULL;
++	}

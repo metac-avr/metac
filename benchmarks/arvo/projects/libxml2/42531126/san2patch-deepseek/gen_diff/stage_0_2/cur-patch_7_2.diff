@@ -1,0 +1,79 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..224d9e94 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -417,9 +417,10 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     * From rfc2044: encoding of the Unicode values on UTF-8:
+-     *
+-     * UCS-4 range (hex.)           UTF-8 octet sequence (binary)
+-     * 0000 0000-0000 007F   0xxxxxxx
+-     * 0000 0080-0000 07FF   110xxxxx 10xxxxxx
+-     * 0000 0800-0000 FFFF   1110xxxx 10xxxxxx 10xxxxxx
+-     *
+-     * Check for the 0x110000 limit too
+-     */
++static int
++htmlCurrentChar(htmlParserCtxtPtr ctxt, int *len)
++{
++    const xmlChar *cur;
++    unsigned char c;
++    unsigned int val;
++
++    if (ctxt->input == NULL)
++        return(0);
++
+@@ -438 +439,53 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        if ((c & 0xe0) == 0xe0) {
++
++        if ((c & 0xe0) == 0xc0) {
++            if ((avail < 3) || ((cur[2] & 0xc0) != 0x80))
++                goto encoding_error;
++            val = ((c & 0x1f) << 12) +
++                  ((cur[1] & 0x3f) << 6) +
++                  (cur[2] & 0x3f);
++            ctxt->input->cur += 3;
++        } else {
++            if ((avail < 4) || ((cur[2] & 0xc0) != 0x80) ||
++                ((cur[3] & 0xc0) != 0x80))
++                goto encoding_error;
++            val = ((c & 0x0f) << 18) +
++                  ((cur[1] & 0x3f) << 12) +
++                  ((cur[2] & 0x3f) << 6) +
++                  (cur[3] & 0x3f);
++            ctxt->input->cur += 4;
++            if ((val & 0xFC00) == 0xD800)
++                goto encoding_error;
++        }
++
++        if (!IS_CHAR(val)) {
++            goto encoding_error;
++        }
++        *len = ctxt->input->cur - cur;
++        return(val);
++    } else {
++        /* 1-byte code */
++        *len = 1;
++        return(c);
++    }
++
++encoding_error:
++    /*
++     * If we detect an encoding error, we probably have an encoding error
++     * in the underline input.
++     */
++    if ((ctxt->errNo == XML_HTML_UNKNOWN_ENCODING) ||
++        (ctxt->errNo == XML_ERR_ENCODING_NOT_SUPPORTED)) {
++        htmlParseErr(ctxt, XML_ERR_INVALID_ENCODING,
++                     "encoding error: input conversion failed due to input error",
++                     NULL, NULL);
++    } else {
++        htmlParseErr(ctxt, XML_ERR_INVALID_CHAR,
++                     "encoding error: invalid character",
++                     NULL, NULL);
++    }
++
++    if (ctxt->input->end - ctxt->input->cur <= 1)
++        ctxt->input->cur++;
++    *len = 1;
++    return(c);
++}        if ((c & 0xe0) == 0xe0) {

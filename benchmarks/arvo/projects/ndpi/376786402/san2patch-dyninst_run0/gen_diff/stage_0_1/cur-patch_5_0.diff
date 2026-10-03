@@ -1,0 +1,18 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..64c16d931 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1034 +1034,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      size_t content_len;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t content_len;
+@@ -1037 +1038 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-					   packet->authorization_line.len - len, &content_len);
++				   packet->authorization_line.len - len, &content_len);
+@@ -1040 +1041,5 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
++	char *double_dot = NULL;
++	size_t search_len = (content_len > 0) ? content_len : 0;
++	if(search_len > 0) {
++	  double_dot = memchr((char*)content, ':', search_len);
++	}

@@ -1,0 +1,70 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..3c9e4159a32 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p) return;
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..0361807581a 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1750,4 +1750,9 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-			do {
+-				i_zval_ptr_dtor(zv);
+-			} while (++zv != end);
++// FIXME: Crash CWE-416: Use After Free
++ 
++			if (zv < end) {
++				do {
++					if (Z_TYPE_P(zv) != IS_UNDEF) {
++						i_zval_ptr_dtor(zv);
++					}
++				} while (++zv != end);
++			}
+@@ -1759,3 +1764,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
+-					i_zval_ptr_dtor(&p->val);
+-				} while (++p != end);
++				if (p < end) {
++					do {
++						if (Z_TYPE(p->val) != IS_UNDEF) {
++							i_zval_ptr_dtor(&p->val);
++						}
++					} while (++p != end);
++				}
+@@ -1763,6 +1772,10 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
+-					i_zval_ptr_dtor(&p->val);
+-					if (EXPECTED(p->key)) {
+-						zend_string_release_ex(p->key, 0);
+-					}
+-				} while (++p != end);
++				if (p < end) {
++					do {
++						if (Z_TYPE(p->val) != IS_UNDEF) {
++							i_zval_ptr_dtor(&p->val);
++							if (EXPECTED(p->key)) {
++								zend_string_release_ex(p->key, 0);
++							}
++						}
++					} while (++p != end);
++				}
+@@ -1770,5 +1783,7 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
+-					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
+-						i_zval_ptr_dtor(&p->val);
+-						if (EXPECTED(p->key)) {
+-							zend_string_release_ex(p->key, 0);
++				if (p < end) {
++					do {
++						if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
++							i_zval_ptr_dtor(&p->val);
++							if (EXPECTED(p->key)) {
++								zend_string_release_ex(p->key, 0);
++							}
+@@ -1776,2 +1791,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					}
+-				} while (++p != end);
++					} while (++p != end);
++				}

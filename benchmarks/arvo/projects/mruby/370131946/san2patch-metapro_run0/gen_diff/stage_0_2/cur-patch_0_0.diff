@@ -1,0 +1,30 @@
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..5249ffcf1 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2843 +2843,3 @@ mrb_str_cat(mrb_state *mrb, mrb_value str, const char *ptr, size_t len)
+-  if (ptr >= RSTR_PTR(s) && ptr <= RSTR_PTR(s) + (size_t)RSTR_LEN(s)) {
++  
++  /* Validate pointer before use to prevent expired pointer dereference */
++  if (ptr != NULL && ptr >= RSTR_PTR(s) && ptr <= RSTR_PTR(s) + (size_t)RSTR_LEN(s)) {
+@@ -2862,3 +2864,6 @@ mrb_str_cat(mrb_state *mrb, mrb_value str, const char *ptr, size_t len)
+-  memcpy(RSTR_PTR(s) + RSTR_LEN(s), ptr, len);
+-  RSTR_SET_LEN(s, total);
+-  RSTR_PTR(s)[total] = '\0';   /* sentinel */
++  /* Additional null check to prevent dereferencing invalid pointers */
++  if (ptr != NULL) {
++    memcpy(RSTR_PTR(s) + RSTR_LEN(s), ptr, len);
++    RSTR_SET_LEN(s, total);
++    RSTR_PTR(s)[total] = '\0';   /* sentinel */
++  }
+@@ -2876,0 +2882 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
++  if (mrb_type(str2) != MRB_TT_STRING) return str;
+@@ -2878 +2884 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-    mrb_str_modify(mrb, mrb_str_ptr(str));
++     mrb_str_modify(mrb, mrb_str_ptr(str));
+@@ -2879,0 +2886 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
++  if (RSTRING_LEN(str2) == 0) return str;
+@@ -2890,2 +2897 @@ mrb_str_append(mrb_state *mrb, mrb_value str1, mrb_value str2)
+-/*
+- * call-seq:
++/* * call-seq:

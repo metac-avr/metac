@@ -1,0 +1,63 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..a1af6f62b9 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,22 +2017,36 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++#define WRITE_FRAME(DIRECT, PIXEL) \
++static void write_frame_##DIRECT##_##PIXEL(Jpeg2000DecoderContext *s, AVFrame *picture, \
++                               Jpeg2000Tile *tile, int compno) \
++{ \
++    int x, y, pixel_size; \
++    int *src = tile->comp[compno].i_data; \
++    int *i_datap = src; \
++    PIXEL *dst; \
++    int xoff = tile->comp[compno].x0 - s->image_offset_x; \
++    int yoff = tile->comp[compno].y0 - s->image_offset_y; \
++    int planelinesize = picture->linesize[compno] / sizeof(PIXEL); \
++    int pixelsize = s->cdef[compno] + 1; \
++    int plane = s->cdef[compno]; \
++\
++    for (y = 0; y < tile->comp[compno].y1 - tile->comp[compno].y0; y++) { \
++        PIXEL *line; \
++        if (yoff + y < 0 || yoff + y >= picture->height) \
++            continue; \
++        line = (PIXEL*)picture->data[compno] + (yoff + y) * planelinesize; \
++        for (x = 0; x < tile->comp[compno].x1 - tile->comp[compno].x0; x++) { \
++            if (xoff + x < 0 || xoff + x >= picture->width) \
++                continue; \
++            dst = line + xoff + x; \
++            /* Fixed CWE-787: Out-of-bounds Write by validating buffer bounds */ \
++            if ((uint8_t*)dst < (uint8_t*)picture->data[compno] || \
++                (uint8_t*)dst >= (uint8_t*)picture->data[compno] + picture->linesize[compno] * picture->height) { \
++                i_datap++; \
++                continue; \
++            } \
++            *(PIXEL *)dst = *i_datap; \
++            i_datap++; \
++            dst += pixelsize; \
++        } \
++        line += picture->linesize[compno] / sizeof(PIXEL); \
++    } \
++}

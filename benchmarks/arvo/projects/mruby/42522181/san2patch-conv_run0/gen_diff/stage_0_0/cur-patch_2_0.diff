@@ -1,0 +1,26 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..3a41ebd2f 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -238 +238,2 @@ static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++// FIXME: Crash CWE-416: Use After Free
++ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+@@ -239,0 +241 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++  if (mrb_type(v) >= MRB_TT_FREE) return 0;
+@@ -246,0 +249 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
++  if (!t) return;
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..baa4ecdaa 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1203,3 +1203,6 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Prevent premature freeing during active marking operations */
++      if (gc->current_phase != GC_MARK_PHASE) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }

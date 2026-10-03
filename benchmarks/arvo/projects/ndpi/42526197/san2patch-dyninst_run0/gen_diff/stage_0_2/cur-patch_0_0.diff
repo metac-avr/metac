@@ -1,0 +1,26 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..4d4fb8480 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -294,2 +294,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	if(packet->content_disposition_line.ptr[attachment_len] == '\"') {
+-	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '\"') {
++	if(packet->content_disposition_line.ptr[attachment_len] == '"') {
++// FIXME: Crash CWE-190: Integer Overflow or Wraparound
++ 	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '"') {
+@@ -298,2 +299,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    if(flow->http.filename != NULL) {
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
++	    if(flow->http.filename != NULL && filename_len > 0) {
++	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, (size_t)(filename_len-1));
+@@ -307 +308 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    if(flow->http.filename != NULL) {
++	    if(flow->http.filename != NULL && filename_len > 1) {
+@@ -309 +310 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-		      filename_len-2);
++		      (size_t)(filename_len-2));
+@@ -318,2 +319,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	  if(flow->http.filename != NULL) {
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
++	  if(flow->http.filename != NULL && filename_len >= 0) {
++	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, (size_t)filename_len);

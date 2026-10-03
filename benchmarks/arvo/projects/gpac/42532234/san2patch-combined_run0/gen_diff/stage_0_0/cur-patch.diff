@@ -1,0 +1,27 @@
+diff --git a/src/media_tools/m3u8.c b/src/media_tools/m3u8.c
+index 5f570e30a..cc144572a 100644
+--- a/src/media_tools/m3u8.c
++++ b/src/media_tools/m3u8.c
+@@ -329 +329 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-	ret = gf_calloc((num_attributes + 1), sizeof(char*));
++	ret = gf_calloc((num_attributes + 2), sizeof(char*));
+@@ -338 +338 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			while (line[start+spaces] == ' ')
++			while (start+spaces < len && line[start+spaces] == ' ')
+@@ -340 +340 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			if ((sz-spaces<=1) && (line[start+spaces]==',')) {
++			if ((sz-spaces<=1) && (start+spaces < len && line[start+spaces]==',')) {
+@@ -343 +343 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-				if (!strncmp(&line[start+spaces], "\t", sz-spaces) || !strncmp(&line[start+spaces], "\n", sz-spaces)) {
++				if ((start+spaces < len && !strncmp(&line[start+spaces], "\t", sz-spaces)) || (start+spaces < len && !strncmp(&line[start+spaces], "\n", sz-spaces))) {
+@@ -345 +345 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-					ret[curr_attribute] = gf_calloc( (1+sz-spaces), sizeof(char));
++					ret[curr_attribute] = gf_calloc( (1+sz-spaces+8), sizeof(char));
+@@ -1254,0 +1255 @@ GF_Err gf_m3u8_parse_sub_playlist(const char *m3u8_file, MasterPlaylist **playli
++// Fixed CWE-125: Out-of-bounds Read by implementing safe array traversal
+@@ -1256,2 +1257 @@ GF_Err gf_m3u8_parse_sub_playlist(const char *m3u8_file, MasterPlaylist **playli
+-					i = 0;
+-					while (attributes[i] != NULL) {
++					for (i = 0; i < MAX_ATTRIBUTES && attributes[i] != NULL; i++) {
+@@ -1261 +1260,0 @@ GF_Err gf_m3u8_parse_sub_playlist(const char *m3u8_file, MasterPlaylist **playli
+-						i++;

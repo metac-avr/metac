@@ -1,0 +1,30 @@
+diff --git a/dict.c b/dict.c
+index 5c9ca719..548f19ed 100644
+--- a/dict.c
++++ b/dict.c
+@@ -870 +870 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-    unsigned long key, okey, nbi = 0;
++unsigned long key, okey, nbi = 0;
+@@ -878,0 +879,4 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
++    /* Validate pointer before use - prevent expired pointer dereference */
++    if ((__builtin_expect(!!((uintptr_t)name & ~(uintptr_t)0x1)), 0))
++        return(NULL);
++ 
+@@ -890,2 +894 @@ xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len) {
+-     */
+-    okey = xmlDictComputeKey(dict, name, l);
++     */    okey = xmlDictComputeKey(dict, name, l);
+diff --git a/tree.c b/tree.c
+index 6a42f118..75c525df 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4310,2 +4310,3 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    else if (node->name != NULL) {
+-        if ((doc != NULL) && (doc->dict != NULL))
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     else if (node->name != NULL) {
++        if ((doc != NULL) && (doc->dict != NULL) && (xmlDictOwns(doc->dict, node->name) == 1))
+@@ -4322,2 +4323 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }else{
+-      if (node->type == XML_ELEMENT_NODE)
++    }else{      if (node->type == XML_ELEMENT_NODE)

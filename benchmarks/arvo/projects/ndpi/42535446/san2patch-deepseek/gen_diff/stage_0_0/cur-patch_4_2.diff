@@ -1,0 +1,21 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..326af284b 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1025,4 +1025,3 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+-	  snprintf(msg, sizeof(msg), "Expected %s, found %s",
+-		   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
+-	  ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);
++  snprintf(msg, sizeof(msg), "Expected %s, found %s",
++	   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
++  ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);
+@@ -1035 +1034,7 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
++  if(flow->host_server_name[0] != '\0') {
++    uint8_t is_a_request = ndpi_strnstr((const char *)flow->l4.tcp.http.request_buffer,
++				       flow->l4.tcp.http.request_buffer_len, "Content-Type:",
++				       strlen("Content-Type:")) != NULL;
++    if(is_a_request)
++      ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
++  }

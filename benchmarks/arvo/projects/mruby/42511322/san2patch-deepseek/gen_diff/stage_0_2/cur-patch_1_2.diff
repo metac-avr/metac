@@ -1,0 +1,41 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..d0feb32fb 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -191,14 +190,0 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+-  if (size > MRB_STACK_MAX) {
+-    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+-  }
+-}
+-
+-MRB_API void
+-mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
+-  if (!mrb->c->ci->stack || mrb->c->ci->stack + room >= mrb->c->stend) {
+-    stack_extend_alloc(mrb, room);
+-  }
+-}
+-
+@@ -216,0 +203,21 @@ uvenv(mrb_state *mrb, mrb_int up)
++  else {
++    mrb_value *stack = mrb->c->stack;
++    mrb_int n = 0;
++    while (mrb->c->cibase->stack < stack) {
++      if (mrb->c->cibase->stack == stack) {
++        return NULL;
++      }
++      mrb->c->cibase++;
++      if (mrb->c->cibase->stack == stack) {
++        return NULL;
++      }
++      mrb->c->cibase++;
++      n++;
++    }
++    return NULL;
++  }
++}    proc = proc->upper;
++    if (!proc) return NULL;
++  }
++  e = MRB_PROC_ENV(proc);
++  if (e) return e;              /* proc has enclosed env */

@@ -1,0 +1,27 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..7891a6d8c 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -531 +531 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
++  }
+@@ -538,0 +539 @@ MRB_API mrb_value
++// FIXME: Crash CWE-787: Out-of-bounds Write
+@@ -540,0 +542 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
++  if (mrb == NULL) return mrb_nil_value();
+@@ -549,0 +552 @@ exec_irep(mrb_state *mrb, mrb_value self, struct RProc *p)
++  if (ci == NULL || ci->stack == NULL) return mrb_nil_value();
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..574312ff4 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -790,0 +791,9 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  if (mrb->c->stack) {
++    mrb_int stack_len = mrb->c->stend - mrb->c->stack;
++    if (stack_len < 0 || stack_len > 1024) {
++      stack_len = 1024;
++    }
++    if ((char*)(mrb->c->stack + 1) > (char*)mrb->c->stend - 8) {
++      mrb_gc_protect(mrb, name);
++    }
++  }

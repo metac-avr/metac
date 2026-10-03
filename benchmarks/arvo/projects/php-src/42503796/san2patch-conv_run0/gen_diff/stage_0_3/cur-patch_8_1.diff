@@ -1,0 +1,59 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..3baae7add6a 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,15 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+-	/* IS_OBJECT       */ (zend_rc_dtor_func_t)zend_objects_store_del,
+-	/* IS_RESOURCE     */ (zend_rc_dtor_func_t)zend_list_free,
+-	/* IS_REFERENCE    */ (zend_rc_dtor_func_t)zend_reference_destroy,
+-	/* IS_CONSTANT_AST */ (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
+@@ -63,6 +49,6 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++	HashTable *ht = emalloc(sizeof(HashTable));
++	if (ht == NULL) return NULL;
++	memset(ht, 0, sizeof(HashTable));
++	_zend_hash_init_int(ht, HT_MIN_SIZE, ZVAL_PTR_DTOR, 0);
++	return ht;
++}}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..b74defe18ca 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -262,15 +261,0 @@ static zend_always_inline void _zend_hash_init_int(HashTable *ht, uint32_t nSize
+-	ht->nTableSize = zend_hash_check_size(nSize);
+-}
+-
+-ZEND_API void ZEND_FASTCALL _zend_hash_init(HashTable *ht, uint32_t nSize, dtor_func_t pDestructor, bool persistent)
+-{
+-	_zend_hash_init_int(ht, nSize, pDestructor, persistent);
+-}
+-
+-ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
+-{
+-	HashTable *ht = emalloc(sizeof(HashTable));
+-	_zend_hash_init_int(ht, HT_MIN_SIZE, ZVAL_PTR_DTOR, 0);
+-	return ht;
+-}
+-
+@@ -279,0 +265,2 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
++	if (ht == NULL) return NULL;
++	memset(ht, 0, sizeof(HashTable));
+@@ -283 +269,0 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
+-

@@ -1,0 +1,58 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..4c3fd325ef 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1389,0 +1390,8 @@ static int hls_transform_tree(HEVCLocalContext *lc,
++    static int hls_transform_tree(HEVCLocalContext *lc, const HEVCPPS *pps, const HEVCSPS *sps,
++                                 int x0, int y0, int xBase, int yBase, int cb_xBase, int cb_yBase,
++                                 int log2_cb_size, int log2_trafo_size, int trafo_depth, int blk_idx,
++                                 int *cbf_cb, int *cbf_cr)
++{
++    HEVCContext *s = lc->sc;
++    int ret;
++
+@@ -1436 +1444,3 @@ do {
+-                    s->cbf_luma[y_tu * min_tu_width + x_tu] = 1;
++                    // Fixed bounds checking using correct SPS field names
++                    if (s && s->cbf_luma && (y_tu * min_tu_width + x_tu) < (sps->ctb_width * sps->ctb_height))
++                        s->cbf_luma[y_tu * min_tu_width + x_tu] = 1;
+@@ -1440 +1450,3 @@ do {
+-            ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
++            // Validate pointers before calling deblocking function
++            if (lc && pps && s) 
++                ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
+@@ -1442 +1454 @@ do {
+-                lc->cu.cu_transquant_bypass_flag)
++                lc && lc->cu.cu_transquant_bypass_flag)
+@@ -1445,0 +1458 @@ do {
++}
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..9edfba2684 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -44,7 +43,0 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
+-        ff_refstruct_unref(&frame->rpl_tab);
+-        frame->refPicList = NULL;
+-
+-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+-    }
+-}
+-
+@@ -52 +45,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -58,8 +52,5 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-    return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
+-}
+-
+-void ff_hevc_clear_refs(HEVCContext *s)
+-{
+-    int i;
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    // Added null checks to prevent expired pointer dereference
++    if (ref && ref->rpl_tab && ctb_addr_ts >= 0 && ctb_addr_ts < s->pps->num_tile_columns * s->pps->num_tile_rows && ref->rpl_tab[ctb_addr_ts])
++        return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
++    return NULL;
++}        ff_hevc_unref_frame(&s->DPB[i],

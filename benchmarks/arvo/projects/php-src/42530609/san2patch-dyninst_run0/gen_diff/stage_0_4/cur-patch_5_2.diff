@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..744e5d21234 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -56,2 +56,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	ZEND_ASSERT(GC_TYPE(p) <= IS_CONSTANT_AST);
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (p != NULL && GC_TYPE(p) <= IS_CONSTANT_AST) {  /* Add null check and bounds validation */
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index fbad44d2f2c..89928d932b5 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3880 +3880,10 @@ static zend_always_inline void i_free_compiled_variables(zend_execute_data *exec
+-		i_zval_ptr_dtor(cv);
++		if (Z_TYPE_P(cv) == IS_OBJECT) {
++			if (Z_OBJ_P(cv)->handlers == &spl_fixedarray_handlers) {
++				i_zval_ptr_dtor(cv);
++				ZVAL_NULL(cv);
++			} else {
++				i_zval_ptr_dtor(cv);
++			}
++		} else {
++			i_zval_ptr_dtor(cv);
++		}

@@ -1,0 +1,31 @@
+diff --git a/tree.c b/tree.c
+index e4425f10..725b0452 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3733 +3733,3 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		DICT_FREE(cur->content)
++		if ((cur->content != NULL) && 
++		    (!((cur->type == XML_TEXT_NODE) || (cur->type == XML_COMMENT_NODE))))
++		    DICT_FREE(cur->content)
+diff --git a/parser.c b/parser.c
+index c3068cad..fb1d33b9 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7188 +7188 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-					   ent->ExternalID, &list);
++				   ent->ExternalID, &list);
+@@ -7195,0 +7196,14 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++	/* Prevent double-free of dictionary-managed strings */
++	if (list != NULL && ctxt->dict != NULL) {
++	    xmlNodePtr cur = list;
++	    while (cur != NULL) {
++	        if (cur->type == XML_TEXT_NODE && cur->content != NULL) {
++		    /* Check if content is dictionary-managed before freeing */
++		    if (xmlDictOwns(ctxt->dict, cur->content)) {
++	                cur->content = NULL; /* Don't free dictionary strings */
++		    }
++	        }
++	        cur = cur->next;
++	    }
++	}
++

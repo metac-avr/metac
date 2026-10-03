@@ -1,0 +1,28 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..ae1d7f5164 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -786,4 +786,17 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
+-    for (int i = dist->alphabet_size - 1; i >= 0; i--) {
+-        int idx = --level2_codecounts[level2_lens[i]];
+-        level2_lens_s[idx] = level2_lens[i];
+-        level2_syms[idx] = i;
++    // Check bounds before accessing level2_codecounts array
++    if (dist->alphabet_size > 0 && dist->alphabet_size < 32768) {
++        for (int i = dist->alphabet_size - 1; i >= 0; i--) {
++            if (level2_lens[i] >= 0 && level2_lens[i] < 16) {  // Validate level2_lens index
++                int idx = --level2_codecounts[level2_lens[i]];
++                if (idx >= 0 && idx < dist->alphabet_size) {  // Validate idx bounds
++                    level2_lens_s[idx] = level2_lens[i];
++                    level2_syms[idx] = i;
++                } else {
++                    return AVERROR_INVALIDDATA;
++                }
++            } else {
++                return AVERROR_INVALIDDATA;
++            }
++        }
++    } else {
++        return AVERROR_INVALIDDATA;
+@@ -798 +810,0 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
+-

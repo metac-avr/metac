@@ -1,0 +1,64 @@
+diff --git a/libavcodec/faanidct.c b/libavcodec/faanidct.c
+index 3921f82dae..973aa3bcb0 100644
+--- a/libavcodec/faanidct.c
++++ b/libavcodec/faanidct.c
+@@ -97,8 +97,9 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-            data[0*x + i]= lrintf(os07 + od07);
+-            data[7*x + i]= lrintf(os07 - od07);
+-            data[1*x + i]= lrintf(os16 + od16);
+-            data[6*x + i]= lrintf(os16 - od16);
+-            data[2*x + i]= lrintf(os25 + od25);
+-            data[5*x + i]= lrintf(os25 - od25);
+-            data[3*x + i]= lrintf(os34 - od34);
+-            data[4*x + i]= lrintf(os34 + od34);
++            data[FFMIN(FFMAX(0*x + i, 0), 63)]= lrintf(os07 + od07);
++            data[FFMIN(FFMAX(7*x + i, 0), 63)]= lrintf(os07 - od07);
++            data[FFMIN(FFMAX(1*x + i, 0), 63)]= lrintf(os16 + od16);
++            data[FFMIN(FFMAX(6*x + i, 0), 63)]= lrintf(os16 - od16);
++            data[FFMIN(FFMAX(2*x + i, 0), 63)]= lrintf(os25 + od25);
++            data[FFMIN(FFMAX(5*x + i, 0), 63)]= lrintf(os25 - od25);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             data[FFMIN(FFMAX(3*x + i, 0), 63)]= lrintf(os34 - od34);
++            data[FFMIN(FFMAX(4*x + i, 0), 63)]= lrintf(os34 + od34);
+@@ -106,8 +107,16 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-            dest[0*stride + i]= av_clip_uint8(((int)dest[0*stride + i]) + lrintf(os07 + od07));
+-            dest[7*stride + i]= av_clip_uint8(((int)dest[7*stride + i]) + lrintf(os07 - od07));
+-            dest[1*stride + i]= av_clip_uint8(((int)dest[1*stride + i]) + lrintf(os16 + od16));
+-            dest[6*stride + i]= av_clip_uint8(((int)dest[6*stride + i]) + lrintf(os16 - od16));
+-            dest[2*stride + i]= av_clip_uint8(((int)dest[2*stride + i]) + lrintf(os25 + od25));
+-            dest[5*stride + i]= av_clip_uint8(((int)dest[5*stride + i]) + lrintf(os25 - od25));
+-            dest[3*stride + i]= av_clip_uint8(((int)dest[3*stride + i]) + lrintf(os34 - od34));
+-            dest[4*stride + i]= av_clip_uint8(((int)dest[4*stride + i]) + lrintf(os34 + od34));
++            int idx0 = FFMIN(FFMAX(0*stride + i, 0), stride*8-1);
++            int idx7 = FFMIN(FFMAX(7*stride + i, 0), stride*8-1);
++            int idx1 = FFMIN(FFMAX(1*stride + i, 0), stride*8-1);
++            int idx6 = FFMIN(FFMAX(6*stride + i, 0), stride*8-1);
++            int idx2 = FFMIN(FFMAX(2*stride + i, 0), stride*8-1);
++            int idx5 = FFMIN(FFMAX(5*stride + i, 0), stride*8-1);
++            int idx3 = FFMIN(FFMAX(3*stride + i, 0), stride*8-1);
++            int idx4 = FFMIN(FFMAX(4*stride + i, 0), stride*8-1);
++            dest[idx0]= av_clip_uint8(((int)dest[idx0]) + lrintf(os07 + od07));
++            dest[idx7]= av_clip_uint8(((int)dest[idx7]) + lrintf(os07 - od07));
++            dest[idx1]= av_clip_uint8(((int)dest[idx1]) + lrintf(os16 + od16));
++            dest[idx6]= av_clip_uint8(((int)dest[idx6]) + lrintf(os16 - od16));
++            dest[idx2]= av_clip_uint8(((int)dest[idx2]) + lrintf(os25 + od25));
++            dest[idx5]= av_clip_uint8(((int)dest[idx5]) + lrintf(os25 - od25));
++            dest[idx3]= av_clip_uint8(((int)dest[idx3]) + lrintf(os34 - od34));
++            dest[idx4]= av_clip_uint8(((int)dest[idx4]) + lrintf(os34 + od34));
+@@ -115,8 +124,8 @@ static inline void p8idct(int16_t data[64], FLOAT temp[64], uint8_t *dest,
+-            dest[0*stride + i]= av_clip_uint8(lrintf(os07 + od07));
+-            dest[7*stride + i]= av_clip_uint8(lrintf(os07 - od07));
+-            dest[1*stride + i]= av_clip_uint8(lrintf(os16 + od16));
+-            dest[6*stride + i]= av_clip_uint8(lrintf(os16 - od16));
+-            dest[2*stride + i]= av_clip_uint8(lrintf(os25 + od25));
+-            dest[5*stride + i]= av_clip_uint8(lrintf(os25 - od25));
+-            dest[3*stride + i]= av_clip_uint8(lrintf(os34 - od34));
+-            dest[4*stride + i]= av_clip_uint8(lrintf(os34 + od34));
++            dest[FFMIN(FFMAX(0*stride + i, 0), stride*8-1)]= av_clip_uint8(lrintf(os07 + od07));
++            dest[FFMIN(FFMAX(7*stride + i, 0), stride*8-1)]= av_clip_uint8(lrintf(os07 - od07));
++            dest[FFMIN(FFMAX(1*stride + i, 0), stride*8-1)]= av_clip_uint8(lrintf(os16 + od16));
++            dest[FFMIN(FFMAX(6*stride + i, 0), stride*8-1)]= av_clip_uint8(lrintf(os16 - od16));
++            dest[FFMIN(FFMAX(2*stride + i, 0), stride*8-1)]= av_clip_uint8(lrintf(os25 + od25));
++            dest[FFMIN(FFMAX(5*stride + i, 0), stride*8-1)]= av_clip_uint8(lrintf(os25 - od25));
++            dest[FFMIN(FFMAX(3*stride + i, 0), stride*8-1)]= av_clip_uint8(lrintf(os34 - od34));
++            dest[FFMIN(FFMAX(4*stride + i, 0), stride*8-1)]= av_clip_uint8(lrintf(os34 + od34));

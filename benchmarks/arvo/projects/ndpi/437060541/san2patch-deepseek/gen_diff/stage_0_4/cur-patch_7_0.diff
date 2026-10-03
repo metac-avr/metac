@@ -1,0 +1,28 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 535a0c5bd..6d8ce41e9 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1616 +1616,22 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-  }
++    if(flow->http.hostname.ptr != NULL) {
++      u_int16_t i;
++      u_int16_t hostname_len = 0;
++      for(i = 0; i < flow->http.hostname.len; i++) {
++        if(flow->http.hostname.ptr[i] == '\0' ||
++           flow->http.hostname.ptr[i] == ' ' ||
++           flow->http.hostname.ptr[i] == '\t' ||
++           flow->http.hostname.ptr[i] == '\r' ||
++           flow->http.hostname.ptr[i] == '\n' ||
++           (flow->http.hostname.ptr[i] > 0 && flow->http.hostname.ptr[i] < 0x20)) {
++          break;
++        }
++        hostname_len++;
++      }
++      if(hostname_len > 0) {
++        if(hostname_len < sizeof(flow->http.hostname_buf)) {
++          memcpy(flow->http.hostname_buf, flow->http.hostname.ptr, hostname_len);
++          flow->http.hostname_buf[hostname_len] = '\0';
++        }
++      }
++    }
++   }

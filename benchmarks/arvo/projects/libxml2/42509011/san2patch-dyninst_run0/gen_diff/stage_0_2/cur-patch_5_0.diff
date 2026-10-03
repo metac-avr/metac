@@ -1,0 +1,21 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..f3d0b214 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2092 +2092,2 @@ xmlFreePropList(xmlAttrPtr cur) {
+-    while (cur != NULL) {
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     while (cur != NULL) {
+@@ -2094 +2095,11 @@ xmlFreePropList(xmlAttrPtr cur) {
+-        xmlFreeProp(cur);
++        /* Check if property name is dictionary-owned before freeing */
++        if ((cur->name != NULL) && (cur->doc != NULL) && 
++            (cur->doc->dict != NULL) && 
++            (xmlDictOwns(cur->doc->dict, cur->name))) {
++            /* Dictionary-owned string - don't call xmlFreeProp */
++            if (cur->children != NULL)
++                xmlFreeNodeList(cur->children);
++            xmlFree(cur);
++        } else {
++            xmlFreeProp(cur);
++        }

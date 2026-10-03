@@ -1,0 +1,26 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..1673bfb3 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2053,0 +2054,4 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++    
++    /* Validate node integrity before use to prevent use-after-free */
++    if ((cur->doc == NULL) || (cur->type <= 0) || (cur->type > XML_ENTITY_REF_NODE))
++        return(-1);
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..7f208aa6 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1363,4 +1363,8 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                if (oldnode == tmp)
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                if (oldnode == tmp) {
++                     oldnode = NULL;
++		     tmp = NULL;  /* Prevent use-after-free */
++		}
++		if (tmp != NULL) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		}

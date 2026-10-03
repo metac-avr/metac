@@ -1,0 +1,24 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d0bc551f0..f174e6342 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -2448,2 +2448,2 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-
+-					}
++                        group->substreams = NULL; // Set to NULL after freeing to prevent UAF
++ 					}
+@@ -2450,0 +2451 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
++                    group = NULL; // Set to NULL after freeing to prevent UAF
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index be826527f..63ce06a12 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -16142 +16142,2 @@ Bool gf_ac4_parser_bs(GF_BitStream *bs, GF_AC4Config *hdr, Bool full_parse)
+-	// clean the GF_List data if exits
++// FIXME: Crash CWE-416: Use After Free
++  	// clean the GF_List data if exits
+@@ -16144,0 +16146,4 @@ Bool gf_ac4_parser_bs(GF_BitStream *bs, GF_AC4Config *hdr, Bool full_parse)
++		// Validate pointers after cleaning to prevent use-after-free
++		if (hdr && hdr->group) {
++			hdr->group = NULL;
++		}

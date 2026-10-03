@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index d13087a5b02..3c469f593cb 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -156 +156,5 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			zend_copy_to_variable(variable_ptr, value, value_type);
++// FIXME: Crash CWE-416: Use After Free
++			/* Create a local copy to prevent use-after-free */
++			zval temp_value;
++			ZVAL_COPY(&temp_value, value);
++			zend_copy_to_variable(variable_ptr, &temp_value, value_type);
+@@ -164,0 +169 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++			zval_ptr_dtor(&temp_value);
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index acf98a2f74a..f2fbc9ba251 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -23866,0 +23867,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_U
++	/* Validate pointer before dereferencing to prevent use-after-free */
++	if (variable_ptr && !Z_REFCOUNTED_P(variable_ptr)) {
++		ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++	}
++

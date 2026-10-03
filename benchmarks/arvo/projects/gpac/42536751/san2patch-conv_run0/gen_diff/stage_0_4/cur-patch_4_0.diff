@@ -1,0 +1,30 @@
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index 0f2f5aa8d..50e973c01 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -7538 +7538,3 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-	s32 poc_lt_curr[16];
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	s32 poc_lt_curr[16];
++	if (rps->num_negative_pics > 16) rps->num_negative_pics = 16;
+@@ -7544,0 +7547 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
++	if (rps->num_positive_pics > 16) rps->num_positive_pics = 16;
+@@ -7546 +7549 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		if (!rps->used_by_curr_pic[i]) continue;
++		if (i >= 16 || !rps->used_by_curr_pic[i]) continue;
+@@ -7554 +7557 @@ static void gf_hevc_compute_ref_list(HEVCState *hevc, HEVCSliceInfo *si)
+-		if (!rps->used_by_curr_pic[i]) continue;
++		if (i >= 16 || !rps->used_by_curr_pic[i]) continue;
+@@ -9108,3 +9111,9 @@ s32 gf_hevc_parse_nalu_bs(GF_BitStream *bs, HEVCState *hevc, u8 *nal_unit_type,
+-		hevc_compute_poc(&n_state);
+-		if (hevc->full_slice_header_parse)
+-			gf_hevc_compute_ref_list(hevc, &n_state);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		// Validate reference list parameters before processing
++		if (hevc && n_state.pps && (n_state.slice.segment_address == 0)) {
++			hevc_compute_poc(&n_state);
++			if (hevc->full_slice_header_parse)
++				gf_hevc_compute_ref_list(hevc, &n_state);
++		} else {
++			hevc_compute_poc(&n_state);
++		}

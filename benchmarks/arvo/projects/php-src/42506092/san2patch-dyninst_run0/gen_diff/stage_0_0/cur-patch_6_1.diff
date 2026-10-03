@@ -1,0 +1,37 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..af23ee3891d 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756,4 +756,9 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
+-	}
+-	return zend_hash_lookup(ht, offset_key);
+-
++        goto num_index;
++    }
++    // Validate ht pointer before use to prevent use-after-free
++    if (ht == NULL || GC_IS_RECURSIVE(&ht->gc)) {
++        return NULL;
++    }
++    return zend_hash_lookup(ht, offset_key);
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -761,2 +766,6 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
++    // Check array validity before index lookup
++    if (ht == NULL || GC_IS_RECURSIVE(&ht->gc)) {
++        return NULL;
++    }
++    ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
++    return retval;
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..3e05871d5ec 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1781,0 +1782,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Clear JIT pointers before freeing to prevent use-after-free */
++	zend_jit_hash_destroy(ht);
+@@ -1783 +1785 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++ free_ht:

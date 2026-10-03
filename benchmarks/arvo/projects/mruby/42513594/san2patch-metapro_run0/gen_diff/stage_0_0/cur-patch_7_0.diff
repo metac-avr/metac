@@ -1,0 +1,18 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..535fc652d 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1707 +1707,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1710,0 +1712,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      if (a < 0 || a >= MRB_STACK_MAX) {
++        mrb_raise(mrb, E_INDEX_ERROR, "register index out of bounds");
++      }
++
+@@ -1756 +1761,3 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        ci->stack[0] = recv;
++        if ((ci->stack + 0) >= mrb->c->stbase && (ci->stack + 0) < mrb->c->stend) {
++          ci->stack[0] = recv;
++        }

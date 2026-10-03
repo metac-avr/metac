@@ -1,0 +1,21 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..0ffb13d1ff 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
++     } else {
+@@ -243,0 +244 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++            memset(&vlc->table_size, 0, sizeof(vlc->table_size));
+@@ -427 +428,6 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-416: Use After Free - Fixed by adding validation
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
++
++    // Validate inputs to prevent accessing freed memory
++    if (nb_codes <= 0 || numbits <= 0)
++        return AVERROR(EINVAL);
+@@ -438,0 +445,3 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++        // Check if single and its table are valid before accessing
++        if (!single || !single->table)
++            return AVERROR(EINVAL);

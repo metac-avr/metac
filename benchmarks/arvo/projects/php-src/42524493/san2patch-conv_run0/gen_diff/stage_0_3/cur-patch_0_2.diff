@@ -1,0 +1,37 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index bbddd459704..0578e6b25aa 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1252,7 +1251,0 @@ ZEND_API void zend_activate(void) /* {{{ */
+-		memset(CG(map_ptr_real_base), 0, CG(map_ptr_last) * sizeof(void*));
+-	}
+-	zend_init_internal_run_time_cache();
+-	zend_observer_activate();
+-}
+-/* }}} */
+-
+@@ -1262,0 +1256,4 @@ void zend_call_destructors(void) /* {{{ */
++	} zend_catch {
++		/* Prevent use-after-free by clearing destructor queue on exception */
++		HashTable *function_table = CG(function_table);
++		GC_FLAGS(function_table) |= GC_IMMUTABLE;
+@@ -1265,9 +1262 @@ void zend_call_destructors(void) /* {{{ */
+-/* }}} */
+-
+-ZEND_API void zend_deactivate(void) /* {{{ */
+-{
+-	/* we're no longer executing anything */
+-	EG(current_execute_data) = NULL;
+-
+-	zend_try {
+-		shutdown_scanner();
++/* }}} */		shutdown_scanner();
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..4f94b38388a 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++		/* Remove object from GC buffer before freeing to prevent use-after-free */
+@@ -203,0 +204 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		ptr = ((char*)object) - object->handlers->offset;

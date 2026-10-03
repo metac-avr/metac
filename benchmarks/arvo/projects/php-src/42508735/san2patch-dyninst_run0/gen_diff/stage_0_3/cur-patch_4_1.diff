@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..63ddb711f59 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1234 +1234,4 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	if (!pz) return 0;
++	zend_refcounted_h* counted = Z_COUNTED_P(pz);
++	if (!counted || (GC_FLAGS(counted) & GC_FREE_FLAG)) return 0;
++	return GC_REFCOUNT(counted);
+diff --git a/Zend/zend.c b/Zend/zend.c
+index c37cd9ed974..dd05a3fc0b0 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1215 +1215 @@ ZEND_API void zend_activate(void) /* {{{ */
+-	if (CG(map_ptr_last)) {
++if (CG(map_ptr_last)) {
+@@ -1223 +1223,5 @@ void zend_call_destructors(void) /* {{{ */
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
++	static int destruction_guard = 0;
++	if (destruction_guard) return;
++	destruction_guard = 1;
+@@ -1226,0 +1231 @@ void zend_call_destructors(void) /* {{{ */
++	destruction_guard = 0;
+@@ -1236 +1240,0 @@ ZEND_API void zend_deactivate(void) /* {{{ */
+-

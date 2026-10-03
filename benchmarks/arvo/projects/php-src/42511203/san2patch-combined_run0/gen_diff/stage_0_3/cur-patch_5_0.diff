@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..d09a55f0459 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -156,2 +156,2 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			zend_copy_to_variable(variable_ptr, value, value_type);
+-			if (GC_DELREF(garbage) == 0) {
++			zend_bool was_freed = (GC_DELREF(garbage) == 0);
++			if (was_freed) {
+@@ -159 +159,3 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			} else { /* we need to split */
++			} else {
++				zend_copy_to_variable(variable_ptr, value, value_type);
++				/* we need to split */
+@@ -164,0 +167,2 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
++			if (!was_freed) return variable_ptr;
++			ZVAL_NULL(variable_ptr);
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..8214f1e9902 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (__builtin_expect(!!(p), 1)) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

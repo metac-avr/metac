@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..898c7f09efb 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -135,2 +135 @@ ZEND_METHOD(SensitiveParameterValue, __debugInfo)
+-
+-	RETURN_EMPTY_ARRAY();
++RETURN_EMPTY_ARRAY();
+@@ -143 +142,3 @@ static HashTable *attributes_sensitive_parameter_value_get_properties_for(zend_o
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
++/* Fixed: Added safety checks to prevent dereferencing expired pointers */
+@@ -155 +156,3 @@ static zend_attribute *get_attribute(HashTable *attributes, zend_string *lcname,
+-			if (attr->offset == offset && zend_string_equals(attr->lcname, lcname)) {
++			/* Validate both attr and attr->lcname before use to prevent use-after-free */
++			if ((attr != NULL) && (lcname != NULL) && (attr->lcname != NULL) && zend_string_equals(attr->lcname, lcname)) {
++				if (attr->offset == offset) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..f4585929f00 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1050,0 +1051,3 @@ ZEND_API zval* ZEND_FASTCALL zend_hash_str_add_new(HashTable *ht, const char *st
++	if (pData == NULL) {
++		return NULL;
++	}
+@@ -1061 +1063,0 @@ ZEND_API zval* ZEND_FASTCALL zend_hash_index_add_empty_element(HashTable *ht, ze
+-

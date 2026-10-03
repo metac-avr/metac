@@ -1,0 +1,25 @@
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..693c61f08 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2876,0 +2877,4 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
++  if ((uintptr_t)mrb_str_ptr(str2) % 8 != 0) {
++    /* Handle misaligned pointer - avoid direct member access */
++    mrb_raise(mrb, E_TYPE_ERROR, "misaligned string pointer");
++  }
+@@ -2878 +2882 @@ mrb_str_cat_str(mrb_state *mrb, mrb_value str, mrb_value str2)
+-    mrb_str_modify(mrb, mrb_str_ptr(str));
++     mrb_str_modify(mrb, mrb_str_ptr(str));
+diff --git a/src/error.c b/src/error.c
+index c622df789..8998fa91f 100644
+--- a/src/error.c
++++ b/src/error.c
+@@ -515 +514,0 @@ frozen_error(mrb_state *mrb, mrb_value v)
+-
+@@ -523 +522,2 @@ MRB_API void
+-mrb_check_frozen(mrb_state *mrb, void *o)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mrb_check_frozen(mrb_state *mrb, void *o)
+@@ -525 +525 @@ mrb_check_frozen(mrb_state *mrb, void *o)
+-  if (mrb_frozen_p((struct RBasic*)o)) {
++  if ((uintptr_t)o % 8 == 0 && mrb_frozen_p((struct RBasic*)o)) {

@@ -1,0 +1,99 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..59207ed80e3 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,2 +1145,13 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
++#ifndef ZEND_TYPES_H
++#define ZEND_TYPES_H
++
++#if !defined(ZEND_VM_FP_GLOBAL_REG) || !defined(ZEND_VM_IP_GLOBAL_REG)
++			int ret;
++#endif
++#if (ZEND_VM_KIND == ZEND_VM_KIND_HYBRID)
++		HYBRID_SWITCH() {
++#else
++#if defined(ZEND_VM_FP_GLOBAL_REG) && defined(ZEND_VM_IP_GLOBAL_REG)
++		((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++// FIXME: Crash CWE-416: Use After Free
++ 		if (UNEXPECTED(!OPLINE || EG(exit_status) != 0)) {
+@@ -1148,4 +1159 @@ extern ZEND_API bool zend_rc_debug;
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
++		if (UNEXPECTED((ret = ((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU)) != 0)) {
+@@ -1153,14 +1161,9 @@ extern ZEND_API bool zend_rc_debug;
+-
+-static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p) {
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc) {
+-	p->refcount = rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	ZEND_RC_MOD_CHECK(p);
+-	return ++(p->refcount);
+-}
++#endif
++#if (ZEND_VM_KIND == ZEND_VM_KIND_HYBRID)
++			HYBRID_CASE(ZEND_ASSIGN_STATIC_PROP_OP_SPEC):
++				VM_TRACE(ZEND_ASSIGN_STATIC_PROP_OP_SPEC)
++				ZEND_ASSIGN_STATIC_PROP_OP_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++				HYBRID_BREAK();
++			HYBRID_CASE(ZEND_PRE_INC_STATIC_PROP_SPEC):
++				VM_TRACE(ZEND_PRE_INC_STATIC_PROP_SPEC)
++				ZEND_PRE_INC_STATIC_PROP_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..01fab752ffd 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54414,9 +54414,2 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-#if !defined(ZEND_VM_FP_GLOBAL_REG) || !defined(ZEND_VM_IP_GLOBAL_REG)
+-			int ret;
+-#endif
+-#if (ZEND_VM_KIND == ZEND_VM_KIND_HYBRID)
+-		HYBRID_SWITCH() {
+-#else
+-#if defined(ZEND_VM_FP_GLOBAL_REG) && defined(ZEND_VM_IP_GLOBAL_REG)
+-		((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-		if (UNEXPECTED(!OPLINE)) {
++GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
++	} while (0)
+@@ -54424 +54417,4 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		if (UNEXPECTED((ret = ((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU)) != 0)) {
++# define ZEND_RC_MOD_CHECK(p) \
++	do { } while (0)
++# define GC_MAKE_PERSISTENT_LOCAL(p) \
++	do { } while (0)
+@@ -54426,10 +54422,16 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-#endif
+-#if (ZEND_VM_KIND == ZEND_VM_KIND_HYBRID)
+-			HYBRID_CASE(ZEND_ASSIGN_STATIC_PROP_OP_SPEC):
+-				VM_TRACE(ZEND_ASSIGN_STATIC_PROP_OP_SPEC)
+-				ZEND_ASSIGN_STATIC_PROP_OP_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-				HYBRID_BREAK();
+-			HYBRID_CASE(ZEND_PRE_INC_STATIC_PROP_SPEC):
+-				VM_TRACE(ZEND_PRE_INC_STATIC_PROP_SPEC)
+-				ZEND_PRE_INC_STATIC_PROP_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-				HYBRID_BREAK();
++
++// FIXME: Crash CWE-416: Use After Free
++ 
++static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p) {
++	if (p && ((zend_refcounted_h*)p)->refcount != 0xDEADBEEF) return p->refcount;
++	return 0;
++}
++
++static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc) {
++	p->refcount = rc;
++	return p->refcount;
++}
++
++static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	ZEND_RC_MOD_CHECK(p);
++	return ++(p->refcount);				HYBRID_BREAK();

@@ -1,0 +1,136 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..ffc07cf5 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270,20 +4270,39 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
+-
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
+-	    /*
+-	     * Humm, we are copying an element whose namespace is defined
+-	     * out of the new tree scope. Search it in the original tree
+-	     * and add it at the top of the new tree.
+-             *
+-             * TODO: Searching the original tree seems unnecessary. We
+-             * already have a namespace URI.
+-	     */
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
+-
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-            } else {
+-                ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++         xmlNsPtr ns;
++
++	/* Safe copy: check if namespace is accessible before copying */
++	if (node->ns != NULL) {
++	    /* Attempt to access namespace safely */
++	    const xmlChar* prefix = node->ns->prefix;
++	    const xmlChar* href = node->ns->href;
++	    
++	    /* Use local copies to avoid direct access to potentially freed memory */
++	    if (prefix != NULL || href != NULL) {
++	        ns = xmlSearchNs(doc, ret, prefix);
++	        if (ns == NULL) {
++	            /*
++	             * Humm, we are copying an element whose namespace is defined
++	             * out of the new tree scope. Search it in the original tree
++	             * and add it at the top of the new tree.
++                     *
++                     * TODO: Searching the original tree seems unnecessary. We
++                     * already have a namespace URI.
++	             */
++	            ns = xmlSearchNs(node->doc, node, prefix);
++	            if (ns != NULL) {
++	                xmlNodePtr root = ret;
++
++	                while (root->parent != NULL) root = root->parent;
++	                ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                    } else {
++                        ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	            }
++                    if (ret->ns == NULL)
++                        goto error;
++	        } else {
++	            /*
++	             * reference the existing namespace definition in our own tree.
++	             */
++	            ret->ns = ns;
++	        }
++	    } else {
++	        ret->ns = NULL;
+@@ -4291,2 +4309,0 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-            if (ret->ns == NULL)
+-                goto error;
+@@ -4294,4 +4311 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    /*
+-	     * reference the existing namespace definition in our own tree.
+-	     */
+-	    ret->ns = ns;
++	    ret->ns = NULL;
+diff --git a/parser.c b/parser.c
+index cae2b7fd..9e48227f 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7373,11 +7373,5 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw == NULL) {
+-                        xmlErrMemory(ctxt);
+-                    } else {
+-			if (nw->_private == NULL)
+-			    nw->_private = cur->_private;
+-			if (firstChild == NULL){
+-			    firstChild = nw;
+-			}
+-			nw = xmlAddChild(ctxt->node, nw);
+-                        if (nw == NULL)
++		    xmlNodePtr copy_node = cur;
++		    /* Ensure node and its namespace data are valid before copying */
++		    if (copy_node != NULL) {
++		        nw = xmlDocCopyNode(copy_node, ctxt->myDoc, 1);
++		        if (nw == NULL) {
+@@ -7384,0 +7379,26 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++                        } else {
++			    if (nw->_private == NULL)
++			        nw->_private = copy_node->_private;
++			    if (firstChild == NULL){
++			        firstChild = nw;
++			    }
++			    nw = xmlAddChild(ctxt->node, nw);
++                            if (nw == NULL)
++                                xmlErrMemory(ctxt);
++		        }
++		        if (copy_node == ent->last) {
++			    /*
++			     * needed to detect some strange empty
++			     * node cases in the reader tests
++			     */
++			    if ((ctxt->parseMode == XML_PARSE_READER) &&
++			        (nw != NULL) &&
++			        (nw->type == XML_ELEMENT_NODE) &&
++			        (nw->children == NULL))
++			        nw->extra = 1;
++
++			    break;
++		        }
++		        cur = cur->next;
++		    } else {
++		        break;  /* Exit loop if node is invalid */
+@@ -7386,14 +7405,0 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    if (cur == ent->last) {
+-			/*
+-			 * needed to detect some strange empty
+-			 * node cases in the reader tests
+-			 */
+-			if ((ctxt->parseMode == XML_PARSE_READER) &&
+-			    (nw != NULL) &&
+-			    (nw->type == XML_ELEMENT_NODE) &&
+-			    (nw->children == NULL))
+-			    nw->extra = 1;
+-
+-			break;
+-		    }
+-		    cur = cur->next;

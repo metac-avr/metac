@@ -1,0 +1,48 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..cf2f2c1eb6f 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
++/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -57 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (GC_TYPE(p) >= IS_UNDEF && GC_TYPE(p) <= IS_CONSTANT_AST) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..af65637e9f3 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1751,3 +1751,6 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-			do {
+-				i_zval_ptr_dtor(zv);
+-			} while (++zv != end);
++			while (zv < end) {
++				if (Z_TYPE_P(zv) != IS_UNDEF) {
++					i_zval_ptr_dtor(zv);
++				}
++				zv++;
++			}
+@@ -1758,6 +1761,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-			if (HT_HAS_STATIC_KEYS_ONLY(ht)) {
+-				do {
+-					i_zval_ptr_dtor(&p->val);
+-				} while (++p != end);
+-			} else if (HT_IS_WITHOUT_HOLES(ht)) {
+-				do {
++			while (p < end) {
++				if (Z_TYPE(p->val) != IS_UNDEF) {
+@@ -1768,10 +1767,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				} while (++p != end);
+-			} else {
+-				do {
+-					if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
+-						i_zval_ptr_dtor(&p->val);
+-						if (EXPECTED(p->key)) {
+-							zend_string_release_ex(p->key, 0);
+-						}
+-					}
+-				} while (++p != end);
++				}
++				p++;

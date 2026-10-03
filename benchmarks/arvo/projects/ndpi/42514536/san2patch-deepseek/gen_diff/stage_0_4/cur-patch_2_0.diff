@@ -1,0 +1,19 @@
+diff --git a/src/lib/protocols/softether.c b/src/lib/protocols/softether.c
+index 8a80e6322..c0d30edba 100644
+--- a/src/lib/protocols/softether.c
++++ b/src/lib/protocols/softether.c
+@@ -241,3 +241,11 @@ static int dissect_softether_host_fqdn(struct ndpi_flow_struct *flow,
+-        size_t len = ndpi_min(val1.value_size, sizeof(flow->protos.softether.fqdn) - 1);
+-        strncpy(flow->protos.softether.fqdn, val1.value.ptr.value_str, len);
+-        flow->protos.softether.fqdn[len] = '\0';
++        size_t remaining = packet->payload_packet_len - (val1.value.ptr.value_str - packet->payload);
++        size_t len = ndpi_min(remaining, ndpi_min(val1.value_size, sizeof(flow->protos.softether.fqdn) - 1));
++        if (remaining > 0 && len <= sizeof(flow->protos.softether.fqdn) - 1)
++        {
++          strncpy(flow->protos.softether.fqdn, val1.value.ptr.value_str, len);
++          flow->protos.softether.fqdn[len] = '\0';
++        }
++        else
++        {
++          flow->protos.softether.fqdn[0] = '\0';
++        }

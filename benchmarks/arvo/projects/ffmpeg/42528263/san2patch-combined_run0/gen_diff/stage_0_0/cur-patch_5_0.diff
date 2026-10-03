@@ -1,0 +1,14 @@
+diff --git a/libavcodec/evc_frame_merge_bsf.c b/libavcodec/evc_frame_merge_bsf.c
+index cfdf24c69e..a4bc11fd05 100644
+--- a/libavcodec/evc_frame_merge_bsf.c
++++ b/libavcodec/evc_frame_merge_bsf.c
+@@ -119 +119,8 @@ static int parse_nal_unit(AVBSFContext *bsf, const uint8_t *buf, int buf_size)
+-        EVCParserSliceHeader sh;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         EVCParserSliceHeader sh;
++        
++        // Add bounds checking before slice header parsing
++        if (buf_size <= 0 || buf_size > MAX_EVC_BUFFER_SIZE) {
++            av_log(bsf, AV_LOG_ERROR, "Invalid buffer size for slice header parsing\n");
++            return AVERROR_INVALIDDATA;
++        }

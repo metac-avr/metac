@@ -1,0 +1,26 @@
+diff --git a/libavcodec/flac_parser.c b/libavcodec/flac_parser.c
+index 2c550507fc..d385dc87aa 100644
+--- a/libavcodec/flac_parser.c
++++ b/libavcodec/flac_parser.c
+@@ -200 +200 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
+-                                     &fpc->wrap_buf,
++                                      &fpc->wrap_buf,
+@@ -201,0 +202,2 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
++    if (!header_buf)
++        return 0;
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index d4e9276da1..55d8d1ab74 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -404,3 +404,8 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
+-    UPDATE_CACHE(re, s);
+-    tmp = SHOW_UBITS(re, s, n);
+-    LAST_SKIP_BITS(re, s, n);
++    // Validate buffer bounds before updating cache
++    if (s->buffer && re.index < s->buffer_end - s->buffer - 4) {
++        UPDATE_CACHE(re, s);
++        tmp = SHOW_UBITS(re, s, n);
++        LAST_SKIP_BITS(re, s, n);
++    } else {
++        tmp = 0;  // Safe fallback when approaching buffer boundary
++    }

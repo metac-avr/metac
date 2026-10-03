@@ -1,0 +1,23 @@
+diff --git a/src/vm.c b/src/vm.c
+index 424567a18..ef4c33325 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1726 +1726,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-          recv = p->body.func(mrb, recv);
++          /* Ensure receiver is valid before proceeding */
++          if (recv.tt != MRB_TT_FREE && recv.tt != MRB_TT_UNDEF) {
++            recv = p->body.func(mrb, recv);
++          } else {
++            mrb_raise(mrb, E_ARGUMENT_ERROR, "expired pointer dereference detected");
++          }
+@@ -1730 +1735,7 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-            check_method_noarg(mrb, ci);
++             check_method_noarg(mrb, ci);
++          }
++          /* Validate receiver pointer validity */
++          if (recv.tt != MRB_TT_FREE && recv.tt != MRB_TT_UNDEF) {
++            recv = MRB_METHOD_FUNC(m)(mrb, recv);
++          } else {
++            mrb_raise(mrb, E_ARGUMENT_ERROR, "expired pointer dereference detected");
+@@ -1732 +1742,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-          recv = MRB_METHOD_FUNC(m)(mrb, recv);

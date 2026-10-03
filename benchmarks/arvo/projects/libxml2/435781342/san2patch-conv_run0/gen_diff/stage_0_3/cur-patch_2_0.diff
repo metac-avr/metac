@@ -1,0 +1,31 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..5c2bc892 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2345 +2345,2 @@ xmlSAX2StartElementNs(void *ctx,
+-		}
++// FIXME: Crash CWE-416: Use After Free
++ 		}
+@@ -2348,0 +2350 @@ xmlSAX2StartElementNs(void *ctx,
++            
+@@ -2352,0 +2355,10 @@ xmlSAX2StartElementNs(void *ctx,
++            /* Validate attribute namespace to prevent use-after-free */
++            if (attr->ns != NULL) {
++                /* Check if namespace structure is still valid */
++                if (((xmlNsPtr)attr->ns)->href == NULL && 
++                    ((xmlNsPtr)attr->ns)->prefix == NULL) {
++                    /* Namespace appears to be freed, skip this attribute */
++                    continue;
++                }
++            }
++
+diff --git a/valid.c b/valid.c
+index e11d2c95..145694e9 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
+@@ -2376 +2376 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);

@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..54a17852756 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1237 +1237,2 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
+-		HT_SET_DATA_ADDR(ht, new_data);
++// FIXME: Crash CWE-416: Use After Free
++ 		HT_SET_DATA_ADDR(ht, new_data);
+@@ -1239,0 +1241,3 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
++		if (ht->arData != old_buckets) {
++			memset(old_buckets, 0, sizeof(Bucket) * ht->nNumUsed); // Clear old data only if moved
++		}
+@@ -2154 +2158,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			if (result & ZEND_HASH_APPLY_REMOVE) {
++// FIXME: Crash CWE-416: Use After Free
++ 			if (result & ZEND_HASH_APPLY_REMOVE) {
+@@ -2156 +2161,3 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				if (ht->arData != NULL) {
++					_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				}

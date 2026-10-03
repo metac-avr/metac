@@ -1,0 +1,35 @@
+diff --git a/src/lib/ndpi_serializer.c b/src/lib/ndpi_serializer.c
+index 63877cd69..5a9926121 100644
+--- a/src/lib/ndpi_serializer.c
++++ b/src/lib/ndpi_serializer.c
+@@ -192 +192,9 @@ int ndpi_init_serializer_ll(ndpi_serializer *_serializer,
+-  ndpi_private_serializer *serializer = (ndpi_private_serializer*)_serializer;
++  ndpi_private_serializer *serializer;
++
++  if ((uintptr_t)_serializer % _Alignof(ndpi_private_serializer) != 0) {
++    serializer = (ndpi_private_serializer *)malloc(sizeof(ndpi_private_serializer));
++    if (serializer == NULL)
++      return(-1);
++  } else {
++    serializer = (ndpi_private_serializer*)_serializer;
++  }
+@@ -199 +207,2 @@ int ndpi_init_serializer_ll(ndpi_serializer *_serializer,
+-  }
++// FIXME: Crash CWE-119: Buffer Overflow
++   }
+@@ -204 +213,3 @@ int ndpi_init_serializer_ll(ndpi_serializer *_serializer,
+-      ndpi_init_serializer_buffer(&serializer->buffer, buffer_size) != 0)
++      ndpi_init_serializer_buffer(&serializer->buffer, buffer_size) != 0) {
++    if (serializer != (ndpi_private_serializer*)_serializer)
++      free(serializer);
+@@ -205,0 +217 @@ int ndpi_init_serializer_ll(ndpi_serializer *_serializer,
++  }
+@@ -212,0 +225,2 @@ int ndpi_init_serializer_ll(ndpi_serializer *_serializer,
++      if (serializer != (ndpi_private_serializer*)_serializer)
++        free(serializer);
+@@ -223,0 +238,5 @@ int ndpi_init_serializer_ll(ndpi_serializer *_serializer,
++  if (serializer != (ndpi_private_serializer*)_serializer) {
++    memcpy(_serializer, serializer, sizeof(ndpi_private_serializer));
++    free(serializer);
++  }
++

@@ -1,0 +1,187 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..d2a4d1f32f 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,17 +2017 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
++static void libschroedinger_flush(AVCodecContext *avctx)
+@@ -2035,4 +2019,18 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++    SchroDecoderParams* p_schro_params = (SchroDecoderParams*)avctx->priv_data;
++    
++    /* Close the encoder session. */
++    if (p_schro_params->decoder) {
++        schro_decoder_free(p_schro_params->decoder);
++        p_schro_params->decoder = NULL;
++    }
++    
++    /* Free the video format structure. */
++    if (p_schro_params->format) {
++        av_freep(&p_schro_params->format);
++    }
++    
++    /* Reset frame queue */
++    p_schro_params->frame_queue.head = 0;
++    p_schro_params->frame_queue.tail = 0;
++    p_schro_params->frame_queue.size = 0;
++}
+@@ -2430,2 +2428,2 @@ static av_cold int jpeg2000_decode_init(AVCodecContext *avctx)
+-static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-                                 int *got_frame, AVPacket *avpkt)
++static int libschroedinger_decode_frame(AVCodecContext *avctx, void *data,
++                                         int *data_size, AVPacket *avpkt)
+@@ -2433 +2431,5 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-    Jpeg2000DecoderContext *s = avctx->priv_data;
++    SchroDecoderParams* p_schro_params = (SchroDecoderParams*)avctx->priv_data;
++    SchroDecoder *decoder = p_schro_params->decoder;
++    SchroBuffer *buffer;
++    SchroFrame *frame;
++    int parse_code;
+@@ -2435,24 +2437,4 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-
+-    s->avctx     = avctx;
+-    bytestream2_init(&s->g, avpkt->data, avpkt->size);
+-    s->curtileno = -1;
+-    memset(s->cdef, -1, sizeof(s->cdef));
+-
+-    if (bytestream2_get_bytes_left(&s->g) < 2) {
+-        ret = AVERROR_INVALIDDATA;
+-        goto end;
+-    }
+-
+-    // check if the image is in jp2 format
+-    if (bytestream2_get_bytes_left(&s->g) >= 12 &&
+-       (bytestream2_get_be32u(&s->g) == 12) &&
+-       (bytestream2_get_be32u(&s->g) == JP2_SIG_TYPE) &&
+-       (bytestream2_get_be32u(&s->g) == JP2_SIG_VALUE)) {
+-        if (!jp2_find_codestream(s)) {
+-            av_log(avctx, AV_LOG_ERROR,
+-                   "Could not find Jpeg2000 codestream atom.\n");
+-            ret = AVERROR_INVALIDDATA;
+-            goto end;
+-        }
+-    } else {
+-        bytestream2_seek(&s->g, 0, SEEK_SET);
++    
++    if (!avpkt->size) {
++        /* No data provided, flush decoder */
++        return 0;
+@@ -2460,8 +2442,6 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-
+-    while (bytestream2_get_bytes_left(&s->g) >= 3 && bytestream2_peek_be16(&s->g) != JPEG2000_SOC)
+-        bytestream2_skip(&s->g, 1);
+-
+-    if (bytestream2_get_be16u(&s->g) != JPEG2000_SOC) {
+-        av_log(avctx, AV_LOG_ERROR, "SOC marker not present\n");
+-        ret = AVERROR_INVALIDDATA;
+-        goto end;
++    
++    /* Create a SchroBuffer from the input packet */
++    buffer = schro_buffer_new_with_data(avpkt->data, avpkt->size);
++    if (!buffer) {
++        av_log(avctx, AV_LOG_ERROR, "Failed to create SchroBuffer\n");
++        return AVERROR(ENOMEM);
+@@ -2469,9 +2449,31 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-    if (ret = jpeg2000_read_main_headers(s))
+-        goto end;
+-
+-    if (s->sar.num && s->sar.den)
+-        avctx->sample_aspect_ratio = s->sar;
+-    s->sar.num = s->sar.den = 0;
+-
+-    if (avctx->skip_frame >= AVDISCARD_ALL) {
+-        jpeg2000_dec_cleanup(s);
++    
++    /* Push the buffer to the decoder */
++    schro_decoder_push_buffer(decoder, buffer);
++    
++    /* Process available frames */
++    while ((parse_code = schro_decoder_parse(decoder)) == SCHRO_PARSE_CODE_FRAME) {
++        frame = schro_decoder_pull_frame(decoder);
++        if (!frame) {
++            av_log(avctx, AV_LOG_WARNING, "Decoder returned NULL frame\n");
++            continue;
++        }
++        
++        /* Convert SchroFrame to AVFrame */
++        ret = schro_frame_to_avframe(avctx, frame, data);
++        if (ret < 0) {
++            schro_frame_unref(frame);
++            av_log(avctx, AV_LOG_ERROR, "Failed to convert SchroFrame to AVFrame\n");
++            return ret;
++        }
++        
++        /* Add frame to queue */
++        if (p_schro_params->frame_queue.size < MAX_FRAMES_IN_QUEUE) {
++            p_schro_params->frame_queue.frames[p_schro_params->frame_queue.tail] = *(AVFrame*)data;
++            p_schro_params->frame_queue.tail = (p_schro_params->frame_queue.tail + 1) % MAX_FRAMES_IN_QUEUE;
++            p_schro_params->frame_queue.size++;
++        } else {
++            av_log(avctx, AV_LOG_WARNING, "Frame queue full, dropping frame\n");
++        }
++        
++        schro_frame_unref(frame);
++        *data_size = sizeof(AVFrame);
+@@ -2480,19 +2482,4 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-
+-    /* get picture buffer */
+-    if ((ret = ff_thread_get_buffer(avctx, picture, 0)) < 0)
+-        goto end;
+-    picture->pict_type = AV_PICTURE_TYPE_I;
+-    picture->flags |= AV_FRAME_FLAG_KEY;
+-
+-    if (ret = jpeg2000_read_bitstream_packets(s))
+-        goto end;
+-
+-    for (int x = 0; x < s->ncomponents; x++) {
+-        if (s->cdef[x] < 0) {
+-            for (x = 0; x < s->ncomponents; x++) {
+-                s->cdef[x] = x + 1;
+-            }
+-            if ((s->ncomponents & 1) == 0)
+-                s->cdef[s->ncomponents-1] = 0;
+-            break;
+-        }
++    
++    if (parse_code < 0) {
++        av_log(avctx, AV_LOG_ERROR, "Error parsing Schroedinger stream\n");
++        return AVERROR_INVALIDDATA;
+@@ -2500,15 +2487,4 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
+-
+-    avctx->execute2(avctx, jpeg2000_decode_tile, picture, NULL, s->numXtiles * s->numYtiles);
+-
+-    jpeg2000_dec_cleanup(s);
+-
+-    *got_frame = 1;
+-
+-    if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
+-        memcpy(picture->data[1], s->palette, 256 * sizeof(uint32_t));
+-
+-    return bytestream2_tell(&s->g);
+-
+-end:
+-    jpeg2000_dec_cleanup(s);
+-    return ret;
++    
++    /* No frame ready yet */
++    *data_size = 0;
++    return avpkt->size;

@@ -1,0 +1,60 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..cccd2341 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1160 +1160,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (set->nodeTab[i] == NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 		if (set->nodeTab[i] == NULL)
+@@ -1189,4 +1190,6 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    if (last == NULL) {
+-					list = last = tmp;
+-				    } else {
+-					last = xmlAddNextSibling(last, tmp);
++				    if (tmp != NULL) {
++					if (last == NULL) {
++					    list = last = tmp;
++					} else {
++					    last = xmlAddNextSibling(last, tmp);
++					}
+@@ -1214,2 +1217,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
++		if (last == NULL) {
++		    xmlNodePtr tmp = xmlXIncludeCopyNode(ctxt, target, source,
+@@ -1216,0 +1220,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		    if (tmp != NULL)
++			list = last = tmp;
++		}
+@@ -1218,5 +1224,7 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    xmlNodePtr tmp = xmlXIncludeCopyNode(ctxt, target, source,
++				                set->nodeTab[i]);
++		    if (tmp != NULL) {
++			xmlAddNextSibling(last, tmp);
++			if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2230,3 +2238,11 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	ctxt->incTab[nr]->inc =
+-	    xmlXIncludeCopyXPointer(ctxt, ctxt->doc, ctxt->doc,
+-		                    ctxt->incTab[nr]->xptr);
++	if ((cur->parent != NULL && cur->parent->doc != NULL) ||
++	    (cur->doc != NULL && cur->doc->children != NULL)) {
++	    ctxt->incTab[nr]->inc =
++	        xmlXIncludeCopyXPointer(ctxt, ctxt->doc, ctxt->doc,
++		                        ctxt->incTab[nr]->xptr);
++	    if (ctxt->incTab[nr]->inc == NULL) {
++	        xmlXPathFreeObject(ctxt->incTab[nr]->xptr);
++	        ctxt->incTab[nr]->xptr = NULL;
++	        return(-1);
++	    }
++	}
+@@ -2241,2 +2257 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-     * Check against the risk of generating a multi-rooted document
+-     */
++     * Check against the risk of generating a multi-rooted document     */

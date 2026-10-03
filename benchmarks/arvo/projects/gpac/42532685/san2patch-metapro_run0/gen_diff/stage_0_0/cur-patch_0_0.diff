@@ -1,0 +1,28 @@
+diff --git a/src/filters/reframe_img.c b/src/filters/reframe_img.c
+index 9eb787203..5ac5ec69c 100644
+--- a/src/filters/reframe_img.c
++++ b/src/filters/reframe_img.c
+@@ -347,7 +347,16 @@ GF_Err img_process(GF_Filter *filter)
+-			pix = data + fh.bfOffBits + i*in_stride;
+-			for (j=0; j<out_stride; j+=4) {
+-				output[j + irow] = pix[2];
+-				output[j+1 + irow] = pix[1];
+-				output[j+2 + irow] = pix[0];
+-				output[j+3 + irow] = pix[3];
+-				pix += 4;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++			if (data && fh.bfOffBits >= 0 && i*in_stride < (int)(sizeof(data) - fh.bfOffBits)) {
++				pix = data + fh.bfOffBits + i*in_stride;
++				for (j=0; j<out_stride; j+=4) {
++					if ((j + irow) < out_size && (j+1 + irow) < out_size && (j+2 + irow) < out_size && (j+3 + irow) < out_size) {
++						output[j + irow] = pix[2];
++						output[j+1 + irow] = pix[1];
++						output[j+2 + irow] = pix[0];
++						output[j+3 + irow] = pix[3];
++					} else {
++						return GF_OUT_OF_MEM;
++					}
++					pix += 4;
++				}
++			} else {
++				return GF_OUT_OF_MEM;

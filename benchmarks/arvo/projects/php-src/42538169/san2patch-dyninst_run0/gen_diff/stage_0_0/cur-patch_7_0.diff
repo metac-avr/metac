@@ -1,0 +1,34 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..3faa99d14d1 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -194 +194,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			object->handlers->free_obj(object);
++			if (object->handlers && object->handlers->free_obj) {
++				object->handlers->free_obj(object);
++			}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 733ce54dc24..99cd2aa0435 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -5166 +5166,5 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			/* Defensive check: validate iterator before release */
++			zend_object *obj = Z_OBJ(iter->std);
++			if (obj && obj->gc.refcount > 0) {
++				OBJ_RELEASE(&iter->std);
++			}
+@@ -5179 +5183,5 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			/* Validate reference count before cleanup */
++			zend_object *obj = Z_OBJ(iter->std);
++			if (obj && obj->gc.refcount > 0) {
++				OBJ_RELEASE(&iter->std);
++			}
+@@ -5188 +5196,5 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-		OBJ_RELEASE(&iter->std);
++		/* Prevent UAF by checking object validity */
++		zend_object *obj = Z_OBJ(iter->std);
++		if (obj && obj->gc.refcount > 0) {
++			OBJ_RELEASE(&iter->std);
++		}

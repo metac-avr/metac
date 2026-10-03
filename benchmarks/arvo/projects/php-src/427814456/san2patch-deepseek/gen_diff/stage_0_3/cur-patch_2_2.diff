@@ -1,0 +1,52 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..a8aad49d77e 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -826,8 +825,0 @@ ZEND_API void ZEND_FASTCALL convert_to_object(zval *op) /* {{{ */
+-	}
+-}
+-/* }}} */
+-
+-ZEND_API void ZEND_COLD zend_incompatible_double_to_long_error(double d)
+-{
+-	zend_error_unchecked(E_DEPRECATED, "Implicit conversion from float %.*H to int loses precision", -1, d);
+-}
+@@ -835,0 +828 @@ ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string
++	GC_ADDREF(s);
+@@ -836,0 +830 @@ ZEND_API void ZEND_COLD zend_incompatible_string_to_long_error(const zend_string
++	GC_DELREF(s);
+@@ -852,0 +847,34 @@ ZEND_API zend_long ZEND_FASTCALL zval_get_long_func(zval *op, bool is_strict) /*
++		case IS_DOUBLE:
++			if (UNEXPECTED(is_strict)) {
++				zend_incompatible_double_to_long_error(Z_DVAL_P(op));
++			}
++			return zend_dval_to_lval(Z_DVAL_P(op));
++		case IS_STRING: {
++			zend_long lval;
++			if (EXPECTED(zend_parse_string_to_long(Z_STRVAL_P(op), Z_STRLEN_P(op), &lval, is_strict))) {
++				return lval;
++			}
++			return 0;
++		}
++		case IS_ARRAY:
++			return zend_hash_num_elements(Z_ARRVAL_P(op)) ? 1 : 0;
++		case IS_OBJECT: {
++			zval dst;
++			convert_object_to_type(op, &dst, IS_LONG, convert_to_long);
++			if (Z_TYPE(dst) == IS_LONG) {
++				return Z_LVAL(dst);
++			} else {
++				return 1;
++			}
++		}
++		case IS_REFERENCE:
++			op = Z_REFVAL_P(op);
++			goto try_again;
++		EMPTY_SWITCH_DEFAULT_CASE();
++	}
++}		case IS_TRUE:
++			return 1;
++		case IS_RESOURCE:
++			return Z_RES_HANDLE_P(op);
++		case IS_LONG:
++			return Z_LVAL_P(op);

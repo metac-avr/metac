@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..e9bfa70e44b 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -41 +41 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr && !Z_ISREF_P(zval_ptr) && Z_REFCOUNTED_P(zval_ptr)) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 63a3112405b..b748f92c370 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -1184 +1184,7 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_leave_helper
+-				OBJ_RELEASE(ZEND_CLOSURE_OBJECT(EX(func)));
++				zend_object *closure_obj = ZEND_CLOSURE_OBJECT(EX(func));
++				if (closure_obj != NULL) {
++					zend_ulong refcount = GC_REFCOUNT(closure_obj);
++					if (refcount > 0) {
++						OBJ_RELEASE(closure_obj);
++					}
++				}
+@@ -54585 +54591,7 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-				OBJ_RELEASE(ZEND_CLOSURE_OBJECT(EX(func)));
++				zend_object *closure_obj = ZEND_CLOSURE_OBJECT(EX(func));
++				if (closure_obj != NULL) {
++					zend_ulong refcount = GC_REFCOUNT(closure_obj);
++					if (refcount > 0) {
++						OBJ_RELEASE(closure_obj);
++					}
++				}

@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..f4619996802 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -339 +339 @@ static zend_always_inline gc_root_buffer* gc_decompress(zend_refcounted *ref, ui
+-	if (EXPECTED(GC_GET_PTR(root->ref) == ref)) {
++	if (EXPECTED(idx < GC_G(first_unused) && GC_GET_PTR(root->ref) == ref)) {
+@@ -345 +345 @@ static zend_always_inline gc_root_buffer* gc_decompress(zend_refcounted *ref, ui
+-		ZEND_ASSERT(idx < GC_G(first_unused));
++		if (idx >= GC_G(first_unused)) break;
+@@ -350,0 +351 @@ static zend_always_inline gc_root_buffer* gc_decompress(zend_refcounted *ref, ui
++	return NULL;
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..847928a2f17 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -250 +250,6 @@ void shutdown_destructors(void) /* {{{ */
+-		do {
++		/* Temporarily suspend GC to prevent access to freed Generator objects during shutdown */
++		int gc_active = GC isActive();
++		if (gc_active) {
++			GC_DISABLE_COLLECTION();
++		}
++ 		do {
+@@ -254,0 +260,3 @@ void shutdown_destructors(void) /* {{{ */
++		if (gc_active) {
++			GC_ENABLE_COLLECTION();
++		}

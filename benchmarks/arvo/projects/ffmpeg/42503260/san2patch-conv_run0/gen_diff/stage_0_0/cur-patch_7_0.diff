@@ -1,0 +1,23 @@
+diff --git a/libavcodec/speexdec.c b/libavcodec/speexdec.c
+index 35270e6723..5dd72f7c88 100644
+--- a/libavcodec/speexdec.c
++++ b/libavcodec/speexdec.c
+@@ -586,0 +587 @@ static void iir_mem(const float *x, const float *den,
++    if (ord < 1) return;
+@@ -590 +591,2 @@ static void iir_mem(const float *x, const float *den,
+-        for (int j = 0; j < ord - 1; j++)
++        for (int j = 0; j < ord - 1; j++) {
++            if (j >= ord - 1) break;
+@@ -592 +594,2 @@ static void iir_mem(const float *x, const float *den,
+-        mem[ord - 1] = den[ord - 1] * nyi;
++        }
++        if (ord > 0) mem[ord - 1] = den[ord - 1] * nyi;
+@@ -946 +949,2 @@ static int nb_decode(AVCodecContext *avctx, void *ptr_st,
+-
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
+@@ -948 +952,3 @@ static int nb_decode(AVCodecContext *avctx, void *ptr_st,
+-        iir_mem(st->exc, lpc, out, NB_FRAME_SIZE, NB_ORDER, st->mem_sp);
++        if (NB_ORDER <= NB_FRAME_SIZE) {
++            iir_mem(st->exc, lpc, out, NB_FRAME_SIZE, NB_ORDER, st->mem_sp);
++        }

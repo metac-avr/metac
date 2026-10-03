@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..7d8c19cf29a 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1250 +1250,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// Resolved CWE-825: Expired Pointer Dereference - Safe pointer access with validation
++ 
+@@ -1252 +1253 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	return p ? p->refcount : 0;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..addb2abf199 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		ptr = ((char*)object) - object->handlers->offset;
+@@ -204,0 +206 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		EG(objects_store).object_buckets[handle] = NULL;  /* Set to NULL after freeing */

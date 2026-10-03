@@ -1,0 +1,67 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..56eb9f0934b 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1332,9 +1331,0 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
+-	}
+-}
+-
+@@ -1341,0 +1333,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (!p) {
++		return 0;
++	}
+@@ -1345,9 +1339 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..9ee72bc60f0 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3227,9 +3227,12 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-		/* free op1 of the corresponding RETURN */
+-		for (i = throw_op_num; i < range->end; i++) {
+-			if (EX(func)->op_array.opcodes[i].opcode == ZEND_FREE
+-			 || EX(func)->op_array.opcodes[i].opcode == ZEND_FE_FREE) {
+-				/* pass */
+-			} else {
+-				if (EX(func)->op_array.opcodes[i].opcode == ZEND_RETURN
+-				 && (EX(func)->op_array.opcodes[i].op1_type & (IS_VAR|IS_TMP_VAR))) {
+-					zval_ptr_dtor(EX_VAR(EX(func)->op_array.opcodes[i].op1.var));
++		if (range) {  /* Add null check for range */
++			/* free op1 of the corresponding RETURN */
++			for (i = throw_op_num; i < range->end; i++) {
++				if (EX(func)->op_array.opcodes[i].opcode == ZEND_FREE
++				 || EX(func)->op_array.opcodes[i].opcode == ZEND_FE_FREE) {
++					/* pass */
++				} else {
++					if (EX(func)->op_array.opcodes[i].opcode == ZEND_RETURN
++					 && (EX(func)->op_array.opcodes[i].op1_type & (IS_VAR|IS_TMP_VAR))) {
++						zval_ptr_dtor(EX_VAR(EX(func)->op_array.opcodes[i].op1.var));
++					}
++					break;
+@@ -3237 +3239,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				break;
+@@ -3238,0 +3241 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
++			throw_op_num = range->end;
+@@ -3240 +3242,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-		throw_op_num = range->end;
+@@ -3272 +3274,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *var_ptr = EX_VAR(throw_op->result.var);
++					if (var_ptr != NULL && Z_TYPE_P(var_ptr) != IS_UNDEF) {
++						zval_ptr_dtor_nogc(var_ptr);
++					}

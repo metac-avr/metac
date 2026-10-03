@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..8f95d0fd133 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -389 +389,2 @@ void shutdown_executor(void) /* {{{ */
+-	} zend_end_try();
++// FIXME: Crash CWE-416: Use After Free
++ 	} zend_end_try();
+@@ -390,0 +392,2 @@ void shutdown_executor(void) /* {{{ */
++	/* Process GC tasks before value cleanup to avoid accessing freed memory */
++	zend_gc_collect_cycles(); /* Force garbage collection before cleanup */
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..5abe498be42 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1374 +1374,9 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}
++	}
++
++	/* Defer string cleanup to prevent premature freeing during garbage collection */
++	if (Z_TYPE(p->val) == IS_STRING && Z_COUNTED(p->val)) {
++		zend_string *str = Z_STR(p->val);
++		if (GC_REFCOUNT(str) > 0) {
++			GC_ADDREF(str);
++		}

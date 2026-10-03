@@ -1,0 +1,33 @@
+diff --git a/xmlstring.c b/xmlstring.c
+index 54734724..6bd00cb5 100644
+--- a/xmlstring.c
++++ b/xmlstring.c
+@@ -48,0 +49,8 @@ xmlStrndup(const xmlChar *cur, int len) {
++    /* Fix: Ensure len does not exceed the actual string length to prevent out-of-bounds read */
++    int actual_len = 0;
++    const xmlChar *tmp = cur;
++    while (actual_len < len && *tmp) {
++        actual_len++;
++        tmp++;
++    }
++    len = actual_len;
+@@ -51 +59 @@ xmlStrndup(const xmlChar *cur, int len) {
+-        return(NULL);
++         return(NULL);
+diff --git a/HTMLparser.c b/HTMLparser.c
+index b8b6bd23..d533194b 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3013,3 +3013,9 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
+-        NEXT;
+-        if (err == 0)
+-            ret = xmlStrndup((BASE_PTR+startPosition), len);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         NEXT;
++        if (err == 0) {
++            /* Fix: Add bounds check to prevent out-of-bounds read */
++            if (len > 0 && (BASE_PTR + startPosition + len) <= (BASE_PTR + ctxt->input->length))
++                ret = xmlStrndup((BASE_PTR+startPosition), len);
++            else
++                ret = xmlStrndup((BASE_PTR+startPosition), 0);
++        }

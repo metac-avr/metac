@@ -1,0 +1,25 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..3d36b362cd 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -439,3 +439,5 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++        if (single && single->table) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        }
+@@ -495 +497 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -496,0 +499,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    // Store the result of vlc_multi_gen before calling vlc_common_end
++    int multi_gen_result = vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
+@@ -498 +502 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    if (ret < 0)
++    if (ret < 0 || multi_gen_result < 0)
+@@ -500 +504 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    return multi_gen_result;

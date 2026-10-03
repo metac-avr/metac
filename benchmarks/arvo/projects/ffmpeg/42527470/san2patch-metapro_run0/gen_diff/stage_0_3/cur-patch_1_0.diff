@@ -1,0 +1,109 @@
+diff --git a/libavcodec/hevcdec.c b/libavcodec/hevcdec.c
+index 1a0beac901..564ad2dd0a 100644
+--- a/libavcodec/hevcdec.c
++++ b/libavcodec/hevcdec.c
+@@ -1958,6 +1958,13 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        int nPbH_c = nPbH >> s->ps.sps->vshift[1];
+-
+-        luma_mc_uni(lc, dst0, s->frame->linesize[0], ref0->frame,
+-                    &current_mv.mv[0], x0, y0, nPbW, nPbH,
+-                    s->sh.luma_weight_l0[current_mv.ref_idx[0]],
+-                    s->sh.luma_offset_l0[current_mv.ref_idx[0]]);
++// FIXED: Added boundary validation and size checks
++         int nPbH_c = nPbH >> s->ps.sps->vshift[1];
++
++        // Check for valid motion vector and prediction unit dimensions
++        if ((nPbW > 0) && (nPbH > 0)) {
++            // Ensure coordinates are within frame boundaries
++            if ((x0 + nPbW) <= s->frame->width && (y0 + nPbH) <= s->frame->height) {
++                luma_mc_uni(lc, dst0, s->frame->linesize[0], ref0->frame,
++                            &current_mv.mv[0], x0, y0, nPbW, nPbH,
++                            s->sh.luma_weight_l0[current_mv.ref_idx[0]],
++                            s->sh.luma_offset_l0[current_mv.ref_idx[0]]);
++            }
++        }
+@@ -1966,6 +1973,12 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-            chroma_mc_uni(lc, dst1, s->frame->linesize[1], ref0->frame->data[1], ref0->frame->linesize[1],
+-                          0, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
+-                          s->sh.chroma_weight_l0[current_mv.ref_idx[0]][0], s->sh.chroma_offset_l0[current_mv.ref_idx[0]][0]);
+-            chroma_mc_uni(lc, dst2, s->frame->linesize[2], ref0->frame->data[2], ref0->frame->linesize[2],
+-                          0, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
+-                          s->sh.chroma_weight_l0[current_mv.ref_idx[0]][1], s->sh.chroma_offset_l0[current_mv.ref_idx[0]][1]);
++            // Validate chroma dimensions and coordinates
++            if ((nPbW_c > 0) && (nPbH_c > 0)) {
++                if ((x0_c + nPbW_c) <= (s->frame->width >> s->ps.sps->hshift[1]) && 
++                    (y0_c + nPbH_c) <= (s->frame->height >> s->ps.sps->vshift[1])) {
++                    chroma_mc_uni(lc, dst1, s->frame->linesize[1], ref0->frame->data[1], ref0->frame->linesize[1],
++                                  0, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
++                                  s->sh.chroma_weight_l0[current_mv.ref_idx[0]][0], s->sh.chroma_offset_l0[current_mv.ref_idx[0]][0]);
++                    chroma_mc_uni(lc, dst2, s->frame->linesize[2], ref0->frame->data[2], ref0->frame->linesize[2],
++                                  0, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
++                                  s->sh.chroma_weight_l0[current_mv.ref_idx[0]][1], s->sh.chroma_offset_l0[current_mv.ref_idx[0]][1]);
++                }
++            }
+@@ -1979,4 +1992,10 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        luma_mc_uni(lc, dst0, s->frame->linesize[0], ref1->frame,
+-                    &current_mv.mv[1], x0, y0, nPbW, nPbH,
+-                    s->sh.luma_weight_l1[current_mv.ref_idx[1]],
+-                    s->sh.luma_offset_l1[current_mv.ref_idx[1]]);
++        // Check for valid motion vector and prediction unit dimensions
++        if ((nPbW > 0) && (nPbH > 0)) {
++            // Ensure coordinates are within frame boundaries
++            if ((x0 + nPbW) <= s->frame->width && (y0 + nPbH) <= s->frame->height) {
++                luma_mc_uni(lc, dst0, s->frame->linesize[0], ref1->frame,
++                            &current_mv.mv[1], x0, y0, nPbW, nPbH,
++                            s->sh.luma_weight_l1[current_mv.ref_idx[1]],
++                            s->sh.luma_offset_l1[current_mv.ref_idx[1]]);
++            }
++        }
+@@ -1985,7 +2004,13 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-            chroma_mc_uni(lc, dst1, s->frame->linesize[1], ref1->frame->data[1], ref1->frame->linesize[1],
+-                          1, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
+-                          s->sh.chroma_weight_l1[current_mv.ref_idx[1]][0], s->sh.chroma_offset_l1[current_mv.ref_idx[1]][0]);
+-
+-            chroma_mc_uni(lc, dst2, s->frame->linesize[2], ref1->frame->data[2], ref1->frame->linesize[2],
+-                          1, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
+-                          s->sh.chroma_weight_l1[current_mv.ref_idx[1]][1], s->sh.chroma_offset_l1[current_mv.ref_idx[1]][1]);
++            // Validate chroma dimensions and coordinates
++            if ((nPbW_c > 0) && (nPbH_c > 0)) {
++                if ((x0_c + nPbW_c) <= (s->frame->width >> s->ps.sps->hshift[1]) && 
++                    (y0_c + nPbH_c) <= (s->frame->height >> s->ps.sps->vshift[1])) {
++                    chroma_mc_uni(lc, dst1, s->frame->linesize[1], ref1->frame->data[1], ref1->frame->linesize[1],
++                                  1, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
++                                  s->sh.chroma_weight_l1[current_mv.ref_idx[1]][0], s->sh.chroma_offset_l1[current_mv.ref_idx[1]][0]);
++
++                    chroma_mc_uni(lc, dst2, s->frame->linesize[2], ref1->frame->data[2], ref1->frame->linesize[2],
++                                  1, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
++                                  s->sh.chroma_weight_l1[current_mv.ref_idx[1]][1], s->sh.chroma_offset_l1[current_mv.ref_idx[1]][1]);
++                }
++            }
+@@ -1999,3 +2024,9 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-        luma_mc_bi(lc, dst0, s->frame->linesize[0], ref0->frame,
+-                   &current_mv.mv[0], x0, y0, nPbW, nPbH,
+-                   ref1->frame, &current_mv.mv[1], &current_mv);
++        // Check for valid motion vector and prediction unit dimensions
++        if ((nPbW > 0) && (nPbH > 0)) {
++            // Ensure coordinates are within frame boundaries
++            if ((x0 + nPbW) <= s->frame->width && (y0 + nPbH) <= s->frame->height) {
++                luma_mc_bi(lc, dst0, s->frame->linesize[0], ref0->frame,
++                           &current_mv.mv[0], x0, y0, nPbW, nPbH,
++                           ref1->frame, &current_mv.mv[1], &current_mv);
++            }
++        }
+@@ -2004,5 +2035,11 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
+-            chroma_mc_bi(lc, dst1, s->frame->linesize[1], ref0->frame, ref1->frame,
+-                         x0_c, y0_c, nPbW_c, nPbH_c, &current_mv, 0);
+-
+-            chroma_mc_bi(lc, dst2, s->frame->linesize[2], ref0->frame, ref1->frame,
+-                         x0_c, y0_c, nPbW_c, nPbH_c, &current_mv, 1);
++            // Validate chroma dimensions and coordinates
++            if ((nPbW_c > 0) && (nPbH_c > 0)) {
++                if ((x0_c + nPbW_c) <= (s->frame->width >> s->ps.sps->hshift[1]) && 
++                    (y0_c + nPbH_c) <= (s->frame->height >> s->ps.sps->vshift[1])) {
++                    chroma_mc_bi(lc, dst1, s->frame->linesize[1], ref0->frame, ref1->frame,
++                                 x0_c, y0_c, nPbW_c, nPbH_c, &current_mv, 0);
++
++                    chroma_mc_bi(lc, dst2, s->frame->linesize[2], ref0->frame, ref1->frame,
++                                 x0_c, y0_c, nPbW_c, nPbH_c, &current_mv, 1);
++                }
++            }

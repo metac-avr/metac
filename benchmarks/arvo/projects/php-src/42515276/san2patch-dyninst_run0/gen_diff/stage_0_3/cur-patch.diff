@@ -1,0 +1,62 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index 229d9890251..39068fae596 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2320,21 +2320,36 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-			time_str = "now";
+-			time_str_len = sizeof("now") - 1;
+-		}
+-		dateobj->time = timelib_strtotime(time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
+-	}
+-
+-	/* update last errors and warnings */
+-	update_errors_warnings(err);
+-
+-	/* If called from a constructor throw an exception */
+-	if ((flags & PHP_DATE_INIT_CTOR) && err && err->error_count) {
+-		/* spit out the first library error message, at least */
+-		zend_throw_exception_ex(NULL, 0, "Failed to parse time string (%s) at position %d (%c): %s", time_str,
+-			err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
+-	}
+-	if (err && err->error_count) {
+-		timelib_time_dtor(dateobj->time);
+-		dateobj->time = 0;
+-		return 0;
+-	}
+-
++            time_str = "now";
++            time_str_len = sizeof("now") - 1;
++        }
++        dateobj->time = timelib_strtotime(time_str, time_str_len, &err, DATE_TIMEZONEDB, php_date_parse_tzfile_wrapper);
++    }
++
++    /* Extract error details before freeing */
++    int saved_error_count = 0;
++    timelib_error_message first_error = {0};
++    
++    if (err && err->error_count > 0 && err->error_messages) {
++        saved_error_count = err->error_count;
++        /* Deep copy first error message */
++        first_error.position = err->error_messages[0].position;
++        first_error.character = err->error_messages[0].character;
++        first_error.message = err->error_messages[0].message ? estrdup(err->error_messages[0].message) : NULL;
++    }
++    
++    /* update last errors and warnings */
++    update_errors_warnings(err);
++    // Fixed: Use copied error data instead of accessing freed memory
++    
++    /* If called from a constructor throw an exception */
++    if ((flags & PHP_DATE_INIT_CTOR) && saved_error_count > 0) {
++        /* spit out the first library error message, at least */
++        zend_throw_exception_ex(NULL, 0, "Failed to parse time string (%s) at position %d (%c): %s", time_str,
++            first_error.position, first_error.character, first_error.message ? first_error.message : "Error message unavailable");
++    }
++    if (first_error.message) {
++        efree(first_error.message);
++    }
++    if (saved_error_count > 0) {
++        timelib_time_dtor(dateobj->time);
++        dateobj->time = 0;
++        return 0;
++    }

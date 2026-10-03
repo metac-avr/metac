@@ -1,0 +1,18 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..78633f4c 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2094,2 +2094,7 @@ xmlFreePropList(xmlAttrPtr cur) {
+-        xmlFreeProp(cur);
+-	cur = next;
++        if (cur->doc != NULL && cur->doc->dict != NULL) {
++            if (!xmlDictOwns(cur->doc->dict, (const xmlChar*)cur->name))
++                xmlFreeProp(cur);
++        } else {
++            xmlFreeProp(cur);
++        }
++        cur = next;
+@@ -3724 +3729,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		 (cur->type == XML_XINCLUDE_END)) &&
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference - Skip property cleanup for dictionary strings
++ 		 (cur->type == XML_XINCLUDE_END)) &&

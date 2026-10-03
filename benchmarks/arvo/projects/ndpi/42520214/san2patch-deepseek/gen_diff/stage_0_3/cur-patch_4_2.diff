@@ -1,0 +1,40 @@
+diff --git a/src/lib/protocols/bittorrent.c b/src/lib/protocols/bittorrent.c
+index cdb62e8db..5f9bb2a2e 100644
+--- a/src/lib/protocols/bittorrent.c
++++ b/src/lib/protocols/bittorrent.c
+@@ -90 +90,11 @@ static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndp
+-	bt_hash = (const char*)&packet->payload[28];
++static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndpi_struct,
++                                           struct ndpi_flow_struct *flow,
++                                           int bt_offset) {
++  struct ndpi_packet_struct *packet = &ndpi_struct->packet;
++  const char *bt_hash = NULL;
++  const char *bt_magic = "BitTorrent protocol";
++
++  if(bt_offset >= 0) {
++    if(packet->payload_packet_len >= (bt_offset + 19)) {
++      if(memcmp(&packet->payload[bt_offset], bt_magic, 19) == 0)
++        bt_hash = &bt_magic[19];
+@@ -92 +102 @@ static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndp
+-	bt_hash = &bt_magic[19];
++        bt_hash = (const char*)&packet->payload[bt_offset];
+@@ -96,3 +106,6 @@ static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndp
+-  
+-  if(bt_hash && (packet->payload_packet_len >= (20 + (bt_hash-(const char*)packet->payload))))
+-    memcpy(flow->protos.bittorrent.hash, bt_hash, 20);
++
++  if(bt_hash && (packet->payload_packet_len >= (20 + (bt_hash-(const char*)packet->payload)))) {
++    size_t remaining = packet->payload_packet_len - (bt_hash-(const char*)packet->payload);
++    if(remaining >= 20)
++      memcpy(flow->protos.bittorrent.hash, bt_hash, 20);
++  }
+@@ -104,3 +117,3 @@ static void ndpi_add_connection_as_bittorrent(struct ndpi_detection_module_struc
+-					      struct ndpi_flow_struct *flow,
+-					      int bt_offset, int check_hash,
+-					      ndpi_confidence_t confidence) {
++                                              struct ndpi_flow_struct *flow,
++                                              int bt_offset, int check_hash,
++                                              ndpi_confidence_t confidence) {
+@@ -111 +124 @@ static void ndpi_add_connection_as_bittorrent(struct ndpi_detection_module_struc
+-
++}

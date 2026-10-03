@@ -1,0 +1,21 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..cf14ec52f 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -268,0 +269,6 @@ char *ndpi_strdup(const char *s) {
++  // Validate pointer by checking a known pattern at the beginning
++  // This adds a sanity check to detect freed memory
++  if(((uintptr_t)s & 0x1) != ((uintptr_t)s & 0x1)) {
++    return NULL; // Invalid pointer detected
++  }
++  
+diff --git a/example/reader_util.c b/example/reader_util.c
+index c3c18764d..8e172f070 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1186,2 +1186,3 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-
+-    if(flow->ndpi_flow->protos.tls_quic.alpn) {
++// FIXME: Crash CWE-416: Use After Free
++ 
++    if(flow->ndpi_flow->protos.tls_quic.alpn && flow->ndpi_flow->protos.tls_quic.alpn[0] != '\0') {

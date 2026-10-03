@@ -1,0 +1,166 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..9147b913f90 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1683,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
++	if (ht != NULL && HT_GET_DATA_ADDR(ht) != NULL) {
++		efree(HT_GET_DATA_ADDR(ht));
++	}
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1688,5 +1690,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..bf0a704b678 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -25490,14 +25490,15 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_VAR_TMPVAR_OP_
+-					}
+-					goto exit_assign_obj;
+-				}
+-			}
+-		}
+-		name = Z_STR_P(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC));
+-	} else {
+-		name = zval_try_get_tmp_string(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC), &tmp_name);
+-		if (UNEXPECTED(!name)) {
+-
+-			UNDEF_RESULT();
+-			goto exit_assign_obj;
+-		}
+-	}
++                    }
++                    goto exit_assign_obj;
++                }
++            }
++        }
++        name = Z_STR_P(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC));
++    } else {
++        name = zval_try_get_tmp_string(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC), &tmp_name);
++// FIXME: Crash CWE-416: Use After Free
++        if (UNEXPECTED(!name)) {
++
++            UNDEF_RESULT();
++            goto exit_assign_obj;
++        }
++    }
+@@ -25505,3 +25506,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_VAR_TMPVAR_OP_
+-	if (IS_CONST == IS_CV || IS_CONST == IS_VAR) {
+-		ZVAL_DEREF(value);
+-	}
++    if (IS_CONST == IS_CV || IS_CONST == IS_VAR) {
++        ZVAL_DEREF(value);
++    }
+@@ -25509 +25510,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_VAR_TMPVAR_OP_
+-	value = zobj->handlers->write_property(zobj, name, value, ((IS_TMP_VAR|IS_VAR) == IS_CONST) ? CACHE_ADDR(opline->extended_value) : NULL);
++    /* Check if object is still valid before property write */
++    if (UNEXPECTED(GC_DELREF(zobj) < 0)) {
++        GC_ADDREF(zobj);
++        UNDEF_RESULT();
++        goto exit_assign_obj;
++    }
++    GC_ADDREF(zobj);
+@@ -25510,0 +25518 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_VAR_TMPVAR_OP_
++    value = zobj->handlers->write_property(zobj, name, value, ((IS_TMP_VAR|IS_VAR) == IS_CONST) ? CACHE_ADDR(opline->extended_value) : NULL);
+@@ -33686,14 +33694,15 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_UNUSED_TMPVAR_
+-					}
+-					goto exit_assign_obj;
+-				}
+-			}
+-		}
+-		name = Z_STR_P(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC));
+-	} else {
+-		name = zval_try_get_tmp_string(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC), &tmp_name);
+-		if (UNEXPECTED(!name)) {
+-
+-			UNDEF_RESULT();
+-			goto exit_assign_obj;
+-		}
+-	}
++                    }
++                    goto exit_assign_obj;
++                }
++            }
++        }
++        name = Z_STR_P(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC));
++    } else {
++        name = zval_try_get_tmp_string(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC), &tmp_name);
++// FIXME: Crash CWE-416: Use After Free
++        if (UNEXPECTED(!name)) {
++
++            UNDEF_RESULT();
++            goto exit_assign_obj;
++        }
++    }
+@@ -33701,3 +33710,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_UNUSED_TMPVAR_
+-	if (IS_CONST == IS_CV || IS_CONST == IS_VAR) {
+-		ZVAL_DEREF(value);
+-	}
++    if (IS_CONST == IS_CV || IS_CONST == IS_VAR) {
++        ZVAL_DEREF(value);
++    }
+@@ -33705 +33714,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_UNUSED_TMPVAR_
+-	value = zobj->handlers->write_property(zobj, name, value, ((IS_TMP_VAR|IS_VAR) == IS_CONST) ? CACHE_ADDR(opline->extended_value) : NULL);
++    /* Check if object is still valid before property write */
++    if (UNEXPECTED(GC_DELREF(zobj) < 0)) {
++        GC_ADDREF(zobj);
++        UNDEF_RESULT();
++        goto exit_assign_obj;
++    }
++    GC_ADDREF(zobj);
+@@ -33706,0 +33722 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_UNUSED_TMPVAR_
++    value = zobj->handlers->write_property(zobj, name, value, ((IS_TMP_VAR|IS_VAR) == IS_CONST) ? CACHE_ADDR(opline->extended_value) : NULL);
+@@ -43960,14 +43976,15 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_CV_TMPVAR_OP_D
+-					}
+-					goto exit_assign_obj;
+-				}
+-			}
+-		}
+-		name = Z_STR_P(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC));
+-	} else {
+-		name = zval_try_get_tmp_string(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC), &tmp_name);
+-		if (UNEXPECTED(!name)) {
+-
+-			UNDEF_RESULT();
+-			goto exit_assign_obj;
+-		}
+-	}
++                    }
++                    goto exit_assign_obj;
++                }
++            }
++        }
++        name = Z_STR_P(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC));
++    } else {
++        name = zval_try_get_tmp_string(_get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC), &tmp_name);
++// FIXME: Crash CWE-416: Use After Free
++        if (UNEXPECTED(!name)) {
++
++            UNDEF_RESULT();
++            goto exit_assign_obj;
++        }
++    }
+@@ -43975,3 +43992,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_CV_TMPVAR_OP_D
+-	if (IS_CONST == IS_CV || IS_CONST == IS_VAR) {
+-		ZVAL_DEREF(value);
+-	}
++    if (IS_CONST == IS_CV || IS_CONST == IS_VAR) {
++        ZVAL_DEREF(value);
++    }
+@@ -43979 +43996,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_CV_TMPVAR_OP_D
+-	value = zobj->handlers->write_property(zobj, name, value, ((IS_TMP_VAR|IS_VAR) == IS_CONST) ? CACHE_ADDR(opline->extended_value) : NULL);
++    /* Check if object is still valid before property write */
++    if (UNEXPECTED(GC_DELREF(zobj) < 0)) {
++        GC_ADDREF(zobj);
++        UNDEF_RESULT();
++        goto exit_assign_obj;
++    }
++    GC_ADDREF(zobj);
+@@ -43980,0 +44004 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_OBJ_SPEC_CV_TMPVAR_OP_D
++    value = zobj->handlers->write_property(zobj, name, value, ((IS_TMP_VAR|IS_VAR) == IS_CONST) ? CACHE_ADDR(opline->extended_value) : NULL);

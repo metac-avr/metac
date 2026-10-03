@@ -1,0 +1,23 @@
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index d456e5dd11..3a8abee42f 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -282,2 +282,5 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++                for (int w = 0, idx = 0; w < (16 >> (hsub + lowres)); w++, idx += step) {
++                    if (w >= 0 && w < (16 >> (hsub + lowres))) {
++                        dest_pcm[i][w] = src[idx];
++                    }
++                }
+@@ -299,3 +302,7 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
+-            for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
+-                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step)
+-                    dest_pcm[i][w] = src[idx];
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             for (int h = (16 >> (vsub + lowres)) - 1; h >= 0; h--){
++                for (int w = (16 >> (hsub + lowres)) - 1, idx = 0; w >= 0; w--, idx += step) {
++                    if (w >= 0 && w < (16 >> (hsub + lowres))) {
++                        dest_pcm[i][w] = src[idx];
++                    }
++                }

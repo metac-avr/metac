@@ -1,0 +1,39 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..eed23d3c74 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -428,0 +429,12 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    // Validate input parameters to prevent expired pointer dereference
++    if (!table || !single || !buf || nb_codes <= 0 || numbits <= 0) {
++        av_log(logctx, AV_LOG_ERROR, "Invalid parameters for VLC table generation\n");
++        return AVERROR(EINVAL);
++    }
++
++    // Additional validation to check if single->table is valid
++    if (!single->table) {
++        av_log(logctx, AV_LOG_ERROR, "Invalid VLC table pointer\n");
++        return AVERROR(EINVAL);
++    }
++
+@@ -438,0 +451,5 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++        // Check bounds before accessing single->table to prevent use-after-free
++        if (j >= (1 << numbits)) {
++            av_log(logctx, AV_LOG_ERROR, "Table index out of bounds\n");
++            return AVERROR(EINVAL);
++        }
+@@ -467 +484,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    if (!multi->table)
++    if (!multi->table) {
++        vlc_common_end(vlc, nb_bits, 0, buf, flags, localbuf);
+@@ -468,0 +487 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    }
+@@ -495 +514 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -499,0 +519,6 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    
++    if (!multi->table) {
++        av_log(logctx, AV_LOG_ERROR, "VLC table is NULL after initialization\n");
++        return AVERROR_INVALIDDATA;
++    }
++    

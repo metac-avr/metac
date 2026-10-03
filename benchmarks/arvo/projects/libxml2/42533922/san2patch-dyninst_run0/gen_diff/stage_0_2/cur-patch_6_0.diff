@@ -1,0 +1,29 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..34a0a311 100644
+--- a/tree.c
++++ b/tree.c
+@@ -746 +746 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-	    if (xmlStrEqual(prev->prefix, cur->prefix))
++	    if ((prev->prefix != NULL) && (cur->prefix != NULL) && xmlStrEqual(prev->prefix, cur->prefix))
+@@ -750 +750 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-		if (xmlStrEqual(prev->prefix, cur->prefix))
++		if ((prev->prefix != NULL) && (cur->prefix != NULL) && xmlStrEqual(prev->prefix, cur->prefix))
+@@ -759 +759,7 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-    xmlFreeNs(cur);
++    if (cur != NULL) {
++        if (cur->href != NULL)
++            xmlFree((xmlChar *) cur->href);
++        if (cur->prefix != NULL)
++            xmlFree((xmlChar *) cur->prefix);
++        xmlFree(cur);
++    }
+@@ -791,0 +798 @@ xmlFreeNs(xmlNsPtr cur) {
++    /* Clear pointers to prevent use-after-free */
+@@ -792,0 +800 @@ xmlFreeNs(xmlNsPtr cur) {
++    cur->href = NULL;  /* Prevent dangling pointer access */
+@@ -793,0 +802 @@ xmlFreeNs(xmlNsPtr cur) {
++    cur->prefix = NULL;  /* Prevent dangling pointer access */
+@@ -804,2 +813 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;

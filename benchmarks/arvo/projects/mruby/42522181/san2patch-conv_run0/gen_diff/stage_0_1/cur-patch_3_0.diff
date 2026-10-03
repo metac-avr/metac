@@ -1,0 +1,34 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..aff30af8a 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1252 +1252 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    /* unknown state */
++/* unknown state */
+@@ -1263,0 +1264,5 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
++  
++  /* Clear any pending sweep references to prevent use-after-free */
++  if (gc->sweeps) {
++    gc->sweeps = 0;
++  }
+@@ -1272,2 +1277 @@ incremental_gc_step(mrb_state *mrb, mrb_gc *gc)
+-    result += incremental_gc(mrb, gc, limit);
+-    if (gc->state == MRB_GC_STATE_ROOT)
++    result += incremental_gc(mrb, gc, limit);    if (gc->state == MRB_GC_STATE_ROOT)
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..9879ef326 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -264 +264,2 @@ void
+-mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+@@ -266 +267,3 @@ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+-  mark_tbl(mrb, obj->iv);
++  if (obj && obj->iv) {
++    mark_tbl(mrb, obj->iv);
++  }
+@@ -276,2 +279 @@ void
+-mrb_gc_free_iv(mrb_state *mrb, struct RObject *obj)
+-{
++mrb_gc_free_iv(mrb_state *mrb, struct RObject *obj){

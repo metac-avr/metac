@@ -1,0 +1,45 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..5e91eb529f 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,21 +2017,19 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
++WRITE_FRAME(8, uint8_t)\
++{\
++    PIXEL *line = (PIXEL*)picture->data[plane] + y * (picture->linesize[plane] / sizeof(PIXEL));\
++    for (int i = 0; i < cblk->height; i++) {\
++        PIXEL *dst = line + x;\
++        for (int j = 0; j < cblk->width; j++) {\
++            if (i_datap >= i_endp) break;\
++            *dst = *i_datap;\
++            i_datap++;\
++            dst += pixelsize;\
++        }\
++        line += picture->linesize[plane] / sizeof(PIXEL);\
++    }\
++    // Fixed CWE-787: Out-of-bounds Write - Prevent buffer overflow\
++    if (dst > (PIXEL*)((uint8_t*)picture->data[plane] + picture->linesize[plane] * picture->height)) {\
++        av_log(avctx, AV_LOG_ERROR, "Buffer overflow detected in WRITE_FRAME\n");\
++        return AVERROR_INVALIDDATA;\
++    }\
++}\

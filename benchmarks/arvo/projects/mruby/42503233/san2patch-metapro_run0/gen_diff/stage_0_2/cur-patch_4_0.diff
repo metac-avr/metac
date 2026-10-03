@@ -1,0 +1,33 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..c0641be79 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -178 +178,5 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-#endif
++  /* Check for potential stack overflow before allocation */
++  if (size > MRB_STACK_MAX / 2) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
++ #endif
+@@ -479 +483,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     c = mrb_class(mrb, self);
+@@ -481 +486,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    mrb_stack_extend(mrb, argc + 3);
++    
++    // Preemptive stack overflow protection
++    if ((char*)mrb->c->stend - (char*)mrb->c->stack < 4096) {
++      stack_extend_alloc(mrb, argc + 3);
++    } else {
++      mrb_stack_extend(mrb, argc + 3);
++    }
+@@ -497 +508,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      mrb_stack_extend(mrb, n+2);
++      
++      // Safer stack extension with bounds checking
++      if ((char*)mrb->c->stend - (char*)mrb->c->stack < 4096) {
++        stack_extend_alloc(mrb, n+2);
++      } else {
++        mrb_stack_extend(mrb, n+2);
++      }

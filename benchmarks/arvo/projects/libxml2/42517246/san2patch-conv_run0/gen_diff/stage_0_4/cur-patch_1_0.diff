@@ -1,0 +1,36 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..70693858 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -846,4 +846,9 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-    if (elem->type == XML_DOCUMENT_NODE)
+-	result = xmlXIncludeCopyNodeList(ctxt, target, source, elem->children);
+-    else
+-        result = xmlDocCopyNode(elem, target, 1);
++    if (elem->type == XML_DOCUMENT_NODE) {
++        if (elem->children != NULL && elem->children != (xmlNodePtr)0xdeadbeef)
++	    result = xmlXIncludeCopyNodeList(ctxt, target, source, elem->children);
++        else
++            result = NULL;
++    } else {
++        if (elem != NULL)
++            result = xmlDocCopyNode(elem, target, 1);
++    }
+diff --git a/tree.c b/tree.c
+index 6a42f118..0a87a7d2 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4519 +4519 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4527 +4527,2 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     xmlNodePtr ret;
+@@ -4528,0 +4530,2 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (node == NULL || doc == NULL)
++        return(NULL);
+@@ -4539,2 +4542 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
++ * * Returns: a new #xmlNodePtr, or NULL in case of error.

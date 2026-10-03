@@ -1,0 +1,33 @@
+diff --git a/parser.c b/parser.c
+index 11bb5199..b992ce64 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7501,0 +7502,9 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++		    /* Check if namespace pointer is valid before copying */
++		    if (cur->ns != NULL) {
++		        /* Validate namespace is not freed/dangling */
++		        if (cur->ns->_private == NULL) {
++		            /* Skip copying if namespace appears to be invalid */
++		            cur = cur->next;
++		            continue;
++		        }
++		    }
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..cba745a2 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1299 +1299,13 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++		/* Clear namespace pointers before freeing to prevent UAF */
++		if (tmp->nsDef != NULL) {
++		    xmlNsPtr ns, next;
++		    for (ns = tmp->nsDef; ns != NULL; ns = next) {
++		        next = ns->next;
++		        ns->next = NULL;
++		    }
++		    tmp->nsDef = NULL;
++		}
++		if (tmp->ns != NULL) {
++		    tmp->ns = NULL;
++		}

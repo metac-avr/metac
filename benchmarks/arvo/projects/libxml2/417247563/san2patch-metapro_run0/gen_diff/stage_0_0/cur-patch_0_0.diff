@@ -1,0 +1,89 @@
+diff --git a/xmlIO.c b/xmlIO.c
+index 4b3d2964..9e4f18ba 100644
+--- a/xmlIO.c
++++ b/xmlIO.c
+@@ -279,33 +278,0 @@ xmlEscapeText(const xmlChar *string, int flags) {
+-    while (*cur != 0) {
+-        const xmlChar *base;
+-        const char *repl;
+-        size_t used;
+-        size_t replSize;
+-        size_t unescapedSize;
+-        size_t totalSize;
+-        int c;
+-        int offset;
+-
+-        base = cur;
+-        offset = -1;
+-
+-        while (1) {
+-            c = *cur;
+-
+-            if (c < 0x80) {
+-                offset = tab[c];
+-                if (offset >= 0)
+-                    break;
+-            } else if (flags & XML_ESCAPE_NON_ASCII) {
+-                break;
+-            }
+-
+-            cur += 1;
+-        }
+-
+-        unescapedSize = cur - base;
+-
+-        if (offset >= 0) {
+-            if (c == 0) {
+-                replSize = 0;
+-                repl = "";
+@@ -313,6 +280 @@ xmlEscapeText(const xmlChar *string, int flags) {
+-                replSize = xmlEscapeContent[offset],
+-                repl = &xmlEscapeContent[offset+1];
+-                cur += 1;
+-            }
+-        } else {
+-            char tempBuf[12];
++            char *tempBuf;  /* Use dynamic allocation instead of stack */
+@@ -331,21 +293,2 @@ xmlEscapeText(const xmlChar *string, int flags) {
+-            replSize = xmlSerializeHexCharRef(tempBuf, val);
+-            repl = tempBuf;
+-        }
+-
+-        used = out - buffer;
+-        totalSize = unescapedSize + replSize;
+-
+-        if (totalSize > size - used) {
+-            xmlChar *tmp;
+-            int newSize;
+-
+-            if ((size > (SIZE_MAX - 1) / 2) ||
+-                (totalSize > (SIZE_MAX - 1) / 2 - size)) {
+-                xmlFree(buffer);
+-                return(NULL);
+-            }
+-            newSize = size + totalSize;
+-            if (*cur != 0)
+-                newSize *= 2;
+-            tmp = xmlRealloc(buffer, newSize + 1);
+-            if (tmp == NULL) {
++            tempBuf = xmlMalloc(12);  /* Dynamic allocation */
++            if (tempBuf == NULL) {
+@@ -355,3 +298,3 @@ xmlEscapeText(const xmlChar *string, int flags) {
+-            buffer = tmp;
+-            size = newSize;
+-            out = buffer + used;
++            replSize = xmlSerializeHexCharRef(tempBuf, val);
++            repl = tempBuf;
++            xmlFree(tempBuf);  /* Free the dynamically allocated buffer */
+@@ -360,11 +302,0 @@ xmlEscapeText(const xmlChar *string, int flags) {
+-        memcpy(out, base, unescapedSize);
+-        out += unescapedSize;
+-        memcpy(out, repl, replSize);
+-        out += replSize;
+-
+-        if (c == 0)
+-            break;
+-
+-        base = cur;
+-    }
+-

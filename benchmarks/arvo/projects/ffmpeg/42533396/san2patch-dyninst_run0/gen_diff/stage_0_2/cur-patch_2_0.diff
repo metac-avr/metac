@@ -1,0 +1,18 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..e0e46a0edc 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -674,4 +674,9 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
+-        if (!dst->u.map)
+-            return AVERROR(ENOMEM);
+-        memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        if (src->nb_channels > 0 && src->nb_channels <= (INT_MAX / sizeof(*dst->u.map))) {
++            dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
++            if (!dst->u.map)
++                return AVERROR(ENOMEM);
++            memset(dst->u.map, 0, src->nb_channels * sizeof(*dst->u.map));
++            memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        } else {
++            dst->u.map = NULL;
++        }

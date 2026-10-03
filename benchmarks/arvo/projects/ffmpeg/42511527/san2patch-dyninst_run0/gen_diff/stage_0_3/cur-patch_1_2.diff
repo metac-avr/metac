@@ -1,0 +1,40 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..18b035f22b 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -194,2 +194,3 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
+-    if (s->zlibprime_curr || s->zlibprime_prev) {
++// FIXME: Crash CWE-416: Use After Free
++     }
++    if ((s->zlibprime_curr || s->zlibprime_prev) && s->keyframedata) {
+@@ -200,0 +202,3 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++    } else if (s->zlibprime_curr || s->zlibprime_prev) {
++        av_log(avctx, AV_LOG_ERROR, "keyframedata is NULL when zlibprime is active\n");
++        return AVERROR_INVALIDDATA;
+@@ -217 +221 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    if (s->is_keyframe) {
++    if (s->is_keyframe && s->keyframedata) {
+@@ -219,0 +224,3 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++    } else if (s->is_keyframe) {
++        av_log(avctx, AV_LOG_ERROR, "keyframedata is NULL during keyframe processing\n");
++        return AVERROR_INVALIDDATA;
+@@ -349,6 +355,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -357 +358,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -358,0 +361 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        void *temp_ptr = s->keyframedata;
+@@ -361 +364,4 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        if (s->keyframedata)
++            memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        else
++            return AVERROR(ENOMEM);

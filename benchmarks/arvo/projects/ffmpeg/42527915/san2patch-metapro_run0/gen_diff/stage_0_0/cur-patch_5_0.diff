@@ -1,0 +1,46 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..1e65e8d225 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239,3 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
+-        if (codes != localbuf)
+-            av_free(codes);
++     } else {
+@@ -242,0 +241,2 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++            if (codes != localbuf)
++                av_free(codes);
+@@ -245,0 +246,3 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++        /* Only free codes buffer if not needed by subsequent operations */
++        if (codes != localbuf)
++            av_free(codes);
+@@ -427,0 +431,5 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    
++    // Early return if parameters are invalid to prevent use-after-free
++    if (!table || !single || !buf || nb_elems <= 0 || nb_codes <= 0) {
++        return -1;
++    }
+@@ -432 +440,2 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    while (max >= nb_codes/2) {
++    // Add bounds checking to prevent buffer overruns
++    while (max >= nb_codes/2 && max >= 0) {
+@@ -438,4 +447,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    for (int j = 0; j < 1<<numbits; j++) {
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++    // Safe memory access with bounds checking
++    for (int j = 0; j < 1<<numbits && j < VLC_MAX_TABLE_SIZE; j++) {
++        if (j < nb_codes && single->table) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            AV_WN16(table[j].val, single->table[j].sym);
++        }
+@@ -444,2 +456,5 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    add_level(table, nb_elems, nb_codes, numbits, buf,
+-              0, 0, numbits, 0, minbits, max, count, &info);
++    // Ensure we don't access beyond buffer boundaries
++    if (max >= 0 && max < nb_codes) {
++        add_level(table, nb_elems, nb_codes, numbits, buf,
++                  0, 0, numbits, 0, minbits, max, count, &info);
++    }

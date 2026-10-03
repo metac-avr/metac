@@ -1,0 +1,34 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..4542de2b 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1252,0 +1253,5 @@ xmlFreeDoc(xmlDocPtr cur) {
++    /* Free properties before children to avoid double-free of dict strings */
++    if (cur->properties != NULL) {
++        xmlFreePropList(cur->properties);
++        cur->properties = NULL;
++    }
+@@ -3725,2 +3730,17 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		(cur->properties != NULL))
+-		xmlFreePropList(cur->properties);
++		(cur->properties != NULL)) {
++	        /* Check if properties contain dictionary strings before freeing */
++	        xmlAttrPtr prop = cur->properties;
++	        xmlAttrPtr prev_prop = NULL;
++	        
++	        /* Temporarily nullify dictionary-owned content to prevent double-free */
++	        while (prop != NULL) {
++	            if ((prop->children != NULL) && (prop->children->content != NULL)) {
++	                if ((prop->doc != NULL) && (prop->doc->dict != NULL) &&
++	                    xmlDictOwns(prop->doc->dict, prop->children->content)) {
++	                    prop->children->content = NULL;
++	                }
++	            }
++	            prop = prop->next;
++	        }
++	        xmlFreePropList(cur->properties);
++	    }
+@@ -3734 +3754,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-#endif
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ #endif

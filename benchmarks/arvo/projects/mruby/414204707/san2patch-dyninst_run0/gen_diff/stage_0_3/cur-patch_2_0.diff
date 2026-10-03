@@ -1,0 +1,22 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..ea1866683 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -792 +792,6 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-  add_gray_list(mrb, &mrb->gc, obj);
++  
++  // Additional safety check to prevent expired pointer dereference
++  volatile struct RBasic *safe_obj = obj;
++  if (safe_obj && safe_obj->tt != MRB_TT_FREE) {
++    add_gray_list(mrb, &mrb->gc, (struct RBasic*)safe_obj);
++  }
+@@ -799,2 +804 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:

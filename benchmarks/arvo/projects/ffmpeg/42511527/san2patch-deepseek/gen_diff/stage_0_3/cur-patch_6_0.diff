@@ -1,0 +1,15 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..dfaf8e91d3 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -357 +357,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -359,2 +360,4 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
+-            return err;
++        uint8_t *new_keyframedata = av_realloc(s->keyframedata, avpkt->size);
++        if (!new_keyframedata)
++            return AVERROR(ENOMEM);
++        s->keyframedata = new_keyframedata;

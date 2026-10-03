@@ -1,0 +1,80 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..4f910ae49 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -780,5 +779,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  default:
+-    break;
+-  }
+-}
+-
+@@ -787 +782,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -791,0 +788,4 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (mrb->gc.state == MRB_GC_STATE_SWEEP && !is_dead(mrb, obj)) {
++    /* During sweep phase, check if object is about to be freed */
++    return;
++  }
+@@ -793,8 +793 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++}  case MRB_TT_OBJECT:
+@@ -1165,34 +1158 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-  while (page && (tried_sweep < limit)) {
+-    RVALUE *p = objects(page);
+-    RVALUE *e = p + MRB_HEAP_PAGE_SIZE;
+-    size_t freed = 0;
+-    mrb_bool dead_slot = TRUE;
+-    mrb_bool full = (page->freelist == NULL);
+-
+-    if (is_minor_gc(gc) && page->old) {
+-      /* skip a slot which doesn't contain any young object */
+-      p = e;
+-      dead_slot = FALSE;
+-    }
+-    while (p<e) {
+-      if (is_dead(gc, &p->as.basic)) {
+-        if (p->as.basic.tt != MRB_TT_FREE) {
+-          obj_free(mrb, &p->as.basic, FALSE);
+-          if (p->as.basic.tt == MRB_TT_FREE) {
+-            p->as.free.next = page->freelist;
+-            page->freelist = (struct RBasic*)p;
+-            freed++;
+-          }
+-          else {
+-            dead_slot = FALSE;
+-          }
+-        }
+-      }
+-      else {
+-        if (!is_generational(gc))
+-          paint_partial_white(gc, &p->as.basic); /* next gc target */
+-        dead_slot = FALSE;
+-      }
+-      p++;
+-    }
+-
++  
+@@ -1208,14 +1167,0 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    else {
+-      if (full && freed > 0) {
+-        link_free_heap_page(gc, page);
+-      }
+-      if (page->freelist == NULL && is_minor_gc(gc))
+-        page->old = TRUE;
+-      else
+-        page->old = FALSE;
+-      page = page->next;
+-    }
+-    tried_sweep += MRB_HEAP_PAGE_SIZE;
+-    gc->live -= freed;
+-    gc->live_after_mark -= freed;
+-  }

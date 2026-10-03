@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..ecc8942af69 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -260,2 +260,4 @@ void shutdown_destructors(void) /* {{{ */
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
+-		} while (symbols != zend_hash_num_elements(&EG(symbol_table)));
++			if (EG(symbol_table).nNumUsed > 0) {
++				zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			}
++		} while (symbols != zend_hash_num_elements(&EG(symbol_table)) && EG(symbol_table).nNumUsed > 0);
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index 6f00786b669..d744b8d3a2b 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -317,0 +318,3 @@ static void gc_stack_free(gc_stack *stack)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	if (!stack) return;
++	
+@@ -318,0 +322 @@ static void gc_stack_free(gc_stack *stack)
++	stack->next = NULL; // Prevent use-after-free
+@@ -322 +326 @@ static void gc_stack_free(gc_stack *stack)
+-		efree(p);
++		if (p) efree(p);

@@ -1,0 +1,15 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..99f260f2eb 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2025 +2025,9 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-    }
++// Fixed CWE-787: Out-of-bounds Write - Added bounds checking to prevent buffer overflow
++        ptrdiff_t offset = (uint8_t*)dst - (uint8_t*)picture->data[plane];                        \
++        if (offset >= 0 && offset < picture->linesize[plane] * picture->height) {                 \
++            *dst = *i_datap;                                                                      \
++        }                                                                                         \
++        i_datap++;                                                                                \
++        dst += pixelsize;                                                                         \
++    }                                                                                             \
++}

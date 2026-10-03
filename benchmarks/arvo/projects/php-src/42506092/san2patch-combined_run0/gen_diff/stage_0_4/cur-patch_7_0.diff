@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..de0d7a9441b 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1781,0 +1782,6 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	
++	/* Notify JIT compiler about hash table destruction before freeing memory */
++	if (ZEND_JIT_ENABLED()) {
++		zend_jit_invalidate_references(ht);
++	}
++	
+@@ -1783 +1789,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1786,6 +1793 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	IS_CONSISTENT(ht);
+-	HT_ASSERT_RC1(ht);
++}	HT_ASSERT_RC1(ht);
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..e6d591779cb 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -757,0 +758,4 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
++	/* Validate hash table before accessing to prevent use-after-free vulnerability */
++	if (UNEXPECTED(GC_IS_REFCOUNTED(ht)) && UNEXPECTED(GC_REFCOUNT(ht) == 0)) {
++		return NULL;
++	}
+@@ -759 +763,2 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -763,5 +768 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
+-{
+-	zend_long offset;
++}	zend_long offset;

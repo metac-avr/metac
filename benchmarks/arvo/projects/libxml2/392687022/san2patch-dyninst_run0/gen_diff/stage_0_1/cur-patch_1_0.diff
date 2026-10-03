@@ -1,0 +1,75 @@
+diff --git a/valid.c b/valid.c
+index 897a368d..b2700709 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5010,3 +5010,8 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-		    if (size - len < xmlStrlen(cur->ns->prefix) + 10) {
+-			if ((size - len > 4) && (buf[len - 1] != '.'))
+-			    strcat(buf, " ...");
++		    int prefix_len = xmlStrlen(cur->ns->prefix);
++		    if (size - len < prefix_len + 10) {
++			if ((size - len > 4) && (buf[len - 1] != '.')) {
++			    int remaining = size - len - 1;
++			    if (remaining > 0) {
++			        strncat(buf, " ...", remaining);
++			    }
++			}
+@@ -5015,2 +5020,2 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-		    strcat(buf, (char *) cur->ns->prefix);
+-		    strcat(buf, ":");
++		    strncat(buf, (char *) cur->ns->prefix, size - len - 1);
++		    strncat(buf, ":", size - len - 1);
+@@ -5018,3 +5023,8 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-                if (size - len < xmlStrlen(cur->name) + 10) {
+-		    if ((size - len > 4) && (buf[len - 1] != '.'))
+-			strcat(buf, " ...");
++                int name_len = xmlStrlen(cur->name);
++                if (size - len < name_len + 10) {
++		    if ((size - len > 4) && (buf[len - 1] != '.')) {
++			int remaining = size - len - 1;
++			if (remaining > 0) {
++			    strncat(buf, " ...", remaining);
++			}
++		    }
+@@ -5022 +5032,2 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-		}
++// Fixed buffer overflow by checking available space before strcat operations
++ 		}
+@@ -5024 +5035 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-	            strcat(buf, (char *) cur->name);
++		    strncat(buf, (char *) cur->name, size - len - 1);
+@@ -5026 +5037 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-		    strcat(buf, " ");
++		    strncat(buf, " ", size - len - 1);
+@@ -5034,3 +5045,12 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-	        strcat(buf, "CDATA");
+-		if (cur->next != NULL)
+-		    strcat(buf, " ");
++	        {
++		    int remaining = size - len - 1;
++		    if (remaining > 0) {
++		        strncat(buf, "CDATA", remaining);
++		    }
++		}
++		if (cur->next != NULL) {
++		    int remaining = size - len - 1;
++		    if (remaining > 0) {
++		        strncat(buf, " ", remaining);
++		    }
++		}
+@@ -5045,3 +5065,12 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+-	        strcat(buf, "???");
+-		if (cur->next != NULL)
+-		    strcat(buf, " ");
++	        {
++		    int remaining = size - len - 1;
++		    if (remaining > 0) {
++		        strncat(buf, "???", remaining);
++		    }
++		}
++		if (cur->next != NULL) {
++		    int remaining = size - len - 1;
++		    if (remaining > 0) {
++		        strncat(buf, " ", remaining);
++		    }
++		}

@@ -1,0 +1,58 @@
+diff --git a/src/filters/reframe_ac4.c b/src/filters/reframe_ac4.c
+index e86b40a57..d1de08ca8 100644
+--- a/src/filters/reframe_ac4.c
++++ b/src/filters/reframe_ac4.c
+@@ -378,9 +378,5 @@ GF_Err ac4dmx_process(GF_Filter *filter)
+-	}
+-	else {
+-		gf_bs_reassign_buffer(ctx->bs, start, remain);
+-	}
+-
+-	while (remain) {
+-		u8 *sync;
+-		Bool res;
+-		u32 sync_pos, bytes_to_drop=0;
++while (remain) {
++		u8 *sync = NULL;
++		Bool res = GF_FALSE;
++// FIXME: Crash CWE-416: Use After Free - FIXED
++		u32 sync_pos = 0, bytes_to_drop=0;
+@@ -398,2 +394 @@ GF_Err ac4dmx_process(GF_Filter *filter)
+-					start += sync_pos;
+-					remain -= sync_pos;
++					start += sync_pos;					remain -= sync_pos;
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index be826527f..37b4c81f5 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -15955 +15955,2 @@ static Bool gf_ac4_raw_frame(GF_BitStream *bs, GF_AC4Config* hdr, Bool full_pars
+-			default_presentation_flag = gf_ac4_is_substream_group_part_of_default_presentation(hdr_p_list, i);
++// FIXME: Crash CWE-416: Use After Free
++ 			default_presentation_flag = gf_ac4_is_substream_group_part_of_default_presentation(hdr_p_list, i);
+@@ -15958,11 +15959,15 @@ static Bool gf_ac4_raw_frame(GF_BitStream *bs, GF_AC4Config* hdr, Bool full_pars
+-			gf_ac4_substream_group_info(bs,
+-										group,
+-										bitstream_version,
+-										pinfo->presentation_version,
+-										default_presentation_flag,
+-										frame_rate_factor,
+-										fs_index,
+-										&local_channel_count,
+-										&speaker_group_index_mask,
+-										&b_obj_or_ajoc);
+-			gf_list_add(temp_groups, group);
++			if (group != NULL) {
++				gf_ac4_substream_group_info(bs,
++										 group,
++										 bitstream_version,
++										 pinfo->presentation_version,
++										 default_presentation_flag,
++										 frame_rate_factor,
++										 fs_index,
++										 &local_channel_count,
++										 &speaker_group_index_mask,
++										 &b_obj_or_ajoc);
++				gf_list_add(temp_groups, group);
++			} else {
++				return GF_FALSE;
++			}

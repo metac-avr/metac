@@ -1,0 +1,40 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..39220b89c4 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1396,0 +1397,4 @@ do {
++    if (x < 0 || y < 0 || x >= sps->width || y >= sps->height) {               \
++        av_log(NULL, AV_LOG_ERROR, "Invalid transform block position\n");      \
++        return AVERROR_INVALIDDATA;                                             \
++    }                                                                           \
+@@ -1403 +1407,2 @@ do {
+-} while (0)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ } while (0)
+@@ -1439,0 +1445,24 @@ do {
++            /* Validate reference list state before the deblocking filter
++             * accesses ff_hevc_get_ref_list(). This prevents an out-of-bounds
++             * read when the reference index is invalid or no reference frames
++             * are available. */
++            int ref_idx;
++            HEVCRefPicList *ref_pic_list;
++            if (s->sh.slice_type == HEVC_SLICE_B)
++                ref_pic_list = &s->ref->refPicList[1];
++            else
++                ref_pic_list = &s->ref->refPicList[0];
++
++            if (!ref_pic_list || ref_pic_list->num_refs <= 0) {
++                av_log(NULL, AV_LOG_ERROR, "Invalid reference picture list\n");
++                return AVERROR_INVALIDDATA;
++            }
++
++            for (ref_idx = 0; ref_idx < ref_pic_list->num_refs; ref_idx++) {
++                if (!ref_pic_list->refs ||
++                    !ref_pic_list->refs[ref_idx].frame) {
++                    av_log(NULL, AV_LOG_ERROR, "Missing reference frame\n");
++                    return AVERROR_INVALIDDATA;
++                }
++            }
++
+@@ -1445,0 +1475 @@ do {
++

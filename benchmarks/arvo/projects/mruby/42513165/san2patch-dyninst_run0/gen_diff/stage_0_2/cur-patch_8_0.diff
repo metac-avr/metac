@@ -1,0 +1,22 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..a0e0294ad 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -988 +988,16 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
++  struct RBigint *b;
++  
++  // Early validation to prevent out-of-bounds access
++  if (x == NULL) {
++    return mrb_nil_value();
++  }
++  
++  if (len < 0 || len > 1000000) {  // Reasonable upper bound for string length
++    return mrb_nil_value();
++  }
++  
++  if (iabs(base) < 2 || iabs(base) > 36) {
++    return mrb_nil_value();
++  }
++  
++  b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);

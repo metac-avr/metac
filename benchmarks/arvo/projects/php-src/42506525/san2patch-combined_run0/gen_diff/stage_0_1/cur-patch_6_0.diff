@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..4fcf517291d 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1237 +1237,2 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
+-		HT_SET_DATA_ADDR(ht, new_data);
++// FIXME: Crash CWE-416: Use After Free
++ 		HT_SET_DATA_ADDR(ht, new_data);
+@@ -1238,0 +1240,5 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
++		/* Mark old buckets as invalid before freeing */
++		for (uint32_t i = 0; i < ht->nNumUsed; i++) {
++			ZEND_ASSERT(old_buckets + i != NULL);
++			old_buckets[i].key = NULL;  /* Invalidate bucket */
++		}
+@@ -1440 +1445,0 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-
+@@ -1446 +1451,3 @@ ZEND_API void ZEND_FASTCALL zend_hash_packed_del_val(HashTable *ht, zval *zv)
+-	_zend_hash_packed_del_val(ht, HT_IDX_TO_HASH(zv - ht->arPacked), zv);
++	if (zv && !ZVAL_IS_NULL(zv)) {
++		_zend_hash_packed_del_val(ht, HT_IDX_TO_HASH(zv - ht->arPacked), zv);
++	}
+@@ -1448 +1455,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_packed_del_val(HashTable *ht, zval *zv)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1455,7 +1463,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_del_bucket(HashTable *ht, Bucket *p)
+-	_zend_hash_del_el(ht, HT_IDX_TO_HASH(p - ht->arData), p);
+-}
+-
+-ZEND_API zend_result ZEND_FASTCALL zend_hash_del(HashTable *ht, zend_string *key)
+-{
+-	zend_ulong h;
+-	uint32_t nIndex;
++	if (p && (p->key != NULL || Z_TYPE(p->val) != IS_UNDEF)) {
++		_zend_hash_del_el(ht, HT_IDX_TO_HASH(p - ht->arData), p);
++	}
++}	uint32_t nIndex;

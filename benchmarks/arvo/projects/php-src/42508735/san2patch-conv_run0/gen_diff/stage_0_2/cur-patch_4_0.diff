@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..6e1c1e4ffd2 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1231 +1231 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-#if ZEND_DEBUG
++	#if ZEND_DEBUG
+@@ -1233,2 +1233,4 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-#endif
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	#endif
++	zend_refcounted_h *ref = Z_COUNTED_P(pz);
++	if (UNEXPECTED(ref == NULL)) return 0;
++	return GC_REFCOUNT(ref);
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index b09ce3b990d..2e9d8ae3455 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -68 +68,2 @@ ZEND_API void zend_object_std_dtor(zend_object *object)
+-					}
++// Fixed CWE-416: Use After Free - Mark object as destroyed before cleanup
++ 					}

@@ -1,0 +1,33 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..95fe5cbbc 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -433 +433,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    mp_limb2 qhat = (((mp_limb2)x.p[j+yd] << DIG_SIZE) + x.p[j+yd-1]) / z;
++    if (j+yd >= x->_mp_size) return;
++    if (j+yd-1 >= x->_mp_size) return;
++    mp_limb2 qhat = (((mp_limb2)x->_mp_d[j+yd] << DIG_SIZE) + x->_mp_d[j+yd-1]) / z;
+@@ -437,3 +439,5 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-        mp_limb2 zz = qhat * y.p[i];
+-        mp_limb2s u = LOW(b)+x.p[i+j]-LOW(zz);
+-        x.p[i+j] = LOW(u);
++        if (i+j >= x->_mp_size) return;
++        if (i >= y->_mp_size) return;
++        mp_limb2 zz = qhat * y->_mp_d[i];
++        mp_limb2s u = LOW(b)+x->_mp_d[i+j]-LOW(zz);
++        x->_mp_d[i+j] = LOW(u);
+@@ -442 +446,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if (i+j >= x->_mp_size) return;
++      b += x->_mp_d[i+j];
+@@ -447,2 +452,4 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-        c += (mp_limb2)x.p[i+j] + (mp_limb2)y.p[i];
+-        x.p[i+j] = LOW(c);
++        if (i+j >= x->_mp_size) return;
++        if (i >= y->_mp_size) return;
++        c += (mp_limb2)x->_mp_d[i+j] + (mp_limb2)y->_mp_d[i];
++        x->_mp_d[i+j] = LOW(c);
+@@ -453 +460,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j >= q->_mp_size) return;
++    q->_mp_d[j] = qhat;

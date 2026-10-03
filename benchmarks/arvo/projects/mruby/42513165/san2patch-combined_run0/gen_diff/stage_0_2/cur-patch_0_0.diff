@@ -1,0 +1,24 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..0896d87e9 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1358 +1358 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        {
++         {
+@@ -1360 +1360,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-          regs[a] = mrb_bint_new_str(mrb, s+2, (mrb_int)s[0], (mrb_int)s[1]);
++          /* Fix: Add bounds checking to prevent integer overflow in bigint conversion */
++          if (s[0] >= 0 && s[1] >= 0 && (mrb_int)s[0] * (mrb_int)s[1] < 1000000) {
++            regs[a] = mrb_bint_new_str(mrb, s+2, (mrb_int)s[0], (mrb_int)s[1]);
++          } else {
++            goto L_INT_OVERFLOW;
++          }
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..7e46729da 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -656,0 +657,4 @@ mpz_init_set_str(mrb_state *mrb, mpz_t *x, const char *s, mrb_int len, mrb_int b
++    if (i < 0 || i >= len) {  /* Bounds check to prevent out-of-bounds read */
++      retval = (-1);
++      break;
++    }

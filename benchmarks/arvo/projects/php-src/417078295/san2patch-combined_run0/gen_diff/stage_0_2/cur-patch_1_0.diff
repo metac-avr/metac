@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..817de753dc6 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -10525 +10525,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_NEW_SPEC_CONST_UNUSED_HANDLER(
+-		Z_ADDREF_P(result);
++		/* Validate object before reference count increment */
++		if (EXPECTED(Z_OBJ_P(result) != NULL)) {
++			Z_ADDREF_P(result);
++		}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..b5dab0ac033 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,3 +202,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
++// Fixed CWE-825: Expired Pointer Dereference by validating object and handlers before use
++		if (object != NULL && object->handlers != NULL && EG(objects_store).object_buckets != NULL && handle < EG(objects_store).top) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++		} else {
++			GC_REMOVE_FROM_BUFFER(object);
++		}

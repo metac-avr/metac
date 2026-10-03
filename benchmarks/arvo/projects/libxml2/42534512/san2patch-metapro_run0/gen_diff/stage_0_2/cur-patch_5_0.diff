@@ -1,0 +1,25 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..78774bc8 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1687 +1687,2 @@ xmlNewPropInternal(xmlNodePtr node, xmlNsPtr ns,
+-        xmlNodePtr tmp;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++         xmlNodePtr tmp;
+@@ -1698,0 +1700,3 @@ xmlNewPropInternal(xmlNodePtr node, xmlNsPtr ns,
++            /* Add safety check to prevent traversal of potentially freed nodes */
++            if (tmp != NULL && tmp->parent == NULL) 
++                break;
+@@ -2284,2 +2288,5 @@ xmlNewText(const xmlChar *content) {
+-        if (cur->content == NULL)
+-            goto error;
++        if (cur->content == NULL) {
++            memset(cur, 0, sizeof(xmlNode));
++            xmlFreeNode(cur);
++            return(NULL);
++        }
+@@ -2291,4 +2297,0 @@ xmlNewText(const xmlChar *content) {
+-
+-error:
+-    xmlFreeNode(cur);
+-    return(NULL);

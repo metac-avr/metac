@@ -1,0 +1,44 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..8e92dbd6 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2496 +2496,2 @@ xmlFreeID(xmlIDPtr id) {
+-    if (id->doc != NULL)
++    /* Clear references to this ID from validation tables before freeing */
++    if (id->doc != NULL) {
+@@ -2497,0 +2499,5 @@ xmlFreeID(xmlIDPtr id) {
++        /* Remove this ID from any validation tables first */
++        if (id->doc->ids != NULL) {
++            xmlHashRemoveEntry(id->doc->ids, id->value, NULL);
++        }
++    }
+@@ -2636,9 +2642,2 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
+-        }
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+-static void
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static void
+@@ -2646,12 +2645,5 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    if (idPtr != NULL) {
++        xmlFreeID(idPtr);
++    }
++}    xmlHashFree(table, xmlFreeIDTableEntry);

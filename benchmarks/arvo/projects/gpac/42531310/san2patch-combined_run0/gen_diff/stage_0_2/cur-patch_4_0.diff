@@ -1,0 +1,19 @@
+diff --git a/src/utils/bitstream.c b/src/utils/bitstream.c
+index 0697e490a..5ab23a8eb 100644
+--- a/src/utils/bitstream.c
++++ b/src/utils/bitstream.c
+@@ -456 +456,2 @@ static u8 BS_ReadByte(GF_BitStream *bs)
+-			return 0;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++			return 0; // Keep original return but add bounds check in caller
+diff --git a/src/media_tools/av_parsers.c b/src/media_tools/av_parsers.c
+index 83afa6f5f..aa22bc758 100644
+--- a/src/media_tools/av_parsers.c
++++ b/src/media_tools/av_parsers.c
+@@ -2461 +2461,5 @@ u64 gf_av1_leb128_read(GF_BitStream *bs, u8 *opt_Leb128Bytes) {
+-		u8 leb128_byte = gf_bs_read_u8(bs);
++		u8 leb128_byte;
++		if (gf_bs_read_u8_ex(bs, &leb128_byte) != GF_OK) {
++			// Handle read error to prevent buffer overflow
++			break;
++		}

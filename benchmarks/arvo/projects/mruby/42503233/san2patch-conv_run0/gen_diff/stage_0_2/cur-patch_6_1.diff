@@ -1,0 +1,58 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..1400042cb 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -190,14 +189,0 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+-  if (size > MRB_STACK_MAX) {
+-    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+-  }
+-}
+-
+-MRB_API void
+-mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
+-  if (!mrb->c->ci->stack || mrb->c->ci->stack + room >= mrb->c->stend) {
+-    stack_extend_alloc(mrb, room);
+-  }
+-}
+-
+@@ -210,0 +197 @@ uvenv(mrb_state *mrb, mrb_int up)
++    if (!proc) return NULL;
+@@ -215,0 +203,9 @@ uvenv(mrb_state *mrb, mrb_int up)
++  else {
++    if (MRB_PROC_CFUNC_P(proc)) return NULL;
++    return proc->e.env;
++  }
++}    proc = proc->upper;
++    if (!proc) return NULL;
++  }
++  e = MRB_PROC_ENV(proc);
++  if (e) return e;              /* proc has enclosed env */
+@@ -473 +469 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    if (mrb->c->stbase <= argv && argv < mrb->c->stend) {
++    if (mrb->c->stbase <= argv && argv < mrb->c->stbase + (mrb->c->stend - mrb->c->stbase)) {
+@@ -479 +475 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++     c = mrb_class(mrb, self);
+@@ -480,0 +477,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    if (argc + 3 > 0x10000) {
++      mrb_raise(mrb, E_RUNTIME_ERROR, "too many arguments");
++    }
+@@ -507 +506,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-        mrb_stack_extend(mrb, p->body.irep->nregs + argc);
++        mrb_int extend_size = p->body.irep->nregs + argc;
++        if (extend_size > 0x10000) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack extension too large");
++        }
++        mrb_stack_extend(mrb, extend_size);
+@@ -515,2 +518,7 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++      if (argc > 0) {
++        if (ci->stack + 1 + argc <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack copy would overflow");
++        }
++      }

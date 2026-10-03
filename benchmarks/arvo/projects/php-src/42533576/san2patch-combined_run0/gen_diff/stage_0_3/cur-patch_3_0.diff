@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 888c35482a4..c5ec883dc82 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1228 +1228,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1229,0 +1231,3 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p == NULL) {
++		return 0;
++	}
+@@ -1240 +1243,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 4714ab37101..df7a0523658 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -60379,5 +60379,8 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
+-	i_init_code_execute_data(execute_data, op_array, return_value);
+-	ZEND_OBSERVER_FCALL_BEGIN(execute_data);
+-	zend_execute_ex(execute_data);
+-	/* Observer end handlers are called from ZEND_RETURN */
+-	zend_vm_stack_free_call_frame(execute_data);
++	/* Check for valid execute_data before initialization */
++	if (execute_data != NULL) {
++		i_init_code_execute_data(execute_data, op_array, return_value);
++		ZEND_OBSERVER_FCALL_BEGIN(execute_data);
++		zend_execute_ex(execute_data);
++		/* Observer end handlers are called from ZEND_RETURN */
++		zend_vm_stack_free_call_frame(execute_data);
++	}

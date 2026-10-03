@@ -1,0 +1,31 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..9dea42181 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -500,4 +500,22 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    if (j%2)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
+-    else
+-      q.p[j/2] |= qhat;
++    if (j%2) {
++      // Prevent integer overflow in pointer arithmetic
++      if (q.p != NULL && j/2 < q.sz) {
++        // Check bounds before shift operation
++        if (qhat <= (UINT_MAX >> HALFDIGITBITS)) {
++          q.p[j/2] |= qhat << HALFDIGITBITS;
++        } else {
++          // Handle overflow case
++          q.p[j/2] |= (qhat & ((1U << HALFDIGITBITS) - 1)) << HALFDIGITBITS;
++        }
++      }
++    } else {
++      // Prevent integer overflow in direct assignment
++      if (q.p != NULL && j/2 < q.sz) {
++        if (qhat <= UINT_MAX - q.p[j/2]) {
++          q.p[j/2] |= qhat;
++        } else {
++          // Handle overflow by masking to valid range
++          q.p[j/2] |= (qhat & UINT_MAX);
++        }
++      }
++    }

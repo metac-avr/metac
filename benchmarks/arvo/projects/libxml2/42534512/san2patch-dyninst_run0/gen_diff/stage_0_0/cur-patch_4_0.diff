@@ -1,0 +1,66 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..cc6323fc 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2284,2 +2284,4 @@ xmlNewText(const xmlChar *content) {
+-        if (cur->content == NULL)
+-            goto error;
++        if (cur->content == NULL) {
++            xmlFree(cur);
++            return(NULL);
++        }
+@@ -2291,4 +2292,0 @@ xmlNewText(const xmlChar *content) {
+-
+-error:
+-    xmlFreeNode(cur);
+-    return(NULL);
+@@ -3610,11 +3608,18 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    if (((cur->type == XML_ELEMENT_NODE) ||
+-		 (cur->type == XML_XINCLUDE_START) ||
+-		 (cur->type == XML_XINCLUDE_END)) &&
+-		(cur->properties != NULL))
+-		xmlFreePropList(cur->properties);
+-	    if ((cur->type != XML_ELEMENT_NODE) &&
+-		(cur->type != XML_XINCLUDE_START) &&
+-		(cur->type != XML_XINCLUDE_END) &&
+-		(cur->type != XML_ENTITY_REF_NODE) &&
+-		(cur->content != (xmlChar *) &(cur->properties))) {
+-		DICT_FREE(cur->content)
++	    /* Store type before freeing to avoid accessing freed memory */
++	    xmlElementType nodeType = cur->type;
++	    xmlChar* contentPtr = cur->content;
++	    xmlAttrPtr propPtr = cur->properties;
++	    xmlNsPtr nsDefPtr = cur->nsDef;
++	    const xmlChar* namePtr = cur->name;
++
++	    if (((nodeType == XML_ELEMENT_NODE) ||
++		 (nodeType == XML_XINCLUDE_START) ||
++		 (nodeType == XML_XINCLUDE_END)) &&
++		(propPtr != NULL))
++		xmlFreePropList(propPtr);
++	    if ((nodeType != XML_ELEMENT_NODE) &&
++		(nodeType != XML_XINCLUDE_START) &&
++		(nodeType != XML_XINCLUDE_END) &&
++		(nodeType != XML_ENTITY_REF_NODE) &&
++		(contentPtr != (xmlChar *) &(propPtr))) {
++		DICT_FREE(contentPtr)
+@@ -3622,5 +3627,5 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    if (((cur->type == XML_ELEMENT_NODE) ||
+-	         (cur->type == XML_XINCLUDE_START) ||
+-		 (cur->type == XML_XINCLUDE_END)) &&
+-		(cur->nsDef != NULL))
+-		xmlFreeNsList(cur->nsDef);
++	    if (((nodeType == XML_ELEMENT_NODE) ||
++	         (nodeType == XML_XINCLUDE_START) ||
++		 (nodeType == XML_XINCLUDE_END)) &&
++		(nsDefPtr != NULL))
++		xmlFreeNsList(nsDefPtr);
+@@ -3634,4 +3639,4 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    if ((cur->name != NULL) &&
+-		(cur->type != XML_TEXT_NODE) &&
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
++	    if ((namePtr != NULL) &&
++		(nodeType != XML_TEXT_NODE) &&
++		(nodeType != XML_COMMENT_NODE))
++		DICT_FREE(namePtr)

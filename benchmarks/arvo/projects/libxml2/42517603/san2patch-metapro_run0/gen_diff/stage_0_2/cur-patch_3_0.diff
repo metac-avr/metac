@@ -1,0 +1,26 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..b296f5f3 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2050 +2050,3 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	return(-1);
++ 	return(-1);
++    if (ref->elem == NULL)
++        return(-1);
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..f4457060 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1364,3 +1364,9 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
+-		xmlUnlinkNode(tmp);
+-		xmlTextReaderFreeNode(reader, tmp);
++                     oldnode = NULL;
++		/* Check if node is referenced by XInclude before freeing */
++		if (tmp->references == 0) {
++		    xmlUnlinkNode(tmp);
++		    xmlTextReaderFreeNode(reader, tmp);
++		} else {
++		    /* Node is still referenced, mark for later cleanup */
++		    tmp->extra |= NODE_IS_PRESERVED;
++		}

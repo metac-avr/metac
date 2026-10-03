@@ -1,0 +1,36 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..4ae01971640 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267 +2267,4 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
++	timelib_error_container *temp_ptr = NULL;
++	
+@@ -2277,2 +2280,7 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-	if ((*last_errors)->warning_count || (*last_errors)->error_count) {
+-		DATEG(last_errors) = *last_errors;
++	temp_ptr = *last_errors; // Store pointer to prevent UAF
++	*last_errors = NULL; // Clear original pointer immediately
++	
++	if (temp_ptr->warning_count || temp_ptr->error_count) {
++		DATEG(last_errors) = temp_ptr;
++	} else {
++		timelib_error_container_dtor(temp_ptr);
+@@ -2280,3 +2287,0 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-
+-	timelib_error_container_dtor(*last_errors);
+-	*last_errors = NULL;
+@@ -2506 +2511 @@ PHP_METHOD(DateTime, __construct)
+-	zval *timezone_object = NULL;
++zval *timezone_object = NULL;
+@@ -2513,0 +2519,6 @@ PHP_METHOD(DateTime, __construct)
++	// Fixed CWE-416: Use After Free - Prevent double free by checking pointer validity
++	if (DATEG(last_errors) != NULL) {
++		timelib_error_container *temp_errors = DATEG(last_errors);
++		DATEG(last_errors) = NULL;
++		timelib_error_container_dtor(temp_errors);
++	}
+@@ -2526 +2536,0 @@ PHP_METHOD(DateTimeImmutable, __construct)
+-

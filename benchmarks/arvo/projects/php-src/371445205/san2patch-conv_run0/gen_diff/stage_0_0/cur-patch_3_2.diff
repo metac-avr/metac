@@ -1,0 +1,90 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f4386babef8..bea1cb7cc06 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6770,5 +6770,20 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-		if (!(flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
+-			if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
+-				zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
+-				RETURN_THROWS();
+-			}
++ZEND_METHOD(ReflectionAttribute, newInstance)
++{
++	zend_reflection_attribute *attr = Z_REFLECTION_ATTR_P(getThis());
++	zend_class_entry *ce;
++
++	if (attr->data->flags & ZEND_ATTRIBUTE_IS_INSTANCEOF) {
++		ce = zend_lookup_class(attr->data->name);
++	} else {
++		ce = zend_hash_find_ptr(EG(class_table), attr->data->name);
++	}
++
++	if (!ce) {
++		zend_throw_error(NULL, "Class \"%s\" does not exist", ZSTR_VAL(attr->data->name));
++		RETURN_THROWS();
++	}
++
++	if (!(attr->data->flags & ZEND_ATTRIBUTE_IS_REPEATABLE)) {
++		if (zend_is_attribute_repeated(attr->attributes, attr->data)) {
++			zend_throw_error(NULL, "Attribute \"%s\" must not be repeated", ZSTR_VAL(attr->data->name));
++			RETURN_THROWS();
+@@ -6778,0 +6794 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	zend_object *attr_obj;
+@@ -6783,0 +6800,10 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
++	attr_obj = Z_OBJ(obj);
++	if (attr_obj && attr_obj->ce) {
++		zend_string *class_name = attr_obj->ce->name;
++		if (class_name && !ZSTR_IS_INTERNED(class_name)) {
++			if (GC_DELREF(class_name) == 0) {
++				zend_string_release(class_name);
++			}
++		}
++	}
++	
+@@ -6785,7 +6811 @@ ZEND_METHOD(ReflectionAttribute, newInstance)
+-}
+-
+-ZEND_METHOD(ReflectionEnum, __construct)
+-{
+-	reflection_class_object_ctor(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+-	if (EG(exception)) {
+-		RETURN_THROWS();
++}		RETURN_THROWS();
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..4305be599ab 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1827,0 +1828,22 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++		} zend_hash_destroy(zend_array *ht)
++{
++	Bucket *p;
++	uint32_t mask;
++
++	IS_CONSISTENT(ht);
++
++	if (ht->nNumUsed) {
++		if (HT_FLAGS(ht) & HASH_FLAG_PACKED) {
++			p = ht->arPacked;
++			if (HT_HAS_STATIC_KEYS_ONLY(ht)) {
++				do {
++					i_zval_ptr_dtor(&p->val);
++				} while (++p != ht->arPacked + ht->nNumUsed);
++			} else {
++				do {
++					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(p->key)) {
++						zend_string_release_ex(p->key, 0);
++					}
++				} while (++p != ht->arPacked + ht->nNumUsed);
++			}
+@@ -1829 +1851 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-			Bucket *p = ht->arData;
++			p = ht->arData;
+@@ -1839 +1861 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					if (EXPECTED(p->key)) {
++					if (EXPECTED(p->key) && ZSTR_IS_VALID(p->key)) {
+@@ -1847 +1869 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						if (EXPECTED(p->key)) {
++						if (EXPECTED(p->key) && ZSTR_IS_VALID(p->key)) {
+@@ -1853,0 +1876 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	}

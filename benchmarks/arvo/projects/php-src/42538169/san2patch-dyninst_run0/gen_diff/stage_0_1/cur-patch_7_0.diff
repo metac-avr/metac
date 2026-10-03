@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 8f012868dda..85cb29cd739 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1345,0 +1346,7 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	// Patched CWE-825: Validate pointer before dereferencing to prevent expired pointer access
++	if (p == NULL) {
++		return 0;
++	}
++	if (p->u.type_info & GC_IMMUTABLE) {
++		return 0;
++	}
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 733ce54dc24..82a5374688c 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -5165 +5165 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-		if (iter) {
++		if (iter && Z_OBJ(iter)) {
+@@ -5179 +5179,3 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			if (Z_OBJ(iter)) {
++				OBJ_RELEASE(&iter->std);
++			}
+@@ -5188 +5190,3 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-		OBJ_RELEASE(&iter->std);
++		if (Z_OBJ(iter)) {
++			OBJ_RELEASE(&iter->std);
++		}

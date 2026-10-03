@@ -1,0 +1,36 @@
+diff --git a/libavcodec/vvc/vvc_ps.c b/libavcodec/vvc/vvc_ps.c
+index ac96ed9f43..12a69ef674 100644
+--- a/libavcodec/vvc/vvc_ps.c
++++ b/libavcodec/vvc/vvc_ps.c
+@@ -991,0 +992,6 @@ int ff_vvc_decode_aps(VVCParamSets *ps, const CodedBitstreamUnit *unit)
++    // Bounds check for all APS types to prevent buffer overflows
++    if (aps->aps_adaptation_parameter_set_id < 0 || aps->aps_adaptation_parameter_set_id >= MAX_APS_COUNT) {
++        av_log(NULL, AV_LOG_ERROR, "APS ID out of bounds: %d\n", aps->aps_adaptation_parameter_set_id);
++        return AVERROR_INVALIDDATA;
++    }
++
+@@ -998 +1004,2 @@ int ff_vvc_decode_aps(VVCParamSets *ps, const CodedBitstreamUnit *unit)
+-            break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             break;
+diff --git a/libavcodec/refstruct.c b/libavcodec/refstruct.c
+index 7597f6d0ee..c3384f5b44 100644
+--- a/libavcodec/refstruct.c
++++ b/libavcodec/refstruct.c
+@@ -161,2 +161,5 @@ void ff_refstruct_replace(void *dstp, const void *src)
+-{
+-    const void *dst;
++ {
++    const void *dst = NULL;
++    
++    if (!dstp) return;
++    
+@@ -169,0 +173,8 @@ void ff_refstruct_replace(void *dstp, const void *src)
++        if (dst) {
++            memcpy(dstp, &dst, sizeof(dst));
++        } else {
++            dst = NULL;
++            memcpy(dstp, &dst, sizeof(dst));
++        }
++    } else {
++        dst = NULL;

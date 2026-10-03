@@ -1,0 +1,26 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..bc78cc5d6 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -954,2 +954 @@ static GF_Err pcapng_load_shb(GF_NetcapFilter *nf)
+-		gf_net_close_capture();
+-		GF_LOG(GF_LOG_ERROR, GF_LOG_NETWORK, ("[NetCap] Corrrupted pacpng file\n"));
++		GF_LOG(GF_LOG_ERROR, GF_LOG_NETWORK, ("[NetCap] Corrupted pcapng file\n"));
+@@ -1480,5 +1479,12 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
+-			gf_netcap_load_pck_pcap(nf);
+-
++		// Check if capture context is still valid before loading packets
++		if (nf->cap_bs) {
++			if (nf->cap_mode==NETCAP_GPAC)
++				gf_netcap_load_pck_gpac(nf);
++			else
++				gf_netcap_load_pck_pcap(nf);
++		} else {
++			// Capture context was freed, exit early
++			return;
++		}
++// FIXME: Crash CWE-416: Use After Free
++ 

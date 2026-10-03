@@ -1,0 +1,24 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index dcdde6966..d5823d808 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -7138 +7138,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  options_fp_len += rc;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		  options_fp_len += rc;
+@@ -7140 +7141,3 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  rc = snprintf(&fingerprint[fp_idx], sizeof(fingerprint)-fp_idx, "%s%u", (i > 0) ? "-" : "", kind);
++		  // Check if there's enough space before writing (safe margin for format string)
++		  if((sizeof(fingerprint) - fp_idx) >= 16) {  // Conservative check for "%s%u" format
++		    rc = snprintf(&fingerprint[fp_idx], sizeof(fingerprint)-fp_idx, "%s%u", (i > 0) ? "-" : "", kind);
+@@ -7142,2 +7145,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(fp_idx + rc) == sizeof(fingerprint)))
+-		    break;
++		    if((rc < 0) || ((int)(fp_idx + rc) == sizeof(fingerprint)))
++		      break;
+@@ -7145 +7148,4 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  fp_idx += rc;
++		    fp_idx += rc;
++		  } else {
++		    break; // Prevent buffer overflow
++		  }

@@ -1,0 +1,25 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..824b3f1a3 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1909 +1909,10 @@ num_gt(mrb_state *mrb, mrb_value self)
+-  n = cmpnum(mrb, self, other);
++  if (mrb_type(self) != MRB_TT_BIGINT || mrb_type(other) != MRB_TT_BIGINT) {
++    n = cmpnum(mrb, self, other);
++  } else {
++    if (mrb_bigint_p(self) && mrb_bigint_p(other)) {
++      n = cmpnum(mrb, self, other);
++    } else {
++      cmperr(mrb, self, other);
++      return mrb_false_value();
++    }
++  }
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..9913a9611 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -612,0 +613,4 @@ mpz_cmp(mrb_state *mrb, mpz_t *x, mpz_t *y)
++  if (x == NULL)
++    return (y == NULL) ? 0 : -1;
++  if (y == NULL)
++    return 1;

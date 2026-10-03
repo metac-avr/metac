@@ -1,0 +1,30 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..d130f280 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745 +2745,2 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++    /* Remove from hash table first, then free */
++    if (xmlHashRemoveEntry(table, attr->id->value, NULL) < 0)
+@@ -2747 +2748,3 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-
++    
++    /* Now safely free the ID structure */
++    xmlFreeID(attr->id);
+diff --git a/hash.c b/hash.c
+index 33e8581e..0403bef0 100644
+--- a/hash.c
++++ b/hash.c
+@@ -1274,2 +1274,2 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
+-
+-    if ((dealloc != NULL) && (entry->payload != NULL))
++ 
++    if ((dealloc != NULL) && (entry->payload != NULL)) {
+@@ -1276,0 +1277,4 @@ xmlHashRemoveEntry3(xmlHashTablePtr hash, const xmlChar *key,
++        entry->payload = NULL; /* Prevent dangling pointer access */
++    } else if (entry->payload != NULL) {
++        entry->payload = NULL; /* Defensive clearing even without dealloc */
++    }

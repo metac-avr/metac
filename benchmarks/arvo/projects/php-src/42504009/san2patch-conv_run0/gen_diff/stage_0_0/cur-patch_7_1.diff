@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..210e243f40f 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1052,3 +1052,10 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	ZVAL_DEREF(op1);
+-	ZVAL_DEREF(op2);
+-	if (add_function_fast(result, op1, op2) == SUCCESS) {
++	zval *safe_op1 = op1;
++	zval *safe_op2 = op2;
++	
++	if (!safe_op1 || !safe_op2) {
++		return FAILURE;
++	}
++	
++	ZVAL_DEREF(safe_op1);
++	ZVAL_DEREF(safe_op2);
++	if (add_function_fast(result, safe_op1, safe_op2) == SUCCESS) {
+@@ -1061,4 +1068,4 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (UNEXPECTED(zendi_try_convert_scalar_to_number(op1, &op1_copy) == FAILURE)
+-			|| UNEXPECTED(zendi_try_convert_scalar_to_number(op2, &op2_copy) == FAILURE)) {
+-		zend_binop_error("+", op1, op2);
+-		if (result != op1) {
++	if (UNEXPECTED(zendi_try_convert_scalar_to_number(safe_op1, &op1_copy) == FAILURE)
++			|| UNEXPECTED(zendi_try_convert_scalar_to_number(safe_op2, &op2_copy) == FAILURE)) {
++		zend_binop_error("+", safe_op1, safe_op2);
++		if (result != safe_op1) {
+@@ -1070 +1077 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (result == op1) {
++	if (result == safe_op1) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..37f88f4bd1e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -444 +444,5 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_add_helper_S
+-		op_2 = ZVAL_UNDEFINED_OP2();
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++		/* Check if op_2 is a valid pointer before assignment to prevent use-after-free */
++		if (op_2) {
++			op_2 = ZVAL_UNDEFINED_OP2();
++		}

@@ -1,0 +1,22 @@
+diff --git a/src/filters/reframe_ac4.c b/src/filters/reframe_ac4.c
+index eacaea264..d2a9b6097 100644
+--- a/src/filters/reframe_ac4.c
++++ b/src/filters/reframe_ac4.c
+@@ -386 +386,2 @@ GF_Err ac4dmx_process(GF_Filter *filter)
+-		u32 sync_pos, bytes_to_drop=0;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		u32 sync_pos, bytes_to_drop=0;
+@@ -389,0 +391,7 @@ GF_Err ac4dmx_process(GF_Filter *filter)
++		// Fix: Add safe cleanup with nullification to prevent use-after-free
++		if (ctx->hdr) {
++			AC4FrameHeader *cleanup_ptr = ctx->hdr;
++			ctx->hdr = NULL;
++			gf_odf_ac4_cfg_clean_list(cleanup_ptr);
++		}
++
+@@ -391 +399,4 @@ GF_Err ac4dmx_process(GF_Filter *filter)
+-		sync_framesize = ctx->hdr.frame_size + ctx->hdr.header_size + ctx->hdr.crc_size;
++		sync_framesize = 0;
++		if (cleanup_ptr) {
++			sync_framesize = cleanup_ptr->frame_size + cleanup_ptr->header_size + cleanup_ptr->crc_size;
++		}

@@ -1,0 +1,30 @@
+diff --git a/libavformat/iamfdec.c b/libavformat/iamfdec.c
+index 28d69b8b3f..f1de604c7a 100644
+--- a/libavformat/iamfdec.c
++++ b/libavformat/iamfdec.c
+@@ -394 +394,2 @@ static int iamf_read_header(AVFormatContext *s)
+-    int ret;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     int ret;
+@@ -443,0 +445,5 @@ static int iamf_read_header(AVFormatContext *s)
++            // Add bounds check for sub_mix elements
++            if (!sub_mix || sub_mix->nb_elements <= 0) {
++                continue;
++            }
++
+diff --git a/libavformat/iamf_parse.c b/libavformat/iamf_parse.c
+index feb670180e..b3ed391c1c 100644
+--- a/libavformat/iamf_parse.c
++++ b/libavformat/iamf_parse.c
+@@ -942 +942 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
+-                int sound_system;
++                 int sound_system;
+@@ -944 +944,7 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
+-                av_channel_layout_copy(&submix_layout->sound_system, &ff_iamf_sound_system_map[sound_system].layout);
++                if (sound_system < FF_ARRAY_ELEMS(ff_iamf_sound_system_map)) {
++                    av_channel_layout_copy(&submix_layout->sound_system, &ff_iamf_sound_system_map[sound_system].layout);
++                } else {
++                    av_log(s, AV_LOG_ERROR, "Sound system index %d out of bounds\n", sound_system);
++                    ret = AVERROR_INVALIDDATA;
++                    goto fail;
++                }

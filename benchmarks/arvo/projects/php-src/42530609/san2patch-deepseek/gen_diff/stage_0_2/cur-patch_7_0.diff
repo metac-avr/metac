@@ -1,0 +1,15 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..485f9b6add6 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57,9 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	uint32_t type = GC_TYPE(p);
++	zend_rc_dtor_func_t dtor = zend_rc_dtor_func[type];
++	dtor(p);
++	if (type != IS_OBJECT) {
++		return;
++	}
++	if (GC_REFCOUNT(p) == 0) {
++		return;
++	}

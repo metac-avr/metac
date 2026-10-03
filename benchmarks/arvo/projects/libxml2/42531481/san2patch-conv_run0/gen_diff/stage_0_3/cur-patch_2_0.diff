@@ -1,0 +1,39 @@
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..32f484ef 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -402,3 +402,7 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	 (cur->type == XML_XINCLUDE_END)) &&
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++// FIXME: Crash CWE-416: Use After Free
++	 (cur->type == XML_XINCLUDE_END))) {
++        if (cur->nsDef != NULL) {
++            xmlFreeNsList(cur->nsDef);
++            cur->nsDef = NULL;
++        }
++    }
+diff --git a/tree.c b/tree.c
+index 314cf5d5..99f389f4 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// FIXME: Crash CWE-416: Use After Free
++         xmlNsPtr ns;
+@@ -4282,3 +4283,4 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    ns = xmlSearchNs(node->doc, node, node->ns->prefix);
+-	    if (ns != NULL) {
+-	        xmlNodePtr root = ret;
++	    if (node->ns != NULL && node->ns->prefix != NULL) {
++	        ns = xmlSearchNs(node->doc, node, node->ns->prefix);
++	        if (ns != NULL) {
++	            xmlNodePtr root = ret;
+@@ -4286,2 +4288,5 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		    while (root->parent != NULL) root = root->parent;
++		    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                } else {
++                    ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++	        }

@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..0c0328e3902 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1838,2 +1838,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
+-					if (EXPECTED(p->key)) {
++// FIXME: Crash CWE-416: Use After Free
++ 					i_zval_ptr_dtor(&p->val);
++					if (EXPECTED(p->key) && !ZSTR_IS_REFUSED(p->key)) {
+@@ -1847 +1848 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						if (EXPECTED(p->key)) {
++						if (EXPECTED(p->key) && !ZSTR_IS_REFUSED(p->key)) {
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..d3d94def4f9 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -362 +362,4 @@ static zend_always_inline void zend_string_release_ex(zend_string *s, bool persi
+-				efree(s);
++				/* Check if string is already freed to prevent use-after-free */
++				if (EXPECTED(s) && !(GC_FLAGS(s) & IS_STR_FREEABLE)) {
++					efree(s);
++				}

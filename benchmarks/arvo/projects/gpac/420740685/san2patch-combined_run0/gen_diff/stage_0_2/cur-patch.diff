@@ -1,0 +1,17 @@
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..e3b1b0daf 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -522 +522,11 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
+-		memcpy(szLang, stream->sub.language, 3);
++		gf_props_t lang_prop;
++		lang_prop = gf_props_get_string(stream->sub.language);
++		if (lang_prop.value.string && strlen(lang_prop.value.string) >= 3) {
++			memcpy(szLang, lang_prop.value.string, 3);
++		} else if (lang_prop.value.string) {
++			size_t len = strlen(lang_prop.value.string);
++			memcpy(szLang, lang_prop.value.string, len);
++			memset(szLang + len, 0, 3 - len);
++		} else {
++			memset(szLang, 0, 3);
++		}

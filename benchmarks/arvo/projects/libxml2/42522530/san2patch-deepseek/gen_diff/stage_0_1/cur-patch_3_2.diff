@@ -1,0 +1,45 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index e9084950..7b024638 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3371,2 +3371,3 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
+-    if ((RAW == '<') && (NXT(1) == '?')) {
+-	state = ctxt->instate;
++    if ((ctxt->input->cur < ctxt->input->end) && (ctxt->input->cur[0] == '<') &&
++        (ctxt->input->cur + 1 < ctxt->input->end) && (ctxt->input->cur[1] == '?')) {
++        state = ctxt->instate;
+@@ -3374,5 +3374,0 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
+-	/*
+-	 * this is a Processing Instruction.
+-	 */
+-	SKIP(2);
+-	SHRINK;
+@@ -3380,3 +3376,25 @@ htmlParsePI(htmlParserCtxtPtr ctxt) {
+-	/*
+-	 * Parse the target name and check for special support like
+-	 * namespace.
++        /* this is a Processing Instruction. */
++        SKIP(2);
++        SHRINK;
++
++        target = ctxt->input->cur;
++        count = 0;
++        while ((ctxt->input->cur < ctxt->input->end) &&
++               (*ctxt->input->cur != '>') && (*ctxt->input->cur != '?') &&
++               (count < 100)) {
++            ctxt->input->cur++;
++            count++;
++        }
++        if (count == 100) {
++            htmlParseErr(ctxt, XML_ERR_PI_NOT_FINISHED,
++                         "PI: too long target\n", NULL, NULL);
++        }
++        if ((ctxt->input->cur < ctxt->input->end) && (*ctxt->input->cur == '?')) {
++            ctxt->input->cur++;
++            if ((ctxt->input->cur < ctxt->input->end) && (*ctxt->input->cur == '>')) {
++                ctxt->input->cur++;
++            }
++        }
++        ctxt->instate = state;
++        return;
++    }	 * namespace.

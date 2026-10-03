@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..a56600213e4 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74,4 +73,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
+-}
+-
+@@ -81,0 +78 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
++// FIXME: Crash CWE-416: Use After Free
+@@ -84 +81,3 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr) {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -86,10 +85 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-/* }}} */
+-
+-ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++/* }}} */				zend_string *str = (zend_string*)ref;
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..2a88aaf077f 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1946 +1946,2 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-		if (result & ZEND_HASH_APPLY_REMOVE) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (result & ZEND_HASH_APPLY_REMOVE) {
+@@ -1948 +1949,3 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++			if (ht && p) {
++				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++			}

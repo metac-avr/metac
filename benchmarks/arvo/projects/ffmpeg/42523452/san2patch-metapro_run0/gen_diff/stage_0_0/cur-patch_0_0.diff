@@ -1,0 +1,17 @@
+diff --git a/libavcodec/hevc_ps.c b/libavcodec/hevc_ps.c
+index 348e4d8de2..0a42978683 100644
+--- a/libavcodec/hevc_ps.c
++++ b/libavcodec/hevc_ps.c
+@@ -1363 +1363,5 @@ static void colour_mapping_table(GetBitContext *gb, HEVCPPS *pps)
+-    pps->num_cm_ref_layers_minus1 = get_ue_golomb_long(gb);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     pps->num_cm_ref_layers_minus1 = get_ue_golomb_long(gb);
++    if (pps->num_cm_ref_layers_minus1 >= 64) {
++        pps->num_cm_ref_layers_minus1 = 63;
++    }
+@@ -1422,2 +1426,3 @@ static int pps_multilayer_extension(GetBitContext *gb, AVCodecContext *avctx,
+-    pps->colour_mapping_enabled_flag = get_bits1(gb);
+-    if (pps->colour_mapping_enabled_flag)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     pps->colour_mapping_enabled_flag = get_bits1(gb);
++    if (pps->colour_mapping_enabled_flag && pps->num_cm_ref_layers_minus1 < 64)

@@ -1,0 +1,18 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..4fdd0dde1 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1700 +1700,2 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -1701,0 +1703,9 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
++  mrb_int len = RSTR_LEN(s);
++  const char *ptr = RSTR_PTR(s);
++  
++  // Validate string buffer before accessing
++  if (!ptr) return 0;
++  
++  // Force string instantiation to prevent GC during hash computation
++  mrb_str_flush_split_heaps(mrb, str);
++  

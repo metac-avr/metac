@@ -1,0 +1,31 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..3db83b44a8 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1214 +1214,2 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        // This happens normally for CABAC.
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         // This happens normally for CABAC.
+@@ -1216,2 +1217,4 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        memcpy(put_bits_ptr(pbc), pos, rest);
+-        skip_put_bytes(pbc, rest);
++        if (rest <= data_size) {
++            memcpy(put_bits_ptr(pbc), pos, rest);
++            skip_put_bytes(pbc, rest);
++        }
+@@ -1300 +1303 @@ static int cbs_h264_write_nal_unit(CodedBitstreamContext *ctx,
+-
++ 
+@@ -1302,5 +1305,7 @@ static int cbs_h264_write_nal_unit(CodedBitstreamContext *ctx,
+-                err = cbs_h2645_write_slice_data(ctx, pbc, slice->data,
+-                                                 slice->data_size,
+-                                                 slice->data_bit_start);
+-                if (err < 0)
+-                    return err;
++                if (slice->data_size > 0) {
++                    err = cbs_h2645_write_slice_data(ctx, pbc, slice->data,
++                                                     slice->data_size,
++                                                     slice->data_bit_start);
++                    if (err < 0)
++                        return err;
++                }

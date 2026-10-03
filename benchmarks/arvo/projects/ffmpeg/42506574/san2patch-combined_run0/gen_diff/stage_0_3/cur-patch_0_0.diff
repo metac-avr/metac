@@ -1,0 +1,22 @@
+diff --git a/libavcodec/jrevdct.c b/libavcodec/jrevdct.c
+index a1a0f571ad..583cb998fd 100644
+--- a/libavcodec/jrevdct.c
++++ b/libavcodec/jrevdct.c
+@@ -1161 +1161,5 @@ void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
++    int i;
++    int16_t clipped_block[64];
++    
+@@ -1163 +1167,9 @@ void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-    ff_put_pixels_clamped_c(block, dest, line_size);
++    
++    // Clip pixel values to prevent out-of-bounds writes
++    for (i = 0; i < 64; i++) {
++        if (block[i] < 0) clipped_block[i] = 0;
++        else if (block[i] > 255) clipped_block[i] = 255;
++        else clipped_block[i] = block[i];
++    }
++    
++    ff_put_pixels_clamped_c(clipped_block, dest, line_size);

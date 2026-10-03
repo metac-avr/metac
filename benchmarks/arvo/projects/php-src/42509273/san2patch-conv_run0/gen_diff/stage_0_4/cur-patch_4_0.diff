@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..f52f05fd4d8 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -1486 +1485,0 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
+@@ -1493,0 +1493,6 @@ ZEND_API int zend_gc_collect_cycles(void)
++ 
++		/* Validate heap boundaries before garbage collection */
++		if (!zend_gc_validate_heap_bounds()) {
++			GC_G(gc_active) = 0;
++			return 0;
++		}
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..d5584c74eb9 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -216,2 +216,3 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		}
+-		for (zend_long i = 0; i < intern->array.size; i++) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		}
++		for (zend_long i = 0; i < intern->array.size && i < intern->array.size; i++) {  /* Redundant bounds check for safety */

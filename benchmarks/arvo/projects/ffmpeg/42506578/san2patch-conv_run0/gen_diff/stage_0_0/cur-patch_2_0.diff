@@ -1,0 +1,15 @@
+diff --git a/libavutil/buffer.c b/libavutil/buffer.c
+index 54590be566..c47528976d 100644
+--- a/libavutil/buffer.c
++++ b/libavutil/buffer.c
+@@ -144 +144,7 @@ void av_buffer_unref(AVBufferRef **buf)
+-    buffer_replace(buf, NULL);
++    // Prevent release of invalid pointer by validating buffer
++    AVBufferRef *ref = *buf;
++    if (ref && ref->buffer && ref->buffer->refcount >= 0) {
++        buffer_replace(buf, NULL);
++    } else {
++        *buf = NULL;
++    }
+@@ -154 +159,0 @@ int av_buffer_is_writable(const AVBufferRef *buf)
+-

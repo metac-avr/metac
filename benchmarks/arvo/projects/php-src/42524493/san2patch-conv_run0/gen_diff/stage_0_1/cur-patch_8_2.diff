@@ -1,0 +1,54 @@
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index 4d40b76854d..919401b2e8c 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -177,8 +176,0 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-			} else {
+-				EG(exception) = old_exception;
+-			}
+-		}
+-		OBJ_RELEASE(object);
+-	}
+-}
+-
+@@ -189,0 +182 @@ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++	object->handlers = &std_object_handlers;
+@@ -191,8 +184 @@ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object, zend_object *old_object)
+-{
+-	bool has_clone_method = old_object->ce->clone != NULL;
+-
+-	if (old_object->ce->default_properties_count) {
+-		zval *src = old_object->properties_table;
++}		zval *src = old_object->properties_table;
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..5a5f426fa8b 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47,7 +46,0 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	[IS_ARRAY] =        (zend_rc_dtor_func_t)zend_array_destroy,
+-	[IS_OBJECT] =       (zend_rc_dtor_func_t)zend_objects_store_del,
+-	[IS_RESOURCE] =     (zend_rc_dtor_func_t)zend_list_free,
+-	[IS_REFERENCE] =    (zend_rc_dtor_func_t)zend_reference_destroy,
+-	[IS_CONSTANT_AST] = (zend_rc_dtor_func_t)zend_ast_ref_destroy
+-};
+-
+@@ -57,12 +50,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-{
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++	if (p && GC_TYPE(p) <= IS_CONSTANT_AST) {
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}
++}}

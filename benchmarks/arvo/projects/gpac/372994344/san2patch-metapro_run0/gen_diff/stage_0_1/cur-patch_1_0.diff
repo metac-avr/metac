@@ -1,0 +1,16 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..6822391e6 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -292 +292 @@ static void gf_m2ts_es_del(GF_M2TS_ES *es, GF_M2TS_Demuxer *ts)
+-		if ((pes->flags & GF_M2TS_INHERIT_PCR) && ts->ess[es->program->pcr_pid]==es)
++		if ((pes->flags & GF_M2TS_INHERIT_PCR) && ts->ess && es->program->pcr_pid < GF_M2TS_MAX_ES && ts->ess[es->program->pcr_pid] && ts->ess[es->program->pcr_pid]==es)
+@@ -3113 +3113,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++  	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3118,0 +3120,4 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
++	// Clear all ess pointers to prevent use-after-free
++	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++		ts->ess[i] = NULL;
++	}

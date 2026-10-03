@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..562696b7e8c 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++// Fixed: Add atomic reference increment/decrement to prevent concurrent access to freed object
++		GC_SET_REFCOUNT(object, GC_REFCOUNT(object) + 1);
+@@ -204,0 +207 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		GC_DELREF(object);
+diff --git a/Zend/zend.c b/Zend/zend.c
+index e42fc648a4d..f850f3d1963 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1519,0 +1520,2 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
++	int obj_ref_count = 0;
++	zend_object *current_obj = NULL;
+@@ -1521,0 +1524,5 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
++	if (EG(current_execute_data) && EG(current_execute_data)->This.type == IS_OBJECT) {
++		current_obj = Z_OBJ(EG(current_execute_data)->This);
++		obj_ref_count = GC_REFCOUNT(current_obj);
++		GC_ADDREF(current_obj);
++	}
+@@ -1524,0 +1532,3 @@ ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
++	if (current_obj && GC_REFCOUNT(current_obj) > obj_ref_count) {
++		GC_DELREF(current_obj);
++	}

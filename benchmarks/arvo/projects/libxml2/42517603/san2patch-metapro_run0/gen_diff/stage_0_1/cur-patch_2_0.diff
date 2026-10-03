@@ -1,0 +1,21 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..278c76dd 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2279,2 +2279,4 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            if ((ctxt->incTab[i]->inc != NULL) ||
+-                (ctxt->incTab[i]->emptyFb != 0)) {	/* (empty fallback) */
++// FIXME: Crash CWE-416: Use After Free
++             if (((ctxt->incTab[i]->inc != NULL) ||
++                (ctxt->incTab[i]->emptyFb != 0)) && 
++                (ctxt->incTab[i]->doc != NULL)) { /* Validate node is still attached to document */
+@@ -2467 +2469 @@ xmlXIncludeProcessNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
+-        (node->doc == NULL) || (ctxt == NULL))
++         (node->doc == NULL) || (ctxt == NULL))
+@@ -2468,0 +2471,6 @@ xmlXIncludeProcessNode(xmlXIncludeCtxtPtr ctxt, xmlNodePtr node) {
++    
++    /* Additional validation to ensure node integrity before XInclude processing */
++    if ((node->_private != NULL) && (node->doc != NULL) && 
++        (((uintptr_t)node->_private) < 0x1000))
++        return(-1);
++    

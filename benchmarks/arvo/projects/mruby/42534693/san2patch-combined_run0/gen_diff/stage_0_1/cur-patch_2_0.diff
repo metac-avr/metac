@@ -1,0 +1,22 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..b01187589 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -165 +165,2 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
+-DEFINE_INCREMENTER(ht, size)
++// FIXME: Crash CWE-825: Expired Pointer Dereference - Enhanced safety checks
++ DEFINE_INCREMENTER(ht, size)
+@@ -172,4 +173,7 @@ DEFINE_SWITCHER(ht, HT)
+-  hash_entry *entry_var = ea, *ea_end__ = entry_var + (n_used);               \
+-  for (; entry_var < ea_end__; entry_var++) {                                 \
+-    code;                                                                     \
+-  }                                                                           \
++  hash_entry *entry_var = ea;                                                  \
++  if (entry_var) {                                                             \
++    hash_entry *ea_end__ = entry_var + (n_used);                             \
++    for (; entry_var < ea_end__ && entry_var; entry_var++) {                 \
++      code;                                                                   \
++    }                                                                          \
++  }                                                                            \
+@@ -177 +180,0 @@ DEFINE_SWITCHER(ht, HT)
+-

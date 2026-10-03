@@ -1,0 +1,44 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..ffe3aa18587 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1780,12 +1780 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	}
+-	SET_INCONSISTENT(HT_DESTROYED);
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
+-	zend_hash_iterators_remove(ht);
+-	FREE_HASHTABLE(ht);
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	IS_CONSISTENT(ht);
+-	HT_ASSERT_RC1(ht);
++zend_hash_destroy	HT_ASSERT_RC1(ht);
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 6a6476b2ce5..79319b593bb 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -20630,20 +20630 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ADD_ARRAY_ELEMENT_SPEC_TMP_UNU
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	zval *array;
+-	uint32_t size;
+-	USE_OPLINE
+-
+-	array = EX_VAR(opline->result.var);
+-	if (IS_TMP_VAR != IS_UNUSED) {
+-		size = opline->extended_value >> ZEND_ARRAY_SIZE_SHIFT;
+-		ZVAL_ARR(array, zend_new_array(size));
+-		/* Explicitly initialize array as not-packed if flag is set */
+-		if (opline->extended_value & ZEND_ARRAY_NOT_PACKED) {
+-			zend_hash_real_init_mixed(Z_ARRVAL_P(array));
+-		}
+-		ZEND_VM_TAIL_CALL(ZEND_ADD_ARRAY_ELEMENT_SPEC_TMP_UNUSED_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));
+-	} else {
+-		ZVAL_ARR(array, zend_new_array(0));
+-		ZEND_VM_NEXT_OPCODE();
+-	}
+-}
++static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_hash_clean

@@ -1,0 +1,68 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..9e83a1c779 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1212,29 +1212,6 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        // If the writer is aligned at this point,
+-        // memcpy can be used to improve performance.
+-        // This happens normally for CABAC.
+-        flush_put_bits(pbc);
+-        memcpy(put_bits_ptr(pbc), pos, rest);
+-        skip_put_bytes(pbc, rest);
+-    } else {
+-        // If not, we have to copy manually.
+-        // rbsp_stop_one_bit forces us to special-case
+-        // the last byte.
+-        uint8_t temp;
+-        int i;
+-
+-        for (; rest > 4; rest -= 4, pos += 4)
+-            put_bits32(pbc, AV_RB32(pos));
+-
+-        for (; rest > 1; rest--, pos++)
+-            put_bits(pbc, 8, *pos);
+-
+-    rbsp_stop_one_bit:
+-        temp = rest ? *pos : *pos & MAX_UINT_BITS(8 - data_bit_start % 8);
+-
+-        av_assert0(temp);
+-        i = ff_ctz(*pos);
+-        temp = temp >> i;
+-        i = rest ? (8 - i) : (8 - i - data_bit_start % 8);
+-        put_bits(pbc, i, temp);
+-        if (put_bits_count(pbc) % 8)
+-            put_bits(pbc, 8 - put_bits_count(pbc) % 8, 0);
++    // If the writer is aligned at this point,
++    // memcpy can be used to improve performance.
++    // This happens normally for CABAC.
++    if (rest <= 0) {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid slice data length.\n");
++        return AVERROR_INVALIDDATA;
+@@ -1241,0 +1219,27 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
++    flush_put_bits(pbc);
++    memcpy(put_bits_ptr(pbc), pos, rest);
++    skip_put_bytes(pbc, rest);
++} else {
++    // If not, we have to copy manually.
++    // rbsp_stop_one_bit forces us to special-case
++    // the last byte.
++    uint8_t temp;
++    int i;
++
++    for (; rest > 4; rest -= 4, pos += 4)
++        put_bits32(pbc, AV_RB32(pos));
++
++    for (; rest > 1; rest--, pos++)
++        put_bits(pbc, 8, *pos);
++
++rbsp_stop_one_bit:
++    temp = rest ? *pos : *pos & MAX_UINT_BITS(8 - data_bit_start % 8);
++
++    av_assert0(temp);
++    i = ff_ctz(*pos);
++    temp = temp >> i;
++    i = rest ? (8 - i) : (8 - i - data_bit_start % 8);
++    put_bits(pbc, i, temp);
++    if (put_bits_count(pbc) % 8)
++        put_bits(pbc, 8 - put_bits_count(pbc) % 8, 0);
++}

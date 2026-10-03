@@ -1,0 +1,22 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..4eabfe510 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -188,0 +189,2 @@ ucmp(mpz_t *y, mpz_t *x)
++  // Validate pointers before accessing
++  if (y->sz > 0 && (!y->p || !x->p)) return 0;
+@@ -190,2 +192,2 @@ ucmp(mpz_t *y, mpz_t *x)
+-    mp_limb a = y->p[i];
+-    mp_limb b = x->p[i];
++    mp_limb a = (i < y->sz) ? y->p[i] : 0;
++    mp_limb b = (i < x->sz) ? x->p[i] : 0;
+@@ -245 +247,2 @@ mpz_add(mrb_state *mrb, mpz_t *zz, mpz_t *x, mpz_t *y)
+-  else {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   else {
+@@ -247 +250,4 @@ mpz_add(mrb_state *mrb, mpz_t *zz, mpz_t *x, mpz_t *y)
+-    if ((mg = ucmp(x,y)) == 0) {
++    if (x->p == NULL || y->p == NULL) {
++      zero(&z);
++    }
++    else if ((mg = ucmp(x,y)) == 0) {

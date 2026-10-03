@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..73585784bcf 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1950 +1950 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	} else {
++	}         else {
+@@ -1967,2 +1967,8 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			/* special case, perform operations on result */
+-			result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			if (Z_REFCOUNT_P(result) != 1) {
++				result_str = zend_string_init(Z_STRVAL_P(result), Z_STRLEN_P(result), 0);
++				i_zval_ptr_dtor(result);
++				result_str = zend_string_extend(result_str, result_len, 0);
++			} else {
++				/* special case, perform operations on result */
++				result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c0efe2a6dcf..cfb38c0ad2e 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1185 +1185 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
++        }
+@@ -1204,3 +1204 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {

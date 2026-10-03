@@ -1,0 +1,39 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..606e3b8c4 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -294,2 +294,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	if(packet->content_disposition_line.ptr[attachment_len] == '\"') {
+-	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '\"') {
++	if(packet->content_disposition_line.ptr[attachment_len] == '"') {
++	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '"') {
+@@ -299,2 +299,6 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++	      if (attachment_len + 1 + (filename_len-1) <= packet->content_disposition_line.len) {
++	        strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
++	        flow->http.filename[filename_len-1] = '\0';
++	      } else {
++	        flow->http.filename[0] = '\0';
++	      }
+@@ -306 +309,0 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-
+@@ -308 +311,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
++	      if (attachment_len + 1 + (filename_len-2) <= packet->content_disposition_line.len) {
++	        strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+@@ -310 +314,4 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      flow->http.filename[filename_len-2] = '\0';
++	        flow->http.filename[filename_len-2] = '\0';
++	      } else {
++	        flow->http.filename[0] = '\0';
++	      }
+@@ -319,2 +326,6 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    if (attachment_len + filename_len <= packet->content_disposition_line.len) {
++	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
++	      flow->http.filename[filename_len] = '\0';
++	    } else {
++	      flow->http.filename[0] = '\0';
++	    }

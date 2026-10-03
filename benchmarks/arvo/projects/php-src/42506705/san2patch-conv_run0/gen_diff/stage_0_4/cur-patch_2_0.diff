@@ -1,0 +1,40 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..4756ea82d4e 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -269 +268,0 @@ ZEND_API void ZEND_FASTCALL _zend_hash_init(HashTable *ht, uint32_t nSize, dtor_
+-
+@@ -277 +276,2 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array_0(void)
+-ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
+@@ -280 +280,5 @@ ZEND_API HashTable* ZEND_FASTCALL _zend_new_array(uint32_t nSize)
+-	_zend_hash_init_int(ht, nSize, ZVAL_PTR_DTOR, 0);
++	if (ht != NULL) {
++		_zend_hash_init_int(ht, nSize, ZVAL_PTR_DTOR, 0);
++	} else {
++		return NULL;
++	}
+@@ -289,2 +293 @@ ZEND_API HashTable* ZEND_FASTCALL zend_new_pair(zval *val1, zval *val2)
+-	ht->nNumUsed = ht->nNumOfElements = ht->nNextFreeElement = 2;
+-	zend_hash_real_init_packed_ex(ht);
++	ht->nNumUsed = ht->nNumOfElements = ht->nNextFreeElement = 2;	zend_hash_real_init_packed_ex(ht);
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 6a6476b2ce5..e54f7c3d816 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -20640,3 +20640,9 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
+-		/* Explicitly initialize array as not-packed if flag is set */
+-		if (opline->extended_value & ZEND_ARRAY_NOT_PACKED) {
+-			zend_hash_real_init_mixed(Z_ARRVAL_P(array));
++		/* Defensive check for valid array reference to prevent use-after-free */
++		if (Z_TYPE_P(array) == IS_ARRAY && Z_ARRVAL_P(array) != NULL) {
++			/* Explicitly initialize array as not-packed if flag is set */
++			if (opline->extended_value & ZEND_ARRAY_NOT_PACKED) {
++				zend_hash_real_init_mixed(Z_ARRVAL_P(array));
++			}
++			ZEND_VM_TAIL_CALL(ZEND_ADD_ARRAY_ELEMENT_SPEC_TMP_UNUSED_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));
++		} else {
++			ZEND_VM_NEXT_OPCODE();
+@@ -20644 +20649,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_INIT_ARRAY_SPEC_TMP_UNUSED_HAN
+-		ZEND_VM_TAIL_CALL(ZEND_ADD_ARRAY_ELEMENT_SPEC_TMP_UNUSED_HANDLER(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));

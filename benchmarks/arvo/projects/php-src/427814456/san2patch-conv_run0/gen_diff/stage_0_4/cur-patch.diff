@@ -1,0 +1,52 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..39931f91a85 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1434,25 +1434,10 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
+-		if ((p->key == key) ||
+-			(p->h == h &&
+-		     p->key &&
+-		     zend_string_equal_content(p->key, key))) {
+-			if (Z_TYPE(p->val) == IS_INDIRECT) {
+-				zval *data = Z_INDIRECT(p->val);
+-
+-				if (UNEXPECTED(Z_TYPE_P(data) == IS_UNDEF)) {
+-					return FAILURE;
+-				} else {
+-					if (ht->pDestructor) {
+-						zval tmp;
+-						ZVAL_COPY_VALUE(&tmp, data);
+-						ZVAL_UNDEF(data);
+-						ht->pDestructor(&tmp);
+-					} else {
+-						ZVAL_UNDEF(data);
+-					}
+-					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+-				}
+-			} else {
+-				_zend_hash_del_el_ex(ht, idx, p, prev);
+-			}
+-			return SUCCESS;
+-		}
++		static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++{
++	CHECK_ZVAL_STRING(str);
++	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
++	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
++	/* Set flags to indicate destroyed state */
++	GC_FLAGS(str) |= 0x00000080;  /* Using numeric flag value instead of undefined IS_STR_DESTROYED */
++	efree(str);
++}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..cc167f280c3 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -66,0 +67,2 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Set flags to indicate destroyed state */
++	GC_FLAGS(str) |= IS_STR_DESTROYED;
+@@ -77 +78,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

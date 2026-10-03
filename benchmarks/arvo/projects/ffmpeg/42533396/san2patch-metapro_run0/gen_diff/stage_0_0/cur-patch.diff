@@ -1,0 +1,26 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..462b838bf5 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -674 +674,6 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
++        if (src->nb_channels > 128 || src->nb_channels <= 0)
++            return AVERROR(EINVAL);
++        size_t map_size = src->nb_channels * sizeof(*dst->u.map);
++        if (map_size / sizeof(*dst->u.map) != src->nb_channels)
++            return AVERROR(EINVAL);
++        dst->u.map = av_malloc(map_size);
+@@ -677 +682 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        memcpy(dst->u.map, src->u.map, map_size);
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..0a680dc179 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -523,0 +524,6 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
++ 
++        // Validate parameters to prevent buffer overflow
++        if (nb_channels <= 0 || num_descr < 0 || num_descr > nb_channels) {
++            av_log(s, AV_LOG_ERROR, "invalid channel parameters: nb_channels=%d, num_descr=%d\n", nb_channels, num_descr);
++            return AVERROR_INVALIDDATA;
++        }

@@ -1,0 +1,45 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..8f6620085 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -987,0 +988,40 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
++  // Comprehensive input validation
++  if (!x || len <= 0 || len > 1000000) {  // Reasonable length limit
++    mrb_raisef(mrb, E_ARGUMENT_ERROR, "invalid string length: %d", (int)len);
++    return mrb_nil_value();
++  }
++  
++  if (base < 2 || base > 36) {
++    mrb_raisef(mrb, E_ARGUMENT_ERROR, "invalid base: %d", (int)base);
++    return mrb_nil_value();
++  }
++  
++  // Validate string content based on base
++  for (mrb_int i = 0; i < len; i++) {
++    char c = x[i];
++    int digit_val;
++    
++    if (c >= '0' && c <= '9') {
++      digit_val = c - '0';
++    } else if (c >= 'a' && c <= 'z') {
++      digit_val = c - 'a' + 10;
++    } else if (c >= 'A' && c <= 'Z') {
++      digit_val = c - 'A' + 10;
++    } else if (c == '-' || c == '+') {
++      // Sign characters allowed only at beginning
++      if (i != 0) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid character position");
++        return mrb_nil_value();
++      }
++      continue;
++    } else {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid character");
++      return mrb_nil_value();
++    }
++    
++    if (digit_val >= base) {
++      mrb_raisef(mrb, E_ARGUMENT_ERROR, "digit '%c' exceeds base %d", c, (int)base);
++      return mrb_nil_value();
++    }
++  }
++  

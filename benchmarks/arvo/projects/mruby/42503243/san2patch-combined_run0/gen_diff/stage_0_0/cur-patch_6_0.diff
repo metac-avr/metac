@@ -1,0 +1,40 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..f2900ce31 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -531,7 +530,0 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    }
+-  }
+-  mrb_gc_arena_restore(mrb, ai);
+-  mrb_gc_protect(mrb, val);
+-  return val;
+-}
+-
+@@ -540,0 +534,4 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
++  /* Check for potential stack overflow before function call */
++  if (mrb->c->ci->stack + argc + 1 >= mrb->c->stend) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "stack level too deep");
++  }
+@@ -542,11 +539 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
+-}
+-
+-static mrb_value
+-exec_irep(mrb_state *mrb, mrb_value self, struct RProc *p)
+-{
+-  mrb_callinfo *ci = mrb->c->ci;
+-  int keep, nregs;
+-
+-  ci->stack[0] = self;
+-  mrb_vm_ci_proc_set(ci, p);
+-  if (MRB_PROC_CFUNC_P(p)) {
++}  if (MRB_PROC_CFUNC_P(p)) {
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..71a75716b 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -775,0 +776,5 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  /* Check stack boundary before constant lookup */
++  if ((char*)mrb->c->stack + sizeof(mrb_value) > (char*)mrb->c->stend) {
++    mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in constant lookup");
++  }
++

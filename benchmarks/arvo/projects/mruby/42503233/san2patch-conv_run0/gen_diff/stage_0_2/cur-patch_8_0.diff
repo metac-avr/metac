@@ -1,0 +1,60 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..1c204039e 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -199,0 +200 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++    if (room <= 0) return;  /* Validate room parameter */
+@@ -202,10 +203 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-}
+-
+-static inline struct REnv*
+-uvenv(mrb_state *mrb, mrb_int up)
+-{
+-  const struct RProc *proc = mrb->c->ci->proc;
+-  struct REnv *e;
+-
+-  while (up--) {
+-    proc = proc->upper;
++}    proc = proc->upper;
+@@ -479 +471 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++     c = mrb_class(mrb, self);
+@@ -480,0 +473,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    if (argc > 10000) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "argument count too large");
++    }
+@@ -484,0 +480,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      if (n + 1 >= mrb->c->stend - mrb->c->stbase) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow");
++      }
+@@ -497,0 +496,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      if (n + 1 >= mrb->c->stend - mrb->c->stbase) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in method_missing");
++      }
+@@ -506,0 +508,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++        if (p->body.irep->nregs > 10000) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "IREP register count too large");
++        }
+@@ -515,3 +519,12 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
+-      ci->stack[argc+1] = blk;
++      if (argc > 0) {
++        if (ci->stack + 1 + argc <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          return mrb_nil_value();
++        }
++      }
++      if (ci->stack + argc + 1 < mrb->c->stend) {
++        ci->stack[argc+1] = blk;
++      } else {
++        return mrb_nil_value();
++      }
+@@ -520 +533,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[2] = blk;
++      if (ci->stack + 2 < mrb->c->stend) {
++        ci->stack[2] = blk;
++      } else {
++        return mrb_nil_value();
++      }

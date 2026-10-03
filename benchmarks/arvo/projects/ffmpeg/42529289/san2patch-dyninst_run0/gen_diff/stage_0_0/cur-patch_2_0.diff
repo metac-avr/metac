@@ -1,0 +1,40 @@
+diff --git a/libavcodec/bitstream_template.h b/libavcodec/bitstream_template.h
+index 0308e3a924..bbc11292c3 100644
+--- a/libavcodec/bitstream_template.h
++++ b/libavcodec/bitstream_template.h
+@@ -529 +529 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-    int ret, nb_bits, code, n = Jtable[idx].len;
++     int ret, nb_bits, code, n = Jtable[idx].len;
+@@ -531 +531,3 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-        AV_COPY64U(dst, Jtable[idx].val);
++        if (dst != NULL) {
++            AV_COPY64U(dst, Jtable[idx].val);
++        }
+@@ -544 +546,3 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-        AV_WN16(dst, code);
++        if (dst != NULL) {
++            AV_WN16(dst, code);
++        }
+@@ -551,0 +556 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
++
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..665de92097 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -639 +639 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-        return ret;
++    return ret;
+@@ -647,3 +647,6 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-    s->buf = avpkt->data;
+-    s->p = p;
+-    avctx->execute2(avctx, s->magy_decode_slice, NULL, NULL, s->nb_slices);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++    if (avpkt->data && avpkt->size >= 8) {
++        s->buf = avpkt->data;
++        s->p = p;
++        avctx->execute2(avctx, s->magy_decode_slice, NULL, NULL, s->nb_slices);
++    }
+@@ -659,2 +662 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
+-    } else {
+-        switch (s->color_matrix) {
++    } else {        switch (s->color_matrix) {

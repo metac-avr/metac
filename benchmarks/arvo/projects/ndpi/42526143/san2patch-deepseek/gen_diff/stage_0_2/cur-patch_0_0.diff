@@ -1,0 +1,24 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..c99c6a646 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -299,2 +299,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+-	      flow->http.filename[filename_len-1] = '\0';
++	      u_int32_t bounded_len = ndpi_min(filename_len - 1, packet->content_disposition_line.len - (attachment_len + 1));
++	      memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, bounded_len);
++	      flow->http.filename[bounded_len] = '\0';
+@@ -308,3 +309,4 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++	      u_int32_t bounded_len = ndpi_min(filename_len - 2, packet->content_disposition_line.len - (attachment_len + 1));
++	      memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
++		      bounded_len);
++	      flow->http.filename[bounded_len] = '\0';
+@@ -319,2 +321,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
+-	    flow->http.filename[filename_len] = '\0';
++	    u_int32_t bounded_len = ndpi_min(filename_len, packet->content_disposition_line.len - attachment_len);
++	    memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, bounded_len);
++	    flow->http.filename[bounded_len] = '\0';

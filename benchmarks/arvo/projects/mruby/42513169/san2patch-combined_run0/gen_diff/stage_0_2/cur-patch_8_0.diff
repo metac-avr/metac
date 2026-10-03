@@ -1,0 +1,33 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..7f0227375 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -611 +611,2 @@ mpz_cmp(mrb_state *mrb, mpz_t *x, mpz_t *y)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -613,8 +614,11 @@ mpz_cmp(mrb_state *mrb, mpz_t *x, mpz_t *y)
+-  if (x->sn < 0 && y->sn > 0)
+-    return (-1);
+-  if (x->sn > 0 && y->sn < 0)
+-    return 1;
+-  abscmp=ucmp(x,y);
+-  if (x->sn >=0 && y->sn >=0)
+-    return abscmp;
+-  return (-abscmp);          // if (x->sn <=0 && y->sn <=0)
++  if (x && y) {  // Check pointers are valid before accessing
++    if (x->sn < 0 && y->sn > 0)
++      return (-1);
++    if (x->sn > 0 && y->sn < 0)
++      return 1;
++    abscmp=ucmp(x,y);
++    if (x->sn >=0 && y->sn >=0)
++      return abscmp;
++    return (-abscmp);          // if (x->sn <=0 && y->sn <=0)
++  }
++  return 0;  // Return neutral value for invalid pointers
+@@ -1299,0 +1304,4 @@ mrb_bint_cmp(mrb_state *mrb, mrb_value x, mrb_value y)
++  
++  /* Defensive check for valid pointers before calling mpz_cmp */
++  if (&b->mp == NULL || &b2->mp == NULL) return -2; /* prevent null dereference */
++  

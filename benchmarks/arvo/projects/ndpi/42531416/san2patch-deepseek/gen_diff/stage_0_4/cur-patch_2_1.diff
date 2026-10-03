@@ -1,0 +1,28 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..88b68efa8 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,6 +2380,0 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
+-
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+-
+@@ -2387,0 +2382,5 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
++		  int remaining = total_len - s_offset - i;
++		  if(remaining < 2) {
++		    break;
++		  }
++
+@@ -2391 +2390 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++		  ja.client.signature_algorithms[id++] = (((u_int16_t)packet->payload[s_offset+i*2]) << 8) | packet->payload[s_offset+i*2+1];
+@@ -2397 +2396 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++		  u_int16_t signature_algo = (u_int16_t)((((u_int16_t)packet->payload[s_offset+i]) << 8) | packet->payload[s_offset+i+1]);
+@@ -2398,0 +2398 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
++		#ifdef TLS_HANDLE_SIGNATURE_ALGORITMS
+@@ -2402 +2402 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		    continue;
++		#endif		    continue;

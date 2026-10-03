@@ -1,0 +1,43 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..e0b4392c 100644
+--- a/tree.c
++++ b/tree.c
+@@ -792,2 +792,11 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++    // Validate and free namespace components safely
++    if (cur->href != NULL) {
++        xmlFree((char *) cur->href);
++        cur->href = NULL;
++    }
++    if (cur->prefix != NULL) {
++        xmlFree((char *) cur->prefix);
++        cur->prefix = NULL;
++    }
++    // Zero out the entire structure before freeing
++    memset(cur, 0, sizeof(xmlNs));
+@@ -804,2 +813 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;
+@@ -3698,2 +3706,16 @@ xmlFreeNode(xmlNodePtr cur) {
+-            xmlFreePropList(cur->properties);
+-        if (cur->nsDef != NULL)
++// FIXME: Crash CWE-416: Use After Free
++             xmlFreePropList(cur->properties);
++        if (cur->nsDef != NULL) {
++            /* Validate namespace pointer before accessing */
++            if (cur->ns != NULL) {
++                xmlNsPtr nsCheck = cur->nsDef;
++                int validRef = 0;
++                while (nsCheck != NULL) {
++                    if (nsCheck == cur->ns) {
++                        validRef = 1;
++                        break;
++                    }
++                    nsCheck = nsCheck->next;
++                }
++                if (!validRef) cur->ns = NULL;
++            }
+@@ -3700,0 +3723 @@ xmlFreeNode(xmlNodePtr cur) {
++        }

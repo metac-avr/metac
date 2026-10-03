@@ -1,0 +1,44 @@
+diff --git a/Zend/zend_property_hooks.c b/Zend/zend_property_hooks.c
+index 9cfa15ecafa..31129d3532e 100644
+--- a/Zend/zend_property_hooks.c
++++ b/Zend/zend_property_hooks.c
+@@ -209 +209,2 @@ static void zho_it_dtor(zend_object_iterator *iter)
+-	zend_hooked_object_iterator *hooked_iter = (zend_hooked_object_iterator*)iter;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	zend_hooked_object_iterator *hooked_iter = (zend_hooked_object_iterator*)iter;
+@@ -212,2 +213,6 @@ static void zho_it_dtor(zend_object_iterator *iter)
+-	zval_ptr_dtor_nogc(&hooked_iter->current_key);
+-	zval_ptr_dtor(&hooked_iter->current_data);
++	if (hooked_iter->current_key.u1.v.type != IS_UNDEF) {
++		zval_ptr_dtor_nogc(&hooked_iter->current_key);
++	}
++	if (hooked_iter->current_data.u1.v.type != IS_UNDEF) {
++		zval_ptr_dtor(&hooked_iter->current_data);
++	}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..9046093e6a4 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74,2 +74,4 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
++i_zval_ptr_dtor(&ref->val);
++	if (ref != NULL) {
++		efree_size(ref, sizeof(zend_reference));
++	}
+@@ -82 +84,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -84 +87,3 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr) {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -90 +95 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
+@@ -94,2 +99 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

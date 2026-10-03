@@ -1,0 +1,23 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..6387a738f 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -240 +240,3 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (mrb_basic_ptr(v)->tt != MRB_TT_FREE) {
++    mrb_gc_mark_value(mrb, v);
++  }
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..29385cce3 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1203,3 +1203,6 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Defer page freeing until marking phase is complete */
++      if (gc->state != GC_STATE_MARK) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }

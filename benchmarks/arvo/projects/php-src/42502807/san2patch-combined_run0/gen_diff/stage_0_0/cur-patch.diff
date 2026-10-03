@@ -1,0 +1,28 @@
+diff --git a/Zend/Optimizer/zend_optimizer.c b/Zend/Optimizer/zend_optimizer.c
+index c9d23d11b7d..342db4e6b93 100644
+--- a/Zend/Optimizer/zend_optimizer.c
++++ b/Zend/Optimizer/zend_optimizer.c
+@@ -1080,2 +1080,9 @@ static void zend_redo_pass_two(zend_op_array *op_array)
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++		if (op_array->opcodes && op_array->literals) {  // Check both pointers before memcpy
++			size_t literals_offset = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++			size_t literals_size = sizeof(zval) * op_array->last_literal;
++			// Validate that the copy operation won't cause overflow
++			if (literals_size > 0 && literals_offset + literals_size > literals_offset) {  // Check for integer overflow
++				memcpy(((char*)op_array->opcodes) + literals_offset,
++					op_array->literals, literals_size);
++			}
++		}
+@@ -1191,2 +1198,9 @@ static void zend_redo_pass_two_ex(zend_op_array *op_array, zend_ssa *ssa)
+-		memcpy(((char*)op_array->opcodes) + ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16),
+-			op_array->literals, sizeof(zval) * op_array->last_literal);
++		if (op_array->opcodes && op_array->literals) {  // Check both pointers before memcpy
++			size_t literals_offset = ZEND_MM_ALIGNED_SIZE_EX(sizeof(zend_op) * op_array->last, 16);
++			size_t literals_size = sizeof(zval) * op_array->last_literal;
++			// Validate that the copy operation won't cause overflow
++			if (literals_size > 0 && literals_offset + literals_size > literals_offset) {  // Check for integer overflow
++				memcpy(((char*)op_array->opcodes) + literals_offset,
++					op_array->literals, literals_size);
++			}
++		}

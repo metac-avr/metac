@@ -1,0 +1,41 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..7c12f8952 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -204,5 +203,0 @@ mrb_str_new_static(mrb_state *mrb, const char *p, mrb_int len)
+-{
+-  struct RString *s = str_new_static(mrb, p, len);
+-  return mrb_obj_value(s);
+-}
+-
+@@ -211,0 +207 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
++  if (shared->refcnt == 0) return;
+@@ -224 +220,27 @@ str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
+-
++    if (shared->refcnt == 1 && s->as.heap.ptr == shared->ptr) {
++      s->flags &= ~MRB_STR_SHARED;
++      s->as.heap.aux.capa = s->as.heap.len;
++    }
++    else {
++      str_decref(mrb, shared);
++      s->as.heap.ptr = (char *)mrb_malloc(mrb, (size_t)s->as.heap.len + 1);
++      if (s->as.heap.len > 0) {
++        memcpy(s->as.heap.ptr, shared->ptr, (size_t)s->as.heap.len);
++      }
++      s->as.heap.ptr[s->as.heap.len] = '\0';
++      s->as.heap.aux.capa = s->as.heap.len;
++      s->flags &= ~MRB_STR_SHARED;
++    }
++    s->flags |= MRB_STR_ASCII;
++  }
++  else if (RSTR_NOFREE_P(s) || RSTR_FSHARED_P(s)) {
++    char *p = (char *)mrb_malloc(mrb, (size_t)s->as.heap.len + 1);
++    if (s->as.heap.len > 0) {
++      memcpy(p, s->as.heap.ptr, (size_t)s->as.heap.len);
++    }
++    p[s->as.heap.len] = '\0';
++    s->as.heap.ptr = p;
++    s->as.heap.aux.capa = s->as.heap.len;
++    s->flags &= ~(MRB_STR_NOFREE | MRB_STR_FSHARED);
++  }
++}

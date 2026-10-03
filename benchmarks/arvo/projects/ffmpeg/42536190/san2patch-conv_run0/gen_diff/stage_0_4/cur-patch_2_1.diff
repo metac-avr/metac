@@ -1,0 +1,34 @@
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..9d366e92b1 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -44,7 +43,0 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
+-        ff_refstruct_unref(&frame->rpl_tab);
+-        frame->refPicList = NULL;
+-
+-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+-    }
+-}
+-
+@@ -52 +45,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-416: Use After Free
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -58,8 +52,9 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-    return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
+-}
+-
+-void ff_hevc_clear_refs(HEVCContext *s)
+-{
+-    int i;
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++    
++    if (ref && ref->rpl_tab && ctb_addr_ts >= 0) {
++        // Check if rpl_tab[ctb_addr_ts] is valid before accessing
++        if (ref->rpl_tab[ctb_addr_ts]) {
++            return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
++        }
++    }
++    return NULL;
++}        ff_hevc_unref_frame(&s->DPB[i],

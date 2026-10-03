@@ -1,0 +1,46 @@
+diff --git a/ext/standard/string.c b/ext/standard/string.c
+index 70743f4db70..d6d97bb7ac6 100644
+--- a/ext/standard/string.c
++++ b/ext/standard/string.c
+@@ -5144,0 +5145,6 @@ PHP_FUNCTION(str_getcsv)
++	/* Prevent integer overflow by validating string length */
++	if (ZSTR_LEN(str) > 0x7FFFFFFF) {
++		php_error_docref(NULL, E_WARNING, "String too long for CSV processing");
++		RETURN_FALSE;
++	}
++
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..67fb816726f 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2140,4 +2140,7 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-						}
+-						break;
+-					default:
+-						break;
++quit_loop_3:
++			/* Check for valid range to avoid negative size in memcpy */
++			if (bptr > hunk_begin) {
++				size_t copy_len = bptr - hunk_begin;
++				if (copy_len <= buf_len) {
++					memcpy(tptr, hunk_begin, copy_len);
++					tptr += copy_len;
+@@ -2145,2 +2147,0 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-				bptr += inc_len;
+-				inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
+@@ -2148,4 +2148,0 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-
+-		quit_loop_3:
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-			tptr += (bptr - hunk_begin);
+@@ -2153,9 +2150 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			comp_end = tptr;
+-		} else {
+-			/* 2B. Handle non-enclosure field */
+-
+-			hunk_begin = bptr;
+-
+-			for (;;) {
+-				switch (inc_len) {
+-					case 0:
++			comp_end = tptr;					case 0:

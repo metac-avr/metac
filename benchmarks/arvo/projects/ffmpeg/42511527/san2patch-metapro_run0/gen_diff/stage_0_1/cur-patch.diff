@@ -1,0 +1,57 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..d86e680b84 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -152,0 +153,6 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Validate all buffers before use to prevent use-after-free
++    if (!s->tmpblock || !s->deflate_block) {
++        av_log(s->avctx, AV_LOG_ERROR, "Buffer validation failed - possible use after free\n");
++        return AVERROR(EINVAL);
++    }
++
+@@ -155 +161,2 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
+-    s->zstream.next_out  = s->tmpblock;
++// FIXME: Crash CWE-416: Use After Free
++     s->zstream.next_out  = s->tmpblock;
+@@ -172,0 +180,6 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Additional validation before second inflate call
++    if (!s->tmpblock || !s->deflate_block) {
++        av_log(s->avctx, AV_LOG_ERROR, "Buffer re-validation failed\n");
++        return AVERROR(EINVAL);
++    }
++
+@@ -194 +207,2 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
++// FIXME: Crash CWE-416: Use After Free
++     }
+@@ -200,0 +215,3 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        
++        /* Ensure line pointer is updated after flashsv2_prime */
++        line = s->tmpblock;
+@@ -201,0 +219,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++    
++    /* Validate critical pointers before use */
++    if (!s->tmpblock || !s->zstream.next_out) {
++        av_log(avctx, AV_LOG_ERROR, "Critical pointer validation failed\n");
++        return AVERROR(ENOMEM);
++    }
++    
+@@ -210,0 +235,7 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        
++        /* Re-validate after inflateSync which may affect memory */
++        if (!s->tmpblock) {
++            av_log(avctx, AV_LOG_ERROR, "tmpblock became invalid after inflateSync\n");
++            return AVERROR(ENOMEM);
++        }
++        line = s->tmpblock;
+@@ -227,0 +259,5 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++            /* Defensive check before memcpy */
++            if (!s->frame || !s->frame->data[0] || !line) {
++                av_log(avctx, AV_LOG_ERROR, "Memory access with invalid pointers\n");
++                return AVERROR(EINVAL);
++            }
+@@ -235,0 +272,4 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
++        if (!s->tmpblock || !s->frame || !s->frame->data[0]) {
++            av_log(avctx, AV_LOG_ERROR, "Null pointer in hybrid decoding\n");
++            return AVERROR_INVALIDDATA;
++        }

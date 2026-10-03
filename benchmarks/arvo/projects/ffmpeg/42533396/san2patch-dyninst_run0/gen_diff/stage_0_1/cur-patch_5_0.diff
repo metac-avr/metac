@@ -1,0 +1,52 @@
+diff --git a/libavformat/aiffdec.c b/libavformat/aiffdec.c
+index 5314d159ef..e40e084729 100644
+--- a/libavformat/aiffdec.c
++++ b/libavformat/aiffdec.c
+@@ -335 +335,2 @@ static int aiff_read_header(AVFormatContext *s)
+-            break;
++// FIXED: Added comprehensive size validation to prevent buffer overflows
++             break;
+@@ -336,0 +338,5 @@ static int aiff_read_header(AVFormatContext *s)
++            // Validate chunk size to prevent buffer overflow in channel layout processing
++            if (size <= 0 || size > 0x100000) { // Reasonable limit for CHAN chunks
++                av_log(s, AV_LOG_ERROR, "CHAN chunk size out of bounds: %d\n", size);
++                return AVERROR_INVALIDDATA;
++            }
+@@ -353,0 +360,5 @@ static int aiff_read_header(AVFormatContext *s)
++            // Validate skip size to prevent negative or excessive seeks
++            if (size < 0 || size > 0x1000000) {
++                av_log(s, AV_LOG_ERROR, "Invalid chunk size for skip: %d\n", size);
++                return AVERROR_INVALIDDATA;
++            }
+diff --git a/libavcodec/codec_par.c b/libavcodec/codec_par.c
+index abaac63841..b4967401ff 100644
+--- a/libavcodec/codec_par.c
++++ b/libavcodec/codec_par.c
+@@ -271 +271 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        } else {
++         } else {
+@@ -273,3 +273,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
+-        if (ret < 0)
+-            return ret;
++        // Validate channel layout structure integrity before copying
++        if (&par->ch_layout != NULL) {
++            // Perform bounds check on channel layout data
++            if (par->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM) {
++                // For custom layouts, validate the custom channels array
++                if (par->ch_layout.u.map && par->ch_layout.nb_channels > 0) {
++                    ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++                    if (ret < 0)
++                        return ret;
++                } else {
++                    // Safe fallback for invalid custom layout
++                    codec->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
++                    codec->ch_layout.nb_channels = par->ch_layout.nb_channels;
++                }
++            } else {
++                // For native and other layouts, proceed normally
++                ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++                if (ret < 0)
++                    return ret;
++            }
++        }

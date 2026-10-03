@@ -1,0 +1,34 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index b8b6bd23..bb4503cd 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3703,0 +3704,27 @@ htmlParseDocTypeDecl(htmlParserCtxtPtr ctxt) {
++    if ((ExternalID != NULL) && (ctxt->input != NULL)) {
++        const xmlChar *cur = ctxt->input->cur;
++        const xmlChar *end = ctxt->input->end;
++        const xmlChar *base = ctxt->input->base;
++        if ((cur == NULL) || (end == NULL) || (base == NULL) ||
++            (ExternalID < base) || (ExternalID >= end)) {
++            htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++                         "htmlParseDocTypeDecl : ExternalID outside input buffer\n",
++                         NULL, NULL);
++            if (ExternalID != NULL) {
++                xmlFree(ExternalID);
++                ExternalID = NULL;
++            }
++            if (URI != NULL) {
++                xmlFree(URI);
++                URI = NULL;
++            }
++            goto cleanup;
++        }
++        while ((ExternalID < end) && (*ExternalID != 0))
++            ExternalID++;
++        if (ExternalID >= end) {
++            htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++                         "htmlParseDocTypeDecl : unterminated ExternalID\n",
++                         NULL, NULL);
++        }
++    }
+@@ -3726,0 +3754 @@ htmlParseDocTypeDecl(htmlParserCtxtPtr ctxt) {
++cleanup:

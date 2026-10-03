@@ -1,0 +1,29 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..eafb0166 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1161,0 +1162,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++		/* Validate node before accessing - prevent use after free */
++		if (set->nodeTab[i]->_private == NULL) continue;
+@@ -1186,0 +1189,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++				    /* Check node validity before copy operation */
++				    if (cur->_private == NULL) break;
+@@ -1216 +1220 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-			                              set->nodeTab[i]);
++						              set->nodeTab[i]);
+@@ -1218,5 +1222,8 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    /* Validate node before copying */
++		    if (set->nodeTab[i]->_private != NULL) {
++		        xmlAddNextSibling(last,
++			        xmlXIncludeCopyNode(ctxt, target, source,
++					            set->nodeTab[i]));
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2277,0 +2285 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	ctxt->incTab[nr]->ref = NULL;  /* Clear reference to prevent use-after-free */

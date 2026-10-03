@@ -1,0 +1,17 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..72aca5e34 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515 +515 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++      if (argc > 0) {
+@@ -517 +517,8 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[argc+1] = blk;
++      }
++      // Add bounds check before writing to ci->stack[argc+1]
++      if (ci->stack + (argc+1) < mrb->c->stend) {
++        ci->stack[argc+1] = blk;
++      } else {
++        mrb_stack_extend(mrb, argc + 2);
++        ci->stack[argc+1] = blk;
++      }

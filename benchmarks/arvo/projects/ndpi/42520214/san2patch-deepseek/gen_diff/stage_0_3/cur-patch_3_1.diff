@@ -1,0 +1,46 @@
+diff --git a/src/lib/protocols/bittorrent.c b/src/lib/protocols/bittorrent.c
+index cdb62e8db..2000f47eb 100644
+--- a/src/lib/protocols/bittorrent.c
++++ b/src/lib/protocols/bittorrent.c
+@@ -90,5 +90,12 @@ static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndp
+-	bt_hash = (const char*)&packet->payload[28];
+-      else
+-	bt_hash = &bt_magic[19];
+-    }
+-  } else
++static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndpi_struct,
++					    struct ndpi_flow_struct *flow,
++					    int bt_offset) {
++  struct ndpi_packet_struct *packet = &ndpi_struct->packet;
++  const char *bt_hash = NULL;
++  const char bt_magic[] = "BitTorrent protocol";
++
++  if(bt_offset >= 0 && (packet->payload_packet_len >= (bt_offset + 20))) {
++    bt_hash = (const char*)&packet->payload[bt_offset];
++  } else if(packet->payload_packet_len >= 20 && memcmp(packet->payload, "BitTorrent protocol", 19) == 0) {
++    bt_hash = &bt_magic[19];
++  } else {
+@@ -96,3 +103,6 @@ static void ndpi_search_bittorrent_hash(struct ndpi_detection_module_struct *ndp
+-  
+-  if(bt_hash && (packet->payload_packet_len >= (20 + (bt_hash-(const char*)packet->payload))))
+-    memcpy(flow->protos.bittorrent.hash, bt_hash, 20);
++  }
++
++  if(bt_hash && (packet->payload_packet_len >= (20 + (bt_hash-(const char*)packet->payload)))) {
++    if((packet->payload_packet_len - (bt_hash-(const char*)packet->payload)) >= 20)
++      memcpy(flow->protos.bittorrent.hash, bt_hash, 20);
++  }
+@@ -111,0 +122,13 @@ static void ndpi_add_connection_as_bittorrent(struct ndpi_detection_module_struc
++  ndpi_set_detected_protocol_keeping_master(ndpi_struct, flow, NDPI_PROTOCOL_BITTORRENT,
++                                            confidence);
++
++  if(flow->protos.bittorrent.hash[0] == '\0') {
++    if(packet->payload_packet_len >= 20) {
++      memcpy(flow->protos.bittorrent.hash, packet->payload, 20);
++    }
++  }
++
++  if(ndpi_struct->bittorrent_cache && packet->iph) {
++    ndpi_bittorrent_cache_add(ndpi_struct, flow, packet);
++  }
++}

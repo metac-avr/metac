@@ -1,0 +1,23 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..5ea7853ac 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -39,2 +39,4 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-    x->p=(mp_limb*)mrb_realloc(mrb,x->p,size * sizeof(mp_limb));
+-    for (size_t i=x->sz; i<size; i++)
++    mp_limb* new_p = (mp_limb*)mrb_realloc(mrb, x->p, size * sizeof(mp_limb));
++    if (new_p == NULL) return;  // Handle allocation failure
++    x->p = new_p;
++    for (size_t i = x->sz; i < size; i++)
+@@ -1427 +1429,4 @@ mrb_bint_xor(mrb_state *mrb, mrb_value x, mrb_value y)
+-    return bint_norm(mrb, b3);
++    if (b3 && b3->mp.sz > 0) {
++      return bint_norm(mrb, b3);
++    }
++    return mrb_fixnum_value(0);
+@@ -1433 +1438,4 @@ mrb_bint_xor(mrb_state *mrb, mrb_value x, mrb_value y)
+-  return bint_norm(mrb, b3);
++  if (b3 && b3->mp.sz > 0) {
++    return bint_norm(mrb, b3);
++  }
++  return mrb_fixnum_value(0);

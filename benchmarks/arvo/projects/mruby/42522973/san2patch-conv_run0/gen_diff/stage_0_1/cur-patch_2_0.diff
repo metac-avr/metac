@@ -1,0 +1,30 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..087b49aad 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -647 +647 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super && c->super->tt != MRB_TT_FREE) mrb_gc_mark(mrb, (struct RBasic*)c->super);
+@@ -651 +651,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   case MRB_TT_OBJECT:
+@@ -660,2 +661,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper && p->upper->tt != MRB_TT_FREE) mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++      if (p->e.env && p->e.env->tt != MRB_TT_FREE) mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
+@@ -664 +664,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -732 +731,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -740 +739,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -744,0 +745 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if ((obj->tt & 0xff) == MRB_TT_FREE) return;  /* Explicit TT_FREE check */
+@@ -752,2 +753 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:

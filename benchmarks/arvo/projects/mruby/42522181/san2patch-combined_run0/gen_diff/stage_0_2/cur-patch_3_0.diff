@@ -1,0 +1,28 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..2688be80f 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1096,3 +1096,7 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc->gray_list = obj->gcnext;
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj->tt != MRB_TT_FREE) {  // Check if object is not freed
++      gc->gray_list = obj->gcnext;
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    } else {
++      gc->gray_list = obj->gcnext;  // Skip freed objects
++    }
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..26e5c9a03 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -266 +266,3 @@ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+-  mark_tbl(mrb, obj->iv);
++  if (obj->iv) {
++    mark_tbl(mrb, obj->iv);
++  }
+@@ -276,2 +278 @@ void
+-mrb_gc_free_iv(mrb_state *mrb, struct RObject *obj)
+-{
++mrb_gc_free_iv(mrb_state *mrb, struct RObject *obj){

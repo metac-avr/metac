@@ -1,0 +1,54 @@
+diff --git a/xinclude.c b/xinclude.c
+index 72a88c99..7cc8b55c 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2135 +2135,2 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-    for (i = start; i < ctxt->incNr; i++) {
++// FIXME: Crash CWE-416: Use After Free
++     for (i = start; i < ctxt->incNr; i++) {
+@@ -2136,0 +2138,16 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
++            /* Fix for use-after-free: clean up ID table entries before node processing */
++            if (ctxt->incTab[i]->inc != NULL) {
++                xmlNodePtr current = ctxt->incTab[i]->inc;
++                /* Pre-process to remove ID references before actual inclusion */
++                while (current != NULL) {
++                    if ((current->type == XML_ELEMENT_NODE) && (current->doc != NULL)) {
++                        xmlAttrPtr attr;
++                        for (attr = current->properties; attr != NULL; attr = attr->next) {
++                            if (attr->atype == XML_ATTRIBUTE_ID) {
++                                xmlRemoveID(current->doc, attr);
++                            }
++                        }
++                    }
++                    current = current->next;
++                }
++            }
+@@ -2144,0 +2162,13 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
++                /* Ensure ID cleanup before freeing */
++                xmlNodePtr temp = ctxt->incTab[i]->inc;
++                while (temp != NULL) {
++                    if ((temp->type == XML_ELEMENT_NODE) && (temp->doc != NULL)) {
++                        xmlAttrPtr attr;
++                        for (attr = temp->properties; attr != NULL; attr = attr->next) {
++                            if (attr->atype == XML_ATTRIBUTE_ID) {
++                                xmlRemoveID(temp->doc, attr);
++                            }
++                        }
++                    }
++                    temp = temp->next;
++                }
+diff --git a/valid.c b/valid.c
+index 1ecc762c..82041891 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2745,5 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    /* Additional null check to prevent accessing freed memory */
++    if (attr->id && attr->id->value) {
++        if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }

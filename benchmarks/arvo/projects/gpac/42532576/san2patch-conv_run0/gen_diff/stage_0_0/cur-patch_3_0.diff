@@ -1,0 +1,118 @@
+diff --git a/src/media_tools/m3u8.c b/src/media_tools/m3u8.c
+index 5f570e30a..a6e0518c3 100644
+--- a/src/media_tools/m3u8.c
++++ b/src/media_tools/m3u8.c
+@@ -649,22 +649,34 @@ static char** parse_attributes(const char *line, s_accumulated_attributes *attri
+-					attributes->byte_range_start = begin;
+-					attributes->byte_range_end = begin + size - 1;
+-				} else {
+-					GF_LOG(GF_LOG_ERROR, GF_LOG_DASH,("[M3U8] Invalid byte range %s\n", ret[0]));
+-				}
+-			}
+-		}
+-		M3U8_COMPATIBILITY_VERSION(4);
+-		return ret;
+-	}
+-	ret = extract_attributes("#EXT-X-MEDIA:", line, 14);
+-	if (ret) {
+-		/* #EXT-X-MEDIA:[TYPE={AUDIO,VIDEO}],[URI],[GROUP-ID],[LANGUAGE],[NAME],[DEFAULT={YES,NO}],[AUTOSELECT={YES,NO}] */
+-		M3U8_COMPATIBILITY_VERSION(4);
+-		attributes->is_master_playlist = GF_TRUE;
+-		i = 0;
+-		while (ret[i] != NULL) {
+-			if (safe_start_equals("TYPE=", ret[i])) {
+-				if (!strncmp(ret[i]+5, "AUDIO", 5)) {
+-					attributes->type = MEDIA_TYPE_AUDIO;
+-				} else if (!strncmp(ret[i]+5, "VIDEO", 5)) {
+-					attributes->type = MEDIA_TYPE_VIDEO;
++                    attributes->byte_range_start = begin;
++                    attributes->byte_range_end = begin + size - 1;
++                } else {
++                    GF_LOG(GF_LOG_ERROR, GF_LOG_DASH,("[M3U8] Invalid byte range %s\n", ret[0]));
++                }
++            }
++        }
++        M3U8_COMPATIBILITY_VERSION(4);
++// Fixed CWE-125: Out-of-bounds Read - Added bounds checking before returning
++        if (ret) {
++            u32 i = 0;
++            while (ret[i] != NULL) {
++                // Ensure each attribute string is properly null-terminated
++                // and within expected bounds before processing
++                if (strlen(ret[i]) > MAX_ATTRIBUTE_LENGTH) {
++                    GF_LOG(GF_LOG_WARNING, GF_LOG_DASH, ("[M3U8] Attribute too long, truncating: %s\n", ret[i]));
++                    ret[i][MAX_ATTRIBUTE_LENGTH] = '\0';
++                }
++                i++;
++            }
++        }
++        return ret;
++    }
++    ret = extract_attributes("#EXT-X-MEDIA:", line, 14);
++    if (ret) {
++        /* #EXT-X-MEDIA:[TYPE={AUDIO,VIDEO}],[URI],[GROUP-ID],[LANGUAGE],[NAME],[DEFAULT={YES,NO}],[AUTOSELECT={YES,NO}] */
++        M3U8_COMPATIBILITY_VERSION(4);
++        attributes->is_master_playlist = GF_TRUE;
++        i = 0;
++        while (ret[i] != NULL) {
++            if (safe_start_equals("TYPE=", ret[i])) {
++                if (!strncmp(ret[i]+5, "AUDIO", 5)) {
++                    attributes->type = MEDIA_TYPE_AUDIO;
++                } else if (!strncmp(ret[i]+5, "VIDEO", 5)) {					attributes->type = MEDIA_TYPE_VIDEO;
+@@ -721,22 +733,27 @@ static char** parse_attributes(const char *line, s_accumulated_attributes *attri
+-				if (attributes->name) gf_free(attributes->name);
+-				attributes->name = gf_strdup(ret[i]+5+1);
+-				u32 len = (u32) strlen(attributes->name);
+-				if (len) attributes->name[len-1]=0;
+-			} else if (safe_start_equals("DEFAULT=", ret[i])) {
+-				if (!strncmp(ret[i]+8, "YES", 3)) {
+-					attributes->is_default = GF_TRUE;
+-				} else if (!strncmp(ret[i]+8, "NO", 2)) {
+-					attributes->is_default = GF_FALSE;
+-				} else {
+-					GF_LOG(GF_LOG_WARNING, GF_LOG_DASH,("[M3U8] Invalid #EXT-X-MEDIA:DEFAULT=%s\n", ret[i]+8));
+-				}
+-			} else if (safe_start_equals("AUTOSELECT=", ret[i])) {
+-				if (!strncmp(ret[i]+11, "YES", 3)) {
+-					attributes->is_autoselect = GF_TRUE;
+-				} else if (!strncmp(ret[i]+11, "NO", 2)) {
+-					attributes->is_autoselect = GF_TRUE;
+-				} else {
+-					GF_LOG(GF_LOG_WARNING, GF_LOG_DASH,("[M3U8] Invalid #EXT-X-MEDIA:AUTOSELECT=%s\n", ret[i]+11));
+-				}
+-			} else if (safe_start_equals("CHANNELS=", ret[i])) {
+-				sscanf(ret[i] + 9, "\"%u\"", &attributes->channels);
++	if (attributes->name) gf_free(attributes->name);
++	char *name_src = ret[i]+5+1;
++	u32 name_len = 0;
++	while (name_src[name_len] && name_src[name_len] != '"') name_len;
++	attributes->name = gf_malloc(name_len + 1);
++	if (attributes->name) {
++		memcpy(attributes->name, name_src, name_len);
++		attributes->name[name_len] = 0;
++	}
++} else if (safe_start_equals("DEFAULT=", ret[i])) {
++	if (!strncmp(ret[i]+8, "YES", 3)) {
++		attributes->is_default = GF_TRUE;
++	} else if (!strncmp(ret[i]+8, "NO", 2)) {
++		attributes->is_default = GF_FALSE;
++	} else {
++		GF_LOG(GF_LOG_WARNING, GF_LOG_DASH,("[M3U8] Invalid #EXT-X-MEDIA:DEFAULT=%s\n", ret[i]+8));
++	}
++} else if (safe_start_equals("AUTOSELECT=", ret[i])) {
++	if (!strncmp(ret[i]+11, "YES", 3)) {
++		attributes->is_autoselect = GF_TRUE;
++	} else if (!strncmp(ret[i]+11, "NO", 2)) {
++		attributes->is_autoselect = GF_TRUE;
++	} else {
++		GF_LOG(GF_LOG_WARNING, GF_LOG_DASH,("[M3U8] Invalid #EXT-X-MEDIA:AUTOSELECT=%s\n", ret[i]+11));
++	}
++} else if (safe_start_equals("CHANNELS=", ret[i])) {
++	sscanf(ret[i] + 9, "\"%u\"", &attributes->channels);
+@@ -744,3 +761,3 @@ static char** parse_attributes(const char *line, s_accumulated_attributes *attri
+-			} else {
+-				GF_LOG(GF_LOG_WARNING, GF_LOG_DASH,("[M3U8] Attribute %s not supported\n", ret[i]));
+-			}
++} else {
++	GF_LOG(GF_LOG_WARNING, GF_LOG_DASH,("[M3U8] Attribute %s not supported\n", ret[i]));
++}

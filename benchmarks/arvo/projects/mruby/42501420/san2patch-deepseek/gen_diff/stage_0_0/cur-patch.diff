@@ -1,0 +1,14 @@
+diff --git a/src/array.c b/src/array.c
+index fc3b0a087..c935f115a 100644
+--- a/src/array.c
++++ b/src/array.c
+@@ -804 +804,8 @@ mrb_ary_splice(mrb_state *mrb, mrb_value ary, mrb_int head, mrb_int len, mrb_val
+-      value_move(ptr + head + argc, ptr + tail, alen - tail);
++      mrb_int move = alen - tail;
++      if (head + argc < alen && tail < alen && move > alen - tail) {
++        move = alen - tail;
++      }
++      if (move < 0 || head + argc + move > newlen || tail + move > alen) {
++        goto out_of_range;
++      }
++      value_move(ptr + head + argc, ptr + tail, move);

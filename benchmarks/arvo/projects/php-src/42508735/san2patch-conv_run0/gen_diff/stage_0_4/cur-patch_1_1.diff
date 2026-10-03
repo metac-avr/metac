@@ -1,0 +1,77 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..5b1f363e687 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -164 +164 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+-ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
++ZEND_API void static zend_object *zend_generator_create(zend_class_entry *class_type) /* {{{ */
+@@ -166 +166 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
++	zend_generator *generator;
+@@ -168,4 +168,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	/* GC might have released this object already. */
+-	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
+-		return;
+-	}
++	generator = emalloc(sizeof(zend_generator));
++	memset(generator, 0, sizeof(zend_generator));
+@@ -173,16 +171,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	/*	Make sure we hold a reference count during the destructor call
+-		otherwise, when the destructor ends the storage might be freed
+-		when the refcount reaches 0 a second time
+-	 */
+-	if (!(OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
+-		GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
+-
+-		if (object->handlers->dtor_obj != zend_objects_destroy_object
+-				|| object->ce->destructor) {
+-			zend_fiber_switch_block();
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->dtor_obj(object);
+-			GC_DELREF(object);
+-			zend_fiber_switch_unblock();
+-		}
+-	}
++	/* The key will be incremented on first use, so it'll start at 0 */
++	generator->largest_used_integer_key = -1;
+@@ -190,17 +174,15 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-	if (GC_REFCOUNT(object) == 0) {
+-		uint32_t handle = object->handle;
+-		void *ptr;
+-
+-		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+-		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+-		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
+-		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
+-		}
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
+-	}
++	ZVAL_UNDEF(&generator->retval);
++	ZVAL_UNDEF(&generator->values);
++
++	/* By default we have a tree of only one node */
++	generator->node.parent = NULL;
++	generator->node.children = 0;
++	generator->node.ptr.root = NULL;
++
++	zend_object_std_init(&generator->std, class_type);
++	generator->std.handlers = &zend_generator_handlers;
++
++	/* Mark object as initialized to prevent premature cleanup */
++	generator->std.gc.flags = 0;
++
++	return (zend_object*)generator;
+diff --git a/Zend/zend_generators.c b/Zend/zend_generators.c
+index a5fcad31dfe..48fd4645e3e 100644
+--- a/Zend/zend_generators.c
++++ b/Zend/zend_generators.c
+@@ -425,0 +426,3 @@ static zend_object *zend_generator_create(zend_class_entry *class_type) /* {{{ *
++	/* Mark object as initialized to prevent premature cleanup */
++	generator->std.gc.u.v.flags = 0;
++

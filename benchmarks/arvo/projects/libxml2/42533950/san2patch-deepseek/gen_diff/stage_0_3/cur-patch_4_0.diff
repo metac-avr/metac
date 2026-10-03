@@ -1,0 +1,129 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..50999110 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3935,0 +3936,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
++      xmlChar *prefix;
++      xmlChar *href;
+@@ -3938,28 +3940,4 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-      res = xmlSearchNsSafe(target, cur->ns->prefix, &ns);
+-      if (res < 0)
+-          goto error;
+-      if (ns == NULL) {
+-        /*
+-         * Humm, we are copying an element whose namespace is defined
+-         * out of the new tree scope. Search it in the original tree
+-         * and add it at the top of the new tree
+-         */
+-        res = xmlSearchNsSafe(cur->parent, cur->ns->prefix, &ns);
+-        if (res < 0)
+-          goto error;
+-        if (ns != NULL) {
+-          xmlNodePtr root = target;
+-          xmlNodePtr pred = NULL;
+-
+-          while (root->parent != NULL) {
+-            pred = root;
+-            root = root->parent;
+-          }
+-          if (root == (xmlNodePtr) target->doc) {
+-            /* correct possibly cycling above the document elt */
+-            root = pred;
+-          }
+-          ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+-          if (ret->ns == NULL)
+-              goto error;
+-        }
++      if ((cur->ns->prefix == NULL) ||
++          (cur->ns->href == NULL) ||
++          (xmlStrlen(cur->ns->prefix) == 0)) {
++          ret->ns = NULL;
+@@ -3967,17 +3945,71 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-        /*
+-         * we have to find something appropriate here since
+-         * we can't be sure, that the namespace we found is identified
+-         * by the prefix
+-         */
+-        if (xmlStrEqual(ns->href, cur->ns->href)) {
+-          /* this is the nice case */
+-          ret->ns = ns;
+-        } else {
+-          /*
+-           * we are in trouble: we need a new reconciled namespace.
+-           * This is expensive
+-           */
+-          ret->ns = xmlNewReconciledNs(target, cur->ns);
+-          if (ret->ns == NULL)
+-              goto error;
+-        }
++	  prefix = xmlStrdup(cur->ns->prefix);
++	  href = xmlStrdup(cur->ns->href);
++	  if ((prefix == NULL) || (href == NULL)) {
++	      if (prefix != NULL)
++		  xmlFree(prefix);
++	      if (href != NULL)
++		  xmlFree(href);
++	      goto error;
++	  }
++
++	  res = xmlSearchNsSafe(target, prefix, &ns);
++	  if (res < 0) {
++	      xmlFree(prefix);
++	      xmlFree(href);
++	      goto error;
++	  }
++	  if (ns == NULL) {
++	    /*
++	     * Humm, we are copying an element whose namespace is defined
++	     * out of the new tree scope. Search it in the original tree
++	     * and add it at the top of the new tree
++	     */
++	    res = xmlSearchNsSafe(cur->parent, prefix, &ns);
++	    if (res < 0) {
++		xmlFree(prefix);
++		xmlFree(href);
++		goto error;
++	    }
++	    if (ns != NULL) {
++	      xmlNodePtr root = target;
++	      xmlNodePtr pred = NULL;
++
++	      while (root->parent != NULL) {
++		pred = root;
++		root = root->parent;
++	      }
++	      if (root == (xmlNodePtr) target->doc) {
++		/* correct possibly cycling above the document elt */
++		root = pred;
++	      }
++	      ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++	      if (ret->ns == NULL) {
++		  xmlFree(prefix);
++		  xmlFree(href);
++		  goto error;
++	      }
++	    }
++	  } else {
++	    /*
++	     * we have to find something appropriate here since
++	     * we can't be sure, that the namespace we found is identified
++	     * by the prefix
++	     */
++	    if (xmlStrEqual(ns->href, href)) {
++	      /* this is the nice case */
++	      ret->ns = ns;
++	    } else {
++	      /*
++	       * we are in trouble: we need a new reconciled namespace.
++	       * This is expensive
++	       */
++	      ret->ns = xmlNewReconciledNs(target, cur->ns);
++	      if (ret->ns == NULL) {
++		  xmlFree(prefix);
++		  xmlFree(href);
++		  goto error;
++	      }
++	    }
++	  }
++	  xmlFree(prefix);
++	  xmlFree(href);

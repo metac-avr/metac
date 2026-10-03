@@ -1,0 +1,21 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..d2be5fcb3 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -830,0 +831,2 @@ void gf_net_close_capture()
++		// Set pointer to NULL after freeing to prevent use-after-free
++		nf->cap_bs = NULL;
+@@ -1480,4 +1482,9 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
+-			gf_netcap_load_pck_pcap(nf);
++		if (nf->cap_mode==NETCAP_GPAC) {
++			// Check if capture is still valid before loading packet
++			if (nf->cap_bs != NULL)
++				gf_netcap_load_pck_gpac(nf);
++		} else {
++			// Check if capture is still valid before loading packet
++			if (nf->cap_bs != NULL)
++				gf_netcap_load_pck_pcap(nf);
++		}

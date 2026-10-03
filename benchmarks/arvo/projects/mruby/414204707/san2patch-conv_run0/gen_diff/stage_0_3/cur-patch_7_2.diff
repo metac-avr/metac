@@ -1,0 +1,66 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..7b204f11b 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779,7 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
+-    break;
+-  }
+-}
+-
+-MRB_API void
+@@ -793,8 +786 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++}  case MRB_TT_OBJECT:
+@@ -1229,26 +1215,14 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-  switch (gc->state) {
+-  case MRB_GC_STATE_ROOT:
+-    root_scan_phase(mrb, gc);
+-    gc->state = MRB_GC_STATE_MARK;
+-    flip_white_part(gc);
+-    return 0;
+-  case MRB_GC_STATE_MARK:
+-    if (gc->gray_list) {
+-      return incremental_marking_phase(mrb, gc, limit);
+-    }
+-    else {
+-      final_marking_phase(mrb, gc);
+-      prepare_incremental_sweep(mrb, gc);
+-      return 0;
+-    }
+-  case MRB_GC_STATE_SWEEP: {
+-     size_t tried_sweep = 0;
+-     tried_sweep = incremental_sweep_phase(mrb, gc, limit);
+-     if (tried_sweep == 0)
+-       gc->state = MRB_GC_STATE_ROOT;
+-     return tried_sweep;
+-  }
+-  default:
+-    /* unknown state */
+-    mrb_assert(0);
+-    return 0;
++  incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++{
++  struct RBasic *obj;
++  size_t tried_marks = 0;
++
++  while (gc->gray_list && tried_marks < limit) {
++    obj = gc->gray_list;
++    gc->gray_list = obj->gcnext;
++    obj->gcnext = NULL;
++    mrb_assert(is_gray(obj));
++    mrb_assert((obj)->tt != MRB_TT_FREE);
++    paint_black(obj);
++    tried_marks++;
++    gc_mark_children(mrb, gc, obj);
+@@ -1255,0 +1230,2 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
++  return tried_marks;
++}

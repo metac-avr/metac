@@ -1,0 +1,20 @@
+diff --git a/libavformat/demux.c b/libavformat/demux.c
+index 2e1d0ed66d..693f0d57d1 100644
+--- a/libavformat/demux.c
++++ b/libavformat/demux.c
+@@ -315 +315,12 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
+-    if (s->iformat->read_header)
++    // Apply bounds checking for channel layout to prevent heap overflow
++    if (s->iformat->read_header) {
++        // Pre-validate channel configuration before header reading
++        if (s->ctx_flags & AVFMTCTX_UNSEEKABLE && s->pb && s->pb->buf_ptr) {
++            // Check for potential oversized channel layout data
++            if (avio_tell(s->pb) > 0x100000) {  // Limit to 1MB to prevent excessive allocation
++                av_log(s, AV_LOG_ERROR, "File too large or corrupted channel data\n");
++                ret = AVERROR_INVALIDDATA;
++                goto fail;
++            }
++        }
++        
+@@ -320,0 +332 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
++    }

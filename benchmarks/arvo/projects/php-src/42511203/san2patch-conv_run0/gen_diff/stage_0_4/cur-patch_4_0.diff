@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..35726935475 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -157 +157,2 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			if (GC_DELREF(garbage) == 0) {
++			/* Validate garbage pointer before decrementing refcount */
++			if (garbage != NULL && GC_DELREF(garbage) == 0) {
+@@ -161 +162 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-				if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
++				if (UNEXPECTED(GC_MAY_LEAK(garbage)) && garbage != NULL) {
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..da8ee5f39c3 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -572,0 +573,4 @@ static zend_never_inline ZEND_COLD zval *zend_wrong_assign_to_variable_reference
++	/* Validate pointers are not null to prevent expired pointer dereference */
++	if (variable_ptr == NULL || value_ptr == NULL) {
++		return &EG(uninitialized_zval);
++	}

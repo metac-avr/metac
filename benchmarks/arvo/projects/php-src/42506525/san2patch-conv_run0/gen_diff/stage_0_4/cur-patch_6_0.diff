@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..dea7d96e92e 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1236,0 +1237 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
++// FIXME: Crash CWE-416: Use After Free
+@@ -1238,0 +1240,2 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
++		/* Clear the old bucket pointers to prevent use-after-free */
++		memset(old_buckets, 0, sizeof(Bucket) * ht->nNumUsed);
+@@ -1409,3 +1412,5 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		ZVAL_COPY_VALUE(&tmp, &p->val);
+-		ZVAL_UNDEF(&p->val);
+-		ht->pDestructor(&tmp);
++		if (p) { // Check if pointer is valid before accessing
++			ZVAL_COPY_VALUE(&tmp, &p->val);
++			ZVAL_UNDEF(&p->val);
++			ht->pDestructor(&tmp);
++		}

@@ -1,0 +1,28 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..8d9e40c99 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -189 +189 @@ iv_foreach(mrb_state *mrb, iv_tbl *t, mrb_iv_foreach_func *func, void *p)
+-    if (IV_KEY_P(keys[i])) {
++    if (IV_KEY_P(keys[i]) && vals[i].value.p) {
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..53d054e45 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -694 +694 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super && !mrb_gc_is_dead(c->super)) mrb_gc_mark(mrb, (struct RBasic*)c->super);
+@@ -698 +698,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-416: Use After Free
++   case MRB_TT_OBJECT:
+@@ -700 +701 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (((struct RObject*)obj)->iv && !mrb_gc_is_dead((struct RBasic*)obj)) mrb_gc_mark_iv(mrb, (struct RObject*)obj);
+@@ -707,2 +708,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper && !mrb_gc_is_dead((struct RBasic*)p->upper)) mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++      if (p->e.env && !mrb_gc_is_dead((struct RBasic*)p->e.env)) mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
+@@ -711 +711,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-

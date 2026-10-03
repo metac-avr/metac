@@ -1,0 +1,27 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..1e9e4f50 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5982,7 +5981,0 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
+-
+@@ -5990 +5983,2 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    attr = elemDecl->attributes;
++// FIXME: Crash CWE-416: Use After Free
++    attr = elemDecl ? elemDecl->attributes : NULL;
+@@ -6002,2 +5996 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-			goto found;
+-		    ns = ns->next;
++			goto found;		    ns = ns->next;
+@@ -6225 +6218,5 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                    /* Add validity check before accessing attr */
++                    int attr_valid = (attr != NULL) && (attr->type == XML_ATTRIBUTE_NODE);
++                    if (attr_valid) {
++                        ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                    }

@@ -1,0 +1,43 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..7aecd6dd 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1866,9 +1866,2 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-
+-mem_error:
+-    xmlVErrMemory(ctxt);
+-    xmlFreeEnumeration(tree);
+-    xmlFreeAttribute(ret);
+-    return(NULL);
+-}
+-
+-static void
++// FIXME: Crash CWE-416: Use After Free
++ static void
+@@ -1876,12 +1869,9 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeAttribute((xmlAttributePtr) attr);
+-}
+-
+-/**
+- * xmlFreeAttributeTable:
+- * @table:  An attribute table
+- *
+- * Deallocate the memory used by an entities hash table.
+- */
+-void
+-xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++    // Validate pointer before freeing and ensure no dangling references
++    if (attr != NULL) {
++        xmlAttributePtr attrPtr = (xmlAttributePtr) attr;
++        // Invalidate references in validation structures before freeing
++        attrPtr->next = NULL;
++        attrPtr->tree = NULL;
++        xmlFreeAttribute(attrPtr);
++    }
++}    xmlHashFree(table, xmlFreeAttributeTableEntry);
+@@ -6215 +6205,3 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-        ret &= xmlValidateOneElement(ctxt, doc, elem);
++        if (ctxt && doc && elem) {
++            ret &= xmlValidateOneElement(ctxt, doc, elem);
++        }

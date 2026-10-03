@@ -1,0 +1,58 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..eb444d50552 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1173,6 +1173,15 @@ static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		--p->refcount;
++ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++{
++	uint32_t idx;
++	Bucket *p;
++
++	IS_CONSISTENT(ht);
++	HT_ASSERT_RC1(ht);
++
++	idx = ht->nNumUsed;
++	p = ht->arData + ht->nNumUsed;
++	while (idx > 0) {
++		idx--;
++		p--;
++		if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
++		_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
+@@ -1180,7 +1188,0 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-}
+-
+-static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
+-	ZEND_RC_MOD_CHECK(p);
+-	return --(p->refcount);
+-}
+@@ -1188,5 +1190,5 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount += rc;
+-	return p->refcount;
+-}
++	if (!(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED)) {
++		void* data_ptr = HT_GET_DATA_ADDR(ht); // Store pointer for safe freeing
++		pefree(data_ptr, GC_FLAGS(ht) & IS_ARRAY_PERSISTENT);
++		// HT_GET_DATA_ADDR(ht) = NULL; // Commented out problematic assignment
++	}
+@@ -1194 +1196,2 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
++	SET_INCONSISTENT(HT_DESTROYED);
++}static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..b4ad2ae9dcf 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1835 +1835,3 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
+-		pefree(HT_GET_DATA_ADDR(ht), GC_FLAGS(ht) & IS_ARRAY_PERSISTENT);
++		void* data_ptr = HT_GET_DATA_ADDR(ht); // Store pointer for safe freeing
++		pefree(data_ptr, GC_FLAGS(ht) & IS_ARRAY_PERSISTENT);
++		HT_GET_DATA_ADDR(ht) = NULL; // Clear original pointer to prevent reuse

@@ -1,0 +1,21 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..8c142e7fd8 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -427 +427,2 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    VLC_MULTI_ELEM info = { { 0, }, 0, };
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     VLC_MULTI_ELEM info = { { 0, }, 0, };
+@@ -495 +496,2 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++         }
+@@ -500 +502,5 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    ret = vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    if (buf != localbuf)
++        av_free(buf);
++    buf = NULL; /* Prevent use-after-free */
++    return ret;
+@@ -503,0 +510 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    buf = NULL; /* Prevent use-after-free */

@@ -1,0 +1,42 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..99168c4c999 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -46005,0 +46006,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++			
++			if (UNEXPECTED(var_ptr == NULL || value == NULL)) {
++				if (var_ptr == NULL) {
++					zend_error(E_ERROR, "Invalid variable pointer in array dimension operation");
++				} else {
++					zend_error(E_ERROR, "Invalid value pointer in array dimension operation");
++				}
++				goto assign_dim_op_ret_null;
++			}
++			
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..11ba43541e3 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,5 +1894,17 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
++		if (UNEXPECTED(!op1)) {
++			if (orig_op1 != result) {
++				ZVAL_UNDEF(result);
++			}
++			return FAILURE;
++		}
++		if (UNEXPECTED(!op2)) {
++			if (orig_op1 != result) {
++				ZVAL_UNDEF(result);
++			}
++			return FAILURE;
++		}
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}

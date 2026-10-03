@@ -1,0 +1,35 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..80dd24c112a 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1413,0 +1414,8 @@ static zend_always_inline int zend_binary_op(zval *ret, zval *op1, zval *op2 OPL
++	/* Check if operands are valid and not referencing freed memory */
++	if (Z_REFCOUNTED_P(op1) && Z_REFCOUNT_P(op1) == 0) {
++		return FAILURE;
++	}
++	if (Z_REFCOUNTED_P(op2) && Z_REFCOUNT_P(op2) == 0) {
++		return FAILURE;
++	}
++
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..096d19f5263 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,5 +1894,5 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}
+@@ -1899,0 +1900,6 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
++			if (!op1 || (Z_TYPE_P(op1) == IS_NULL && !Z_ISNULL_P(op1))) {
++				if (orig_op1 != result) {
++					ZVAL_UNDEF(result);
++				}
++				return FAILURE;
++			}

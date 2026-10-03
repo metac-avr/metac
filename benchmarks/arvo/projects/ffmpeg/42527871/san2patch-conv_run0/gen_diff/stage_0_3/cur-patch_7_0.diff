@@ -1,0 +1,28 @@
+diff --git a/libavcodec/jpegxl_parser.c b/libavcodec/jpegxl_parser.c
+index 66e64b1074..198e907621 100644
+--- a/libavcodec/jpegxl_parser.c
++++ b/libavcodec/jpegxl_parser.c
+@@ -450 +450,2 @@ static int populate_distribution(GetBitContext *gb, JXLSymbolDistribution *dist,
+-            num_same = same[i] - 1;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             num_same = same[i] - 1;
+@@ -461,0 +463,4 @@ static int populate_distribution(GetBitContext *gb, JXLSymbolDistribution *dist,
++                // Validate logcounts to prevent invalid memory access
++                if (get_bits_left(gb) < 0) {
++                    return AVERROR_INVALIDDATA;
++                }
+@@ -462,0 +468,4 @@ static int populate_distribution(GetBitContext *gb, JXLSymbolDistribution *dist,
++                // Ensure bitcount doesn't exceed available bits
++                if (bitcount > get_bits_left(gb)) {
++                    return AVERROR_INVALIDDATA;
++                }
+@@ -1309 +1318,2 @@ static int skip_boxes(JXLParseContext *ctx, const uint8_t *buf, int buf_size)
+-        int head_size = 4;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         int head_size = 4;
+@@ -1311 +1321 @@ static int skip_boxes(JXLParseContext *ctx, const uint8_t *buf, int buf_size)
+-        if (bytestream2_peek_le16(&gb) == FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
++        if (bytestream2_get_bytes_left(&gb) >= 2 && bytestream2_peek_le16(&gb) == FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
+@@ -1313 +1323 @@ static int skip_boxes(JXLParseContext *ctx, const uint8_t *buf, int buf_size)
+-        if (bytestream2_peek_le64(&gb) == FF_JPEGXL_CONTAINER_SIGNATURE_LE)
++        if (bytestream2_get_bytes_left(&gb) >= 8 && bytestream2_peek_le64(&gb) == FF_JPEGXL_CONTAINER_SIGNATURE_LE)

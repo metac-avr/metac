@@ -1,0 +1,61 @@
+diff --git a/libavcodec/simple_idct_template.c b/libavcodec/simple_idct_template.c
+index 5ddd0b45a2..d640785cff 100644
+--- a/libavcodec/simple_idct_template.c
++++ b/libavcodec/simple_idct_template.c
+@@ -148 +148 @@ static inline void FUNC6(idctRowCondDC)(idctin *row, int extra_shift)
+-        }
++         }
+@@ -150,4 +150,8 @@ static inline void FUNC6(idctRowCondDC)(idctin *row, int extra_shift)
+-        AV_WN32A(row, temp);
+-        AV_WN32A(row+2, temp);
+-        AV_WN32A(row+4, temp);
+-        AV_WN32A(row+6, temp);
++        
++        // Bounds check to prevent out-of-bounds write
++        if ((uintptr_t)(row + 7) <= (uintptr_t)((char*)row + 2048 - sizeof(uint32_t))) {
++            AV_WN32A(row, temp);
++            AV_WN32A(row+2, temp);
++            AV_WN32A(row+4, temp);
++            AV_WN32A(row+6, temp);
++        }
+diff --git a/libavcodec/speedhq.c b/libavcodec/speedhq.c
+index 4cfd4ce73d..67d8bb4083 100644
+--- a/libavcodec/speedhq.c
++++ b/libavcodec/speedhq.c
+@@ -316,4 +316,7 @@ static int decode_speedhq_border(const SHQContext *s, GetBitContext *gb, AVFrame
+-        if ((ret = decode_dct_block(s, gb, last_dc, 0, dest_y + 8 * linesize_y, linesize_y)) < 0)
+-            return ret;
+-        if ((ret = decode_dct_block(s, gb, last_dc, 0, dest_y + 8 * linesize_y + 8, linesize_y)) < 0)
+-            return ret;
++// Bounds check to prevent out-of-bounds write
++        if ((y + 8 * line_stride) < frame->height) {
++            if ((ret = decode_dct_block(s, gb, last_dc, 0, dest_y + 8 * linesize_y, linesize_y)) < 0)
++                return ret;
++            if ((ret = decode_dct_block(s, gb, last_dc, 0, dest_y + 8 * linesize_y + 8, linesize_y)) < 0)
++                return ret;
++        }
+@@ -326,4 +329,6 @@ static int decode_speedhq_border(const SHQContext *s, GetBitContext *gb, AVFrame
+-            if ((ret = decode_dct_block(s, gb, last_dc, 1, dest_cb + 8 * linesize_cb, linesize_cb)) < 0)
+-                return ret;
+-            if ((ret = decode_dct_block(s, gb, last_dc, 2, dest_cr + 8 * linesize_cr, linesize_cr)) < 0)
+-                return ret;
++            if ((y + 8 * line_stride) < frame->height) {
++                if ((ret = decode_dct_block(s, gb, last_dc, 1, dest_cb + 8 * linesize_cb, linesize_cb)) < 0)
++                    return ret;
++                if ((ret = decode_dct_block(s, gb, last_dc, 2, dest_cr + 8 * linesize_cr, linesize_cr)) < 0)
++                    return ret;
++            }
+@@ -336 +341 @@ static int decode_speedhq_border(const SHQContext *s, GetBitContext *gb, AVFrame
+-            if ((ret = decode_alpha_block(s, gb, last_alpha, dest_a + 8 * linesize_a, linesize_a)) < 0)
++            if ((y + 8 * line_stride) < frame->height && (ret = decode_alpha_block(s, gb, last_alpha, dest_a + 8 * linesize_a, linesize_a)) < 0)
+@@ -344,4 +349,6 @@ static int decode_speedhq_border(const SHQContext *s, GetBitContext *gb, AVFrame
+-            if ((ret = decode_dct_block(s, gb, last_dc, 3, dest_a + 8 * linesize_a, linesize_a)) < 0)
+-                return ret;
+-            if ((ret = decode_dct_block(s, gb, last_dc, 3, dest_a + 8 * linesize_a + 8, linesize_a)) < 0)
+-                return ret;
++            if ((y + 8 * line_stride) < frame->height) {
++                if ((ret = decode_dct_block(s, gb, last_dc, 3, dest_a + 8 * linesize_a, linesize_a)) < 0)
++                    return ret;
++                if ((ret = decode_dct_block(s, gb, last_dc, 3, dest_a + 8 * linesize_a + 8, linesize_a)) < 0)
++                    return ret;
++            }

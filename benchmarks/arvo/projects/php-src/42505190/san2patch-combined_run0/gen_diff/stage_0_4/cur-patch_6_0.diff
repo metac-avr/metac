@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..90d0ead5308 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1654 +1654,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_deprecated_function(const zend_functi
+-ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++// Fixed CWE-825: Expired Pointer Dereference - Added null check before accessing zval
++ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
+@@ -1664,0 +1666 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
++	if (str == NULL || dim == NULL) return; /* Prevent expired pointer dereference */
+@@ -1666,2 +1668 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
+-	/* Illegal offset assignment */
+-	if (UNEXPECTED(EG(exception) != NULL)) {
++	/* Illegal offset assignment */	if (UNEXPECTED(EG(exception) != NULL)) {
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..4516a0b2c66 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -58974,0 +58975 @@ ZEND_API void zend_execute(zend_op_array *op_array, zval *return_value)
++	/* Initialize execute_data before calling observer */

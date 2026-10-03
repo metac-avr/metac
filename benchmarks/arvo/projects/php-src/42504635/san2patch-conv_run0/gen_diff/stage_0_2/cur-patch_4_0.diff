@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..2719b534d6b 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55 +55,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -56,0 +58,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (GC_FLAGS(p) & GC_BLACK) return;
++	GC_FLAGS(p) |= GC_BLACK;
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..59f3949aa0d 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -42,0 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++		if (GC_FLAGS(ref) & GC_IMMUTABLE) return;
+@@ -43,0 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++			GC_FLAGS(ref) |= GC_IMMUTABLE;
+@@ -44,0 +47 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
++			GC_FLAGS(ref) &= ~GC_IMMUTABLE;

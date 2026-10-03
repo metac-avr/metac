@@ -1,0 +1,46 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index d1ca0ee62ae..739a26abc2b 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4335,9 +4335,10 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-							if (level == 0) {
+-								do_exit = 1;
+-							}
+-							level--;
+-							break;
+-					}
+-					opline--;
+-				} while (!do_exit);
+-			}
++                            if (level == 0) {
++                                do_exit = 1;
++                            }
++                            level--;
++                            break;
++                    }
++                    opline--;
++                } while (!do_exit);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			}
+@@ -4345 +4346,3 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-			zend_vm_stack_free_args(EX(call));
++			if (EX(call)) {
++				zend_vm_stack_free_args(EX(call));
++			}
+@@ -4355,2 +4358 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+-			} else if (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
+-				zend_string_release_ex(call->func->common.function_name, 0);
++			} else if (call->func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {				zend_string_release_ex(call->func->common.function_name, 0);
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..9d778d13cfb 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -300 +300,2 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -302 +303,3 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-			zval_ptr_dtor_nogc(p);
++			if (p != NULL) {
++				zval_ptr_dtor_nogc(p);
++			}

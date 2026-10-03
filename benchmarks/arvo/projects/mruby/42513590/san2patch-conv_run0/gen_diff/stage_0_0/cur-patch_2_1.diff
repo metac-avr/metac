@@ -1,0 +1,24 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index 21d1008e3..492d0e10d 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -39,4 +39,9 @@ mpz_realloc(mrb_state *mrb, mpz_t *x, size_t size)
+-    x->p=(mp_limb*)mrb_realloc(mrb,x->p,size * sizeof(mp_limb));
+-    for (size_t i=x->sz; i<size; i++)
+-      (x->p)[i] = 0;
+-    x->sz = size;
++    mp_limb* old_p = x->p;
++    x->p = (mp_limb*)mrb_realloc(mrb, x->p, size * sizeof(mp_limb));
++    if (x->p != NULL || size == 0) {
++      for (size_t i = x->sz; i < size; i++)
++        (x->p)[i] = 0;
++      x->sz = size;
++    } else {
++      x->p = old_p;  // Restore old pointer on failure
++    }
+@@ -1427 +1432 @@ mrb_bint_xor(mrb_state *mrb, mrb_value x, mrb_value y)
+-    return bint_norm(mrb, b3);
++    return (b3 && b3->mp.sz > 0) ? bint_norm(mrb, b3) : mrb_fixnum_value(0);
+@@ -1433 +1438 @@ mrb_bint_xor(mrb_state *mrb, mrb_value x, mrb_value y)
+-  return bint_norm(mrb, b3);
++  return (b3 && b3->mp.sz > 0) ? bint_norm(mrb, b3) : mrb_fixnum_value(0);

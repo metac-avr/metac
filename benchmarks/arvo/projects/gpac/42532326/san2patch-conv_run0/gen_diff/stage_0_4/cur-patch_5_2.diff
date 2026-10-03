@@ -1,0 +1,42 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..0d71fa851 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -407,0 +408,22 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
++	static GF_Err oggdmx_initialize(GF_Filter *filter, const char *name, const char *data)
++{
++	GF_OGGDmxCtx *ctx = gf_filter_get_udta(filter);
++	FILE *stream;
++	OggSyncState oy;
++	OggPage oggpage;
++	OggPacket oggpacket;
++	OggStreamState os, the_os;
++	GF_VorbisParser vp;
++	GF_OpusParser op;
++	GF_ODInfo info;
++	Bool has_stream = GF_FALSE;
++	u64 max_gran = 0;
++	u64 recompute_ts = 0;
++	GF_Fraction64 dur;
++	u32 i=0;
++
++	stream = gf_fopen(name, "rb");
++	if (!stream) return GF_URL_ERROR;
++
++	ogg_sync_init(&oy);
++	memset(&the_os, 0, sizeof(OggStreamState));
+@@ -464,0 +487,2 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
++	return GF_OK;
++}
+@@ -490,11 +513,0 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-			GF_OGGStream *st;
+-			ctx->duration = dur;
+-			while ( (st = gf_list_enum(ctx->streams, &i)) ) {
+-				if (st->opid)
+-					gf_filter_pid_set_property(st->opid, GF_PROP_PID_DURATION, & PROP_FRAC64(ctx->duration));
+-			}
+-		}
+-	}
+-	gf_fclose(stream);
+-}
+-

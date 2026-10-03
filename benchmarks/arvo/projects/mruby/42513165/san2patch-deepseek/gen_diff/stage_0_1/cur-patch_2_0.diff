@@ -1,0 +1,18 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..9fdd81a9d 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -988 +988,2 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
+@@ -990 +991,8 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  mpz_init_set_str(mrb, &b->mp, x, len, base);
++  mpz_t mp;
++  mpz_init(mp);
++  if (mpz_set_str(mp, x, base) != 0) {
++    mpz_clear(mp);
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid bignum string");
++  }
++  mpz_init_set(&b->mp, mp);
++  mpz_clear(mp);

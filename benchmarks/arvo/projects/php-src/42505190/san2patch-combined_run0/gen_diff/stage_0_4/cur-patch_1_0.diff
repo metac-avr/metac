@@ -1,0 +1,47 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..14941e4d315 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -543 +543 @@ struct _zend_ast_ref {
+-#define IS_INDIRECT             	12
++#define IS_INDIRECT              	12
+@@ -551 +551,2 @@ struct _zend_ast_ref {
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -552,0 +554,3 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
++	if (!pz) {
++		return IS_UNDEF;
++	}
+@@ -562,3 +566,2 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
+-
++#define Z_TYPE(zval)                zval_get_type(&(zval))
++#define Z_TYPE_P(zval_p)            Z_TYPE(*(zval_p))
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..36713ca23f8 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1646,9 +1646,2 @@ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_deprecated_function(const zend_functi
+-			ZSTR_VAL(fbc->common.scope->name),
+-			ZSTR_VAL(fbc->common.function_name)
+-		);
+-	} else {
+-		zend_error(E_DEPRECATED, "Function %s() is deprecated", ZSTR_VAL(fbc->common.function_name));
+-	}
+-}
+-
+-ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ ZEND_API ZEND_COLD void ZEND_FASTCALL zend_false_to_array_deprecated(void)
+@@ -1664,0 +1658,5 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
++	if (!str) {
++		zend_error(E_WARNING, "Attempt to assign to invalid string offset");
++		return;
++	}
++
+@@ -1666,2 +1664 @@ static zend_never_inline void zend_assign_to_string_offset(zval *str, zval *dim,
+-	/* Illegal offset assignment */
+-	if (UNEXPECTED(EG(exception) != NULL)) {
++	/* Illegal offset assignment */	if (UNEXPECTED(EG(exception) != NULL)) {

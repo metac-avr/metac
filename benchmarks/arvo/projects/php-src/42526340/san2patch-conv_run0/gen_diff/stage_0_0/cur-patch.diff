@@ -1,0 +1,86 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..d2083dec781 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1300,6 +1299,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint32_t rc) {
+-	ZEND_RC_MOD_CHECK(p);
+-	p->refcount -= rc;
+-	return p->refcount;
+-}
+-
+@@ -1310,12 +1304,6 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
+-}
+-
+-static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
++	zend_refcounted *counted = Z_COUNTED_P(pz);
++	if (counted == NULL) {
++		return 0;
++	}
++	return GC_REFCOUNT(counted);
++}}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..57161c72f0b 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2135,44 +2135,5 @@ ZEND_API void zend_hash_apply_with_arguments(HashTable *ht, apply_func_args_t ap
+-ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t apply_func)
+-{
+-	uint32_t idx;
+-	int result;
+-
+-	IS_CONSISTENT(ht);
+-
+-	idx = ht->nNumUsed;
+-	if (HT_IS_PACKED(ht)) {
+-		zval *zv;
+-
+-		while (idx > 0) {
+-			idx--;
+-			zv = ht->arPacked + idx;
+-			if (UNEXPECTED(Z_TYPE_P(zv) == IS_UNDEF)) continue;
+-
+-			result = apply_func(zv);
+-
+-			if (result & ZEND_HASH_APPLY_REMOVE) {
+-				HT_ASSERT_RC1(ht);
+-				_zend_hash_packed_del_val(ht, HT_IDX_TO_HASH(idx), zv);
+-			}
+-			if (result & ZEND_HASH_APPLY_STOP) {
+-				break;
+-			}
+-		}
+-	} else {
+-		Bucket *p;
+-
+-		while (idx > 0) {
+-			idx--;
+-			p = ht->arData + idx;
+-			if (UNEXPECTED(Z_TYPE(p->val) == IS_UNDEF)) continue;
+-
+-			result = apply_func(&p->val);
+-
+-			if (result & ZEND_HASH_APPLY_REMOVE) {
+-				HT_ASSERT_RC1(ht);
+-				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
+-			}
+-			if (result & ZEND_HASH_APPLY_STOP) {
+-				break;
+-			}
+-		}
++ZEND_API void static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
++	zend_refcounted *counted = Z_COUNTED_P(pz);
++	if (counted == NULL) {
++		return 0;
+@@ -2179,0 +2141 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++	return GC_ADDREF(counted);

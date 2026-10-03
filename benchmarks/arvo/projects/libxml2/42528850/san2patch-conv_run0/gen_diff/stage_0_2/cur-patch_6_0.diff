@@ -1,0 +1,33 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..6869f2cd 100644
+--- a/tree.c
++++ b/tree.c
+@@ -819,2 +819,3 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++    /* Clear pointers to prevent use-after-free */
++    cur->href = NULL;
++    cur->prefix = NULL;
+@@ -831,2 +832 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;
+diff --git a/parser.c b/parser.c
+index 11bb5199..0130898c 100644
+--- a/parser.c
++++ b/parser.c
+@@ -11778,0 +11779,14 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
++// Check for valid namespace context before parsing reference to prevent use-after-free
++                    if (ctxt->node && ctxt->node->nsDef) {
++                        xmlNsPtr ns = ctxt->node->nsDef;
++                        while (ns != NULL) {
++                            if (ns->_private != NULL) {
++                                // Validate namespace pointer before use
++                                if (!xmlIsIDNode((xmlNodePtr)ns)) {
++                                    ns = ns->next;
++                                    continue;
++                                }
++                            }
++                            ns = ns->next;
++                        }
++                    }

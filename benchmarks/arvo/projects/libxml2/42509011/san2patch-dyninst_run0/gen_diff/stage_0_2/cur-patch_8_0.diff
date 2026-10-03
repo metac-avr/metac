@@ -1,0 +1,16 @@
+diff --git a/tree.c b/tree.c
+index 50b6763b..1a87be3d 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3724 +3724,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		 (cur->type == XML_XINCLUDE_END)) &&
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ 		 (cur->type == XML_XINCLUDE_END)) &&
+@@ -3737 +3738,6 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-		DICT_FREE(cur->content)
++		if (cur->doc && cur->doc->dict) {
++		    if (!xmlDictOwns(cur->doc->dict, cur->content))
++		        DICT_FREE(cur->content);
++		} else {
++		    DICT_FREE(cur->content);
++		}

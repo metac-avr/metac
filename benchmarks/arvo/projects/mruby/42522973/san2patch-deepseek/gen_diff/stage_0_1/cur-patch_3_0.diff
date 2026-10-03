@@ -1,0 +1,21 @@
+diff --git a/src/variable.c b/src/variable.c
+index 3088783ec..2a654c712 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -238 +238,2 @@ static int
+-iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
++// FIXME: Crash CWE-416: Use After Free
++ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+@@ -240 +241,3 @@ iv_mark_i(mrb_state *mrb, mrb_sym sym, mrb_value v, void *p)
+-  mrb_gc_mark_value(mrb, v);
++  if (mrb->during_objspace_each) {
++    mrb_gc_mark_value(mrb, v);
++  }
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..967d0772c 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1313 +1313,2 @@ mrb_full_gc(mrb_state *mrb)
+-  }
++    return;
++   }

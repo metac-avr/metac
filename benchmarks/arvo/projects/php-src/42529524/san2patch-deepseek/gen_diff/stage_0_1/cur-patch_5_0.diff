@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..1d065700092 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3190 +3190,26 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-		zend_observer_fcall_end(execute_data, NULL);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		zend_observer_fcall_end(execute_data, NULL);
++	}
++	{
++		zend_op *opline = EX(func)->op_array.opcodes;
++		if (op_num < EX(func)->op_array.last) {
++			zend_uchar *live_vars = opline[op_num].extended_value.live_vars;
++			if (live_vars) {
++				uint32_t var_num = 0;
++				while (*live_vars != 0) {
++					while (!(*live_vars & (1 << (var_num & 7)))) {
++						var_num++;
++					}
++					if (var_num < EX(func)->op_array.last_var) {
++						zval *var_ptr = EX_VAR(var_num);
++						if (var_ptr != NULL && Z_TYPE_P(var_ptr) != IS_UNDEF) {
++							cleanup_one_live_var(var_ptr);
++						}
++					}
++					var_num++;
++					if (var_num % 8 == 0) {
++						live_vars++;
++					}
++				}
++			}
++		}
+@@ -3192 +3216,0 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-	cleanup_live_vars(execute_data, op_num, 0);
+@@ -3274,0 +3299,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	}
++
++	if (opline->op1_type == IS_CV) {
++		zval *var_ptr = EX_VAR_NUM(opline->op1.var);
++		if (var_ptr != NULL && Z_TYPE_P(var_ptr) != IS_UNDEF) {
++			ZVAL_UNDEF(var_ptr);
++		}

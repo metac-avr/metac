@@ -1,0 +1,25 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..2f748c5f4 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -345,0 +346 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    ptrdiff_t old_ci_offset = c->ci - c->cibase;
+@@ -348 +349,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -351 +353,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->ci = ci = c->cibase + size;
++    c->ci = c->cibase + old_ci_offset;
++    ci = c->ci + 1;
+@@ -2710 +2713,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
+@@ -2711,0 +2716,4 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
++      // Re-validate register pointer after potential stack reallocation
++      if (mrb->c->stack != regs) {
++        regs = mrb->c->stack;
++      }
+@@ -2722 +2729,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

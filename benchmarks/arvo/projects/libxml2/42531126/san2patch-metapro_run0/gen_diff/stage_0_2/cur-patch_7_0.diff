@@ -1,0 +1,46 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..2336a8be 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -375 +375 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-    if (ctxt->input->end - ctxt->input->cur < INPUT_CHUNK)
++    if (ctxt->input->end - ctxt->input->cur < INPUT_CHUNK) {
+@@ -376,0 +377,5 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++        /* Ensure we use the updated buffer pointer after growth */
++    }
++    
++    /* Always use current buffer pointer to avoid stale references */
++    cur = ctxt->input->cur;
+@@ -386,2 +391 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        if (*ctxt->input->cur < 0x80) {
+-            if (*ctxt->input->cur == 0) {
++        if (*ctxt->input->cur < 0x80) {            if (*ctxt->input->cur == 0) {
+@@ -3456,0 +3461 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
++// FIXME: Crash CWE-416: Use After Free
+@@ -3458,11 +3463,12 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
+-	NEXTL(l);
+-	next = CUR_CHAR(nl);
+-
+-	if ((q == '-') && (r == '-') && (cur == '!') && (next == '>')) {
+-	  htmlParseErr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
+-		       "Comment incorrectly closed by '--!>'", NULL, NULL);
+-	  cur = '>';
+-	  break;
+-	}
+-
+-	if (len + 5 >= size) {
++	 xmlChar *old_buf = buf;
++	 NEXTL(l);
++	 next = CUR_CHAR(nl);
++
++	 if ((q == '-') && (r == '-') && (cur == '!') && (next == '>')) {
++	   htmlParseErr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
++			"Comment incorrectly closed by '--!>'", NULL, NULL);
++	   cur = '>';
++	   break;
++	 }
++
++	 if (len + 5 >= size) {
+@@ -3479 +3485 @@ htmlParseComment(htmlParserCtxtPtr ctxt) {
+-	}
++	 }

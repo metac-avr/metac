@@ -1,0 +1,106 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index c3c18764d..7d8d08d71 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1186 +1186 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-
++ 
+@@ -1188,2 +1188,5 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      if((flow->ssh_tls.tls_alpn = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.alpn)) != NULL)
+-	correct_csv_data_field(flow->ssh_tls.tls_alpn);
++      char *alpn_ptr = flow->ndpi_flow->protos.tls_quic.alpn;
++      if(alpn_ptr && alpn_ptr[0] != '\0') {
++        if((flow->ssh_tls.tls_alpn = ndpi_strdup(alpn_ptr)) != NULL)
++	  correct_csv_data_field(flow->ssh_tls.tls_alpn);
++      }
+@@ -1192,2 +1195,5 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.issuerDN)
+-      flow->ssh_tls.tls_issuerDN = strdup(flow->ndpi_flow->protos.tls_quic.issuerDN);
++    if(flow->ndpi_flow->protos.tls_quic.issuerDN) {
++      char *issuer_ptr = flow->ndpi_flow->protos.tls_quic.issuerDN;
++      if(issuer_ptr && issuer_ptr[0] != '\0')
++        flow->ssh_tls.tls_issuerDN = strdup(issuer_ptr);
++    }
+@@ -1195,2 +1201,5 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.subjectDN)
+-      flow->ssh_tls.tls_subjectDN = strdup(flow->ndpi_flow->protos.tls_quic.subjectDN);
++    if(flow->ndpi_flow->protos.tls_quic.subjectDN) {
++      char *subject_ptr = flow->ndpi_flow->protos.tls_quic.subjectDN;
++      if(subject_ptr && subject_ptr[0] != '\0')
++        flow->ssh_tls.tls_subjectDN = strdup(subject_ptr);
++    }
+@@ -1199,2 +1208,5 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      flow->ssh_tls.encrypted_sni.esni = strdup(flow->ndpi_flow->protos.tls_quic.encrypted_sni.esni);
+-      flow->ssh_tls.encrypted_sni.cipher_suite = flow->ndpi_flow->protos.tls_quic.encrypted_sni.cipher_suite;
++      char *esni_ptr = flow->ndpi_flow->protos.tls_quic.encrypted_sni.esni;
++      if(esni_ptr && esni_ptr[0] != '\0') {
++        flow->ssh_tls.encrypted_sni.esni = strdup(esni_ptr);
++        flow->ssh_tls.encrypted_sni.cipher_suite = flow->ndpi_flow->protos.tls_quic.encrypted_sni.cipher_suite;
++      }
+@@ -1203,3 +1215,6 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ssh_tls.tls_supported_versions) {
+-      if((flow->ssh_tls.tls_supported_versions = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.tls_supported_versions)) != NULL)
+-	correct_csv_data_field(flow->ssh_tls.tls_supported_versions);
++    if(flow->ndpi_flow->protos.tls_quic.tls_supported_versions) {
++      char *versions_ptr = flow->ndpi_flow->protos.tls_quic.tls_supported_versions;
++      if(versions_ptr && versions_ptr[0] != '\0') {
++        if((flow->ssh_tls.tls_supported_versions = ndpi_strdup(versions_ptr)) != NULL)
++	  correct_csv_data_field(flow->ssh_tls.tls_supported_versions);
++      }
+@@ -1208,17 +1223,18 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-    if(flow->ndpi_flow->protos.tls_quic.alpn
+-       && flow->ndpi_flow->protos.tls_quic.tls_supported_versions) {
+-      correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.alpn);
+-      correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.tls_supported_versions);
+-
+-      flow->info_type = INFO_TLS_QUIC_ALPN_VERSION;
+-      ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s",
+-                    flow->ndpi_flow->protos.tls_quic.alpn);
+-      ndpi_snprintf(flow->tls_quic.tls_supported_versions,
+-                    sizeof(flow->tls_quic.tls_supported_versions),
+-                    "%s", flow->ndpi_flow->protos.tls_quic.tls_supported_versions);
+-    } else if(flow->ndpi_flow->protos.tls_quic.alpn) {
+-      correct_csv_data_field(flow->ndpi_flow->protos.tls_quic.alpn);
+-
+-      flow->info_type = INFO_TLS_QUIC_ALPN_ONLY;
+-      ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s",
+-                    flow->ndpi_flow->protos.tls_quic.alpn);
++    if(flow->ndpi_flow->protos.tls_quic.alpn && flow->ndpi_flow->protos.tls_quic.alpn[0] != '\0') {
++      char *alpn_ptr = flow->ndpi_flow->protos.tls_quic.alpn;
++      if(flow->ndpi_flow->protos.tls_quic.tls_supported_versions && flow->ndpi_flow->protos.tls_quic.tls_supported_versions[0] != '\0') {
++        char *versions_ptr = flow->ndpi_flow->protos.tls_quic.tls_supported_versions;
++        correct_csv_data_field(alpn_ptr);
++        correct_csv_data_field(versions_ptr);
++
++        flow->info_type = INFO_TLS_QUIC_ALPN_VERSION;
++        ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s", alpn_ptr);
++        ndpi_snprintf(flow->tls_quic.tls_supported_versions,
++                      sizeof(flow->tls_quic.tls_supported_versions),
++                      "%s", versions_ptr);
++      } else {
++        correct_csv_data_field(alpn_ptr);
++
++        flow->info_type = INFO_TLS_QUIC_ALPN_ONLY;
++        ndpi_snprintf(flow->tls_quic.alpn, sizeof(flow->tls_quic.alpn), "%s", alpn_ptr);
++      }
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..e5757c0e4 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -2108,7 +2108,9 @@ u_int16_t ndpi_network_port_ptree_match(struct ndpi_detection_module_struct *ndp
+-  ndpi_fill_prefix_v4(&prefix, pin, 32, ((ndpi_patricia_tree_t *) ndpi_str->protocols_ptree)->maxbits);
+-  node = ndpi_patricia_search_best(ndpi_str->protocols_ptree, &prefix);
+-
+-  if(node) {
+-    if((node->value.u.uv32.additional_user_value == 0)
+-       || (node->value.u.uv32.additional_user_value == port))
+-      return(node->value.u.uv32.user_value);
++  if(pin != NULL) {
++    ndpi_fill_prefix_v4(&prefix, pin, 32, ((ndpi_patricia_tree_t *) ndpi_str->protocols_ptree)->maxbits);
++    node = ndpi_patricia_search_best(ndpi_str->protocols_ptree, &prefix);
++
++    if(node) {
++      if((node->value.u.uv32.additional_user_value == 0)
++	 || (node->value.u.uv32.additional_user_value == port))
++	return(node->value.u.uv32.user_value);
++    }

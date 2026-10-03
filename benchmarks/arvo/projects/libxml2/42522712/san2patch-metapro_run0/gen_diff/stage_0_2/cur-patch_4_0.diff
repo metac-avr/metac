@@ -1,0 +1,20 @@
+diff --git a/xmlstring.c b/xmlstring.c
+index 54734724..ce4b8d13 100644
+--- a/xmlstring.c
++++ b/xmlstring.c
+@@ -46,0 +47 @@ xmlStrndup(const xmlChar *cur, int len) {
++    int i;
+@@ -49 +50,3 @@ xmlStrndup(const xmlChar *cur, int len) {
+-    ret = (xmlChar *) xmlMallocAtomic((size_t) len + 1);
++    /* Ensure we don't read beyond string termination */
++    for (i = 0; (i < len) && (cur[i] != 0); i++);
++    ret = (xmlChar *) xmlMallocAtomic((size_t) i + 1);
+@@ -51 +54,2 @@ xmlStrndup(const xmlChar *cur, int len) {
+-        return(NULL);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         return(NULL);
+@@ -53,2 +57,2 @@ xmlStrndup(const xmlChar *cur, int len) {
+-    memcpy(ret, cur, len);
+-    ret[len] = 0;
++    memcpy(ret, cur, i);
++    ret[i] = 0;

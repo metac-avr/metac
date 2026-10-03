@@ -1,0 +1,28 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..aba8b6f14 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -212,4 +212,10 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-  shared->refcnt--;
+-  if (shared->refcnt == 0) {
+-    mrb_free(mrb, shared->ptr);
+-    mrb_free(mrb, shared);
++  if (!shared) return;  // Defensive check for null pointer
++  if (shared->refcnt > 0) {  // Validate refcount before decrementing
++    shared->refcnt--;
++    if (shared->refcnt == 0) {
++      if (shared->ptr) {  // Ensure ptr is valid before freeing
++        mrb_free(mrb, shared->ptr);
++        shared->ptr = NULL;  // Mark as freed
++      }
++      mrb_free(mrb, shared);
++    }
+@@ -256,2 +262,6 @@ mrb_gc_free_str(mrb_state *mrb, struct RString *str)
+-  else if (!RSTR_NOFREE_P(str) && !RSTR_FSHARED_P(str))
+-    mrb_free(mrb, str->as.heap.ptr);
++  else if (!RSTR_NOFREE_P(str) && !RSTR_FSHARED_P(str)) {
++    if (str->as.heap.ptr != NULL) {
++      mrb_free(mrb, str->as.heap.ptr);
++      str->as.heap.ptr = NULL;
++    }
++  }

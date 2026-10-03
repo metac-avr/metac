@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 9efe205abe0..1ecb3e902a1 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -213 +213,5 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		zv = Z_INDIRECT_P(zv);
++		zval *target = Z_INDIRECT_P(zv);
++		if (Z_TYPE_P(target) == IS_UNDEF || Z_TYPE_P(target) == IS_NULL) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
++		zv = target;
+@@ -215 +219 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
++	if (Z_TYPE_P(zv) == IS_UNDEF || Z_TYPE_P(zv) == IS_NULL) {
+@@ -217 +221,8 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-	} else {
++	}
++	if (Z_TYPE_P(zv) == IS_OBJECT) {
++		if (Z_OBJ_P(zv) == NULL || Z_OBJ_HT_P(zv) == NULL) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
++		if (Z_REFCOUNT_P(zv) == 1) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
+@@ -219,0 +231 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++	return ZEND_HASH_APPLY_KEEP;

@@ -1,0 +1,22 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..f32b2d477 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -122 +122,2 @@ stack_init(mrb_state *mrb)
+-  /* mrb_assert(ci == NULL); */
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   /* mrb_assert(ci == NULL); */
+@@ -127 +128 @@ stack_init(mrb_state *mrb)
+-  c->ci = c->cibase;
++  c->ci = &c->cibase[0];
+@@ -339,0 +341 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  mrb_callinfo *old_ci = c->ci;
+@@ -348 +350 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -353,0 +356,5 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++  
++  if (c->cibase != (mrb_callinfo*)((char*)old_ci - sizeof(mrb_callinfo)*(old_ci - c->cibase))) {
++    ci = c->ci;
++  }
++  

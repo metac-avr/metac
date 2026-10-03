@@ -1,0 +1,29 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..994909d3 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2226 +2226,2 @@ xmlSAX2StartElementNs(void *ctx,
+-        pref = namespaces[i++];
++// FIXME: Crash CWE-416: Use After Free
++         pref = namespaces[i++];
+@@ -2243,2 +2244,2 @@ xmlSAX2StartElementNs(void *ctx,
+-        xmlParserNsUpdateSax(ctxt, pref, ns);
+-
++        if (ns != NULL) {
++            xmlParserNsUpdateSax(ctxt, pref, ns);
+@@ -2246,5 +2247,5 @@ xmlSAX2StartElementNs(void *ctx,
+-	if ((!ctxt->html) && ctxt->validate && ctxt->wellFormed &&
+-	    ctxt->myDoc && ctxt->myDoc->intSubset) {
+-	    ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
+-	                                           ret, prefix, ns, uri);
+-	}
++	    if ((!ctxt->html) && ctxt->validate && ctxt->wellFormed &&
++	        ctxt->myDoc && ctxt->myDoc->intSubset) {
++	        ctxt->valid &= xmlValidateOneNamespace(&ctxt->vctxt, ctxt->myDoc,
++	                                               ret, prefix, ns, uri);
++	    }
+@@ -2251,0 +2253,4 @@ xmlSAX2StartElementNs(void *ctx,
++        } else {
++            pref = NULL;
++            uri = NULL;
++        }

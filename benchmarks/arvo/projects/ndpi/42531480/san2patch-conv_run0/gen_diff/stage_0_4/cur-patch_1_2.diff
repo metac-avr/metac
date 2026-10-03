@@ -1,0 +1,152 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..2dcf7bffb 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,3 +2381,9 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
++static void ndpi_int_tls_detect_client_certificate_before_v90(struct ndpi_detection_module_struct *ndpi_struct,
++						struct ndpi_flow_struct *flow,
++						const u_int8_t * payload, u_int32_t payload_len)
++{
++  u_int32_t cert_len;
++  u_int16_t server_cert_len;
++
++  NDPI_LOG_DBG(ndpi_struct, "search tls_crt_certificate
++");
+@@ -2385 +2391,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++  if(payload_len < 3)
++    return;
+@@ -2387,5 +2394,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++  if(payload[0] != 0x0b)
++    return;
+@@ -2393,2 +2397,19 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
+-		}
++  cert_len = (u_int32_t) ntohs(get_u_int16_t(payload, 1));
++  if(cert_len < 3 || cert_len > payload_len - 3)
++    return;
++
++  server_cert_len = (u_int16_t) ntohs(get_u_int16_t(payload, 3));
++  if(server_cert_len < 1 || server_cert_len > cert_len - 1)
++    return;
++
++  if(flow->protos.stun_ssl.ssl.server_certificate_detected)
++    return;
++
++  flow->protos.stun_ssl.ssl.server_certificate_detected = 1;
++
++  if(!flow->protos.stun_ssl.ssl.ja3_server_done) {
++    struct ja3_server_struct ja;
++    u_int32_t offset, total_len, extensions_len, extension_offset;
++    u_int16_t handshake_type;
++
++    memset(&ja, 0, sizeof(ja));
+@@ -2396,2 +2417,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++    total_len = payload_len;
++    offset = 0;
+@@ -2399,4 +2420,91 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++    if(offset+4 >= total_len) return;
++    handshake_type = payload[offset];
++
++    if(handshake_type == 0x02 /* Server Hello Done */) {
++      flow->protos.stun_ssl.ssl.ja3_server_done = 1;
++    } else if(handshake_type == 0x01 /* Client Hello */) {
++      u_int16_t session_id_len, cipher_suites_len, compression_methods_len;
++      u_int16_t extensions_offset;
++      u_int8_t session_id_present;
++
++      offset += 4; /* Skip handshake header */
++
++      if(offset+2 >= total_len) return;
++      session_id_len = payload[offset];
++      offset += 1 + session_id_len;
++
++      if(offset+2 >= total_len) return;
++      cipher_suites_len = ntohs(*(u_int16_t*)(payload+offset));
++      offset += 2 + cipher_suites_len;
++
++      if(offset >= total_len) return;
++      compression_methods_len = payload[offset];
++      offset += 1 + compression_methods_len;
++
++      if(offset+2 > total_len) return;
++      extensions_len = ntohs(*(u_int16_t*)(payload+offset));
++      offset += 2;
++      
++      if((extensions_len+offset) <= total_len) {
++        u_int16_t i;
++        
++        extensions_offset = offset;
++        
++        while(offset < extensions_len + extensions_offset) {
++          u_int16_t extension_type, extension_len;
++          
++          if(offset+4 > total_len) break;
++          
++          extension_type = ntohs(*(u_int16_t*)(payload+offset));
++          extension_len = ntohs(*(u_int16_t*)(payload+offset+2));
++          offset += 4;
++          
++          if(extension_type == 0x000d /* Signature Algorithms */) {
++#ifdef TLS_HANDLE_SIGNATURE_ALGORITMS
++            u_int16_t sa_size, tot_signature_algorithms_len;
++            int s_offset;
++            u_int16_t last_signature = 0;
++            u_int8_t duplicate_found = 0;
++            
++            if(offset+2 >= total_len) break;
++            
++            sa_size = ntohs(*(u_int16_t*)&payload[offset]);
++            tot_signature_algorithms_len = sa_size * 2;
++            
++            if(offset+4+tot_signature_algorithms_len > total_len)
++              break;
++            
++            s_offset = offset + 4;
++            
++            memcpy(&ja.client.signature_algorithms[0],
++                   &payload[s_offset], 2 /* 16 bit */ * sa_size);
++            
++            ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++            
++            for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i*2+1<total_len; i++) {
++              int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++                                     sizeof(ja.client.signature_algorithms_str)-i*2,
++                                     "%02X", payload[s_offset+i*2]);
++              ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&payload[s_offset+i*2]);
++              
++              if(rc < 0) break;
++            }
++            
++            for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < payload_len; i+=2) {
++              u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&payload[s_offset+i]));
++              
++              if(last_signature == signature_algo) {
++                /* Consecutive duplication */
++                duplicate_found = 1;
++#endif
++              }
++              
++              if(offset+extension_len > total_len) break;
++              offset += extension_len;
++            }
++          }
++        }
++      }
++    }
++  }
++}		    continue;

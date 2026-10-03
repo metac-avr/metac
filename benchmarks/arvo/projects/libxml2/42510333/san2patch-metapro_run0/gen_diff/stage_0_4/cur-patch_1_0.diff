@@ -1,0 +1,29 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..91d21b9c 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1985,5 +1985,10 @@ xmlXIncludeLoadFallback(xmlXIncludeCtxtPtr ctxt, xmlNodePtr fallback, int nr) {
+-	xmlXIncludeFreeContext(newctxt);
+-
+-	ctxt->incTab[nr]->inc = xmlDocCopyNodeList(ctxt->doc,
+-	                                           fallback->children);
+-        if (ctxt->incTab[nr]->inc == NULL)
++	// Validate node list before copying to prevent use-after-free
++  	xmlXIncludeFreeContext(newctxt);
++
++        if (fallback->children != NULL) {  // Check if children still valid
++	    ctxt->incTab[nr]->inc = xmlDocCopyNodeList(ctxt->doc,
++	                                               fallback->children);
++            if (ctxt->incTab[nr]->inc == NULL)
++                ctxt->incTab[nr]->emptyFb = 1;
++        } else {
++            ctxt->incTab[nr]->inc = NULL;
+@@ -1990,0 +1996 @@ xmlXIncludeLoadFallback(xmlXIncludeCtxtPtr ctxt, xmlNodePtr fallback, int nr) {
++        }
+diff --git a/tree.c b/tree.c
+index 8077348a..17434d60 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3718 +3718 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-        } else if (cur->type != XML_DTD_NODE) {
++        } else if ((cur != NULL) && (cur->type != XML_DTD_NODE)) {

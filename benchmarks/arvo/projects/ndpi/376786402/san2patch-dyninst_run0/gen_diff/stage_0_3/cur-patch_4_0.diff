@@ -1,0 +1,37 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..94df7695c 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1031 +1031 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-			     "Basic", packet->authorization_line.len))
++		     "Basic", packet->authorization_line.len))
+@@ -1033 +1033 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-				"Digest", packet->authorization_line.len))) {
++			"Digest", packet->authorization_line.len))) {
+@@ -1037 +1037 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-					   packet->authorization_line.len - len, &content_len);
++				   packet->authorization_line.len - len, &content_len);
+@@ -1040,6 +1040,15 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
+-
+-	if(double_dot) {
+-	  double_dot[0] = '\0';
+-	  flow->http.username = ndpi_strdup((char*)content);
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
++	/* Ensure null termination */
++	u_char *safe_content = ndpi_malloc(content_len + 1);
++	if(safe_content != NULL) {
++	  memcpy(safe_content, content, content_len);
++	  safe_content[content_len] = '\0';
++	  
++	  char *double_dot = strchr((char*)safe_content, ':');
++
++	  if(double_dot) {
++	    double_dot[0] = '\0';
++	    flow->http.username = ndpi_strdup((char*)safe_content);
++	    flow->http.password = ndpi_strdup(&double_dot[1]);
++	  }
++	  
++	  ndpi_free(safe_content);
+@@ -1047 +1055,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	

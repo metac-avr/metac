@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 9efe205abe0..ee988428b67 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -215,0 +216,6 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++		if (Z_OBJ_P(zv)->gc.u.type_flags & GC_IMMUTABLE) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
++		if (Z_OBJ_P(zv)->handlers && Z_OBJ_P(zv)->handlers->get_gc) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..8a26b63afe0 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++// FIXME: Crash CWE-416: Use After Free
++		GC_TYPE(object) = IS_NULL;  // Mark object as freed to prevent UAF

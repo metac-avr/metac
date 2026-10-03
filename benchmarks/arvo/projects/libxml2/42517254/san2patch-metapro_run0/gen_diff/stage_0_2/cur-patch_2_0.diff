@@ -1,0 +1,45 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..2b7170dc 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1160 +1160,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (set->nodeTab[i] == NULL)
++		xmlNodePtr current_node = set->nodeTab[i];
++		if (current_node == NULL)
+@@ -1162 +1163 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		switch (set->nodeTab[i]->type) {
++		switch (current_node->type) {
+@@ -1175 +1176 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-	                xmlNodePtr tmp, cur = set->nodeTab[i];
++	                xmlNodePtr tmp, cur = current_node;
+@@ -1216 +1217 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-			                              set->nodeTab[i]);
++			                              current_node);
+@@ -1219,2 +1220,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
++			xmlXIncludeCopyNode(ctxt, target, source,
++				                current_node));
+@@ -2502 +2503 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-    for (i = ctxt->incBase;i < ctxt->incNr; i++) {
++    for (i = ctxt->incBase;i < ctxt->incNr; ) {
+@@ -2504 +2505 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-            (ctxt->incTab[i]->xptr != NULL) ||
++             (ctxt->incTab[i]->xptr != NULL) ||
+@@ -2506,0 +2508,8 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++        /* Remove processed node from incTab to prevent use-after-free */
++        if (i < ctxt->incNr - 1) {
++            memmove(&ctxt->incTab[i], &ctxt->incTab[i + 1], 
++                    (ctxt->incNr - i - 1) * sizeof(xmlXIncludeRefPtr));
++        }
++        ctxt->incNr--;
++        /* Only increment if no removal occurred */
++        if (ctxt->incNr > 0 && i < ctxt->incNr) i++;
+@@ -2512,6 +2521 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-}
+-
+-/**
+- * xmlXIncludeSetFlags:
+- * @ctxt:  an XInclude processing context
+- * @flags: a set of xmlParserOption used for parsing XML includes
++} * @flags: a set of xmlParserOption used for parsing XML includes

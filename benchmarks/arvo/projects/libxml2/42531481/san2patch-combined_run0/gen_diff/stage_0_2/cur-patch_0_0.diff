@@ -1,0 +1,33 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..de3d9139 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+@@ -4272,2 +4272,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
++	 ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	 if (ns == NULL) {
+@@ -4283 +4283 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	    if (ns != NULL) {
++	    if ((ns != NULL) && (ns->href != NULL)) {
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..355fb850 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346 +1346,12 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++		/* Validate namespace pointers before freeing */
++                if (tmp->nsDef != NULL) {
++                    xmlNsPtr nsIter = tmp->nsDef;
++                    while (nsIter != NULL) {
++                        if (nsIter->href != NULL && nsIter->_private != NULL) {
++                            /* Ensure namespace is not being referenced elsewhere */
++                            nsIter->_private = NULL;
++                        }
++                        nsIter = nsIter->next;
++                    }
++                }

@@ -1,0 +1,18 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..88f03dd0b 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1158 +1158,12 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      mrb_free(mrb, page);
++      /* During a full GC, do not release the page immediately. Instead, mark
++         it as pending free by clearing its links. The actual mrb_free is
++         deferred until the next full GC sweep, after all roots have been
++         resynchronized and no mark traversal can reach the freed pointer. */
++      if (!full) {
++        mrb_free(mrb, page);
++      }
++      else {
++        page->next = NULL;
++        page->freelist = NULL;
++        page->old = FALSE;
++      }

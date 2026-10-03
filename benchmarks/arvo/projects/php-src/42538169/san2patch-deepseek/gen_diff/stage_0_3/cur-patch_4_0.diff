@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..4487615e346 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -187,0 +188,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
++			return;
++		}
++
+@@ -201,0 +206 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 733ce54dc24..0c364499b5d 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -5164 +5164,2 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-	if (UNEXPECTED(!iter) || UNEXPECTED(EG(exception))) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	if (UNEXPECTED(!iter) || UNEXPECTED(EG(exception))) {
+@@ -5166 +5167,5 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			if (iter->funcs && iter->funcs->dtor && iter->internal_data.ptr) {
++				iter->funcs->dtor(iter);
++			} else {
++				OBJ_RELEASE(&iter->std);
++			}

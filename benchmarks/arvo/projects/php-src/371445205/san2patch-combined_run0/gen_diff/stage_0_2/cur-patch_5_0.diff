@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..8f56f988a5d 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -344 +344,2 @@ static zend_always_inline void zend_string_efree(zend_string *s)
+-static zend_always_inline void zend_string_release(zend_string *s)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zend_string_release(zend_string *s)
+@@ -346 +347 @@ static zend_always_inline void zend_string_release(zend_string *s)
+-	if (!ZSTR_IS_INTERNED(s)) {
++	if (!ZSTR_IS_INTERNED(s) && s != NULL) {
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..704794eee2e 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -251 +251,3 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-		call->func->op_array.filename = filename;
++		if (filename) {
++			call->func->op_array.filename = zend_string_copy(filename); // Create a copy to avoid use-after-free
++		}
+@@ -291 +293 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-
++ 
+@@ -297,0 +300,3 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		if (call->func->op_array.filename) {
++			zend_string_release(call->func->op_array.filename); // Release the copied string
++		}

@@ -1,0 +1,17 @@
+diff --git a/Zend/zend_closures.c b/Zend/zend_closures.c
+index e2ea9eacc34..a75438a7c85 100644
+--- a/Zend/zend_closures.c
++++ b/Zend/zend_closures.c
+@@ -675 +675,2 @@ static void zend_create_closure_ex(zval *res, zend_function *func, zend_class_en
+-	void *ptr;
++// FIXME: Crash CWE-416: Use After Free
++ 	void *ptr;
+@@ -679,0 +681 @@ static void zend_create_closure_ex(zval *res, zend_function *func, zend_class_en
++	GC_ADDREF(&closure->std);
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..6159bdfb5e9 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (UNEXPECTED(!GC_DELREF(ref))) {

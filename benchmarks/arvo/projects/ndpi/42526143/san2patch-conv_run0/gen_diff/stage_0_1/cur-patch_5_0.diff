@@ -1,0 +1,25 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..a4e084368 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -294,2 +294,2 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	if(packet->content_disposition_line.ptr[attachment_len] == '\"') {
+-	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '\"') {
++	if(packet->content_disposition_line.ptr[attachment_len] == '"') {
++	  if(packet->content_disposition_line.ptr[packet->content_disposition_line.len-1] != '"') {
+@@ -306 +306 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-
++// Fixed CWE-125: Out-of-bounds Read by validating pointer range before strncpy
+@@ -308,3 +308,9 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+-		      filename_len-2);
+-	      flow->http.filename[filename_len-2] = '\0';
++	      const char* src_ptr = (char*)packet->content_disposition_line.ptr+attachment_len+1;
++	      size_t available_len = packet->content_disposition_line.len - (attachment_len+1);
++	      size_t copy_len = (filename_len > 2) ? (filename_len-2) : 0;
++	      if(copy_len <= available_len) {
++	        strncpy(flow->http.filename, src_ptr, copy_len);
++	        flow->http.filename[copy_len] = '\0';
++	      } else {
++	        flow->http.filename[0] = '\0';
++	      }

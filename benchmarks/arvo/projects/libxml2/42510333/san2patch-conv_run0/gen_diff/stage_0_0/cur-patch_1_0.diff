@@ -1,0 +1,25 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..fd9f4435 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2515 +2515,4 @@ xmlXIncludeProcessTreeFlagsData(xmlNodePtr tree, int flags, void *data) {
+-    ctxt->base = xmlStrdup((xmlChar *)tree->doc->URL);
++    ctxt->base = NULL;
++    if (tree->doc->URL != NULL) {
++        ctxt->base = xmlStrdup((xmlChar *)tree->doc->URL);
++    }
+diff --git a/tree.c b/tree.c
+index 8077348a..d9c0a482 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3702 +3702,9 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-    if (cur->doc != NULL) dict = cur->doc->dict;
++    /* Nullify references to prevent dangling pointers */
++    if (cur->_private != NULL) {
++        cur->_private = NULL;
++    }
++    if (cur->doc != NULL) {
++        if (cur->doc->_private == cur)
++            cur->doc->_private = NULL;
++        dict = cur->doc->dict;
++    }

@@ -1,0 +1,22 @@
+diff --git a/src/filter_core/filter_props.c b/src/filter_core/filter_props.c
+index f507546bf..8155f8574 100644
+--- a/src/filter_core/filter_props.c
++++ b/src/filter_core/filter_props.c
+@@ -1063,0 +1064,5 @@ GF_Err gf_props_insert_property(GF_PropertyMap *map, u32 hash, u32 p4cc, const c
++		// Validate data size to prevent integer overflow
++		if (value->value.data.size > GF_PROP_DATA_MAX_SIZE) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_FILTER, ("Data property size %u exceeds maximum allowed size\n", value->value.data.size));
++			return GF_BAD_PARAM;
++		}
+@@ -1122,2 +1127,7 @@ GF_Err gf_props_set_property(GF_PropertyMap *map, u32 p4cc, const char *name, ch
+-		e = GF_OK;
+-	else
++ 		e = GF_OK;
++	else {
++		// Validate property value size to prevent integer overflow
++		if (value->type == GF_PROP_DATA && value->value.data.ptr && value->value.data.size > 1000000) {
++			gf_mx_v(map->session->info_mx);
++			return GF_BAD_PARAM;
++		}
+@@ -1124,0 +1135 @@ GF_Err gf_props_set_property(GF_PropertyMap *map, u32 p4cc, const char *name, ch
++	}

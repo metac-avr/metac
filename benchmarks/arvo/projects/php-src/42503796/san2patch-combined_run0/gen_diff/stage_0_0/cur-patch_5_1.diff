@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..afe0b6f076f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30087 +30087 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	SAVE_OPLINE();
++SAVE_OPLINE();
+@@ -30090 +30090,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	if (EXPECTED(Z_TYPE_P(object_ptr) == IS_ARRAY)) {
++// FIXME: Crash CWE-416: Use After Free
++ 	if (EXPECTED(Z_TYPE_P(object_ptr) == IS_ARRAY)) {
+@@ -30092 +30093,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-		SEPARATE_ARRAY(object_ptr);
++		/* Safe wrapper around SEPARATE_ARRAY to prevent expired pointer dereference */
++		{
++			zend_array *arr = Z_ARR_P(object_ptr);
++			/* Verify array is still allocated and not marked for destruction */
++			if (UNEXPECTED(arr == NULL || GC_FLAGS(arr) & GC_IMMEDIATELY_DESTROY)) {
++				ZVAL_UNDEF(object_ptr);
++			} else {
++				SEPARATE_ARRAY(object_ptr);
++			}
++		}
+@@ -30097,2 +30107 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-			}
+-			value = zend_hash_next_index_insert(Z_ARRVAL_P(object_ptr), value);
++			}			value = zend_hash_next_index_insert(Z_ARRVAL_P(object_ptr), value);

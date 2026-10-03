@@ -1,0 +1,56 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..f5ca91030 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -433,10 +433,30 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    mp_limb2 qhat = (((mp_limb2)x.p[j+yd] << DIG_SIZE) + x.p[j+yd-1]) / z;
+-    mp_limb2s b=0;
+-    if (qhat) {
+-      for (i=0; i<yd; i++) {
+-        mp_limb2 zz = qhat * y.p[i];
+-        mp_limb2s u = LOW(b)+x.p[i+j]-LOW(zz);
+-        x.p[i+j] = LOW(u);
+-        b = HIGH(b) - HIGH(zz) + HIGH(u);
+-      }
+-      b += x.p[i+j];
++    if (j+yd < x.size && j+yd-1 < x.size) {
++        mp_limb2 qhat = (((mp_limb2)x.p[j+yd] << DIG_SIZE) + x.p[j+yd-1]) / z;
++        mp_limb2s b=0;
++        if (qhat) {
++          for (i=0; i<yd; i++) {
++            if (i+j < x.size && i < y.size) {
++                mp_limb2 zz = qhat * y.p[i];
++                mp_limb2s u = LOW(b)+x.p[i+j]-LOW(zz);
++                x.p[i+j] = LOW(u);
++                b = HIGH(b) - HIGH(zz) + HIGH(u);
++            }
++          }
++          if (i+j < x.size) {
++              b += x.p[i+j];
++          }
++        }
++        for (; b!=0; qhat--) {
++          mp_limb2 c = 0;
++          for (i=0; i<yd; i++) {
++            if (i+j < x.size && i < y.size) {
++                c += (mp_limb2)x.p[i+j] + (mp_limb2)y.p[i];
++                x.p[i+j] = LOW(c);
++                c = HIGH(c);
++            }
++          }
++          b += c;
++        }
++        if (j < q.size) {
++            q.p[j] = qhat;
++        }
+@@ -444,10 +463,0 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
+-      mp_limb2 c = 0;
+-      for (i=0; i<yd; i++) {
+-        c += (mp_limb2)x.p[i+j] + (mp_limb2)y.p[i];
+-        x.p[i+j] = LOW(c);
+-        c = HIGH(c);
+-      }
+-      b += c;
+-    }
+-    q.p[j] = qhat;

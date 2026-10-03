@@ -1,0 +1,27 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d0bc551f0..4f94f6bac 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -2439,4 +2439,9 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-						for (s = 0; s < gf_list_count(group->substreams); s++) {
+-							subs = gf_list_get(group->substreams, s);
+-							if (!subs) {
+-								continue;
++						// Validate pointer before use to prevent use-after-free
++						if (group->substreams && gf_list_count(group->substreams) > 0) {
++							for (s = 0; s < gf_list_count(group->substreams); s++) {
++								subs = gf_list_get(group->substreams, s);
++								if (!subs) {
++									continue;
++								}
++
++								gf_free(subs);
+@@ -2444,2 +2449,4 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-
+-							gf_free(subs);
++							gf_list_del(group->substreams);
++						} else if (group->substreams) {
++							// Handle case where substreams exists but is empty
++							gf_list_del(group->substreams);
+@@ -2447 +2453,0 @@ void gf_odf_ac4_cfg_clean_list(GF_AC4Config *cfg)
+-						gf_list_del(group->substreams);

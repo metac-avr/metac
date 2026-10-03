@@ -1,0 +1,49 @@
+diff --git a/tree.c b/tree.c
+index 6a42f118..060504f1 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4302 +4302 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    ret->doc = doc;
++ret->doc = doc;
+@@ -4310,4 +4310,11 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    else if (node->name != NULL) {
+-        if ((doc != NULL) && (doc->dict != NULL))
+-	    ret->name = xmlDictLookup(doc->dict, node->name, -1);
+-	else
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     else if (node->name != NULL) {
++        if ((doc != NULL) && (doc->dict != NULL)) {
++            xmlChar *nodeNameCopy = xmlStrdup(node->name);
++            if (nodeNameCopy != NULL) {
++                ret->name = xmlDictLookup(doc->dict, nodeNameCopy, -1);
++                xmlFree(nodeNameCopy);
++            } else {
++                ret->name = NULL;
++            }
++        } else
+@@ -4322,2 +4329 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-    }else{
+-      if (node->type == XML_ELEMENT_NODE)
++    }else{      if (node->type == XML_ELEMENT_NODE)
+diff --git a/dict.c b/dict.c
+index 5c9ca719..8cffc2fd 100644
+--- a/dict.c
++++ b/dict.c
+@@ -440 +440 @@ xmlDictComputeBigQKey(const xmlChar *prefix, int plen,
+-    hash += (hash << 3);
++hash += (hash << 3);
+@@ -448,6 +448 @@ xmlDictComputeBigQKey(const xmlChar *prefix, int plen,
+-/*
+- * xmlDictComputeFastKey:
+- *
+- * Calculate a hash key using a fast hash function that works well
+- * for low hash table fill.
+- */
++// Validate pointer before accessing to prevent expired pointer dereference
+@@ -458,0 +454,2 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
++    // Validate memory accessibility before dereferencing
++    if (name < (const xmlChar*)0x1000) return(0); // Prevent access to invalid low addresses
+@@ -460,2 +457 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+-    value <<= 5;
+-    if (namelen > 10) {
++    value <<= 5;    if (namelen > 10) {

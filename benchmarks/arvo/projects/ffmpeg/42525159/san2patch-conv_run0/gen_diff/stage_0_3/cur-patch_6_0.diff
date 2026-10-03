@@ -1,0 +1,21 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..6cfd744b21 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2046 +2046,2 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-        write_frame_8(s, tile, picture, 8);
++        if (tile->comp[0].x1 - tile->comp[0].x0 > 0 && tile->comp[0].y1 - tile->comp[0].y0 > 0)
++            write_frame_8(s, tile, picture, 8);
+@@ -2053 +2054,2 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-        write_frame_16(s, tile, picture, precision);
++        if (tile->comp[0].x1 - tile->comp[0].x0 > 0 && tile->comp[0].y1 - tile->comp[0].y0 > 0)
++            write_frame_16(s, tile, picture, precision);
+@@ -2498,0 +2501,8 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
++     }
++
++    // Validate tile dimensions to prevent buffer overflow
++    if (s->numXtiles <= 0 || s->numYtiles <= 0 || 
++        s->numXtiles > INT_MAX / s->numYtiles) {
++        av_log(avctx, AV_LOG_ERROR, "Invalid tile dimensions\n");
++        ret = AVERROR_INVALIDDATA;
++        goto end;

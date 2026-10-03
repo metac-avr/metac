@@ -1,0 +1,21 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..5dfb1de93 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1039,3 +1039,13 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      if(content != NULL) {
+-	char *double_dot = strchr((char*)content, ':');
+-
++      if(content != NULL && content_len > 0) {
++	/* Use safer approach with length-bound search */
++	char *content_str = (char*)content;
++	char *double_dot = NULL;
++	
++	/* Find ':' within the actual content length */
++	for(size_t i = 0; i < content_len; i++) {
++	  if(content_str[i] == ':') {
++	    double_dot = &content_str[i];
++	    break;
++	  }
++	}
++	

@@ -1,0 +1,28 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index 229d9890251..ef3c8df7dfe 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2325,0 +2326,8 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
++	/* Copy error information before freeing */
++	int error_count = 0;
++	timelib_error_message first_error = {0};
++	if (err && err->error_count > 0) {
++		error_count = err->error_count;
++		first_error = err->error_messages[0];
++	}
++
+@@ -2328 +2336,2 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -2330 +2339 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	if ((flags & PHP_DATE_INIT_CTOR) && err && err->error_count) {
++	if ((flags & PHP_DATE_INIT_CTOR) && error_count > 0) {
+@@ -2333 +2342 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-			err->error_messages[0].position, err->error_messages[0].character, err->error_messages[0].message);
++			first_error.position, first_error.character, first_error.message);
+@@ -2335 +2344 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-	if (err && err->error_count) {
++	if (error_count > 0) {
+@@ -2340 +2348,0 @@ PHPAPI bool php_date_initialize(php_date_obj *dateobj, const char *time_str, siz
+-

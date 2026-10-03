@@ -1,0 +1,25 @@
+diff --git a/main/main.c b/main/main.c
+index d918e0b73ae..a11013b3e3b 100644
+--- a/main/main.c
++++ b/main/main.c
+@@ -1827 +1827,2 @@ void php_request_shutdown(void *dummy)
+-	} zend_end_try();
++	}
++ zend_end_try();
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index eb7ef1624b9..7aadf0fbf50 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3270 +3270,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				/* smart branch opcodes may not initialize result */
++// FIXME: Crash CWE-416: Use After Free
++ 				/* smart branch opcodes may not initialize result */
+@@ -3272,0 +3274,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
++					zval *result = EX_VAR(throw_op->result.var);
++					if (Z_TYPE_P(result) == IS_OBJECT) {
++						zend_object *obj = Z_OBJ_P(result);
++						if (obj && GC_TYPE_INFO(obj) & GC_FREE) {
++							zend_hash_index_del(EG(zend_shutdown_destructors), (zend_ulong)(uintptr_t)result);
++							ZVAL_UNDEF(result);
++						}
++					}

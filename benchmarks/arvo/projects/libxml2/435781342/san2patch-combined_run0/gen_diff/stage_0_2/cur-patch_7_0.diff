@@ -1,0 +1,35 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..90effe2f 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2345 +2345,2 @@ xmlSAX2StartElementNs(void *ctx,
+-		}
++// FIXME: Crash CWE-416: Use After Free
++ 		}
+@@ -2348,0 +2350,7 @@ xmlSAX2StartElementNs(void *ctx,
++            /* Validate attribute immediately after creation to prevent use-after-free */
++            if (attr != NULL && attr->ns != NULL) {
++                xmlNodePtr ns_node = (xmlNodePtr) attr->ns;
++                if (ns_node && ns_node->type != XML_NAMESPACE_DECL) {
++                    attr = NULL; /* Invalidate attribute with invalid namespace */
++                }
++            }
+@@ -2362,0 +2371 @@ xmlSAX2StartElementNs(void *ctx,
++
+diff --git a/valid.c b/valid.c
+index e11d2c95..894ed59f 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
+@@ -2371,0 +2372,6 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
++        /* Validate namespace pointers before use */
++        if (attr->ns != NULL) {
++            /* Check if namespace structure is still accessible */
++            if (attr->ns->prefix == NULL && attr->ns->href == NULL)
++                return(0);
++        }
+@@ -2376 +2382 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);

@@ -1,0 +1,63 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 9f1dd9cf5..cece0ab50 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1209,5 +1209,20 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-        return;
+-      } else {
+-        ndpi_int_http_add_connection(ndpi_struct, flow, NDPI_PROTOCOL_HTTP, NDPI_PROTOCOL_CATEGORY_WEB);
+-      }
+-    }
++void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struct,
++                           struct ndpi_flow_struct *flow) {
++
++  struct ndpi_packet_struct *packet = &flow->packet;
++
++  if(packet->detected_protocol_stack[0] != NDPI_PROTOCOL_UNKNOWN)
++    return;
++
++  NDPI_LOG_DBG(ndpi_struct, "search http tcp\n");
++
++  if((packet->payload_packet_len == 0)
++     || (flow->l4.tcp.http_stage == 0))
++    return;
++
++  if(packet->payload_packet_len >= 768)
++    return;
++
++  if((packet->payload[0] == 'G' || packet->payload[0] == 'H' || packet->payload[0] == 'P')
++     && (packet->payload[1] == 'E' || packet->payload[1] == 'T' || packet->payload[1] == 'O')
++     && (packet->payload[2] == 'T' || packet->payload[2] == 'P' || packet->payload[2] == 'S')) {
+@@ -1216 +1231,4 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-		  "Filename HTTP found: %d, we look for line info..\n", filename_start);
++                  "Found GET/POST/HEAD/OPTIONS/PUT/DELETE/CONNECT method \n");
++
++    ndpi_int_http_add_connection(ndpi_struct, flow, NDPI_PROTOCOL_HTTP, NDPI_PROTOCOL_CATEGORY_WEB);
++  }
+@@ -1217,0 +1236,4 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
++  NDPI_LOG_DBG2(ndpi_struct,
++		"Filename HTTP found: %d, we look for line info..\n", filename_start);
++
++  if (packet->l3_packet_len > 0 && packet->payload) {
+@@ -1219,0 +1242 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
++  }
+@@ -1221,3 +1244,3 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    if(packet->parsed_lines <= 1) {
+-      NDPI_LOG_DBG2(ndpi_struct,
+-		    "Found just one line, we will look further for the next packet...\n");
++  if(packet->parsed_lines <= 1) {
++    NDPI_LOG_DBG2(ndpi_struct,
++		  "Found just one line, we will look further for the next packet...\n");
+@@ -1225,2 +1248,2 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-      packet->http_method.ptr = packet->line[0].ptr;
+-      packet->http_method.len = filename_start - 1;
++    packet->http_method.ptr = packet->line[0].ptr;
++    packet->http_method.len = filename_start - 1;
+@@ -1228,3 +1251,4 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-      /* Encode the direction of the packet in the stage, so we will know when we need to look for the response packet. */
+-      flow->l4.tcp.http_stage = packet->packet_direction + 1; // packet_direction 0: stage 1, packet_direction 1: stage 2
+-      return;
++    /* Encode the direction of the packet in the stage, so we will know when we need to look for the response packet. */
++    flow->l4.tcp.http_stage = packet->packet_direction + 1; // packet_direction 0: stage 1, packet_direction 1: stage 2
++
++  }      return;

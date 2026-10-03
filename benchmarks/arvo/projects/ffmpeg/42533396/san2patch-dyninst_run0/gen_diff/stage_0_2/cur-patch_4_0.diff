@@ -1,0 +1,24 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..3ccb075b13 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -674,4 +674,8 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
+-        if (!dst->u.map)
+-            return AVERROR(ENOMEM);
+-        memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        if (src->nb_channels > 0 && src->nb_channels <= 64) {
++            dst->u.map = av_malloc_array(src->nb_channels, sizeof(*dst->u.map));
++             if (!dst->u.map)
++                return AVERROR(ENOMEM);
++            memcpy(dst->u.map, src->u.map, src->nb_channels * sizeof(*src->u.map));
++        } else {
++            return AVERROR(EINVAL);
++        }
+diff --git a/libavformat/aiffdec.c b/libavformat/aiffdec.c
+index 5314d159ef..bdc008bd84 100644
+--- a/libavformat/aiffdec.c
++++ b/libavformat/aiffdec.c
+@@ -336,0 +337,2 @@ static int aiff_read_header(AVFormatContext *s)
++            if (size > 1024 || size < 0) // Validate CHAN chunk size to prevent buffer overflow
++                return AVERROR_INVALIDDATA;

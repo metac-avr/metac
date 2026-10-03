@@ -1,0 +1,68 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..b667d06ade7 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2325,42 +2325 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-	if (EXPECTED(Z_TYPE_P(container) == IS_ARRAY)) {
+-try_array:
+-		SEPARATE_ARRAY(container);
+-fetch_from_array:
+-		if (dim == NULL) {
+-			retval = zend_hash_next_index_insert(Z_ARRVAL_P(container), &EG(uninitialized_zval));
+-			if (UNEXPECTED(retval == NULL)) {
+-				zend_cannot_add_element();
+-				ZVAL_UNDEF(result);
+-				return;
+-			}
+-		} else {
+-			retval = zend_fetch_dimension_address_inner(Z_ARRVAL_P(container), dim, dim_type, type EXECUTE_DATA_CC);
+-			if (UNEXPECTED(!retval)) {
+-				/* This may fail without throwing if the array was modified while throwing an
+-				 * undefined index error. */
+-				ZVAL_NULL(result);
+-				return;
+-			}
+-		}
+-		ZVAL_INDIRECT(result, retval);
+-		return;
+-	} else if (EXPECTED(Z_TYPE_P(container) == IS_REFERENCE)) {
+-		zend_reference *ref = Z_REF_P(container);
+-		container = Z_REFVAL_P(container);
+-		if (EXPECTED(Z_TYPE_P(container) == IS_ARRAY)) {
+-			goto try_array;
+-		} else if (EXPECTED(Z_TYPE_P(container) <= IS_FALSE)) {
+-			if (type != BP_VAR_UNSET) {
+-				if (ZEND_REF_HAS_TYPE_SOURCES(ref)) {
+-					if (UNEXPECTED(!zend_verify_ref_array_assignable(ref))) {
+-						ZVAL_UNDEF(result);
+-						return;
+-					}
+-				}
+-				array_init(container);
+-				goto fetch_from_array;
+-			} else {
+-				goto return_null;
+-			}
+-		}
+-	}
++	zend_fetch_dimension_address_W
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..aee11056336 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -39832,14 +39832 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_CV_CONST_HAND
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_W_SPEC_CV_CONST_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	zval *container;
+-
+-	SAVE_OPLINE();
+-	container = EX_VAR(opline->op1.var);
+-	zend_fetch_dimension_address_W(container, RT_CONSTANT(opline, opline->op2), IS_CONST OPLINE_CC EXECUTE_DATA_CC);
+-
+-	if (IS_CV == IS_VAR) {
+-		FREE_VAR_PTR_AND_EXTRACT_RESULT_IF_NECESSARY(opline->op1.var);
+-	}
+-	ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
+-}
++static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_W_SPEC_CV_CONST_HANDLER

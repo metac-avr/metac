@@ -1,0 +1,25 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..1fbacf5ae4 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -437,0 +438,5 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    // Prevent use-after-free by checking table validity
++    if (!single || !single->table) {
++        return AVERROR_INVALIDDATA;
++    }
++
+@@ -495 +500 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -497 +502,3 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    ret = vlc_common_end(vlc, nb_bits, j, buf, flags, localbuf);
++    // Store whether we need to free the buffer after vlc_multi_gen
++    int needs_free = (buf != localbuf);
++    ret = vlc_common_end(vlc, nb_bits, j, buf, flags, localbuf, 0);
+@@ -500 +507,5 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-    return vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    ret = vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
++    // Free buffer only after vlc_multi_gen is complete
++    if (needs_free)
++        av_free(buf);
++    return ret;

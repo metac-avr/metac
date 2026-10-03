@@ -1,0 +1,38 @@
+diff --git a/src/lib/ndpi_memory.c b/src/lib/ndpi_memory.c
+index bb8173108..55c614649 100644
+--- a/src/lib/ndpi_memory.c
++++ b/src/lib/ndpi_memory.c
+@@ -106,0 +107,6 @@ char *ndpi_strdup(const char *s) {
++   }
++
++  // Validate pointer before use - additional safety check
++  volatile const char *temp_ptr = s;
++  if(temp_ptr == NULL) {
++    return NULL;
+@@ -109 +115 @@ char *ndpi_strdup(const char *s) {
+-  int len = strlen(s);
++  int len = strlen(temp_ptr);
+@@ -113 +119 @@ char *ndpi_strdup(const char *s) {
+-    memcpy(m, s, len);
++    memcpy(m, temp_ptr, len);
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 7362321aa..4230e6358 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -1574 +1574 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-
++ 
+@@ -1576,2 +1576,4 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      if((flow->ssh_tls.advertised_alpns = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.advertised_alpns)) != NULL)
+-	correct_csv_data_field(flow->ssh_tls.advertised_alpns);
++      if(flow->ndpi_flow->protos.tls_quic.advertised_alpns[0] != '\0') {
++        if((flow->ssh_tls.advertised_alpns = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.advertised_alpns)) != NULL)
++	  correct_csv_data_field(flow->ssh_tls.advertised_alpns);
++      }
+@@ -1581,2 +1583,4 @@ void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_fl
+-      if((flow->ssh_tls.negotiated_alpn = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.negotiated_alpn)) != NULL)
+-	correct_csv_data_field(flow->ssh_tls.negotiated_alpn);
++      if(flow->ndpi_flow->protos.tls_quic.negotiated_alpn[0] != '\0') {
++        if((flow->ssh_tls.negotiated_alpn = ndpi_strdup(flow->ndpi_flow->protos.tls_quic.negotiated_alpn)) != NULL)
++	  correct_csv_data_field(flow->ssh_tls.negotiated_alpn);
++      }

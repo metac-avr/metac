@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..e9d9eaded3b 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2167,0 +2168,9 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++			if (UNEXPECTED(Z_TYPE(p->val) == IS_OBJECT) &&
++			    (Z_OBJ_HANDLER(p->val, dtor_obj) == zend_objects_destroy_object ||
++			     Z_OBJ_HANDLER(p->val, dtor_obj) == zend_objects_store_del)) {
++				zend_object *obj = Z_OBJ(p->val);
++				if (UNEXPECTED(!obj || zend_objects_store_is_free(obj))) {
++					_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++					continue;
++				}
++			}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..ee874957b1e 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55 +55 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-{
++ {
+@@ -56,0 +57,3 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (GC_TYPE(p) == IS_OBJECT && !zend_objects_store_is_valid((zend_object *)p)) {
++		return;
++	}
+@@ -58,11 +61 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-}
+-
+-#if ZEND_DEBUG
+-static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-{
+-	CHECK_ZVAL_STRING(str);
+-	ZEND_ASSERT(!ZSTR_IS_INTERNED(str));
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
+-}
++}}

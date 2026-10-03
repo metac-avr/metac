@@ -1,0 +1,146 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..62815dc2204 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2140,7 +2140,28 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-						}
+-						break;
+-					default:
+-						break;
+-				}
+-				bptr += inc_len;
+-				inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
++static void php_fgetcsv_get_field(
++	php_stream *stream, int delimiter, int enclosure, int escape_char,
++	zval *return_value, zval *values, int keep_binary, int enforce_enclosure)
++{
++	char *temp, *bptr, *line_end, *limit;
++	size_t temp_len, line_end_len;
++	int inc_len;
++	int first_field = 1;
++	zval tmp;
++
++	/* first character of input */
++	if ((inc_len = php_stream_getc(stream)) == EOF) {
++		return;
++	}
++
++	/* allocate a reasonable buffer and read until the end of line, up to
++	 * length limit */
++	temp = emalloc((temp_len = 2 * READ_CSV_BUFFER_SIZE) + 1);
++	bptr = temp;
++	limit = temp + temp_len;
++
++	while (1) {
++		if (inc_len == enclosure) {
++			/* 2A. Handle enclosure field */
++			char *hunk_begin;
++			int in_quotes = 1;
++			if (!first_field) {
++				*bptr++ = delimiter;
+@@ -2147,0 +2169,37 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
++			first_field = 0;
++			inc_len = php_stream_getc(stream);
++
++			do {
++				/* Check if we have enough room */
++				if (bptr > limit - 2) {
++					size_t offset = bptr - temp;
++					temp = safe_erealloc(temp, temp_len, 2 * READ_CSV_BUFFER_SIZE + 1, 0);
++					temp_len += 2 * READ_CSV_BUFFER_SIZE;
++					bptr = temp + offset;
++					limit = temp + temp_len;
++				}
++
++				if (inc_len == EOF) {
++					goto quit_loop_3;
++				}
++
++				if (inc_len == escape_char && escape_char != delimiter) {
++					int next = php_stream_getc(stream);
++					if (next == EOF) {
++						goto quit_loop_3;
++					}
++					inc_len = next;
++				} else if (inc_len == enclosure) {
++					int next = php_stream_getc(stream);
++					if (next == enclosure) {
++						inc_len = next;
++					} else {
++						in_quotes = 0;
++						inc_len = next;
++						continue;
++					}
++				}
++
++				*bptr++ = (char) inc_len;
++				inc_len = php_stream_getc(stream);
++			} while (in_quotes);
+@@ -2150,4 +2208,5 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-			tptr += (bptr - hunk_begin);
+-			bptr += inc_len;
+-			comp_end = tptr;
++			if (bptr < temp) {
++				bptr = temp;
++			}
++			line_end = bptr;
++			line_end_len = bptr - temp;
+@@ -2155,0 +2215,6 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
++			char *hunk_begin;
++			int field_len = 0;
++			if (!first_field) {
++				*bptr++ = delimiter;
++			}
++			first_field = 0;
+@@ -2157 +2222,9 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			hunk_begin = bptr;
++			do {
++				/* Check if we have enough room */
++				if (bptr > limit - 2) {
++					size_t offset = bptr - temp;
++					temp = safe_erealloc(temp, temp_len, 2 * READ_CSV_BUFFER_SIZE + 1, 0);
++					temp_len += 2 * READ_CSV_BUFFER_SIZE;
++					bptr = temp + offset;
++					limit = temp + temp_len;
++				}
+@@ -2159,3 +2232,36 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			for (;;) {
+-				switch (inc_len) {
+-					case 0:
++				if (inc_len == EOF) {
++					goto quit_loop_4;
++				}
++				if (inc_len == delimiter) {
++					break;
++				}
++				if (inc_len == escape_char && escape_char != delimiter) {
++					int next = php_stream_getc(stream);
++					if (next == EOF) {
++						goto quit_loop_4;
++					}
++					inc_len = next;
++				}
++				*bptr++ = (char) inc_len;
++				field_len++;
++				inc_len = php_stream_getc(stream);
++			} while (1);
++
++		quit_loop_4:
++			line_end = bptr;
++			line_end_len = bptr - temp;
++		}
++
++		/* skip leading spaces in non-enclosure field */
++		if (first_field) {
++			/* no need to handle */
++		}
++
++		ZVAL_STRINGL(&tmp, line_end, line_end_len, 0);
++		zend_hash_next_index_insert(Z_ARRVAL_P(values), &tmp);
++	}
++
++	if (temp) {
++		efree(temp);
++	}
++}					case 0:

@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..dc1b549954b 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40396 +40396,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-			} else {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			} else {
+@@ -40398 +40399,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-				ZVAL_COPY(&ref->val, get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R));
++				zval *src_val = get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R);
++				if (src_val && Z_REFCOUNTED_P(src_val) && !Z_ISUNDEF_P(src_val)) {
++					ZVAL_COPY(&ref->val, src_val);
++				} else {
++					ZVAL_UNDEF(&ref->val);
++				}

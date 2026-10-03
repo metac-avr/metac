@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..aaa9dcb45c2 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1433,0 +1434,3 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++	if (ht->nInternalPointer == idx) {
++		ht->nInternalPointer = Z_NEXT(p->val);
++	}
+@@ -2145,0 +2149,6 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++		Bucket *buckets_copy;
++		uint32_t num_used_copy;
++
++		num_used_copy = ht->nNumUsed;
++		buckets_copy = emalloc(num_used_copy * sizeof(Bucket));
++		memcpy(buckets_copy, ht->arData, num_used_copy * sizeof(Bucket));
+@@ -2149 +2158 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-			p = ht->arData + idx;
++			p = buckets_copy + idx;
+@@ -2156 +2165 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
+-				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), p);
++				_zend_hash_del_el(ht, HT_IDX_TO_HASH(idx), ht->arData + idx);
+@@ -2161,0 +2171 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++		efree(buckets_copy);

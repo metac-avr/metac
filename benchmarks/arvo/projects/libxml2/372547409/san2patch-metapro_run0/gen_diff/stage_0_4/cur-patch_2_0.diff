@@ -1,0 +1,41 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..42daddc7 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1866 +1865,0 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-
+@@ -1874 +1873,2 @@ xmlAddAttributeDecl(xmlValidCtxtPtr ctxt,
+-static void
++// Fixed CWE-416: Use After Free - Defensive programming approach
++ static void
+@@ -1876 +1876,7 @@ xmlFreeAttributeTableEntry(void *attr, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeAttribute((xmlAttributePtr) attr);
++    xmlAttributePtr attribute = (xmlAttributePtr) attr;
++    
++    // Check for valid pointer before attempting to free
++    if (attribute != NULL) {
++        // Additional sanity check could be added here if needed
++        xmlFreeAttribute(attribute);
++    }
+@@ -1886,2 +1892 @@ void
+-xmlFreeAttributeTable(xmlAttributeTablePtr table) {
+-    xmlHashFree(table, xmlFreeAttributeTableEntry);
++xmlFreeAttributeTable(xmlAttributeTablePtr table) {    xmlHashFree(table, xmlFreeAttributeTableEntry);
+@@ -5982,7 +5986,0 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
+-
+@@ -5990 +5988,2 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    attr = elemDecl->attributes;
++// FIXME: Crash CWE-416: Use After Free
++     attr = elemDecl->attributes;
+@@ -5992 +5991 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	if (attr->def == XML_ATTRIBUTE_REQUIRED) {
++	if (attr != NULL && attr->def == XML_ATTRIBUTE_REQUIRED) {
+@@ -5994,0 +5994,2 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
++	    if (attr == NULL) continue;  /* Skip if attribute was freed */
++

@@ -1,0 +1,20 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..46a21d226 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -831 +831,5 @@ void gf_net_close_capture()
+-		gf_free(nf);
++		// Validate pointer before freeing to avoid double-free
++		if (nf) {
++			gf_free(nf);
++			nf = NULL;
++		}
+@@ -1484 +1488,7 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
++		// Guard against use-after-free by validating context
++		if (nf == NULL) {
++			return;
++		}
++		

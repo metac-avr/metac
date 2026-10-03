@@ -1,0 +1,24 @@
+diff --git a/dict.c b/dict.c
+index 90e4d814..3dd3e46b 100644
+--- a/dict.c
++++ b/dict.c
+@@ -269 +269,2 @@ xmlDictAddString(xmlDictPtr dict, const xmlChar *name, unsigned int namelen) {
+-        if (size < 4 * namelen)
++/* Addressed CWE-763: Ensure sufficient buffer size to prevent invalid pointer dereference */
++         if (size < 4 * namelen)
+diff --git a/tree.c b/tree.c
+index 50b6763b..5d46c28c 100644
+--- a/tree.c
++++ b/tree.c
+@@ -7291 +7291 @@ xmlBufferShrink(xmlBufferPtr buf, unsigned int len) {
+-	    if (start_buf >= buf->size) {
++	    if (start_buf >= buf->size && buf->contentIO != NULL) {
+@@ -7298,3 +7298,5 @@ xmlBufferShrink(xmlBufferPtr buf, unsigned int len) {
+-    } else {
+-	memmove(buf->content, &buf->content[len], buf->use);
+-	buf->content[buf->use] = 0;
++     } else {
++	if (buf->content != NULL) {
++	    memmove(buf->content, &buf->content[len], buf->use);
++	    buf->content[buf->use] = 0;
++	}

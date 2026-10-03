@@ -1,0 +1,28 @@
+diff --git a/libavcodec/bytestream.h b/libavcodec/bytestream.h
+index 67080604b9..ee40fd9bfd 100644
+--- a/libavcodec/bytestream.h
++++ b/libavcodec/bytestream.h
+@@ -92 +92,2 @@ DEF(uint64_t,     le64, 8, AV_RL64, AV_WL64)
+-DEF(unsigned int, le32, 4, AV_RL32, AV_WL32)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ DEF(unsigned int, le32, 4, AV_RL32, AV_WL32)
+@@ -104,2 +105 @@ DEF(unsigned int, byte, 1, AV_RB8 , AV_WB8)
+-#   define bytestream2_get_ne32  bytestream2_get_be32
+-#   define bytestream2_get_ne64  bytestream2_get_be64
++#   define bytestream2_get_ne32  bytestream2_get_be32#   define bytestream2_get_ne64  bytestream2_get_be64
+diff --git a/libavcodec/parser.c b/libavcodec/parser.c
+index efc28b8918..206eca5222 100644
+--- a/libavcodec/parser.c
++++ b/libavcodec/parser.c
+@@ -161 +161 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
+-    }
++     }
+@@ -163,2 +163,6 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
+-    index = s->parser->parser_parse(s, avctx, (const uint8_t **) poutbuf,
+-                                    poutbuf_size, buf, buf_size);
++    if (buf_size >= 0) {  // Add bounds check to prevent out-of-bounds read
++        index = s->parser->parser_parse(s, avctx, (const uint8_t **) poutbuf,
++                                        poutbuf_size, buf, buf_size);
++    } else {
++        index = 0;  // Return safe default when buffer size is invalid
++    }

@@ -1,0 +1,55 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..ba4bb079 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2491,13 +2491,6 @@ static void
+-xmlFreeID(xmlIDPtr id) {
+-    xmlDictPtr dict = NULL;
+-
+-    if (id == NULL) return;
+-
+-    if (id->doc != NULL)
+-        dict = id->doc->dict;
+-
+-    if (id->value != NULL)
+-	DICT_FREE(id->value)
+-    if (id->name != NULL)
+-	DICT_FREE(id->name)
+-    xmlFree(id);
++xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    if (idPtr != NULL) {
++        idPtr->doc = NULL;  // Clear document reference before freeing
++        xmlFreeID(idPtr);
++    }
+@@ -2636,9 +2629,2 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
+-        }
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+-static void
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static void
+@@ -2646,12 +2632,6 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    if (idPtr != NULL) {
++        idPtr->doc = NULL;  // Clear document reference before freeing
++        xmlFreeID(idPtr);
++    }
++}    xmlHashFree(table, xmlFreeIDTableEntry);

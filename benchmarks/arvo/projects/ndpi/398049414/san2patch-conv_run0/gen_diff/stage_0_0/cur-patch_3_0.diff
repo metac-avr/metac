@@ -1,0 +1,32 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 8d2f4dd7f..b4f9ac2ea 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -3274 +3274,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		char buf[256], *tmp, *item;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		char buf[256], *tmp, *item;
+@@ -3276 +3277,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
++		/* Validate pointer before use to prevent out-of-bounds read */
++		if(flow->protos.tls_quic.advertised_alpns != NULL) {
++		  snprintf(buf, sizeof(buf), "%s", flow->protos.tls_quic.advertised_alpns);
+@@ -3278 +3281 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		item = strtok_r(buf, ",", &tmp);
++		  item = strtok_r(buf, ",", &tmp);
+@@ -3280,7 +3283,8 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		while(item != NULL) {
+-		  if(item[0] == 'h') {
+-		    /* Example 'h2' */
+-		    ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_ALPN_SNI_MISMATCH, item);
+-		    break;
+-		  } else
+-		    item = strtok_r(NULL, ",", &tmp);
++		  while(item != NULL) {
++		    if(item[0] == 'h') {
++		      /* Example 'h2' */
++		      ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_ALPN_SNI_MISMATCH, item);
++		      break;
++		    } else
++		      item = strtok_r(NULL, ",", &tmp);
++		  }

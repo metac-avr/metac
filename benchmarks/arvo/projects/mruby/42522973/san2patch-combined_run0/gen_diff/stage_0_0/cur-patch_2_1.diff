@@ -1,0 +1,18 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..c4b54bdc3 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1049,3 +1049,7 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc->gray_list = obj->gcnext;
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj->tt != MRB_TT_FREE) {
++      gc->gray_list = obj->gcnext;
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    } else {
++      gc->gray_list = obj->gcnext;
++    }
+@@ -1155,0 +1160,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Reset page pointers before freeing to prevent dangling references */
++      memset(page, 0, sizeof(mrb_heap_page));

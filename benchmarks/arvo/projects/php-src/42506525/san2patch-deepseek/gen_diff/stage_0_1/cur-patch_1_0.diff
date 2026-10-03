@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..8198e7edef7 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -249,5 +249,8 @@ void shutdown_destructors(void) /* {{{ */
+-		uint32_t symbols;
+-		do {
+-			symbols = zend_hash_num_elements(&EG(symbol_table));
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
+-		} while (symbols != zend_hash_num_elements(&EG(symbol_table)));
++		zval *zv;
++// FIXME: Crash CWE-416: Use After Free
++		while ((zv = zend_hash_get_current_data_ex(&EG(symbol_table), NULL)) != NULL) {
++			zval tmp;
++			ZVAL_COPY_VALUE(&tmp, zv);
++			zend_hash_del_key_or_index(&EG(symbol_table), NULL, zend_hash_get_current_key_type_ex(&EG(symbol_table), NULL));
++			zval_call_destructor(&tmp);
++		}

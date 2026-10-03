@@ -1,0 +1,34 @@
+diff --git a/src/lib/protocols/zoom.c b/src/lib/protocols/zoom.c
+index 4ffad391a..f33db07bc 100644
+--- a/src/lib/protocols/zoom.c
++++ b/src/lib/protocols/zoom.c
+@@ -205,10 +205,19 @@ static void ndpi_search_zoom(struct ndpi_detection_module_struct *ndpi_struct,
+-    ip_len = ntohl(*(u_int32_t *)&packet->payload[24]);
+-
+-    if(24 + 4 + ip_len + 4 < packet->payload_packet_len) {
+-      uuid_len = ntohl(*(u_int32_t *)&packet->payload[24 + 4 + ip_len]);
+-
+-      if(packet->payload_packet_len == 24 + 4 + ip_len + 4 + uuid_len + 4) {
+-        NDPI_LOG_DBG(ndpi_struct, "found P2P Zoom\n");
+-        flow->l4.udp.zoom_p2p = 1;
+-        ndpi_int_zoom_add_connection(ndpi_struct, flow, NDPI_PROTOCOL_UNKNOWN);
+-        return;
++    // Bounds checking added before each memory access
++    if ((packet->payload_packet_len > 27) && (packet->payload_packet_len >= 28)) { // Verify we can read at offset 24 for ip_len
++      ip_len = ntohl(*(u_int32_t *)&packet->payload[24]);
++      
++      // Validate intermediate calculation won't overflow and stays within bounds
++      if ((ip_len <= (packet->payload_packet_len - 28)) && (24 + 4 + ip_len + 4 < packet->payload_packet_len)) {
++        size_t uuid_offset = 24 + 4 + ip_len;
++        // Ensure uuid_len can be read safely
++        if ((uuid_offset + 4) <= packet->payload_packet_len) {
++          uuid_len = ntohl(*(u_int32_t *)&packet->payload[uuid_offset]);
++          
++          // Final comprehensive boundary check
++          if(packet->payload_packet_len == 24 + 4 + ip_len + 4 + uuid_len + 4) {
++            NDPI_LOG_DBG(ndpi_struct, "found P2P Zoom\n");
++            flow->l4.udp.zoom_p2p = 1;
++            ndpi_int_zoom_add_connection(ndpi_struct, flow, NDPI_PROTOCOL_UNKNOWN);
++            return;
++          }
++        }

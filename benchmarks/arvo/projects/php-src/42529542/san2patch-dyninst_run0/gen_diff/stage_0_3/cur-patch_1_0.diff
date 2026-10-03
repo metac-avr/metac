@@ -1,0 +1,44 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index feeff659bd5..6c72e0d3eb5 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -653 +653,4 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return EG(opline_before_exception)->lineno;
++			/* Check both pointer validity and execution context to prevent expired pointer dereference */
++			if (EG(opline_before_exception) && EG(current_execute_data) == ex) {
++				return EG(opline_before_exception)->lineno;
++			}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..9c7cdfaa83a 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -333,5 +332,0 @@ static zval* ZEND_FASTCALL zend_jit_symtable_lookup_w(HashTable *ht, zend_string
+-	} while (0);
+-
+-	return zend_hash_lookup(ht, str);
+-}
+-
+@@ -341 +336 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++	zend_string *cv;
+@@ -343 +338,7 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++	/* Check if the execution context is still valid */
++	if (execute_data && EX(func)) {
++		cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++		zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++	} else {
++		zend_error(E_WARNING, "Undefined variable");
++	}
+@@ -345,10 +346 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-}
+-
+-static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint32_t var)
+-{
+-	const zend_execute_data *execute_data = EG(current_execute_data);
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
+-
+-	/* The array may be destroyed while throwing the notice.
+-	 * Temporarily increase the refcount to detect this situation. */
+-	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
++}	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {

@@ -1,0 +1,35 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..5f086f464 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -148,0 +150,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  /* Defensive check for null ptr */
++  if (t->ptr == NULL) return 0;
++  
+@@ -150,0 +155,4 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  
++  /* Validate memory access before proceeding */
++  if ((uintptr_t)keys < 0x1000 || (uintptr_t)vals < 0x1000) return 0;
++  
+@@ -155 +163 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-  if (pos < t->alloc) {
++  if (pos < t->alloc && pos >= 0) {
+@@ -166,0 +175,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    /* Bounds checking to prevent expired pointer dereference */
++    if (pos < 0 || pos >= t->alloc) return 0;
+diff --git a/src/vm.c b/src/vm.c
+index 6f6b9b001..13bdaeddd 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1273 +1273,6 @@ mrb_vm_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int sta
+-  stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++  
++  // Add null check before accessing c->ci->stack to prevent expired pointer dereference
++  if (c->ci != NULL && &c->ci->stack != NULL) {
++    stack_clear(c->ci->stack + stack_keep, nregs - stack_keep);
++  }
++  

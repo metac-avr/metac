@@ -1,0 +1,39 @@
+diff --git a/parser.c b/parser.c
+index 14288713..01e0e618 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4979 +4979,33 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-
++// FIXME: Crash CWE-787: Out-of-bounds Write
++	if (cur != 0) {
++		if (len + 1 >= size) {
++			size_t newSize;
++			if (size > (len + 1))
++				newSize = size * 2;
++			else
++				newSize = len + 2;
++			if (newSize < len + 2)
++				newSize = len + 2;
++			xmlChar *newBuf = (xmlChar *)xmlRealloc(buf, newSize);
++			if (newBuf == NULL) {
++				xmlFree(buf);
++				xmlFatalErr(ctxt, XML_ERR_NO_MEMORY, NULL);
++				return;
++			}
++			buf = newBuf;
++			size = newSize;
++		}
++		buf[len++] = cur;
++	}
++ 
++    }
++    if (len >= size) {
++	size_t newSize = len + 1;
++	xmlChar *newBuf = (xmlChar *)xmlRealloc(buf, newSize);
++	if (newBuf == NULL) {
++		xmlFree(buf);
++		xmlFatalErr(ctxt, XML_ERR_NO_MEMORY, NULL);
++		return;
++	}
++	buf = newBuf;
++	size = newSize;

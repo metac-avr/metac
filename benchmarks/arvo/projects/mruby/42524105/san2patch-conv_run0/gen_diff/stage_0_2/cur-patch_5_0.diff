@@ -1,0 +1,38 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..198a02752 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -212,4 +212,13 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-  shared->refcnt--;
+-  if (shared->refcnt == 0) {
+-    mrb_free(mrb, shared->ptr);
+-    mrb_free(mrb, shared);
++  // Add validation checks to prevent use-after-free
++  if (shared == NULL) return;
++  
++  // Atomic decrement with validation
++  if (__atomic_load_n(&shared->refcnt, __ATOMIC_RELAXED) > 0) {
++    __atomic_fetch_sub(&shared->refcnt, 1, __ATOMIC_RELEASE);
++    if (__atomic_load_n(&shared->refcnt, __ATOMIC_ACQUIRE) == 0) {
++      void* ptr = __atomic_exchange_n(&shared->ptr, NULL, __ATOMIC_SEQ_CST);
++      if (ptr) {
++        mrb_free(mrb, ptr);
++      }
++      mrb_free(mrb, shared);
++    }
+@@ -254,4 +263,11 @@ mrb_gc_free_str(mrb_state *mrb, struct RString *str)
+-  else if (RSTR_SHARED_P(str))
+-    str_decref(mrb, str->as.heap.aux.shared);
+-  else if (!RSTR_NOFREE_P(str) && !RSTR_FSHARED_P(str))
+-    mrb_free(mrb, str->as.heap.ptr);
++  else if (RSTR_SHARED_P(str)) {
++    if (str->as.heap.aux.shared != NULL) {
++      str_decref(mrb, str->as.heap.aux.shared);
++    }
++  }
++  else if (!RSTR_NOFREE_P(str) && !RSTR_FSHARED_P(str)) {
++    if (str->as.heap.ptr) {
++      mrb_free(mrb, str->as.heap.ptr);
++      str->as.heap.ptr = NULL;
++    }
++  }

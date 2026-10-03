@@ -1,0 +1,22 @@
+diff --git a/tree.c b/tree.c
+index 09c82336..23377c3e 100644
+--- a/tree.c
++++ b/tree.c
+@@ -1476,7 +1476,10 @@ xmlNodeListGetStringInternal(const xmlNode *node, int escape, int flags) {
+-                    xmlChar *encoded;
+-
+-                    encoded = xmlEscapeText(node->content, flags);
+-                    if (encoded == NULL)
+-                        goto error;
+-                    xmlBufCat(buf, encoded);
+-                    xmlFree(encoded);
++// FIXME: Crash CWE-562: Return of Stack Variable Address - Fixed by using xmlEscapeText directly without storing pointer
++                     xmlChar tempBuf[TEMP_BUF_SIZE];
++                     int len;
++
++                     len = xmlEscapeContent(tempBuf, TEMP_BUF_SIZE, node->content, flags);
++                     if (len >= 0) {
++                         xmlBufAdd(buf, tempBuf, len);
++                     } else {
++                         goto error;
++                     }

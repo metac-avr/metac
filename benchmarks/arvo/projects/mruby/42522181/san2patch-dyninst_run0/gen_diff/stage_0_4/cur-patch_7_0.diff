@@ -1,0 +1,34 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..520911453 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1203,4 +1203,9 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++      /* Ensure page is valid before freeing to prevent UAF */
++      if (page) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      } else {
++        page = next;
++      }
+@@ -1252 +1257 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    /* unknown state */
++/* unknown state */
+@@ -1260,2 +1265,4 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
+-{
+-  do {
++// FIXME: Crash CWE-416: Use After Free
++ {
++  /* Complete all remaining GC work before finishing */
++  while (gc->state != MRB_GC_STATE_ROOT) {
+@@ -1263 +1270,4 @@ incremental_gc_finish(mrb_state *mrb, mrb_gc *gc)
+-  } while (gc->state != MRB_GC_STATE_ROOT);
++  }
++  
++  /* Prevent further marking operations */
++  gc->stage = GC_STAGE_FINISHED;

@@ -1,0 +1,21 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..cd37ad00 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -421 +421,2 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     */
++// Security Fix: Prevent out-of-bounds read (CWE-125)
++      */
+@@ -423 +424,5 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-    c = *cur;
++    if (cur == NULL || cur >= ctxt->input->end) {
++        c = 0;
++    } else {
++        c = *cur;
++    }
+@@ -3130 +3135,4 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
+-	cur = CUR_CHAR(l);
++	if ((ctxt->input != NULL) && (ctxt->input->cur < ctxt->input->end))
++	    cur = CUR_CHAR(l);
++	else 
++	    cur = 0;

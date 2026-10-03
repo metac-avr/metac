@@ -1,0 +1,37 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..d6fe647c7 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1034 +1034,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-      size_t content_len;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++       size_t content_len;
+@@ -1037 +1038 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-					   packet->authorization_line.len - len, &content_len);
++				   packet->authorization_line.len - len, &content_len);
+@@ -1040 +1041,10 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
++	// Use bounded string search instead of strchr
++	char *double_dot = NULL;
++	if(content_len > 0) {
++	  for(size_t i = 0; i < content_len; i++) {
++	    if(((char*)content)[i] == ':') {
++	      double_dot = (char*)&content[i];
++	      break;
++	    }
++	  }
++	}
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..f00b420e0 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -956 +956 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++ 
+@@ -958 +958 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-  pos = out = ndpi_malloc(olen);
++  pos = out = ndpi_malloc(olen + 1); // Add space for null terminator
+@@ -992,0 +993,3 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++  if (*out_len < olen + 1) {  // Ensure we don't exceed bounds
++    out[*out_len] = '\0';     // Null terminate safely
++  }

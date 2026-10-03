@@ -1,0 +1,28 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..ec6c32cfca 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -437,0 +438,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    // Validate inputs and prevent use-after-free
++    if (!table || !single || !buf) {
++        av_log(logctx, AV_LOG_ERROR, "Null pointer in vlc_multi_gen\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    // Safe table copying with validity checks
+@@ -438,0 +446,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++        // Ensure single->table is valid before access
++        if (!single->table) {
++            av_log(logctx, AV_LOG_ERROR, "Expired pointer dereference detected\n");
++            return AVERROR_INVALIDDATA;
++        }
++        
++        // Access memory only if valid
+@@ -495 +509 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -503,0 +518,4 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    if (multi->table) {
++        av_free(multi->table);
++        multi->table = NULL;
++    }

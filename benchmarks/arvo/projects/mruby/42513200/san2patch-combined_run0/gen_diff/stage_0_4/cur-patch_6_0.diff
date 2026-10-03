@@ -1,0 +1,20 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..2927cfc47 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1730 +1730,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-            check_method_noarg(mrb, ci);
++// FIXME: Crash CWE-190: Integer Overflow or Wraparound
++             check_method_noarg(mrb, ci);
+@@ -1755,0 +1757,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Check for potential integer overflow before assignment */
++        if ((uintptr_t)ci->stack + sizeof(mrb_value) < (uintptr_t)ci->stack) {
++          mrb->exc = mrb_obj_ptr(mrb_exc_new_str_lit(mrb, E_RUNTIME_ERROR, "Integer overflow detected"));
++          goto L_RAISE;
++        }
+@@ -1767,0 +1774,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++        /* Validate nregs to prevent integer overflow */
++        if (irep->nregs > (SIZE_MAX - 4) / sizeof(mrb_value)) {
++          mrb->exc = mrb_obj_ptr(mrb_exc_new_str_lit(mrb, E_RUNTIME_ERROR, "Integer overflow in stack extension"));
++          goto L_RAISE;
++        }

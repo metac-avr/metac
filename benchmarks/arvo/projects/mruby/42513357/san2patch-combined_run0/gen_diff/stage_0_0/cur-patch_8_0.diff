@@ -1,0 +1,22 @@
+diff --git a/src/numeric.c b/src/numeric.c
+index 27a7cb8c3..bc9529a6b 100644
+--- a/src/numeric.c
++++ b/src/numeric.c
+@@ -1793 +1793,16 @@ int_to_s(mrb_state *mrb, mrb_value self)
+-    return mrb_bint_to_s(mrb, self, base);
++    /* Implement safe string conversion with bounds checking */
++    mrb_value bint_result = mrb_bint_to_s(mrb, self, base);
++    if (mrb_string_p(bint_result)) {
++      /* Check for proper null termination */
++      mrb_int len = RSTRING_LEN(bint_result);
++      const char* ptr = RSTRING_PTR(bint_result);
++      if (len >= 0) {
++        /* Verify we don't go out of bounds */
++        char* safe_ptr = (char*)ptr;
++        if (len == 0 || safe_ptr[len-1] != '\0') {
++          /* Ensure safe termination */
++          mrb_str_cat_lit(mrb, bint_result, "");
++        }
++      }
++    }
++    return bint_result;

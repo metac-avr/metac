@@ -1,0 +1,149 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..997ae6cb9 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381 +2381,84 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
++static void ndpi_search_tls(struct ndpi_detection_module_struct *ndpi_struct,
++			     struct ndpi_flow_struct *flow)
++{
++  struct ndpi_packet_struct *packet = &flow->packet;
++
++  if(packet->detected_protocol_stack[0] != NDPI_PROTOCOL_TLS)
++    return;
++
++  if(flow->l4.tcp.tls_stage == 0) {
++    if(packet->payload_packet_len >= 5) {
++      u_int16_t tls_version = ntohs(*((u_int16_t*)&packet->payload[1]));
++      
++      if(tls_version >= 0x0301 && tls_version <= 0x0304) {
++	/* TLS detected */
++	NDPI_LOG_INFO(ndpi_struct, "found TLS");
++	ndpi_set_detected_protocol(ndpi_struct, flow, NDPI_PROTOCOL_TLS, NDPI_PROTOCOL_UNKNOWN);
++	flow->l4.tcp.tls_stage = 1;
++	return;
++      }
++    }
++  } else if(flow->l4.tcp.tls_stage == 1) {
++    if(packet->payload_packet_len >= 11) {
++      u_int8_t handshake_type = packet->payload[5];
++      u_int32_t total_len = ntohl(*((u_int32_t*)&packet->payload[1])) >> 8;
++      u_int32_t s_offset = 43; /* Skip TLS header + handshake header */
++      
++      if(handshake_type == 0x01 /* Client Hello */) {
++	if(total_len > packet->payload_packet_len - 5) {
++	  NDPI_LOG_INFO(ndpi_struct, "incomplete Client Hello");
++	  return;
++	}
++	
++	/* Skip session ID */
++	if(s_offset + 1 < total_len) {
++	  u_int8_t session_id_len = packet->payload[s_offset];
++	  s_offset += 1 + session_id_len;
++	}
++	
++	/* Skip cipher suites */
++	if(s_offset + 2 < total_len) {
++	  u_int16_t cipher_suites_len = ntohs(*((u_int16_t*)&packet->payload[s_offset]));
++	  s_offset += 2 + cipher_suites_len;
++	}
++	
++	/* Skip compression methods */
++	if(s_offset + 1 < total_len) {
++	  u_int8_t compression_methods_len = packet->payload[s_offset];
++	  s_offset += 1 + compression_methods_len;
++	}
++	
++	/* Parse extensions */
++	if(s_offset + 2 < total_len) {
++	  u_int16_t extensions_len = ntohs(*((u_int16_t*)&packet->payload[s_offset]));
++	  s_offset += 2;
++	  
++	  while(s_offset + 4 < total_len && extensions_len > 0) {
++	    u_int16_t extension_id = ntohs(*((u_int16_t*)&packet->payload[s_offset]));
++	    u_int16_t extension_len = ntohs(*((u_int16_t*)&packet->payload[s_offset + 2]));
++	    s_offset += 4;
++	    
++	    if(s_offset + extension_len <= total_len) {
++	      if(extension_id == 10 /* supported_groups */ && extension_len >= 2) {
++		u_int16_t groups_len = ntohs(*((u_int16_t*)&packet->payload[s_offset]));
++		
++		if(groups_len + 2 <= extension_len) {
++		  for(u_int16_t i = 0; i < groups_len/2 && i < MAX_NUM_JA; i++) {
++		    flow->protos.tls_quic.server_supported_groups[i] = 
++		      ntohs(*((u_int16_t*)&packet->payload[s_offset + 2 + i*2]));
++		  }
++		  flow->protos.tls_quic.num_server_supported_groups = 
++		    ndpi_min(groups_len/2, MAX_NUM_JA);
++		}
++	      } else if(extension_id == 13 /* signature_algorithms */ && extension_len >= 2) {
++		u_int16_t sa_size = ntohs(*((u_int16_t*)&packet->payload[s_offset])) / 2;
++		u_int16_t tot_signature_algorithms_len = ntohs(*((u_int16_t*)&packet->payload[s_offset]));
++		
++#ifdef DEBUG_TLS
++		NDPI_LOG_DBG2(ndpi_struct, "Signature algorithms size: %u\n", sa_size);
++		if(sa_size > 0 && s_offset + 2 + 2*sa_size <= total_len) {
++		  NDPI_LOG_DBG2(ndpi_struct, "Signature algorithms dump: ");
++		  for(u_int16_t j = 0; j < 2*sa_size && j < 32; j++) {
++		    NDPI_LOG_DBG2(ndpi_struct, "%02X ", packet->payload[s_offset + 2 + j]);
++		  }
++		  NDPI_LOG_DBG2(ndpi_struct, "\n");
+@@ -2385 +2468 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++		flow->protos.tls_quic.client_num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+@@ -2387,5 +2470,10 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++		for(u_int16_t i = 0, id = 0; i < tot_signature_algorithms_len && s_offset + 2 + i < total_len; i++) {
++		  if(s_offset + 2 + i < total_len) {  // Bounds check for read operation
++		    int rc = ndpi_snprintf(&flow->protos.tls_quic.client_signature_algorithms_str[i*2],
++					   sizeof(flow->protos.tls_quic.client_signature_algorithms_str)-i*2,
++					   "%02X", packet->payload[s_offset + 2 + i]);
++		    
++		    if(s_offset + 2 + i*2 + 1 < total_len) {  // Bounds check for 16-bit read
++		      flow->protos.tls_quic.client_signature_algorithms[id++] = 
++			ntohs(*(u_int16_t*)&packet->payload[s_offset + 2 + i*2]);
++		    }
+@@ -2393 +2481,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
++		    if(rc < 0) break;
++		  }
+@@ -2395,8 +2484,27 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+-
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++	      } else if(extension_id == 16 /* application_layer_protocol_negotiation */ &&
++			extension_len >= 3) {
++		u_int16_t alpn_len = ntohs(*((u_int16_t*)&packet->payload[s_offset]));
++		
++		if(alpn_len + 2 <= extension_len) {
++		  u_int8_t protocol_name_len = packet->payload[s_offset + 2];
++		  
++		  if(protocol_name_len + 3 <= extension_len) {
++		    memcpy(flow->protos.tls_quic.alpn, 
++			   &packet->payload[s_offset + 3], 
++			   ndpi_min(protocol_name_len, sizeof(flow->protos.tls_quic.alpn) - 1));
++		    flow->protos.tls_quic.alpn[ndpi_min(protocol_name_len, sizeof(flow->protos.tls_quic.alpn) - 1)] = '\0';
++		  }
++		}
++	      }
++	    }
++	    
++	    s_offset += extension_len;
++	    extensions_len -= (4 + extension_len);
++	  }
++	}
++      }
++    }
++    
++    flow->l4.tcp.tls_stage = 2;
++  }
++}		    continue;

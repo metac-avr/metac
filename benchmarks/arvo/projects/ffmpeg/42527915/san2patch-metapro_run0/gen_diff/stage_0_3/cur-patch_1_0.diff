@@ -1,0 +1,21 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..5a2fe89aa0 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -428,0 +429,4 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    // Validate inputs to prevent use-after-free
++    if (!table || !single || !single->table || !buf)
++        return AVERROR_INVALIDDATA;
++
+@@ -495 +499 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
+-        }
++         }
+@@ -499,0 +504,8 @@ int ff_init_vlc_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int
++    
++    // Fix: Check if multi->table is valid before using it
++    if (!multi->table) {
++        if (buf != localbuf)
++            av_free(buf);
++        return AVERROR(ENOMEM);
++    }
++    

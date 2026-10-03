@@ -1,0 +1,22 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..f31eac800 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -198 +198,2 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
+@@ -200 +201,5 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-    stack_extend_alloc(mrb, room);
++    if (room > 0 && room <= MRB_STACK_MAX) {
++      stack_extend_alloc(mrb, room);
++    } else if (room > MRB_STACK_MAX) {
++      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
+@@ -515 +520 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++      if (argc > 0 && ci->stack + argc + 1 <= mrb->c->stend)
+@@ -517 +522,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[argc+1] = blk;
++      if (ci->stack + argc + 1 <= mrb->c->stend)
++        ci->stack[argc+1] = blk;

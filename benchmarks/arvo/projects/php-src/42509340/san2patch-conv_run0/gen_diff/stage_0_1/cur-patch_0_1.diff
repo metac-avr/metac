@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 63a3112405b..3c8823c75cd 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -1170 +1170,3 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_leave_helper
+-			i_free_compiled_variables(execute_data);
++			if (EXPECTED(execute_data != NULL)) {
++				i_free_compiled_variables(execute_data);
++			}
+@@ -3071 +3073,7 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_dispatch_try
+-		ZEND_VM_TAIL_CALL(zend_leave_helper_SPEC(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));
++		/* Prevent expired pointer dereference by checking if prev_execute_data is valid */
++		if (EX(prev_execute_data) != NULL) {
++			ZEND_VM_TAIL_CALL(zend_leave_helper_SPEC(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));
++		} else {
++			/* Handle case where prev_execute_data is NULL to avoid dangling pointer access */
++			ZEND_VM_TAIL_CALL(zend_leave_helper_SPEC(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU));
++		}
+@@ -54571 +54579,3 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-			i_free_compiled_variables(execute_data);
++			if (EXPECTED(execute_data != NULL)) {
++				i_free_compiled_variables(execute_data);
++			}

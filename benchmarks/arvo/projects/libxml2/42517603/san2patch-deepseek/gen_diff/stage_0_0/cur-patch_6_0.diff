@@ -1,0 +1,19 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..10e58312 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2050 +2050,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
+-	return(-1);
++// FIXME: Crash CWE-416: Use After Free
++ 	return(-1);
+@@ -2080,0 +2082,10 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++    /* Recheck the node pointer after possible reader cleanup/free operations */
++    cur = ref->elem;
++    if ((cur == NULL) || (cur->type == XML_NAMESPACE_DECL) ||
++        (cur->doc == NULL)) {
++        xmlXIncludeErr(ctxt, ref->elem, XML_XINCLUDE_INVALID_NODE,
++                       "XInclude error: invalid node\n", NULL);
++        xmlFreeNodeList(list);
++        return(-1);
++    }
++

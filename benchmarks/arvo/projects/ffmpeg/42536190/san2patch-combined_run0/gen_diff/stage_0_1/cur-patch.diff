@@ -1,0 +1,58 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..ca62cb2fc2 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1397 +1397,2 @@ do {
+-    ret = hls_transform_tree(lc, pps, sps,                                      \
++    if (lc != NULL && pps != NULL && sps != NULL) {                            \
++        ret = hls_transform_tree(lc, pps, sps,                                  \
+@@ -1401,3 +1402,4 @@ do {
+-    if (ret < 0)                                                                \
+-        return ret;                                                             \
+-} while (0)
++        if (ret < 0)                                                            \
++            return ret;                                                         \
++    }                                                                           \
++ } while (0)
+@@ -1417 +1419 @@ do {
+-        if (lc->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
++        if (lc != NULL && (lc->cu.pred_mode == MODE_INTRA || trafo_depth != 0 ||
+@@ -1419 +1421 @@ do {
+-            (sps->chroma_format_idc == 2 && (cbf_cb[1] || cbf_cr[1]))) {
++            (sps->chroma_format_idc == 2 && (cbf_cb[1] || cbf_cr[1])))) {
+@@ -1423,6 +1425,8 @@ do {
+-        ret = hls_transform_unit(lc, pps, sps,
+-                                 x0, y0, xBase, yBase, cb_xBase, cb_yBase,
+-                                 log2_cb_size, log2_trafo_size,
+-                                 blk_idx, cbf_luma, cbf_cb, cbf_cr);
+-        if (ret < 0)
+-            return ret;
++        if (lc != NULL && pps != NULL && sps != NULL) {
++            ret = hls_transform_unit(lc, pps, sps,
++                                     x0, y0, xBase, yBase, cb_xBase, cb_yBase,
++                                     log2_cb_size, log2_trafo_size,
++                                     blk_idx, cbf_luma, cbf_cb, cbf_cr);
++            if (ret < 0)
++                return ret;
++        }
+@@ -1430 +1434 @@ do {
+-        if (cbf_luma) {
++        if (cbf_luma && s != NULL) {
+@@ -1436 +1440,3 @@ do {
+-                    s->cbf_luma[y_tu * min_tu_width + x_tu] = 1;
++                    if (s != NULL) {
++                        s->cbf_luma[y_tu * min_tu_width + x_tu] = 1;
++                    }
+@@ -1439,5 +1445,7 @@ do {
+-        if (!s->sh.disable_deblocking_filter_flag) {
+-            ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
+-            if (pps->transquant_bypass_enable_flag &&
+-                lc->cu.cu_transquant_bypass_flag)
+-                set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++        if (s != NULL && !s->sh.disable_deblocking_filter_flag) {
++            if (lc != NULL) {
++                ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
++                if (pps->transquant_bypass_enable_flag &&
++                    lc->cu.cu_transquant_bypass_flag)
++                    set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++            }

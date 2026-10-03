@@ -1,0 +1,53 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..74a5e46eb 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1025,3 +1025,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+-	  snprintf(msg, sizeof(msg), "Expected %s, found %s",
+-		   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
++      snprintf(msg, sizeof(msg), "Expected %s, found %s",
++	   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
+@@ -1033,7 +1032,6 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  }
+-
+-  ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
+-
+-  if(hostname_just_set && strlen(flow->host_server_name) > 0) {
+-    ndpi_check_dga_name(ndpi_struct, flow, flow->host_server_name, 1, 0);
+-  }
++    // Security fix for Out-of-bounds Read (CWE-125)
++    // Validate host_server_name buffer before processing
++    size_t host_len = flow->host_server_name ? strlen(flow->host_server_name) : 0;
++    if(host_len > 0 && host_len < NDPI_MAX_SERVER_NAME_LEN) {
++      ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
++    }
+@@ -1041,2 +1039,3 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  if(flow->guessed_protocol_id == NDPI_PROTOCOL_UNKNOWN)
+-    flow->guessed_protocol_id = NDPI_PROTOCOL_HTTP;
++    if(hostname_just_set && strlen(flow->host_server_name) > 0) {
++      ndpi_check_dga_name(ndpi_struct, flow, flow->host_server_name, 1, 0);
++    }
+@@ -1044,2 +1043,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  ndpi_check_http_header(ndpi_struct, flow);
+-}
++    if(flow->guessed_protocol_id == NDPI_PROTOCOL_UNKNOWN)
++      flow->guessed_protocol_id = NDPI_PROTOCOL_HTTP;
+@@ -1046,0 +1046,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
++    ndpi_check_http_header(ndpi_struct, flow);
++  }
+@@ -1336 +1337,3 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-    if(memcmp(&packet->line[0].ptr[packet->line[0].len - 1], "1", 1) == 0)
++    if(packet->line[0].len >= 1 && packet->line[0].ptr != NULL &&
++       (packet->line[0].ptr + packet->line[0].len - 1) < (packet->payload + packet->payload_len) &&
++       memcmp(&packet->line[0].ptr[packet->line[0].len - 1], "1", 1) == 0)
+@@ -1341,0 +1345,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++       packet->http_url_name.ptr != NULL &&
++       (packet->http_url_name.ptr + packet->http_url_name.len) <= (packet->payload + packet->payload_len) &&
+@@ -1345,0 +1351,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
++       packet->payload_len >= 8 &&
++       packet->payload != NULL &&
+@@ -1349 +1356,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-  }
++// FIXME: Crash CWE-125: Out-of-bounds Read - Fixed by comprehensive bounds checking
++   }

@@ -1,0 +1,44 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..6019d4af36 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239,3 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
+-        if (codes != localbuf)
+-            av_free(codes);
++     } else {
+@@ -242,0 +241,2 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++            if (codes != localbuf)
++                av_free(codes);
+@@ -245,0 +246,3 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++        /* Defer freeing codes until after vlc_multi_gen() completes */
++        if (codes != localbuf && !(flags & INIT_VLC_USE_NEW_STATIC))
++            av_free(codes);
+@@ -427,0 +431,5 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
++    
++    // Check if memory is still valid before accessing
++    if (!table || !single) {
++        return AVERROR(ENOMEM);
++    }
+@@ -438,4 +446,9 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    for (int j = 0; j < 1<<numbits; j++) {
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++    // Validate memory access before copying data
++    for (int j = 0; j < (1<<numbits) && j < nb_codes; j++) {
++        if (single->table && table) {
++            table[j].len = single->table[j].len;
++            table[j].num = single->table[j].len > 0 ? 1 : 0;
++            if (table[j].val) {
++                AV_WN16(table[j].val, single->table[j].sym);
++            }
++        }
+@@ -444,2 +457,5 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-    add_level(table, nb_elems, nb_codes, numbits, buf,
+-              0, 0, numbits, 0, minbits, max, count, &info);
++    // Only call add_level if all memory is valid
++    if (table && buf) {
++        add_level(table, nb_elems, nb_codes, numbits, buf,
++                  0, 0, numbits, 0, minbits, max, count, &info);
++    }

@@ -1,0 +1,37 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..e06832bd 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -4879 +4879,11 @@ htmlParseDocument(htmlParserCtxtPtr ctxt) {
+-     * Time to start parsing the tree itself
++     * Prevent use-after-free by validating parser context before content parsing
++     */
++    if (ctxt != NULL && ctxt->input != NULL) {
++        /* Reset input position to ensure valid buffer access */
++        if (ctxt->input->cur != NULL) {
++            ctxt->input->cur = ctxt->input->base;
++        }
++    }
++    
++    /*
++      * Time to start parsing the tree itself
+diff --git a/xmlIO.c b/xmlIO.c
+index 520720bf..bd308a64 100644
+--- a/xmlIO.c
++++ b/xmlIO.c
+@@ -3218 +3218,11 @@ xmlParserInputBufferGrow(xmlParserInputBufferPtr in, int len) {
+-        if (xmlBufGrow(buf, len + 1) < 0) {
++        char *read_buffer;
++        size_t buffer_size;
++        
++        buffer_size = xmlBufUse(buf) + len + 1;
++        if (xmlBufResize(buf, buffer_size) < 0) {
++            in->error = XML_ERR_NO_MEMORY;
++            return(-1);
++        }
++        
++        read_buffer = (char *)xmlBufEnd(buf);
++        if (read_buffer == NULL) {
+@@ -3223 +3233 @@ xmlParserInputBufferGrow(xmlParserInputBufferPtr in, int len) {
+-	res = in->readcallback(in->context, (char *)xmlBufEnd(buf), len);
++	res = in->readcallback(in->context, read_buffer, len);

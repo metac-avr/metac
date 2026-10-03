@@ -1,0 +1,22 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..f1310cd01 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -379 +379,2 @@ static void
+-add_heap(mrb_state *mrb, mrb_gc *gc)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ add_heap(mrb_state *mrb, mrb_gc *gc)
+@@ -391,0 +393,3 @@ add_heap(mrb_state *mrb, mrb_gc *gc)
++  /* Clear page flags to ensure clean state */
++  page->flags = 0;
++  
+@@ -1203,3 +1207,6 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Safely unlink and free page only if no concurrent marking */
++      if (gc->state != GC_STATE_MARK) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      }

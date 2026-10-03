@@ -1,0 +1,66 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..a4a7cec2f0d 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -891,20 +891,24 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
+-			if (Z_TYPE_P(zv) == IS_INDIRECT) {
+-				zv = Z_INDIRECT_P(zv);
+-			}
+-			if (Z_REFCOUNTED_P(zv)) {
+-				ref = Z_COUNTED_P(zv);
+-				GC_DELREF(ref);
+-				if (!GC_REF_CHECK_COLOR(ref, GC_GREY)) {
+-					GC_REF_SET_COLOR(ref, GC_GREY);
+-					p++;
+-					while (--n) {
+-						zv = &p->val;
+-						if (Z_TYPE_P(zv) == IS_INDIRECT) {
+-							zv = Z_INDIRECT_P(zv);
+-						}
+-						if (Z_REFCOUNTED_P(zv)) {
+-							zend_refcounted *ref = Z_COUNTED_P(zv);
+-							GC_DELREF(ref);
+-							if (!GC_REF_CHECK_COLOR(ref, GC_GREY)) {
+-								GC_REF_SET_COLOR(ref, GC_GREY);
+-								GC_STACK_PUSH(ref);
++			if ((char*)zv >= (char*)p && (char*)zv < (char*)p + sizeof(*p)) { 
++				if (Z_TYPE_P(zv) == IS_INDIRECT) {
++					zv = Z_INDIRECT_P(zv);
++				}
++				if (Z_REFCOUNTED_P(zv)) {
++					ref = Z_COUNTED_P(zv);
++					GC_DELREF(ref);
++					if (!GC_REF_CHECK_COLOR(ref, GC_GREY)) {
++						GC_REF_SET_COLOR(ref, GC_GREY);
++						p++;
++						while (--n) {
++							zv = &p->val;
++							if ((char*)zv >= (char*)p && (char*)zv < (char*)p + sizeof(*p)) { 
++								if (Z_TYPE_P(zv) == IS_INDIRECT) {
++									zv = Z_INDIRECT_P(zv);
++								}
++								if (Z_REFCOUNTED_P(zv)) {
++									zend_refcounted *ref = Z_COUNTED_P(zv);
++									GC_DELREF(ref);
++									if (!GC_REF_CHECK_COLOR(ref, GC_GREY)) {
++										GC_REF_SET_COLOR(ref, GC_GREY);
++										GC_STACK_PUSH(ref);
++									}
++								}
+@@ -911,0 +916 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
++							p++;
+@@ -913 +918 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
+-						p++;
++						goto tail_call;
+@@ -915 +919,0 @@ static void gc_mark_grey(zend_refcounted *ref, gc_stack *stack)
+-					goto tail_call;
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..acb8088f1ff 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -216,2 +216,3 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		}
+-		for (zend_long i = 0; i < intern->array.size; i++) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		}
++		for (zend_long i = 0; i < intern->array.size && i < zend_hash_num_elements(ht); i++) {

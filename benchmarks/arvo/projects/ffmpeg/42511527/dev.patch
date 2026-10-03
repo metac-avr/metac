@@ -1,0 +1,22 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index d8943d9cf8..4357b25d04 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -350,6 +350,9 @@ static int flashsv_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
+            return err;
+        memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        if (s->blocks)
++            memset(s->blocks, 0, (v_blocks + !!v_part) * (h_blocks + !!h_part) *
++                                 sizeof(s->blocks[0]));
+     }
+     if(s->ver == 2 && !s->blocks)
+         s->blocks = av_mallocz((v_blocks + !!v_part) * (h_blocks + !!h_part) *
+@@ -558,6 +561,7 @@ static av_cold int flashsv2_decode_end(AVCodecContext *avctx)
+     FlashSVContext *s = avctx->priv_data;
+ 
+     av_freep(&s->keyframedata);
++    s->keyframedata = NULL;
+     av_freep(&s->blocks);
+     av_freep(&s->keyframe);
+     av_freep(&s->deflate_block);

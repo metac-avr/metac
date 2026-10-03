@@ -1,0 +1,17 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index b59d798f29..2943bfc9c5 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -650 +650,2 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
+@@ -656,0 +658,8 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
++        // Validate that the source map is within valid buffer bounds before copying
++        const uint8_t *map_start = (const uint8_t *)ff_iamf_sound_system_map;
++        const uint8_t *map_end = map_start + sizeof(ff_iamf_sound_system_map);
++        const uint8_t *src_start = (const uint8_t *)src->u.map;
++        const uint8_t *src_end = src_start + (src->nb_channels * sizeof(*src->u.map));
++        if (src_start < map_start || src_end > map_end) {
++            return AVERROR(EINVAL);
++        }

@@ -1,0 +1,19 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..7342d7a4a 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -581 +581,13 @@ GF_Err gf_odf_avc_cfg_write(GF_AVCConfig *cfg, u8 **outData, u32 *outSize)
+-	gf_odf_avc_cfg_write_bs(cfg, bs);
++	if (!cfg || !cfg->sequenceParameterSets || !gf_list_count(cfg->sequenceParameterSets) || !cfg->pictureParameterSets || !gf_list_count(cfg->pictureParameterSets)) {
++		gf_bs_del(bs);
++		*outData = NULL;
++		*outSize = 0;
++		return GF_BAD_PARAM;
++	}
++	GF_Err e = gf_odf_avc_cfg_write_bs(cfg, bs);
++	if (e) {
++		gf_bs_del(bs);
++		*outData = NULL;
++		*outSize = 0;
++		return e;
++	}

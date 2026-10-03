@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..ebf765dc938 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -46 +46,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-			gc_check_possible_root(ref);
++			if (ref != NULL && !GC_IN_DESTRUCTOR(ref)) {
++				gc_check_possible_root(ref);
++			}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..9464ff66c0c 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74,2 +74,7 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
++i_zval_ptr_dtor(&ref->val);
++	if (EXPECTED(ref != NULL) && EXPECTED(!GC_IS_RECURSIVE(ref))) {
++		efree_size(ref, sizeof(zend_reference));
++	} else if (ref) {
++		zend_gc_remove_from_buffer(ref);
++		efree(ref);
++	}
+@@ -82 +87,2 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
++// Fixed CWE-825: Expired Pointer Dereference - Check reference validity before freeing
++ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+@@ -94,2 +100 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++			if (Z_TYPE_P(zval_ptr) == IS_STRING) {				zend_string *str = (zend_string*)ref;

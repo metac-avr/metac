@@ -1,0 +1,19 @@
+diff --git a/libavcodec/speexdec.c b/libavcodec/speexdec.c
+index 35270e6723..7f06c23314 100644
+--- a/libavcodec/speexdec.c
++++ b/libavcodec/speexdec.c
+@@ -1246,3 +1246,11 @@ static int sb_decode(AVCodecContext *avctx, void *ptr_st,
+-            wideband = get_bits1(gb);
+-            st->submodeID = get_bits(gb, SB_SUBMODE_BITS);
+-        } else { /* Was a narrowband frame, set "null submode" */
++            if (get_bits_left(gb) > 0) {
++                wideband = get_bits1(gb);
++                if (get_bits_left(gb) >= SB_SUBMODE_BITS) {
++                    st->submodeID = get_bits(gb, SB_SUBMODE_BITS);
++                } else {
++                    return AVERROR_INVALIDDATA;
++                }
++            } else {
++                return AVERROR_INVALIDDATA;
++            }
++         } else { /* Was a narrowband frame, set "null submode" */

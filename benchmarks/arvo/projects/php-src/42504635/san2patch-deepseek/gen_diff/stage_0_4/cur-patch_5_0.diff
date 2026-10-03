@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index a365cb2574d..e855d967322 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -244,6 +244,5 @@ static zend_always_inline zend_string *zend_string_extend(zend_string *s, size_t
+-	if (!ZSTR_IS_INTERNED(s)) {
+-		if (EXPECTED(GC_REFCOUNT(s) == 1)) {
+-			ret = (zend_string *)perealloc(s, ZEND_MM_ALIGNED_SIZE(_ZSTR_STRUCT_SIZE(len)), persistent);
+-			ZSTR_LEN(ret) = len;
+-			zend_string_forget_hash_val(ret);
+-			return ret;
++ 	if (ZSTR_IS_INTERNED(s) || GC_REFCOUNT(s) != 1) {
++		ret = zend_string_alloc(len, persistent);
++		memcpy(ZSTR_VAL(ret), ZSTR_VAL(s), ZSTR_LEN(s) + 1);
++		if (!ZSTR_IS_INTERNED(s)) {
++			GC_DELREF(s);
+@@ -250,0 +250 @@ static zend_always_inline zend_string *zend_string_extend(zend_string *s, size_t
++		return ret;
+@@ -252,5 +252,3 @@ static zend_always_inline zend_string *zend_string_extend(zend_string *s, size_t
+-	ret = zend_string_alloc(len, persistent);
+-	memcpy(ZSTR_VAL(ret), ZSTR_VAL(s), ZSTR_LEN(s) + 1);
+-	if (!ZSTR_IS_INTERNED(s)) {
+-		GC_DELREF(s);
+-	}
++	ret = (zend_string *)perealloc(s, ZEND_MM_ALIGNED_SIZE(_ZSTR_STRUCT_SIZE(len)), persistent);
++	ZSTR_LEN(ret) = len;
++	zend_string_forget_hash_val(ret);

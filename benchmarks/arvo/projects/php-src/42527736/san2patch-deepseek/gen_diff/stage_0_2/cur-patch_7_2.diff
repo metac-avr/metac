@@ -1,0 +1,134 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..85743d29ab8 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2139,0 +2140,77 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
++static void php_fgetcsv(void)
++{
++	char *temp, *bptr, *line_end, *limit;
++	size_t temp_len, line_end_len;
++	php_stream *stream = NULL;
++	zval *values;
++
++	ZEND_PARSE_PARAMETERS_START(2, 4)
++		Z_PARAM_RESOURCE(stream)
++		Z_PARAM_ARRAY(values)
++		Z_PARAM_OPTIONAL
++		Z_PARAM_LONG(delimiter)
++		Z_PARAM_LONG(enclosure)
++	ZEND_PARSE_PARAMETERS_END();
++
++	if (delimiter == enclosure) {
++		php_error_docref(NULL, E_WARNING, "delimiter must not be equal to enclosure");
++		RETURN_FALSE;
++	}
++
++	if (php_stream_eof(stream)) {
++		RETURN_FALSE;
++	}
++
++	line_end_len = php_stream_eol_and_len(stream, &line_end);
++	if (line_end_len == (size_t)-1) {
++		RETURN_FALSE;
++	}
++
++	temp_len = PHP_STREAM_COPY_ALL;
++	temp = php_stream_get_line(stream, NULL, temp_len, &temp_len, line_end, line_end_len);
++	if (temp == NULL) {
++		RETURN_FALSE;
++	}
++
++	if (temp_len == 0) {
++		efree(temp);
++		RETURN_FALSE;
++	}
++
++	bptr = temp;
++	limit = temp + temp_len;
++
++	/* Initialize return array */
++	array_init(return_value);
++
++	/* Main loop */
++	do {
++		char *hunk_begin;
++		char *comp_end;
++		int inc_len;
++
++		inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)) : 0);
++
++		if (*bptr == enclosure) {
++			bptr++;
++
++			/* 2A. Handle enclosure field */
++			hunk_begin = bptr;
++
++			for (;;) {
++				switch (inc_len) {
++					case 0:
++						goto quit_loop_3;
++					case -2:
++					case -1:
++						if (*bptr == enclosure) {
++							goto quit_loop_3;
++						}
++						break;
++					case 1:
++						if (*bptr == enclosure) {
++							if (bptr + 1 < limit && *(bptr + 1) == enclosure) {
++								bptr++;
++							}
++						} else if (*bptr == delimiter) {
++							goto quit_loop_3;
+@@ -2142,0 +2220,3 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
++						if (*bptr == enclosure) {
++							goto quit_loop_3;
++						}
+@@ -2146 +2226 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-				inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
++				inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)) : 0);
+@@ -2150,2 +2230,4 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-			tptr += (bptr - hunk_begin);
++			if (bptr > hunk_begin) {
++				memcpy(tptr, hunk_begin, bptr - hunk_begin);
++				tptr += (bptr - hunk_begin);
++			}
+@@ -2163,0 +2246,37 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
++					case -1:
++						if (*bptr == delimiter) {
++							goto quit_loop_4;
++						}
++						break;
++					default:
++						if (*bptr == delimiter) {
++							goto quit_loop_4;
++						}
++						break;
++				}
++				bptr += inc_len;
++				inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)) : 0);
++			}
++
++		quit_loop_4:
++			if (bptr > hunk_begin) {
++				memcpy(tptr, hunk_begin, bptr - hunk_begin);
++				tptr += (bptr - hunk_begin);
++			}
++			bptr += inc_len;
++			comp_end = tptr;
++		}
++
++		/* Strip trailing spaces and add to array */
++		comp_end = (char *)php_fgetcsv_lookup_trailing_spaces(temp, tptr - temp);
++		*comp_end = '\0';
++
++		zval z_tmp;
++		ZVAL_STRINGL(&z_tmp, temp, comp_end - temp);
++		zend_hash_next_index_insert(values, &z_tmp);
++	} while (inc_len > 0);
++
++	efree(temp);
++}					case 0:
++						goto quit_loop_4;
++					case -2:

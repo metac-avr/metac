@@ -1,0 +1,181 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..1c8488fd 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -413,22 +413,154 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     * From rfc2044: encoding of the Unicode values on UTF-8:
+-     *
+-     * UCS-4 range (hex.)           UTF-8 octet sequence (binary)
+-     * 0000 0000-0000 007F   0xxxxxxx
+-     * 0000 0080-0000 07FF   110xxxxx 10xxxxxx
+-     * 0000 0800-0000 FFFF   1110xxxx 10xxxxxx 10xxxxxx
+-     *
+-     * Check for the 0x110000 limit too
+-     */
+-    cur = ctxt->input->cur;
+-    c = *cur;
+-    if (c & 0x80) {
+-        size_t avail;
+-
+-        if ((c & 0x40) == 0)
+-            goto encoding_error;
+-
+-        avail = ctxt->input->end - ctxt->input->cur;
+-
+-        if ((avail < 2) || ((cur[1] & 0xc0) != 0x80))
+-            goto encoding_error;
+-        if ((c & 0xe0) == 0xe0) {
++static int
++htmlParseCharData(htmlParserCtxtPtr ctxt) {
++    xmlChar buf[HTML_PARSER_BIG_BUFFER_SIZE + 6];
++    int nbchar = 0;
++    int cur, l;
++    int chunk, maxChunk;
++
++    SAVE_CONTEXT;
++    cur = CUR_CHAR(l);
++    while (cur != 0) {
++        if ((cur == '<') || (cur == '&')) {
++            if (nbchar != 0) {
++                buf[nbchar] = 0;
++                if (!htmlCheckParagraph(ctxt)) {
++                    htmlParseCharDataInternal(ctxt, buf, nbchar);
++                }
++                nbchar = 0;
++            }
++            if (cur == '<') {
++                NEXTL(l);
++                break;
++            }
++            htmlParseReference(ctxt);
++        } else if (cur == '>') {
++            if (nbchar != 0) {
++                buf[nbchar] = 0;
++                if (!htmlCheckParagraph(ctxt)) {
++                    htmlParseCharDataInternal(ctxt, buf, nbchar);
++                }
++                nbchar = 0;
++            }
++        } else if (((cur == '\n') || (cur == '\r')) &&
++                   (ctxt->instate == HTML_PARSE_AFTER_HEAD)) {
++            if (nbchar != 0) {
++                buf[nbchar] = 0;
++                if (!htmlCheckParagraph(ctxt)) {
++                    htmlParseCharDataInternal(ctxt, buf, nbchar);
++                }
++                nbchar = 0;
++            }
++        } else {
++            COPY_BUF(l, buf, nbchar, cur);
++        }
++        NEXTL(l);
++        cur = CUR_CHAR(l);
++    }
++    if (nbchar != 0) {
++        buf[nbchar] = 0;
++        if (!htmlCheckParagraph(ctxt)) {
++            htmlParseCharDataInternal(ctxt, buf, nbchar);
++        }
++    }
++}
++
++static int
++htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
++    xmlChar *URI = NULL;
++
++    if ((UPPER == 'S') && (UPPER1 == 'Y') &&
++        (UPPER2 == 'S') && (UPPER3 == 'T') &&
++        (UPPER4 == 'E') && (UPPER5 == 'M')) {
++        SKIP(6);
++        if (!IS_BLANK_CH(CUR)) {
++            htmlParseErr(ctxt, XML_ERR_SPACE_REQUIRED,
++                         "Space required after 'SYSTEM'\n", NULL, NULL);
++        }
++        SKIP_BLANKS;
++        URI = htmlParseSystemLiteral(ctxt);
++        if (URI == NULL) {
++            htmlParseErr(ctxt, XML_ERR_URI_REQUIRED,
++                         "SystemLiteral expected\n", NULL, NULL);
++        }
++    } else if ((UPPER == 'P') && (UPPER1 == 'U') &&
++               (UPPER2 == 'B') && (UPPER3 == 'L') &&
++               (UPPER4 == 'I') && (UPPER5 == 'C')) {
++        SKIP(6);
++        if (!IS_BLANK_CH(CUR)) {
++            htmlParseErr(ctxt, XML_ERR_SPACE_REQUIRED,
++                         "Space required after 'PUBLIC'\n", NULL, NULL);
++        }
++        SKIP_BLANKS;
++        *publicID = htmlParsePubidLiteral(ctxt);
++        if (*publicID == NULL) {
++            htmlParseErr(ctxt, XML_ERR_PUBID_REQUIRED,
++                         "PubidLiteral expected\n", NULL, NULL);
++        }
++        if (CUR == '"') {
++            NEXT;
++            SKIP_BLANKS;
++            URI = htmlParseSystemLiteral(ctxt);
++        }
++    }
++    return(URI);
++}
++
++static xmlChar *
++htmlParsePubidLiteral(htmlParserCtxtPtr ctxt) {
++    const xmlChar *q;
++    xmlChar *ret = NULL;
++
++    if (CUR == '"') {
++        NEXT;
++        q = CUR_PTR;
++        while ((IS_PUBIDCHAR_CH(CUR)) && (CUR != '\n'))
++            NEXT;
++        if (CUR != '"') {
++            htmlParseErr(ctxt, XML_ERR_LITERAL_NOT_FINISHED,
++                         "Unfinished PubidLiteral\n", NULL, NULL);
++        } else {
++            ret = xmlStrndup(q, CUR_PTR - q);
++            NEXT;
++        }
++    } else {
++        htmlParseErr(ctxt, XML_ERR_LITERAL_NOT_STARTED,
++                     "PubidLiteral expected\n", NULL, NULL);
++    }
++    return(ret);
++}
++
++static xmlChar *
++htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
++    const xmlChar *q;
++    xmlChar *ret = NULL;
++
++    if (CUR == '"') {
++        NEXT;
++        q = CUR_PTR;
++        while ((IS_CHAR_CH(CUR)) && (CUR != '\n'))
++            NEXT;
++        if (CUR != '"') {
++            htmlParseErr(ctxt, XML_ERR_LITERAL_NOT_FINISHED,
++                         "Unfinished SystemLiteral\n", NULL, NULL);
++        } else {
++            ret = xmlStrndup(q, CUR_PTR - q);
++            NEXT;
++        }
++    } else if (CUR == '\'') {
++        NEXT;
++        q = CUR_PTR;
++        while ((IS_CHAR_CH(CUR)) && (CUR != '\n'))
++            NEXT;
++        if (CUR != '\'') {
++            htmlParseErr(ctxt, XML_ERR_LITERAL_NOT_FINISHED,
++                         "Unfinished SystemLiteral\n", NULL, NULL);
++        } else {
++            ret = xmlStrndup(q, CUR_PTR - q);
++            NEXT;
++        }
++    } else {
++        htmlParseErr(ctxt, XML_ERR_LITERAL_NOT_STARTED,
++                     "SystemLiteral expected\n", NULL, NULL);
++    }
++    return(ret);
++}        if ((c & 0xe0) == 0xe0) {

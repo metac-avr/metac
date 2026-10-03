@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..b5654d48cc4 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1446 +1446,2 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
+-						ZVAL_COPY_VALUE(&tmp, data);
++// Validate pointer before use and clear after use to prevent expired pointer dereference
++ 						ZVAL_COPY_VALUE(&tmp, data);
+@@ -1447,0 +1449,3 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
++						if (data != NULL) {  // Additional safety check
++							data = NULL;  // Clear pointer reference
++						}
+@@ -1450,0 +1455,3 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
++						if (data != NULL) {  // Additional safety check
++							data = NULL;  // Clear pointer reference
++						}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..c5642c42bfb 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -67 +67,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
++	/* Validate reference count before destruction */
++	if (GC_REFCOUNT(str) == 0) {
++		efree(str);
++	}
+@@ -77 +79,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

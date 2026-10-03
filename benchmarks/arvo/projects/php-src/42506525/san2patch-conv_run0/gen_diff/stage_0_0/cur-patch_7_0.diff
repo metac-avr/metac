@@ -1,0 +1,22 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..0e592720e56 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1237 +1237,2 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
+-		HT_SET_DATA_ADDR(ht, new_data);
++// FIXME: Crash CWE-416: Use After Free
++ 		HT_SET_DATA_ADDR(ht, new_data);
+@@ -1239,0 +1241,3 @@ static void ZEND_FASTCALL zend_hash_do_resize(HashTable *ht)
++		if (ht->arData == old_buckets) {
++			ht->arData = (Bucket*)((char*)HT_GET_DATA_ADDR(ht) + HT_HASH_SIZE(ht->nTableMask));
++		}
+@@ -1433 +1437,2 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1435 +1440 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	if (p->key) {
++	if (p && p->key) {
+@@ -1438,0 +1444,2 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++	/* Ensure p is not accessed after potential free */
++	p = NULL;

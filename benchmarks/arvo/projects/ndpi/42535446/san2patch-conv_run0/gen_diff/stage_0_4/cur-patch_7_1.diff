@@ -1,0 +1,72 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..13624722d 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1024,0 +1025,23 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
++static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struct,
++                                           struct ndpi_flow_struct *flow) {
++  char msg[256] = { 0 };
++  char buf[32];
++  u_int8_t hostname_just_set = 0;
++
++  if(flow->detected_protocol_stack[0] != NDPI_PROTOCOL_HTTP) {
++    if(flow->packet_counter <= 5) {
++      if(flow->l4.tcp.http_setup_dir == 0) {
++	n dpi_parse_packet_line_info(ndpi_struct, flow);
++	if(flow->packet_lines_parsed_complete) {
++	  if(flow->host_server_name[0] == 0) {
++	    ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
++	    return;
++	  }
++
++	  if((flow->http.url != NULL) && (flow->http_detected_version == NDPI_HTTP_VERSION_1_1)) {
++	    int len = strlen(flow->host_server_name);
++
++	    if((len > 0) && (ndpi_find_first_not_char(flow->host_server_name, " ", len) != len)) {
++	      snprintf(msg, sizeof(msg), "Found leading space character(s) in Host header");
++	      ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);
++	    }
+@@ -1026,4 +1049,16 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	  snprintf(msg, sizeof(msg), "Expected %s, found %s",
+-		   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
+-	  ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);
+-        }
++	    if((flow->http.content_type != NULL) && (strlen(flow->http.content_type) >= 5)) {
++	      if(!ndpi_match_string_prefix(flow->http.content_type, strlen(flow->http.content_type), "text/"))
++		n dpi_check_http_payload(ndpi_struct, flow);
++	    }
++
++	    if(flow->packet.iph && (flow->host_server_name[0] != '\0')) {
++	      if(strcmp(flow->host_server_name, ndpi_intoav4(ntohl(flow->packet.iph->daddr), buf, sizeof(buf))) != 0) {
++		if(strlen(flow->host_server_name) < sizeof(flow->host_server_name)) {
++		  snprintf(msg, sizeof(msg), "Expected %s, found %s",
++			   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
++		  ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);
++		}
++	      }
++	    }
++	  }
++	}
+@@ -1033,3 +1068 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  }
+-
+-  ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
++    ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
+@@ -1037,3 +1070,3 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  if(hostname_just_set && strlen(flow->host_server_name) > 0) {
+-    ndpi_check_dga_name(ndpi_struct, flow, flow->host_server_name, 1, 0);
+-  }
++    if(hostname_just_set && strlen(flow->host_server_name) > 0) {
++      ndpi_check_dga_name(ndpi_struct, flow, flow->host_server_name, 1, 0);
++    }
+@@ -1041,2 +1074,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  if(flow->guessed_protocol_id == NDPI_PROTOCOL_UNKNOWN)
+-    flow->guessed_protocol_id = NDPI_PROTOCOL_HTTP;
++    if(flow->guessed_protocol_id == NDPI_PROTOCOL_UNKNOWN)
++      flow->guessed_protocol_id = NDPI_PROTOCOL_HTTP;
+@@ -1044 +1077,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  ndpi_check_http_header(ndpi_struct, flow);
++    ndpi_check_http_header(ndpi_struct, flow);
++  }
+@@ -1046 +1079,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-

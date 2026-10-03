@@ -1,0 +1,25 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..ad46d064 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2050,0 +2051,9 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, xmlXIncludeRefPtr ref) {
++    
++    /* Check if node has been freed - defensive programming approach */
++    if (ref->elem == NULL)
++        return(-1);
++    
++    /* Additional safety check - validate node integrity */
++    if (((long)ref->elem) & 0x1)  /* Basic sanity check for corrupted pointer */
++        return(-1);
++        
+@@ -2279,3 +2288,7 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            if ((ctxt->incTab[i]->inc != NULL) ||
+-                (ctxt->incTab[i]->emptyFb != 0)) {	/* (empty fallback) */
+-                xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++// FIXME: Crash CWE-416: Use After Free
++             if ((ctxt->incTab[i]->inc != NULL) ||
++                (ctxt->incTab[i]->emptyFb != 0)) {    /* (empty fallback) */
++                /* Add safety check to prevent accessing freed memory */
++                if (ctxt->incTab[i] != NULL && ctxt->incTab[i]->inc != (void*)0xDEADBEEF) {
++                    xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++                }

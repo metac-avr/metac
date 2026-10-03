@@ -1,0 +1,184 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 24ed7b20e..f43bd59f1 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -1476,5 +1476,6 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	          offset + 6 < packet->payload_packet_len) {
+-	  u_int16_t s_offset = offset+4;
+-	  u_int16_t tot_alpn_len = ntohs(*((u_int16_t*)&packet->payload[s_offset]));
+-	  char alpn_str[256];
+-	  u_int8_t alpn_str_len = 0, i;
++          offset + 6 < packet->payload_packet_len) {
++  u_int16_t s_offset = offset+4;
++  u_int16_t tot_alpn_len = ntohs(*((u_int16_t*)&packet->payload[s_offset]));
++  char *alpn_str = NULL;  // Dynamically allocated buffer
++  u_int8_t alpn_str_len = 0, i;
++  u_int16_t alpn_buffer_size = 256;  // Initial buffer size
+@@ -1483 +1484 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  printf("Server TLS [ALPN: block_len=%u/len=%u]\n", extension_len, tot_alpn_len);
++  printf("Server TLS [ALPN: block_len=%u/len=%u]\n", extension_len, tot_alpn_len);
+@@ -1485,2 +1486,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  s_offset += 2;
+-	  tot_alpn_len += s_offset;
++  s_offset += 2;
++  tot_alpn_len += s_offset;
+@@ -1488,2 +1489,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  if(tot_alpn_len > packet->payload_packet_len)
+-	    return 0;
++  if(tot_alpn_len > packet->payload_packet_len)
++    return 0;
+@@ -1491,2 +1492,4 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  while(s_offset < tot_alpn_len && s_offset < total_len) {
+-	    u_int8_t alpn_i, alpn_len = packet->payload[s_offset++];
++  // Allocate initial buffer
++  alpn_str = (char*)ndpi_malloc(alpn_buffer_size);
++  if(alpn_str == NULL) return 0;  // Handle allocation failure
++  alpn_str[0] = '\0';  // Initialize empty string
+@@ -1494 +1497,4 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	    if((s_offset + alpn_len) <= tot_alpn_len) {
++  while(s_offset < tot_alpn_len && s_offset < total_len) {
++    u_int8_t alpn_i, alpn_len = packet->payload[s_offset++];
++
++    if((s_offset + alpn_len) <= tot_alpn_len) {
+@@ -1496,2 +1502,23 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	      printf("Server TLS [ALPN: %u]\n", alpn_len);
+-#endif
++      printf("Server TLS [ALPN: %u]\n", alpn_len);
++#endif
++
++      // Check if we need to expand the buffer
++      if(((uint32_t)alpn_str_len+alpn_len+2) >= alpn_buffer_size) {  // +2 for comma and null terminator
++        char *new_alpn_str;
++        u_int16_t new_size = alpn_buffer_size * 2;
++        
++        // Ensure we don't exceed reasonable limits
++        if(new_size > 1024) new_size = 1024;
++        if(((uint32_t)alpn_str_len+alpn_len+2) >= new_size) {
++          ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_UNCOMMON_ALPN, alpn_str);
++          break;
++        }
++        
++        new_alpn_str = (char*)ndpi_realloc(alpn_str, alpn_buffer_size, new_size);
++        if(new_alpn_str == NULL) {
++          ndpi_free(alpn_str);
++          return 0;  // Handle reallocation failure
++        }
++        alpn_str = new_alpn_str;
++        alpn_buffer_size = new_size;
++      }
+@@ -1499,5 +1526,4 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	      if(((uint32_t)alpn_str_len+alpn_len+1) < (sizeof(alpn_str)-1)) {
+-	        if(alpn_str_len > 0) {
+-	          alpn_str[alpn_str_len] = ',';
+-	          alpn_str_len++;
+-	        }
++      if(alpn_str_len > 0) {
++        alpn_str[alpn_str_len] = ',';
++        alpn_str_len++;
++      }
+@@ -1505,3 +1531,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	        for(alpn_i=0; alpn_i<alpn_len; alpn_i++) {
+-		    alpn_str[alpn_str_len+alpn_i] = packet->payload[s_offset+alpn_i];
+-		  }
++      for(alpn_i=0; alpn_i<alpn_len; alpn_i++) {
++        alpn_str[alpn_str_len+alpn_i] = packet->payload[s_offset+alpn_i];
++      }
+@@ -1509,10 +1535,6 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	        s_offset += alpn_len, alpn_str_len += alpn_len;;
+-	      } else {
+-	        ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_UNCOMMON_ALPN, alpn_str);
+-	        break;
+-	      }
+-	    } else {
+-	      ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_UNCOMMON_ALPN, alpn_str);
+-	      break;
+-	    }
+-	  } /* while */
++      s_offset += alpn_len, alpn_str_len += alpn_len;;
++    } else {
++      ndpi_set_risk(ndpi_struct, flow, NDPI_TLS_UNCOMMON_ALPN, alpn_str);
++      break;
++    }
++  } /* while */
+@@ -1520 +1542 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  alpn_str[alpn_str_len] = '\0';
++  alpn_str[alpn_str_len] = '\0';
+@@ -1523 +1545 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  printf("Server TLS [ALPN: %s][len: %u]\n", alpn_str, alpn_str_len);
++  printf("Server TLS [ALPN: %s][len: %u]\n", alpn_str, alpn_str_len);
+@@ -1525,5 +1547,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  if(ndpi_is_printable_string(alpn_str, alpn_str_len) == 0)
+-	    ndpi_set_risk(ndpi_struct, flow, NDPI_INVALID_CHARACTERS, alpn_str);
+-
+-	  if(flow->protos.tls_quic.alpn == NULL)
+-	    flow->protos.tls_quic.alpn = ndpi_strdup(alpn_str);
++  if(ndpi_is_printable_string(alpn_str, alpn_str_len) == 0)
++    ndpi_set_risk(ndpi_struct, flow, NDPI_INVALID_CHARACTERS, alpn_str);
+@@ -1531,2 +1550,6 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  if(flow->protos.tls_quic.alpn != NULL)
+-	    tlsCheckUncommonALPN(ndpi_struct, flow);
++  if(flow->protos.tls_quic.alpn == NULL)
++    flow->protos.tls_quic.alpn = ndpi_strdup(alpn_str);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
++  if(flow->protos.tls_quic.alpn != NULL)
++    tlsCheckUncommonALPN(ndpi_struct, flow);
+@@ -1534 +1557 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  ndpi_snprintf(ja3.server.alpn, sizeof(ja3.server.alpn), "%s", alpn_str);
++  ndpi_snprintf(ja3.server.alpn, sizeof(ja3.server.alpn), "%s", alpn_str);
+@@ -1536,5 +1559,8 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  /* Replace , with - as in JA3 */
+-	  for(i=0; ja3.server.alpn[i] != '\0'; i++)
+-	    if(ja3.server.alpn[i] == ',') ja3.server.alpn[i] = '-';
+-	} else if(extension_id == 11 /* ec_point_formats groups */) {
+-	  u_int16_t s_offset = offset+4 + 1;
++  /* Replace , with - as in JA3 */
++  for(i=0; ja3.server.alpn[i] != '\0'; i++)
++    if(ja3.server.alpn[i] == ',') ja3.server.alpn[i] = '-';
++    
++  // Free dynamically allocated buffer
++  ndpi_free(alpn_str);
++} else if(extension_id == 11 /* ec_point_formats groups */) {
++  u_int16_t s_offset = offset+4 + 1;
+@@ -1543 +1569 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  printf("Server TLS [EllipticCurveFormat: len=%u]\n", extension_len);
++  printf("Server TLS [EllipticCurveFormat: len=%u]\n", extension_len);
+@@ -1545,3 +1571,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  if((s_offset+extension_len-1) <= total_len) {
+-	    for(i=0; i<extension_len-1 && s_offset+i<packet->payload_packet_len; i++) {
+-	      u_int8_t s_group = packet->payload[s_offset+i];
++  if((s_offset+extension_len-1) <= total_len) {
++    for(i=0; i<extension_len-1 && s_offset+i<packet->payload_packet_len; i++) {
++      u_int8_t s_group = packet->payload[s_offset+i];
+@@ -1550 +1576 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	      printf("Server TLS [EllipticCurveFormat: %u]\n", s_group);
++      printf("Server TLS [EllipticCurveFormat: %u]\n", s_group);
+@@ -1553,4 +1579,4 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	      if(ja3.server.num_elliptic_curve_point_format < MAX_NUM_JA3)
+-		ja3.server.elliptic_curve_point_format[ja3.server.num_elliptic_curve_point_format++] = s_group;
+-	      else {
+-		invalid_ja3 = 1;
++      if(ja3.server.num_elliptic_curve_point_format < MAX_NUM_JA3)
++        ja3.server.elliptic_curve_point_format[ja3.server.num_elliptic_curve_point_format++] = s_group;
++      else {
++        invalid_ja3 = 1;
+@@ -1558 +1584 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		printf("Server TLS Invalid num elliptic %u\n", ja3.server.num_elliptic_curve_point_format);
++        printf("Server TLS Invalid num elliptic %u\n", ja3.server.num_elliptic_curve_point_format);
+@@ -1560,4 +1586,4 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	      }
+-	    }
+-	  } else {
+-	    invalid_ja3 = 1;
++      }
++    }
++  } else {
++    invalid_ja3 = 1;
+@@ -1565 +1591 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	    printf("Server TLS Invalid len %u vs %u\n", s_offset+extension_len, total_len);
++    printf("Server TLS Invalid len %u vs %u\n", s_offset+extension_len, total_len);
+@@ -1567,2 +1593,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-	  }
+-	}
++  }
++}

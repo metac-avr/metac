@@ -1,0 +1,46 @@
+diff --git a/dict.c b/dict.c
+index a0d311a2..46fe004f 100644
+--- a/dict.c
++++ b/dict.c
+@@ -461,0 +462,2 @@ xmlDictGetUsage(xmlDictPtr dict) {
++#include <libxml/parser.h>
++
+@@ -471 +473,3 @@ xmlDictHashName(unsigned seed, const xmlChar* data, size_t maxLen,
+-    for (i = 0; i < maxLen && data[i]; i++) {
++    for (i = 0; i < maxLen; i++) {
++        if (data[i] == 0)
++            break;
+diff --git a/parser.c b/parser.c
+index 43ef214e..f2f9525e 100644
+--- a/parser.c
++++ b/parser.c
+@@ -3473,0 +3474,2 @@ xmlParseName(xmlParserCtxtPtr ctxt) {
++#include <libxml/parser.h>
++
+@@ -3487,3 +3488,0 @@ xmlParseNCNameComplex(xmlParserCtxtPtr ctxt) {
+-    /*
+-     * Handler for more complex cases
+-     */
+@@ -3492,3 +3491,3 @@ xmlParseNCNameComplex(xmlParserCtxtPtr ctxt) {
+-    if ((c == ' ') || (c == '>') || (c == '/') || /* accelerators */
+-	(!xmlIsNameStartChar(ctxt, c) || (c == ':'))) {
+-	return(ret);
++    if ((c == ' ') || (c == '>') || (c == '/') ||
++        (!xmlIsNameStartChar(ctxt, c) || (c == ':'))) {
++        return(ret);
+@@ -3497,2 +3496,2 @@ xmlParseNCNameComplex(xmlParserCtxtPtr ctxt) {
+-    while ((c != ' ') && (c != '>') && (c != '/') && /* test bigname.xml */
+-	   (xmlIsNameChar(ctxt, c) && (c != ':'))) {
++    while ((c != ' ') && (c != '>') && (c != '/') &&
++           (xmlIsNameChar(ctxt, c) && (c != ':'))) {
+@@ -3500,3 +3499,7 @@ xmlParseNCNameComplex(xmlParserCtxtPtr ctxt) {
+-	    len += l;
+-	NEXTL(l);
+-	c = CUR_CHAR(l);
++            len += l;
++        NEXTL(l);
++        c = CUR_CHAR(l);
++    }
++    if (len == 0) {
++        ret.hashValue = xmlDictComputeHash(ctxt->dict, BAD_CAST "");
++        return(ret);

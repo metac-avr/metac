@@ -1,0 +1,32 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index d66ebc786..761dfaa03 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -245,6 +245,4 @@ void ndpi_free(void *ptr) {
+-  if(_ndpi_free) {
+-    if(ptr)
+-      _ndpi_free(ptr);
+-  } else {
+-    if(ptr)
+-      free(ptr);
++  if(_ndpi_free && ptr) {
++    _ndpi_free(ptr);
++  } else if(ptr) {
++    free(ptr);
+@@ -8216 +8213,0 @@ int ndpi_match_impossible_bigram(const char *str) {
+-
+@@ -8224 +8221,4 @@ int ndpi_match_trigram(const char *str) {
+-void ndpi_free_flow(struct ndpi_flow_struct *flow) {
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ void ndpi_free_flow(struct ndpi_flow_struct *flow) {
++  static struct ndpi_flow_struct *last_freed = NULL;
++  
+@@ -8227 +8227,5 @@ void ndpi_free_flow(struct ndpi_flow_struct *flow) {
+-    ndpi_free(flow);
++    // Prevent double-free by tracking last freed pointer
++    if(flow != last_freed) {
++      ndpi_free(flow);
++      last_freed = flow;
++    }
+@@ -8236 +8239,0 @@ char *ndpi_revision() {
+-

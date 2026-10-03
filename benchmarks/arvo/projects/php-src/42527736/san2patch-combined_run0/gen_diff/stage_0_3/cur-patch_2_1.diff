@@ -1,0 +1,106 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..fc617ba00e6 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2140,5 +2140,24 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-						}
+-						break;
+-					default:
+-						break;
+-				}
++PHPAPI char *php_fgetcsv(php_stream *stream, char delimiter, char enclosure, char escape_char, size_t buf_len, char *buf, size_t *length)
++{
++	char *bptr, *tptr, *limit, *hunk_begin;
++	int inc_len;
++	char *comp_end = NULL;
++	size_t local_length;
++
++	if (buf_len == 0) {
++		local_length = 8192;
++		buf = emalloc(local_length+1);
++	} else {
++		local_length = buf_len - 1;
++	}
++
++	limit = buf + local_length;
++	bptr = buf;
++	inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
++	
++	/* Scan forward and truncate string at the first null byte we find */
++	for (;;) {
++		switch (inc_len) {
++			case 0:
++				goto quit_loop_0;
++			default:
+@@ -2146,0 +2166,40 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
++				continue;
++		}
++	}
++	
++	quit_loop_0:
++	limit = bptr;
++	bptr = buf;
++	inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
++	
++	/* Initialize our return buffer */
++	if (length) {
++		*length = 0;
++	}
++	
++	/* Reserve workspace memory for building result strings */
++	if (!tptr) {
++		/* Initial allocation; tptr points to temp buffer */
++		bptr = tpalloc = emalloc(local_length * sizeof(char));
++		if (!tpalloc) {
++			return NULL;
++		}
++		
++		/* Initialize pointers */
++		limit = tpalloc + (local_length * sizeof(char));
++		bptr = buf;
++		inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
++		
++		/* Main processing loop */
++		for (;;) {
++			switch (inc_len) {
++				case 0:
++					/* End of buffer reached */
++					goto quit_loop_3;
++				case -1:
++				case -2:
++					/* Invalid character sequence */
++					if (tpalloc) efree(tpalloc);
++					return NULL;
++				default:
++					break;
+@@ -2148,4 +2206,0 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-
+-		quit_loop_3:
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-			tptr += (bptr - hunk_begin);
+@@ -2153,5 +2208,2 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			comp_end = tptr;
+-		} else {
+-			/* 2B. Handle non-enclosure field */
+-
+-			hunk_begin = bptr;
++			inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
++		}
+@@ -2159,3 +2211,14 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			for (;;) {
+-				switch (inc_len) {
+-					case 0:
++	quit_loop_3:
++		{
++			size_t copy_size = bptr - hunk_begin;
++			if (copy_size > 0 && copy_size <= (size_t)(limit - buf)) {
++				memcpy(tptr, hunk_begin, copy_size);
++				tptr += copy_size;
++			} else if (copy_size != 0) {
++				/* Invalid copy size detected */
++				return NULL;
++			}
++		}
++		bptr += inc_len;
++		comp_end = tptr;
++	}					case 0:

@@ -1,0 +1,45 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..70bb7c9f795 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1242,22 +1242,11 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+-#endif
+-
+-static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p) {
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc) {
+-	p->refcount = rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	ZEND_RC_MOD_CHECK(p);
+-	return ++(p->refcount);
+-}
++static int zval_call_destructor(zval *zv) /* {{{ */
++{
++	if (Z_TYPE_P(zv) == IS_INDIRECT) {
++		zv = Z_INDIRECT_P(zv);
++	}
++	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
++		return ZEND_HASH_APPLY_REMOVE;
++	} else {
++		return ZEND_HASH_APPLY_KEEP;
++	}
++}}
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..d2c73699112 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -215 +215 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
++	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1 && Z_OBJ_P(zv)->gc.u.v.type >= 0) {

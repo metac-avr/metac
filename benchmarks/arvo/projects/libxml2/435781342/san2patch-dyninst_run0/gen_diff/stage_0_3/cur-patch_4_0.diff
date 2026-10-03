@@ -1,0 +1,35 @@
+diff --git a/valid.c b/valid.c
+index e11d2c95..43fd3608 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364,5 +2364,11 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
+-
+-	fullelemname = (elem->ns != NULL && elem->ns->prefix != NULL) ?
+-	    xmlBuildQName(elem->name, elem->ns->prefix, felem, 50) :
+-	    (xmlChar *)elem->name;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++             return(0);
++
++	/* Check if elem->ns is valid before accessing */
++	if (elem->ns != NULL) {
++	    fullelemname = (elem->ns->prefix != NULL) ?
++	        xmlBuildQName(elem->name, elem->ns->prefix, felem, 50) :
++	        (xmlChar *)elem->name;
++	} else {
++	    fullelemname = (xmlChar *)elem->name;
++	}
+@@ -2376 +2382 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);
+@@ -2379 +2385 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-					      attr->name, aprefix);
++			                      attr->name, aprefix);
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..ce0363f3 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2274,2 +2274 @@ xmlSAX2StartElementNs(void *ctx,
+-	nb_attributes -= nb_defaulted;
+-
++        nb_attributes -= nb_defaulted;

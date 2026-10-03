@@ -1,0 +1,28 @@
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..44fcd09f1 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -524,0 +525,5 @@ unpack_float(mrb_state *mrb, const unsigned char * src, int srclen, mrb_value ar
++  /* Prevent out-of-bounds read by validating sufficient data */
++  if (srclen < 4) {
++    return -1;  /* Error: insufficient data */
++  }
++
+@@ -1560 +1565,2 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-#ifndef MRB_NO_FLOAT
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ #ifndef MRB_NO_FLOAT
+@@ -1562 +1568,5 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
++        if (sizeof(float) <= srclen - srcidx) {
++          srcidx += unpack_float(mrb, sptr, srclen - srcidx, result, flags);
++        } else {
++          goto type_error;
++        }
+@@ -1565 +1575,5 @@ pack_unpack(mrb_state *mrb, mrb_value str, int single)
+-        srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
++        if (sizeof(double) <= srclen - srcidx) {
++          srcidx += unpack_double(mrb, sptr, srclen - srcidx, result, flags);
++        } else {
++          goto type_error;
++        }

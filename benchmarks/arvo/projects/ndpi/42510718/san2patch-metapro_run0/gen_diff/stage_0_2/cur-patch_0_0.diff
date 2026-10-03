@@ -1,0 +1,31 @@
+diff --git a/src/lib/protocols/kerberos.c b/src/lib/protocols/kerberos.c
+index 2694b072f..31666b3d3 100644
+--- a/src/lib/protocols/kerberos.c
++++ b/src/lib/protocols/kerberos.c
+@@ -206 +206,11 @@ static void strncpy_lower(char * const dst, size_t dst_siz,
+-   int dst_len = ndpi_min(src_siz, dst_siz - 1);
++    if (!dst || !src || dst_siz == 0) return;
++    
++    size_t safe_src_len = src_siz;
++    if (safe_src_len > 0) {
++        // Check if we can safely access src[safe_src_len-1]
++        const char* temp_ptr = src + safe_src_len - 1;
++        if (temp_ptr < src) return; // Underflow check
++    }
++    
++    int dst_len = ndpi_min(src_siz, dst_siz - 1);
++    if (dst_len < 0) dst_len = 0;
+@@ -208,2 +218,2 @@ static void strncpy_lower(char * const dst, size_t dst_siz,
+-   strncpy(dst, src, dst_len);
+-   dst[dst_len] = '\0';
++    strncpy(dst, src, dst_len);
++    dst[dst_len] = '\0';
+@@ -211,4 +221,4 @@ static void strncpy_lower(char * const dst, size_t dst_siz,
+-   for(int i = 0; i < dst_len; ++i)
+-   {
+-     dst[i] = tolower(dst[i]);
+-   }
++    for(int i = 0; i < dst_len; ++i)
++    {
++        dst[i] = tolower(dst[i]);
++    }

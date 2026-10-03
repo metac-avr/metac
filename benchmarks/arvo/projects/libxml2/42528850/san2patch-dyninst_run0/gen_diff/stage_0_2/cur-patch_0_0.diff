@@ -1,0 +1,26 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..fb4217d1 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++         xmlNsPtr ns;
+diff --git a/xmlreader.c b/xmlreader.c
+index c04cb113..b141694f 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1299 +1299,12 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++		/* Clear namespace references before freeing to prevent use-after-free */
++		if (tmp->nsDef != NULL) {
++		    xmlNsPtr ns, next_ns;
++		    for (ns = tmp->nsDef; ns != NULL; ns = next_ns) {
++		        next_ns = ns->next;
++		        ns->next = NULL;
++		    }
++		}
++		if (tmp->ns != NULL) {
++		    tmp->ns = NULL;
++		}

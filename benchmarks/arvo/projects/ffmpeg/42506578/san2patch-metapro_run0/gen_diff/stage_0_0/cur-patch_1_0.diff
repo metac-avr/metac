@@ -1,0 +1,26 @@
+diff --git a/libavcodec/tiff.c b/libavcodec/tiff.c
+index 60773d59ed..fac401ab51 100644
+--- a/libavcodec/tiff.c
++++ b/libavcodec/tiff.c
+@@ -656 +656,6 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    }
++        /* Ensure jpgframe is properly initialized before proceeding */
++        if (!s->jpgframe || !s->jpgframe->buf[0]) {
++            av_log(avctx, AV_LOG_ERROR, "JPEG frame buffer not properly initialized\n");
++            return AVERROR_INVALIDDATA;
++        }
++     }
+@@ -701 +706 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-        av_frame_unref(s->jpgframe);
++        if (s->jpgframe) av_frame_unref(s->jpgframe);
+@@ -719 +724 @@ static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+-    av_frame_unref(s->jpgframe);
++    if (s->jpgframe) av_frame_unref(s->jpgframe);
+@@ -2002 +2007 @@ static int decode_frame(AVCodecContext *avctx,
+-            }
++             }
+@@ -2009,0 +2015,4 @@ static int decode_frame(AVCodecContext *avctx,
++                // Clear potentially invalid pointers before breaking
++                if (p && i >= s->height - s->rps) {
++                    memset(p, 0, sizeof(*p));
++                }

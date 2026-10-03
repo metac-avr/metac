@@ -1,0 +1,27 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 54e9a85808c..20cb7a1ff8e 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1262 +1262,2 @@ void zend_call_destructors(void) /* {{{ */
+-{
++
++ {
+@@ -1263,0 +1265,9 @@ void zend_call_destructors(void) /* {{{ */
++		zend_objects_store_mark_destructed(&EG(objects_store));
++		zend_hash_internal_pointer_reset_ex(&EG(symbol_table), &EG(symbol_table).nInternalPointer);
++		while (zend_hash_has_more_elements_ex(&EG(symbol_table), &EG(symbol_table).nInternalPointer) == SUCCESS) {
++			zval *zv = zend_hash_get_current_data_ex(&EG(symbol_table), &EG(symbol_table).nInternalPointer);
++			if (Z_TYPE_P(zv) == IS_OBJECT && Z_OBJ_HANDLER_P(zv, dtor_obj) == NULL) {
++				ZVAL_UNDEF(zv);
++			}
++			zend_hash_move_forward_ex(&EG(symbol_table), &EG(symbol_table).nInternalPointer);
++		}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..5039d61050a 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2167,0 +2168,4 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++			if (UNEXPECTED(Z_TYPE(p->val) == IS_OBJECT && Z_OBJ_HANDLER(p->val, get_gc) == NULL)) {
++				zval_ptr_dtor(&p->val);
++				continue;
++			}

@@ -1,0 +1,45 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..d36786c7 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -417,9 +417,9 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     * From rfc2044: encoding of the Unicode values on UTF-8:
+-     *
+-     * UCS-4 range (hex.)           UTF-8 octet sequence (binary)
+-     * 0000 0000-0000 007F   0xxxxxxx
+-     * 0000 0080-0000 07FF   110xxxxx 10xxxxxx
+-     * 0000 0800-0000 FFFF   1110xxxx 10xxxxxx 10xxxxxx
+-     *
+-     * Check for the 0x110000 limit too
+-     */
++ *     From rfc2044: encoding of the Unicode values on UTF-8:
++ *
++ *     UCS-4 range (hex.)           UTF-8 octet sequence (binary)
++ *     0000 0000-0000 007F   0xxxxxxx
++ *     0000 0080-0000 07FF   110xxxxx 10xxxxxx
++ *     0000 0800-0000 FFFF   1110xxxx 10xxxxxx 10xxxxxx
++ *
++ *     Check for the 0x110000 limit too
++ */
+@@ -437,0 +438 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++
+@@ -438,0 +440,19 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++            if ((avail < 3) || ((cur[2] & 0xc0) != 0x80))
++                goto encoding_error;
++            if ((c & 0xf0) == 0xf0) {
++                if ((avail < 4) || ((cur[3] & 0xc0) != 0x80))
++                    goto encoding_error;
++            }
++        }
++    } else {
++        if (c == 0) {
++            if ((ctxt->input->flags & XML_INPUT_HAS_ENCODING) == 0)
++                *len = 1;
++            return(*ctxt->input->cur);
++        }
++    }
++    return(c);
++encoding_error:
++    htmlParseErr(ctxt, XML_ERR_INVALID_ENCODING,
++                 "Invalid UTF-8 encoding\n", NULL, NULL);
++    return(0);        if ((c & 0xe0) == 0xe0) {

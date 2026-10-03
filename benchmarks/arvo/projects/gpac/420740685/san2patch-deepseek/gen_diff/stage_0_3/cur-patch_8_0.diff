@@ -1,0 +1,21 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..d78f5d4a3 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1801,3 +1801,7 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-
+-		evt_type = (status&GF_M2TS_TABLE_FOUND) ? GF_M2TS_EVT_PMT_FOUND : GF_M2TS_EVT_PMT_UPDATE;
+-		if (ts->on_event) ts->on_event(ts, evt_type, pmt->program);
++		if (pmt->es && pmt->es->descs && pmt->es->descs_len > 0) {
++			evt_type = (status&GF_M2TS_TABLE_FOUND) ? GF_M2TS_EVT_PMT_FOUND : GF_M2TS_EVT_PMT_UPDATE;
++			if (ts->on_event) ts->on_event(ts, evt_type, pmt->program);
++		} else {
++			GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[M2TS] Invalid PMT descriptor data, skipping program descriptors\n"));
++			return;
++		}
+diff --git a/src/filters/dmx_m2ts.c b/src/filters/dmx_m2ts.c
+index 686d76a64..3d1a3c5ee 100644
+--- a/src/filters/dmx_m2ts.c
++++ b/src/filters/dmx_m2ts.c
+@@ -531,0 +532 @@ static void m2tsdmx_declare_pid(GF_M2TSDmxCtx *ctx, GF_M2TS_PES *stream, GF_ESD
++		if (stream->sub.composition_page_id <= 0 || stream->sub.ancillary_page_id <= 0) return;

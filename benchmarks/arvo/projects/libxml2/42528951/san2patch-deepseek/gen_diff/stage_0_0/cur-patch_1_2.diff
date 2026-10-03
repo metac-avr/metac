@@ -1,0 +1,43 @@
+diff --git a/parser.c b/parser.c
+index 14288713..035f5af0 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4950,10 +4950,22 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-	if (len + 5 >= size) {
+-	    xmlChar *new_buf;
+-            size_t new_size;
+-
+-	    new_size = size * 2;
+-	    new_buf = (xmlChar *) xmlRealloc(buf, new_size);
+-	    if (new_buf == NULL) {
+-		xmlFree (buf);
+-		xmlErrMemory(ctxt, NULL);
+-		return;
++	{
++	    int mblen;
++	    mblen = xmlCopyCharMultiByte(NULL, cur);
++	    if (mblen < 0) {
++		xmlFatalErr(ctxt, XML_ERR_INVALID_CHAR, NULL);
++		NEXTL(l);
++		cur = CUR_CHAR(l);
++		continue;
++	    }
++	    if (len + mblen + 5 >= size) {
++		xmlChar *new_buf;
++		size_t new_size;
++
++		new_size = size * 2 + mblen + 5;
++		new_buf = (xmlChar *) xmlRealloc(buf, new_size);
++		if (new_buf == NULL) {
++		    xmlFree (buf);
++		    xmlErrMemory(ctxt, NULL);
++		    return;
++		}
++		buf = new_buf;
++		size = new_size;
+@@ -4961,2 +4973 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-	    buf = new_buf;
+-            size = new_size;
++	    len += xmlCopyCharMultiByte(&buf[len], cur);
+@@ -4964 +4974,0 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-	COPY_BUF(ql,buf,len,q);

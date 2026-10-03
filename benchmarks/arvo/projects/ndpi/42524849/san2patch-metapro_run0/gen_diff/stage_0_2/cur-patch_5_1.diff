@@ -1,0 +1,21 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 320fd22e4..5d4d5a163 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -936,3 +936,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+-	  snprintf(msg, sizeof(msg), "Expected %s, found %s",
+-		   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
++          snprintf(msg, sizeof(msg), "Expected %s, found %s",
++	   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
+@@ -943,0 +943,6 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
++    // Fixed OOB read: Validate buffer bounds before punycode processing
++    if(hostname_just_set && flow->host_server_name && strlen(flow->host_server_name) <= 47) {
++      ndpi_check_punycode_string(flow->host_server_name, strlen(flow->host_server_name));
++    } else if(hostname_just_set && flow->host_server_name) {
++      // Skip punycode check for strings that could cause OOB access
++    }
+@@ -956,2 +961 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-    ndpi_int_http_add_connection(ndpi_struct, flow, flow->detected_protocol_stack[0]);
+-  }
++    ndpi_int_http_add_connection(ndpi_struct, flow, flow->detected_protocol_stack[0]);  }

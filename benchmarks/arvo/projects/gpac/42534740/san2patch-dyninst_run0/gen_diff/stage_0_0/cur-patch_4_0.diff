@@ -1,0 +1,19 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index eee917756..df54dd1e3 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -995 +995,2 @@ static GF_Err gsfdmx_process_packets(GF_Filter *filter, GSF_DemuxCtx *ctx, GSF_S
+-		case GFS_PCKTYPE_PID_INFO_UPDATE:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		case GFS_PCKTYPE_PID_INFO_UPDATE:
+@@ -1019,3 +1020,7 @@ static GF_Err gsfdmx_process_packets(GF_Filter *filter, GSF_DemuxCtx *ctx, GSF_S
+-			if (gpck->corrupted) gf_filter_pck_set_corrupted(gpck->pck, GF_TRUE);
+-			e = gf_filter_pck_send(gpck->pck);
+-			gpck->pck = NULL;
++			if (gpck->pck) {
++				if (gpck->corrupted) gf_filter_pck_set_corrupted(gpck->pck, GF_TRUE);
++				e = gf_filter_pck_send(gpck->pck);
++				gpck->pck = NULL;
++			} else {
++				e = GF_OK;
++			}

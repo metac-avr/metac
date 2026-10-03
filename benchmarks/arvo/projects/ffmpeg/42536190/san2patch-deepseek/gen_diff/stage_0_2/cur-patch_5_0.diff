@@ -1,0 +1,33 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..4d87bff0ff 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1395 +1395 @@ static int hls_transform_tree(HEVCLocalContext *lc,
+-#define SUBDIVIDE(x, y, idx)                                                    \
++#define SUBDIVIDE(x, y, idx)                            \
+@@ -1403 +1403,2 @@ do {
+-} while (0)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ } while (0)
+@@ -1439,0 +1441,19 @@ do {
++            /* Guard the deblocking path by checking the reference index state
++             * used by ff_hevc_get_ref_list(). If no valid reference index is
++             * available, skip the operation instead of allowing an OOB read. */
++            if (s->sh.slice_type != HEVC_SLICE_I &&
++                (s->pic->nb_refs == 0 || !s->pic->refs)) {
++                av_log(NULL, AV_LOG_ERROR, "No valid HEVC reference pictures\n");
++                return AVERROR_INVALIDDATA;
++            }
++            if (s->sh.slice_type != HEVC_SLICE_I) {
++                int idx;
++                for (idx = 0; idx < s->pic->nb_refs; idx++) {
++                    if (!s->pic->refs[idx] ||
++                        !s->pic->refs[idx]->frame) {
++                        av_log(NULL, AV_LOG_ERROR,
++                               "Invalid HEVC reference picture index\n");
++                        return AVERROR_INVALIDDATA;
++                    }
++                }
++            }
+@@ -1445,0 +1466 @@ do {
++

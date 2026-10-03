@@ -1,0 +1,22 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..de550d0ce69 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -648 +648,3 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				ce1 = Z_OBJCE_P(zv);
++				if (EXPECTED(Z_OBJ_P(zv) != NULL)) {
++					ce1 = Z_OBJCE_P(zv);
++				}
+@@ -650,2 +652,4 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
++				if (EXPECTED(Z_ARRVAL_P(zv) != NULL && !(GC_FLAGS(Z_ARRVAL_P(zv)) & IS_ARRAY_IMMUTABLE))) {
++					if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
++						flags |= IS_TRACE_PACKED;
++					}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..c5b29f87975 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2496,0 +2497 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++	HT_FLAGS(ht) |= HASH_FLAG_DELETED; /* Mark as freed to prevent use-after-free */

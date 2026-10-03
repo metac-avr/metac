@@ -1,0 +1,55 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..eb03f4b9 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2636 +2636,9 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
++// FIXME: Crash CWE-416: Use After Free
++ static void
++xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    
++    if (idPtr != NULL) {
++        /* Clear the node reference to prevent use-after-free */
++        if (idPtr->attr != NULL && idPtr->attr->doc != NULL) {
++            xmlRemoveID(idPtr->attr->doc, idPtr->attr);
+@@ -2637,0 +2646,2 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
++        /* Now safely free the ID structure */
++        xmlFreeID(idPtr);
+@@ -2639,19 +2649 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+-static void
+-xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
+-
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++}    xmlHashFree(table, xmlFreeIDTableEntry);
+diff --git a/tree.c b/tree.c
+index 8e0b346a..7cc869e5 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3757 +3757,10 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->children != NULL) &&
++
++    /* 
++     * Fix for CVE-2023-XXX: Remove ID references before freeing node content
++     * This prevents use-after-free when xmlRemoveID tries to access freed memory
++     */
++    if ((cur->type == XML_ELEMENT_NODE) && (cur->doc != NULL)) {
++        xmlRemoveID(cur->doc, cur);
++    }
++
++     if ((cur->children != NULL) &&

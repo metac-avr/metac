@@ -1,0 +1,61 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..5ba19691f 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -650,0 +651,5 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
++			if (sec->length < 3 || sec->length > 4096) {
++				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Invalid section length (%d)\n", sec->length) );
++				sec->length = 0;
++				return;
++			}
+@@ -656,5 +661,10 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-			memcpy(sec->section + sec->received, data+1, sizeof(char)*len);
+-			sec->received += len;
+-			if (ptr_field > len)
+-				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Invalid pointer field (@ptr_field=%d, @remaining=%d)\n", ptr_field, len) );
+-			gf_m2ts_section_complete(ts, sec, ses);
++			if (len > 0 && len <= data_size - 1) {
++				memcpy(sec->section + sec->received, data+1, sizeof(char)*len);
++				sec->received += len;
++				if (ptr_field > len)
++					GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Invalid pointer field (@ptr_field=%d, @remaining=%d)\n", ptr_field, len) );
++				gf_m2ts_section_complete(ts, sec, ses);
++			} else {
++				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Invalid section copy length (@len=%d, @available=%d)\n", len, data_size - 1) );
++				return;
++			}
+@@ -670,3 +680,5 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-		sec->section = (char*)gf_malloc(sizeof(char)*data_size);
+-		memcpy(sec->section, data, sizeof(char)*data_size);
+-		sec->received = data_size;
++		if (data_size > 0) {
++			sec->section = (char*)gf_malloc(sizeof(char)*data_size);
++			memcpy(sec->section, data, sizeof(char)*data_size);
++			sec->received = data_size;
++		}
+@@ -685 +697,3 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-			memcpy(sec->section + sec->received, data, sizeof(char)*data_size);
++			if (data_size > 0) {
++				memcpy(sec->section + sec->received, data, sizeof(char)*data_size);
++			}
+@@ -687,2 +701,4 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-			sec->section = (char*)gf_realloc(sec->section, sizeof(char)*(sec->received+data_size));
+-			memcpy(sec->section + sec->received, data, sizeof(char)*data_size);
++			if (data_size > 0) {
++				sec->section = (char*)gf_realloc(sec->section, sizeof(char)*(sec->received+data_size));
++				memcpy(sec->section + sec->received, data, sizeof(char)*data_size);
++			}
+@@ -694,0 +711,5 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
++		if (sec->length < 3 || sec->length > 4096) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS] Invalid section length (%d)\n", sec->length) );
++			sec->length = 0;
++			return;
++		}
+@@ -703 +724 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-
++ 
+@@ -705 +726,3 @@ static void gf_m2ts_gather_section(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter *s
+-	gf_m2ts_section_complete(ts, sec, ses);
++	if (sec->length > 0 && sec->received >= sec->length) {
++		gf_m2ts_section_complete(ts, sec, ses);
++	}

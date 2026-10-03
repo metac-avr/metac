@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index fbad44d2f2c..eacb8476046 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -3880 +3880,12 @@ static zend_always_inline void i_free_compiled_variables(zend_execute_data *exec
+-		i_zval_ptr_dtor(cv);
++		if (!Z_ISUNDEF_P(cv) && Z_REFCOUNTED_P(cv)) {
++			if (Z_TYPE_P(cv) == IS_OBJECT) {
++				zend_object *obj = Z_OBJ_P(cv);
++				if (obj && !GC_REFCOUNT(obj)) {
++					ZVAL_UNDEF(cv);
++				} else {
++					zval_ptr_dtor(cv);
++				}
++			} else {
++				zval_ptr_dtor(cv);
++			}
++		}

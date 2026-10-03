@@ -1,0 +1,30 @@
+diff --git a/parser.c b/parser.c
+index cae2b7fd..7845798d 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7373 +7373,14 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		    /* Validate node and its namespace references before copying */
++		    int can_copy = 1;
++		    if (cur->type == XML_ELEMENT_NODE || cur->type == XML_ATTRIBUTE_NODE) {
++		        if ((cur->ns != NULL) && (cur->ns->href == NULL)) {
++		            can_copy = 0;
++		        }
++		    }
++		    
++		    if (can_copy) {
++		        nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		    } else {
++		        nw = NULL;
++		    }
++		    
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..d5cd7ff4 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346 +1346,4 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++		/* Prevent use-after-free by clearing namespace references before freeing */
++		tmp->nsDef = NULL;
++		tmp->ns = NULL;

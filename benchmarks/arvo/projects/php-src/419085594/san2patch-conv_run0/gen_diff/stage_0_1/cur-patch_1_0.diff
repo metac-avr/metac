@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..4a871e22ce1 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1412,0 +1413,10 @@ static zend_always_inline int zend_binary_op(zval *ret, zval *op1, zval *op2 OPL
++	zval temp_op1, temp_op2;
++
++	if (opcode - ZEND_ADD == ZEND_CONCAT - ZEND_ADD) {
++		ZVAL_COPY(&temp_op1, op1);
++		ZVAL_COPY(&temp_op2, op2);
++		int res = concat_function(ret, &temp_op1, &temp_op2);
++		zval_ptr_dtor(&temp_op1);
++		zval_ptr_dtor(&temp_op2);
++		return res;
++	}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..c81b33e5a37 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -45996,0 +45997,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++		zval temp_value;
++		ZVAL_COPY(&temp_value, value);
+@@ -46002 +46004 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-					zend_binary_assign_op_typed_ref(ref, value OPLINE_CC EXECUTE_DATA_CC);
++					zend_binary_assign_op_typed_ref(ref, &temp_value OPLINE_CC EXECUTE_DATA_CC);
+@@ -46006 +46008 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
+-			zend_binary_op(var_ptr, var_ptr, value OPLINE_CC);
++			zend_binary_op(var_ptr, var_ptr, &temp_value OPLINE_CC);
+@@ -46007,0 +46010 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_OP_SPEC_CV_UNUSED_H
++		zval_ptr_dtor(&temp_value);

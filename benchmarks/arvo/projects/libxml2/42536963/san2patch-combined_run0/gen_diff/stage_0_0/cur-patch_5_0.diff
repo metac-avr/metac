@@ -1,0 +1,27 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..b7895bee 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -421 +421,5 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     */
++      */
++    if (ctxt->input->cur >= ctxt->input->end)
++        return(0);
++    if (ctxt->input->end - ctxt->input->cur < 1)
++        return(0);
+@@ -4449 +4453,4 @@ htmlParseElementInternal(htmlParserCtxtPtr ctxt) {
+-        node_info.begin_pos = ctxt->input->consumed +
++        if (ctxt->input != NULL && ctxt->input->base != NULL && 
++            ctxt->input->cur != NULL && ctxt->input->cur >= ctxt->input->base &&
++            ctxt->input->cur < ctxt->input->base + ctxt->input->length) {
++            node_info.begin_pos = ctxt->input->consumed +
+@@ -4451,2 +4458,7 @@ htmlParseElementInternal(htmlParserCtxtPtr ctxt) {
+-	node_info.begin_line = ctxt->input->line;
+-    }
++	    node_info.begin_line = ctxt->input->line;
++        } else {
++            node_info.begin_pos = ctxt->input->consumed;
++            node_info.begin_line = ctxt->input->line;
++        }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     }

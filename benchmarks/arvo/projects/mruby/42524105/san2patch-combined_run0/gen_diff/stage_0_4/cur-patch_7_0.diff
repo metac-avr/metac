@@ -1,0 +1,26 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..69a55b261 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1685 +1685 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-    hval ^= (uint32_t)*s++;
++hval ^= (uint32_t)*s++;
+@@ -1693,3 +1693,11 @@ uint32_t
+-mrb_byte_hash(const uint8_t *s, mrb_int len)
+-{
+-  return mrb_byte_hash_step(s, len, FNV1_32_INIT);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mrb_byte_hash(const uint8_t *s, mrb_int len)
++{
++  // Create a local copy to avoid referencing freed memory
++  if (!s || len <= 0) return 0;
++  uint8_t *local_copy = (uint8_t*)malloc(len);
++  if (!local_copy) return 0;
++  memcpy(local_copy, s, len);
++  uint32_t result = mrb_byte_hash_step(local_copy, len, FNV1_32_INIT);
++  free(local_copy);
++  return result;
+@@ -1705,2 +1713 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-/* 15.2.10.5.20 */
+-/*
++/* 15.2.10.5.20 *//*

@@ -1,0 +1,37 @@
+diff --git a/ext/date/php_date.c b/ext/date/php_date.c
+index abda2a305c7..207f265cc2b 100644
+--- a/ext/date/php_date.c
++++ b/ext/date/php_date.c
+@@ -2267,3 +2267,6 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-{
+-	if (DATEG(last_errors)) {
+-		timelib_error_container_dtor(DATEG(last_errors));
++// Fixed CWE-825: Expired Pointer Dereference - Enhanced pointer validation
++ {
++	timelib_error_container *temp_errors = DATEG(last_errors);
++	
++	if (temp_errors) {
++		timelib_error_container_dtor(temp_errors);
+@@ -2277,2 +2280,3 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-	if ((*last_errors)->warning_count || (*last_errors)->error_count) {
+-		DATEG(last_errors) = *last_errors;
++	temp_errors = *last_errors;
++	if (temp_errors && (temp_errors->warning_count || temp_errors->error_count)) {
++		DATEG(last_errors) = temp_errors;
+@@ -2281 +2285,3 @@ static void update_errors_warnings(timelib_error_container **last_errors) /* {{{
+-	timelib_error_container_dtor(*last_errors);
++	if (temp_errors != NULL && temp_errors == *last_errors) {  // Validate before destruction
++		timelib_error_container_dtor(*last_errors);
++	}
+@@ -2506 +2512 @@ PHP_METHOD(DateTime, __construct)
+-	zval *timezone_object = NULL;
++zval *timezone_object = NULL;
+@@ -2513,0 +2520,6 @@ PHP_METHOD(DateTime, __construct)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++	if (DATEG(last_errors) != NULL) {
++		if (*DATEG(last_errors) != NULL) {
++			timelib_error_container_dtor(DATEG(last_errors));
++		}
++	}
+@@ -2526 +2537,0 @@ PHP_METHOD(DateTimeImmutable, __construct)
+-

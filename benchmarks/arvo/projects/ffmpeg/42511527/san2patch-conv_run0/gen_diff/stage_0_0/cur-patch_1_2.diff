@@ -1,0 +1,33 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..c237dbcdab 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -348,0 +349,17 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++                                 int *got_frame, AVPacket *avpkt)
++{
++    FlashSVContext *s = avctx->priv_data;
++    GetByteContext gb;
++    int frame_size;
++    int ret;
++    int block_size;
++    int blocks_wide, blocks_high;
++    int h_blocks, v_blocks, h_part, v_part;
++    AVFrame *frame = data;
++
++    if ((ret = init_frame(s, avctx)) < 0)
++        return ret;
++
++    if (avctx->height != s->image_height || avctx->width != s->image_width) {
++        av_log(avctx, AV_LOG_ERROR,
+@@ -358,3 +375,5 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        int err;
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
+-            return err;
++        void *new_keyframedata = av_realloc(s->keyframedata, avpkt->size);
++        if (!new_keyframedata) {
++            return AVERROR(ENOMEM);
++        }
++        s->keyframedata = new_keyframedata;
+@@ -370,0 +390 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++

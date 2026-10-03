@@ -1,0 +1,83 @@
+diff --git a/src/lib/ndpi_memory.c b/src/lib/ndpi_memory.c
+index bb8173108..6d80500de 100644
+--- a/src/lib/ndpi_memory.c
++++ b/src/lib/ndpi_memory.c
+@@ -76,0 +77,6 @@ void ndpi_free(void *ptr) {
++  /* Prevent release of invalid pointer - CWE-763 fix */
++  if(!ptr) return;
++  
++  /* Basic sanity check to avoid freeing obviously invalid addresses */
++  if(((uintptr_t)ptr & 0xFFF) == 0xFFF) return; /* Suspicious pointer pattern */
++  
+@@ -78,5 +84,3 @@ void ndpi_free(void *ptr) {
+-    if(ptr)
+-      _ndpi_free(ptr);
+-  } else {
+-    if(ptr)
+-      free(ptr);
++    _ndpi_free(ptr);
++   } else {
++    free(ptr);
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 904d1d971..839a1d0f6 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -6832,5 +6832,13 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.server_names)
+-	ndpi_free(flow->protos.tls_quic.server_names);
+-
+-      if(flow->protos.tls_quic.advertised_alpns)
+-	ndpi_free(flow->protos.tls_quic.advertised_alpns);
++      void* ptr_to_free;
++      ptr_to_free = flow->protos.tls_quic.server_names;
++      if(ptr_to_free) {
++	flow->protos.tls_quic.server_names = NULL;
++	ndpi_free(ptr_to_free);
++      }
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ 
++      ptr_to_free = flow->protos.tls_quic.advertised_alpns;
++      if(ptr_to_free) {
++	flow->protos.tls_quic.advertised_alpns = NULL;
++	ndpi_free(ptr_to_free);
++      }
+@@ -6838,2 +6846,5 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.negotiated_alpn)
+-	ndpi_free(flow->protos.tls_quic.negotiated_alpn);
++      ptr_to_free = flow->protos.tls_quic.negotiated_alpn;
++      if(ptr_to_free) {
++	flow->protos.tls_quic.negotiated_alpn = NULL;
++	ndpi_free(ptr_to_free);
++      }
+@@ -6841,2 +6852,5 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.tls_supported_versions)
+-	ndpi_free(flow->protos.tls_quic.tls_supported_versions);
++      ptr_to_free = flow->protos.tls_quic.tls_supported_versions;
++      if(ptr_to_free) {
++	flow->protos.tls_quic.tls_supported_versions = NULL;
++	ndpi_free(ptr_to_free);
++      }
+@@ -6844,2 +6858,5 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.issuerDN)
+-	ndpi_free(flow->protos.tls_quic.issuerDN);
++      ptr_to_free = flow->protos.tls_quic.issuerDN;
++      if(ptr_to_free) {
++	flow->protos.tls_quic.issuerDN = NULL;
++	ndpi_free(ptr_to_free);
++      }
+@@ -6847,2 +6864,5 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.subjectDN)
+-	ndpi_free(flow->protos.tls_quic.subjectDN);
++      ptr_to_free = flow->protos.tls_quic.subjectDN;
++      if(ptr_to_free) {
++	flow->protos.tls_quic.subjectDN = NULL;
++	ndpi_free(ptr_to_free);
++      }
+@@ -6850,2 +6870,5 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-      if(flow->protos.tls_quic.ja4_client_raw)
+-	ndpi_free(flow->protos.tls_quic.ja4_client_raw);
++      ptr_to_free = flow->protos.tls_quic.ja4_client_raw;
++      if(ptr_to_free) {
++	flow->protos.tls_quic.ja4_client_raw = NULL;
++	ndpi_free(ptr_to_free);
++      }

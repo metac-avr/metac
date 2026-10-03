@@ -1,0 +1,15 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..bedf943351f 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -302 +302,9 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-			zval_ptr_dtor_nogc(p);
++			if (Z_REFCOUNTED_P(p) && Z_TYPE_P(p) != IS_UNDEF) {
++				if (GC_REFCOUNT(Z_COUNTED_P(p)) > 0) {
++					zval_ptr_dtor_nogc(p);
++				} else {
++					ZVAL_UNDEF(p);
++				}
++			} else {
++				ZVAL_UNDEF(p);
++			}

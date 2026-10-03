@@ -1,0 +1,69 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 1819d0b671d..4c5c46705d6 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4495 +4495,3 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zval_ptr_dtor_nogc(var);
++					if (var && !Z_ISUNDEF_P(var)) {
++						zval_ptr_dtor_nogc(var);
++					}
+@@ -4498,4 +4500,5 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					ZEND_ASSERT(Z_TYPE_P(var) == IS_OBJECT);
+-					obj = Z_OBJ_P(var);
+-					zend_object_store_ctor_failed(obj);
+-					OBJ_RELEASE(obj);
++					if (var && Z_TYPE_P(var) == IS_OBJECT) {
++						obj = Z_OBJ_P(var);
++						zend_object_store_ctor_failed(obj);
++						OBJ_RELEASE(obj);
++					}
+@@ -4503,2 +4506,5 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					if (Z_TYPE_P(var) != IS_ARRAY && Z_FE_ITER_P(var) != (uint32_t)-1) {
+-						zend_hash_iterator_del(Z_FE_ITER_P(var));
++					if (var && !Z_ISUNDEF_P(var)) {
++						if (Z_TYPE_P(var) != IS_ARRAY && Z_FE_ITER_P(var) != (uint32_t)-1) {
++							zend_hash_iterator_del(Z_FE_ITER_P(var));
++						}
++						zval_ptr_dtor_nogc(var);
+@@ -4506 +4511,0 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zval_ptr_dtor_nogc(var);
+@@ -4508,14 +4513,16 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					zend_string **rope = (zend_string **)var;
+-					zend_op *last = EX(func)->op_array.opcodes + op_num;
+-					while ((last->opcode != ZEND_ROPE_ADD && last->opcode != ZEND_ROPE_INIT)
+-							|| last->result.var != var_num) {
+-						ZEND_ASSERT(last >= EX(func)->op_array.opcodes);
+-						last--;
+-					}
+-					if (last->opcode == ZEND_ROPE_INIT) {
+-						zend_string_release_ex(*rope, 0);
+-					} else {
+-						int j = last->extended_value;
+-						do {
+-							zend_string_release_ex(rope[j], 0);
+-						} while (j--);
++					if (var) {
++						zend_string **rope = (zend_string **)var;
++						zend_op *last = EX(func)->op_array.opcodes + op_num;
++						while ((last->opcode != ZEND_ROPE_ADD && last->opcode != ZEND_ROPE_INIT)
++								|| last->result.var != var_num) {
++							ZEND_ASSERT(last >= EX(func)->op_array.opcodes);
++							last--;
++						}
++						if (last->opcode == ZEND_ROPE_INIT) {
++							zend_string_release_ex(*rope, 0);
++						} else {
++							int j = last->extended_value;
++							do {
++								zend_string_release_ex(rope[j], 0);
++							} while (j--);
++						}
+@@ -4525,3 +4532,5 @@ static void cleanup_live_vars(zend_execute_data *execute_data, uint32_t op_num,
+-					if (E_HAS_ONLY_FATAL_ERRORS(EG(error_reporting))
+-							&& !E_HAS_ONLY_FATAL_ERRORS(Z_LVAL_P(var))) {
+-						EG(error_reporting) = Z_LVAL_P(var);
++					if (var && !Z_ISUNDEF_P(var) && Z_TYPE_P(var) == IS_LONG) {
++						if (E_HAS_ONLY_FATAL_ERRORS(EG(error_reporting))
++								&& !E_HAS_ONLY_FATAL_ERRORS(Z_LVAL_P(var))) {
++							EG(error_reporting) = Z_LVAL_P(var);
++						}

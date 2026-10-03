@@ -1,0 +1,23 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..51aaea556 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1097 +1097,3 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc_mark_children(mrb, gc, obj);
++    if ((uintptr_t)obj != 0xdeadbeef && obj->tt != MRB_TT_FREE) {
++      gc_mark_children(mrb, gc, obj);
++    }
+@@ -1203,4 +1205,9 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
+-      page = next;
++      /* Add safety check to prevent use-after-free */
++      if (page->freelist) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++        page = next;
++      } else {
++        page = page->next;
++      }

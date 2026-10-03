@@ -1,0 +1,16 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..aaf1eb78c 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -268,0 +269,11 @@ char *ndpi_strdup(const char *s) {
++  // Validate pointer before dereferencing to prevent expired pointer access
++  static volatile int validator;
++  
++  // Perform basic pointer validation by attempting minimal access
++  if(s != NULL) {
++    // Access first byte to trigger potential segfault if pointer is expired
++    validator = (int)(*((unsigned char*)s));
++    // Prevent compiler optimization of the validation
++    __asm__ __volatile__("" : "+r"(validator) : : "memory");
++  }
++  

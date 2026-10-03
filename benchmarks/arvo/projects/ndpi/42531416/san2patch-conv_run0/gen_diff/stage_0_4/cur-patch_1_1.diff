@@ -1,0 +1,100 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..5a285e430 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,3 +2381,4 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
+-#endif
++static void tls_detect_client_certificate_before_v38(
++  struct ndpi_detection_module_struct *ndpi_struct, struct ndpi_flow_struct *flow)
++{
++  struct ndpi_packet_struct *packet = &flow->packet;
+@@ -2385 +2386 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++  NDPI_LOG_DBG(ndpi_struct, "search TLS Client Certificate\n");
+@@ -2387,5 +2388,4 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++  if(packet->payload_packet_len > 9) {
++    u_int32_t a = 0, b = 0, c = 0;
++    u_int32_t d, tls_record_len;
++    u_int16_t tls_version;
+@@ -2393,2 +2393,26 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
+-		}
++    tls_version = ntohs(*((u_int16_t*)&packet->payload[a]));
++
++    if((tls_version == 0x0301) || (tls_version == 0x0302) || (tls_version == 0x0303)) {
++      a += 2;
++      tls_record_len = ntohs(*((u_int16_t*)&packet->payload[a]));
++      a += 2;
++
++      if(tls_record_len > packet->payload_packet_len)
++	return;
++
++      if(packet->payload[a] != 0x01)
++	return;
++
++      a += 3;
++      b = a;
++      a += 2;
++
++      if(a >= packet->payload_packet_len)
++	return;
++
++      d = ntohs(*((u_int16_t*)&packet->payload[b]));
++
++      if((d+a+1) >= packet->payload_packet_len)
++	return;
++
++      a += d;
+@@ -2396,2 +2420,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++      if(packet->payload[a] != 0x0b)
++	return;
+@@ -2399,4 +2423,36 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++      a++;
++      b = a;
++      a += 3;
++
++      if(a >= packet->payload_packet_len)
++	return;
++
++      d = ntohs(*((u_int16_t*)&packet->payload[b]));
++
++      if((d+b+1) >= packet->payload_packet_len)
++	return;
++
++      b += 3;
++      c = b + d;
++
++      while(b < c) {
++	if(packet->payload[b] == 0x00) {
++	  b++;
++	  d = ntohs(*((u_int16_t*)&packet->payload[b]));
++	  b += 2;
++
++	  if((b+d) < packet->payload_packet_len) {
++	    NDPI_LOG_INFO(ndpi_struct,
++			  "found SSLv3/TLS Certificate len=%u\n", d);
++
++	    flow->l4.tcp.tls_cert_len = d;
++	    memcpy(flow->l4.tcp.tls_cert, &packet->payload[b], min(d, sizeof(flow->l4.tcp.tls_cert)-1));
++	    flow->l4.tcp.tls_cert[sizeof(flow->l4.tcp.tls_cert)-1] = '\0';
++	    flow->l4.tcp.tls_certificate_detected = 1;
++	    return;
++	  }
++	}
++      }
++    }
++  }
++}		    continue;

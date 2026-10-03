@@ -1,0 +1,37 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index dcdde6966..a684afa41 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -7135 +7135,5 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp)))
++		  if(rc < 0) {
++		    rc = 0;
++		    break;
++		  }
++		  if((size_t)rc >= sizeof(options_fp)-options_fp_len)
+@@ -7139,0 +7144,2 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
++		  if(fp_idx >= sizeof(fingerprint))
++		    break;
+@@ -7142 +7148,5 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-		  if((rc < 0) || ((int)(fp_idx + rc) == sizeof(fingerprint)))
++		  if(rc < 0) {
++		    rc = 0;
++		    break;
++		  }
++		  if((size_t)rc >= sizeof(fingerprint)-fp_idx)
+@@ -7196,2 +7206,11 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-			rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", options[j]);
+-			if((rc < 0) || ((int)(options_fp_len + rc) == sizeof(options_fp))) break;
++			if(fp_idx < sizeof(options_fp)) {
++			  rc = snprintf(&options_fp[options_fp_len], sizeof(options_fp)-options_fp_len, "%02x", options[j]);
++			  if(rc < 0) {
++			    rc = 0;
++			    break;
++			  }
++			  if((size_t)rc >= sizeof(options_fp)-options_fp_len)
++			    break;
++			  options_fp_len += rc;
++			} else
++			  break;
+@@ -7199 +7217,0 @@ static int ndpi_init_packet(struct ndpi_detection_module_struct *ndpi_str,
+-			options_fp_len += rc;

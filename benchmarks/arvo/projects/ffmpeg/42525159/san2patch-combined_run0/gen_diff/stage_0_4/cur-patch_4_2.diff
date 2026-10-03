@@ -1,0 +1,68 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..644c7b29b7 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,22 +2017,41 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-
++#define WRITE_FRAME_PREC(prec, PIXEL) \
++static void write_frame_##prec(const Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,\
++                              AVFrame *picture, int precision) \
++{ \
++    int compno;\
++    int x, y, pixel_counter;\
++    int *dst;\
++    int *src;\
++    int *line;\
++    int pixelsize = picture->linesize[0] / sizeof(PIXEL);\
++    int plane = 0;\
++    for (compno = 0; compno < s->ncomponents; compno++) {\
++        if (s->cdef[compno] == -1) {\
++            plane = compno;\
++        } else if (s->cdef[compno] == 0) {\
++            plane = 0;\
++        } else if (s->cdef[compno] == 1) {\
++            plane = 1;\
++        } else if (s->cdef[compno] == 2) {\
++            plane = 2;\
++        } else {\
++            plane = compno;\
++        }\
++        src = tile->data[compno];\
++        line = src;\
++        dst = (int*)(picture->data[plane]);\
++        for (y = 0; y < tile->height; y++) {\
++            PIXEL *i_datap = (PIXEL*)line;\
++            pixel_counter = 0;\
++            for (x = 0; x < tile->width; x++) {\
++                *dst = *i_datap;\
++                i_datap++;\
++                dst += pixelsize;\
++            }\
++            line += picture->linesize[plane] / sizeof(PIXEL);\
++        }\
++    }\
++}\
++\
++WRITE_FRAME_PREC(8, uint8_t)\
++WRITE_FRAME_PREC(16, uint16_t)

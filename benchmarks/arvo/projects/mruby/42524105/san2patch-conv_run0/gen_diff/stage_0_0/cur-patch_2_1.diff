@@ -1,0 +1,63 @@
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..40cf70506 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -324,28 +324 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-  switch (tt) {
+-  case MRB_TT_STRING:
+-    hash_code = mrb_str_hash(mrb, key);
+-    break;
+-  case MRB_TT_TRUE:
+-  case MRB_TT_FALSE:
+-  case MRB_TT_SYMBOL:
+-    hash_code = U32(mrb_fixnum(key));
+-    break;
+-  case MRB_TT_INTEGER:
+-    if (mrb_fixnum_p(key)) {
+-      hash_code = U32(mrb_fixnum(key));
+-      break;
+-    }
+-#ifndef MRB_NO_FLOAT
+-    /* fall through */
+-  case MRB_TT_FLOAT:
+-#endif
+-    hash_code = U32(mrb_obj_id(key));
+-    break;
+-  default:
+-    h_check_modified(mrb, h, {
+-      hash_code_obj = mrb_funcall_argv(mrb, key, MRB_SYM(hash), 0, NULL);
+-    });
+-
+-    hash_code = U32(tt) ^ U32(mrb_integer(hash_code_obj));
+-    break;
+-  }
++  mrb_hash_ht_hash_code
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..e199c0de0 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1668,23 +1668 @@ b */
+-uint32_t
+-mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-{
+-  const uint8_t *send = s + len;
+-
+-  /*
+-   * FNV-1 hash each octet in the buffer
+-   */
+-  while (s < send) {
+-    /* multiply by the 32 bit FNV magic prime mod 2^32 */
+-#if defined(NO_FNV_GCC_OPTIMIZATION)
+-    hval *= FNV_32_PRIME;
+-#else
+-    hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
+-#endif
+-
+-    /* xor the bottom with the current octet */
+-    hval ^= (uint32_t)*s++;
+-  }
+-
+-  /* return our new hash value */
+-  return hval;
+-}
++mrb_byte_hash_step

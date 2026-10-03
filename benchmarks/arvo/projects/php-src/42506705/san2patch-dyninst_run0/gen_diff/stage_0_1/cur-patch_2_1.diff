@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a52a7fc9691..9d91f3ebcad 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1781,0 +1782,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	/* Invalidate JIT references before memory deallocation */
++	zend_jit_invalidate_references(ht);
+@@ -1783 +1785,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-free_ht:
++// FIXME: Crash CWE-416: Use After Free
++ free_ht:
+@@ -1786,6 +1789 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-}
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	IS_CONSISTENT(ht);
+-	HT_ASSERT_RC1(ht);
++}	HT_ASSERT_RC1(ht);
+diff --git a/ext/opcache/jit/zend_jit.c b/ext/opcache/jit/zend_jit.c
+index 5143b977ed9..d9323f40fb0 100644
+--- a/ext/opcache/jit/zend_jit.c
++++ b/ext/opcache/jit/zend_jit.c
+@@ -426 +426 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
+-						return 1;
++return 1;
+@@ -428,0 +429 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
++// Security fix for heap-use-after-free vulnerability
+@@ -437 +437,0 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
+-

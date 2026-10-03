@@ -1,0 +1,26 @@
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..71640ccac 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -776 +776,4 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
+-  if (skip) c = c->super;
++  if (skip) {
++    if (c && c->super) c = c->super;
++    else return mrb_nil_value();
++  }
+@@ -785,4 +788,6 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
+-  if (!retry && base->tt == MRB_TT_MODULE) {
+-    c = mrb->object_class;
+-    retry = TRUE;
+-    goto L_RETRY;
++  if (!retry && base && base->tt == MRB_TT_MODULE) {
++    if (mrb->object_class) {
++      c = mrb->object_class;
++      retry = TRUE;
++      goto L_RETRY;
++    }
+@@ -790,0 +796 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  if (!base) return mrb_nil_value();
+@@ -811 +817 @@ mrb_vm_const_get(mrb_state *mrb, mrb_sym sym)
+-  if (iv_get(mrb, c->iv, sym, &v)) {
++  if (c != NULL && iv_get(mrb, c->iv, sym, &v)) {

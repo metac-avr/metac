@@ -1,0 +1,20 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..39535fe1a 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1342 +1342,2 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-		case GF_M2TS_HLS_EC3_CRYPT:
++// FIXME: Crash CWE-416: Use After Free
++ 		case GF_M2TS_HLS_EC3_CRYPT:
+@@ -1354,2 +1355,5 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-			break;
+-		case GF_M2TS_PRIVATE_DATA:
++			// Clear any existing entry in ts->ess array to prevent dangling pointers
++			if (pid < GF_M2TS_MAX_STREAMS && ts->ess[pid]) {
++				ts->ess[pid] = NULL;
++			}
++			break;		case GF_M2TS_PRIVATE_DATA:
+@@ -1689 +1693,2 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-					es = NULL;
++					ts->ess[es->pid] = NULL; // Clear the pointer to prevent use-after-free
++ 					es = NULL;

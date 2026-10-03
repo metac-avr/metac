@@ -1,0 +1,37 @@
+diff --git a/src/filters/load_bt_xmt.c b/src/filters/load_bt_xmt.c
+index f0d299e0f..32a6681ad 100644
+--- a/src/filters/load_bt_xmt.c
++++ b/src/filters/load_bt_xmt.c
+@@ -832 +832 @@ static const char* my_strstr(const char *str, const char *pat, u32 str_len)
+-	//basically a memmem clone (we don't use for portability reasons)
++	// Fixed: Calculate max search length to prevent buffer overflow
+@@ -834 +834,3 @@ static const char* my_strstr(const char *str, const char *pat, u32 str_len)
+-		char *next = memchr(str, pat[0], str_len);
++		// Limit search length to prevent reading beyond buffer
++		u32 search_len = (str_len > 0) ? str_len : 0;
++		char *next = memchr(str, pat[0], search_len);
+@@ -836 +838,4 @@ static const char* my_strstr(const char *str, const char *pat, u32 str_len)
+-		u32 left = str_len - (u32) (next-str);
++		u32 offset = (u32) (next-str);
++		// Verify offset doesn't exceed buffer bounds
++		if (offset >= str_len) return NULL;
++		u32 left = str_len - offset;
+@@ -894 +899,2 @@ static const char *ctxload_probe_data(const u8 *probe_data, u32 size, GF_FilterP
+-	//we should refine by getting the xmlns attribute value rather than searching for its value...
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	//we should refine by getting the xmlns attribute value rather than searching for its value...
+@@ -896 +902 @@ static const char *ctxload_probe_data(const u8 *probe_data, u32 size, GF_FilterP
+-	if (my_strstr(probe_data, "http://www.w3.org/1999/XSL/Transform", probe_size)
++	if (probe_size > 0 && my_strstr(probe_data, "http://www.w3.org/1999/XSL/Transform", probe_size)
+@@ -899 +905 @@ static const char *ctxload_probe_data(const u8 *probe_data, u32 size, GF_FilterP
+-		|| my_strstr(probe_data, "urn:mpeg:mpeg4:xmta:schema:2002", probe_size)
++		|| (probe_size > 0 && my_strstr(probe_data, "urn:mpeg:mpeg4:xmta:schema:2002", probe_size))
+@@ -902,2 +908,2 @@ static const char *ctxload_probe_data(const u8 *probe_data, u32 size, GF_FilterP
+-	} else if (my_strstr(probe_data, "<X3D", probe_size)
+-		|| my_strstr(probe_data, "http://www.web3d.org/specifications/x3d-3.0.xsd", probe_size)
++	} else if (probe_size > 0 && my_strstr(probe_data, "<X3D", probe_size)
++		|| (probe_size > 0 && my_strstr(probe_data, "http://www.web3d.org/specifications/x3d-3.0.xsd", probe_size))
+@@ -906,2 +912 @@ static const char *ctxload_probe_data(const u8 *probe_data, u32 size, GF_FilterP
+-	} else if (my_strstr(probe_data, "<saf", probe_size)
+-		|| my_strstr(probe_data, "urn:mpeg:mpeg4:SAF:2005", probe_size)
++	} else if (probe_size > 0 && my_strstr(probe_data, "<saf", probe_size))		|| my_strstr(probe_data, "urn:mpeg:mpeg4:SAF:2005", probe_size)

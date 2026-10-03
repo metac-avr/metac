@@ -1,0 +1,30 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..414b73660 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1095,0 +1096 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++    // Temporarily remove from gray list before validation
+@@ -1096,0 +1098,7 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++    
++    // Validate object is still alive before marking
++    if (obj->tt > MRB_TT_MAXDEFINE) {
++      // Object type check to ensure it hasn't been freed
++      continue;
++    }
++    
+@@ -1203,3 +1211,12 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
+-      unlink_free_heap_page(gc, page);
+-      mrb_free(mrb, page);
++      /* Validate page is not referenced before freeing to prevent use-after-free */
++      if (!gc->marking) {
++        unlink_heap_page(gc, page);
++        unlink_free_heap_page(gc, page);
++        mrb_free(mrb, page);
++      } else {
++        /* Move to pending list for later cleanup */
++        page->next = gc->pending_free_list;
++        gc->pending_free_list = page;
++        page = next;
++        continue;
++      }

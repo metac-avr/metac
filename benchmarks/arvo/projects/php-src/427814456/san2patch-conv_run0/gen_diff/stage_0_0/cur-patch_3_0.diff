@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..93f0e3d153d 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -67 +67,4 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
++	/* Fix: Set pointer to NULL after freeing to prevent use-after-free */
++	void *temp_str = str;
++	efree(temp_str);
++	str = NULL;
+@@ -76,3 +79 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-}
+-
+-static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
++}static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..58ba1e5172b 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -19574 +19574,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-					zend_string_release_ex(rope[i], 0);
++					if (rope[i]) {
++						zend_string_release_ex(rope[i], 0);
++						rope[i] = NULL;
++					}
+@@ -19582 +19585,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-		len += ZSTR_LEN(rope[i]);
++		if (rope[i]) {
++			len += ZSTR_LEN(rope[i]);
++		}
+@@ -19588,3 +19593,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ROPE_END_SPEC_TMP_CONST_HANDLE
+-		memcpy(target, ZSTR_VAL(rope[i]), ZSTR_LEN(rope[i]));
+-		target += ZSTR_LEN(rope[i]);
+-		zend_string_release_ex(rope[i], 0);
++		if (rope[i]) {
++			memcpy(target, ZSTR_VAL(rope[i]), ZSTR_LEN(rope[i]));
++			target += ZSTR_LEN(rope[i]);
++			zend_string_release_ex(rope[i], 0);
++			rope[i] = NULL;
++		}

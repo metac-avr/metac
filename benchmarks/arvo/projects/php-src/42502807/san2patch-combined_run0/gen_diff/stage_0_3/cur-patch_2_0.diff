@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_opcode.c b/Zend/zend_opcode.c
+index 38ba89db2ba..ff1bc4cf4a6 100644
+--- a/Zend/zend_opcode.c
++++ b/Zend/zend_opcode.c
+@@ -803 +803,6 @@ static void emit_live_range(
+-				use_opline--;
++// FIXED: Prevent out-of-bounds read by checking array bounds
++				if (use_opline > op_array->opcodes && use_opline < op_array->opcodes + op_array->last) {
++					use_opline--;
++				} else {
++					break;
++				}
+@@ -885 +890,3 @@ static void zend_calc_live_ranges(
+-			if (EXPECTED(last_use[var_num] != (uint32_t) -1)) {
++			if (var_num >= op_array->last_var) {
++				/* Skip out-of-bounds access */
++			} else if (EXPECTED(last_use[var_num] != (uint32_t) -1)) {
+@@ -896 +903,2 @@ static void zend_calc_live_ranges(
+-					num = opnum - (opline->opcode == ZEND_OP_DATA);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 					num = opnum - (opline->opcode == ZEND_OP_DATA);

@@ -1,0 +1,24 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..ee92244f5 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -954,0 +955 @@ static GF_Err pcapng_load_shb(GF_NetcapFilter *nf)
++		nf = NULL;
+@@ -1480,5 +1481,12 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
+-			gf_netcap_load_pck_pcap(nf);
+-
++		// Check if capture is still valid before loading packets
++		if (nf->cap_bs != NULL) {
++			if (nf->cap_mode==NETCAP_GPAC)
++				gf_netcap_load_pck_gpac(nf);
++			else
++				gf_netcap_load_pck_pcap(nf);
++		} else {
++			// Capture buffer has been freed, cannot load packets
++			return;
++		}
++// FIXME: Crash CWE-416: Use After Free
++ 

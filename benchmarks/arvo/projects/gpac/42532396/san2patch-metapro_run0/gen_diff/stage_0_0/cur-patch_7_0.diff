@@ -1,0 +1,21 @@
+diff --git a/src/filters/load_text.c b/src/filters/load_text.c
+index 877b285a8..bcc9d4eca 100644
+--- a/src/filters/load_text.c
++++ b/src/filters/load_text.c
+@@ -4009 +4009 @@ static GF_Err txtin_process(GF_Filter *filter)
+-	if (pck) {
++if (pck) {
+@@ -4016,0 +4017,13 @@ static GF_Err txtin_process(GF_Filter *filter)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	}
++
++	// Validate input size before text processing to prevent buffer overflow
++	if (ctx && ctx->ipid) {
++		u32 max_safe_size = 2048; // Match buffer size in gf_text_get_utf8_line
++		GF_PropertyValue prop;
++		if (gf_filter_pid_get_property(ctx->ipid, GF_PROP_PCK_SIZE, &prop) == GF_OK) {
++			if (prop.value.uint > max_safe_size) {
++				GF_LOG(GF_LOG_ERROR, GF_LOG_PARSER, ("Input size exceeds buffer limit, rejecting\n"));
++				return GF_NON_COMPLIANT_BITSTREAM;
++			}
++		}

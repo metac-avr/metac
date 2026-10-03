@@ -1,0 +1,32 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..08855a3745e 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2552,0 +2553 @@ static zend_string* ZEND_FASTCALL zend_jit_rope_end(zend_string **rope, uint32_t
++		zend_string_addref(rope[i]);
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 278afc9c10f..87c96449c8a 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -156,9 +156,12 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			zend_copy_to_variable(variable_ptr, value, value_type);
+-			if (GC_DELREF(garbage) == 0) {
+-				rc_dtor_func(garbage);
+-			} else { /* we need to split */
+-				/* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
+-				if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
+-					gc_possible_root(garbage);
+-				}
+-			}
++// FIXME: Crash CWE-416: Use After Free
++                        Z_TRY_ADDREF_P(value);
++                        zend_copy_to_variable(variable_ptr, value, value_type);
++                        if (GC_DELREF(garbage) == 0) {
++                                rc_dtor_func(garbage);
++                        } else { /* we need to split */
++                                /* optimized version of GC_ZVAL_CHECK_POSSIBLE_ROOT(variable_ptr) */
++                                if (UNEXPECTED(GC_MAY_LEAK(garbage))) {
++                                        gc_possible_root(garbage);
++                                }
++                        }
++                        zval_ptr_dtor(value);

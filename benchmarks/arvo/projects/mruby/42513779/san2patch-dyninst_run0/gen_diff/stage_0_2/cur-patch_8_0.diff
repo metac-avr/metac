@@ -1,0 +1,31 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..7de6591b7 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -422 +422,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-  if (uzero(yy)) return;        /* divided by zero */
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   if (uzero(yy)) return;        /* divided by zero */
+@@ -425,0 +427 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  if (yd == 0) return;
+@@ -430,0 +433 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  if (yd <= 0) return;  /* prevent invalid indexing */
+@@ -432,0 +436,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    /* Add comprehensive bounds checking before memory access */
++    if (j >= xd || j + yd > xd || j + yd - 1 >= xd) break;
++    if (j + yd >= x.sz + 1) break;  /* prevent overflow access */
+@@ -436 +442 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      for (i=0; i<yd; i++) {
++      for (i=0; i<yd && i+j < x.sz; i++) {  /* bounds check in loop condition */
+@@ -442 +448 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if (i+j < x.sz) b += x.p[i+j];
+@@ -444 +450 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
++    for (; b!=0 && qhat > 0; qhat--) {  /* prevent underflow */
+@@ -446 +452 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      for (i=0; i<yd; i++) {
++      for (i=0; i<yd && i+j < x.sz && i < y.sz; i++) {  /* multiple bounds checks */
+@@ -453 +459 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < q.sz) q.p[j] = qhat;  /* bounds check before assignment */

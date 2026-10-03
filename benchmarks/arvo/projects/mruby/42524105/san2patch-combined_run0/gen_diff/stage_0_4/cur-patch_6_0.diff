@@ -1,0 +1,27 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..73c1d42f7 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1685 +1685 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-    hval ^= (uint32_t)*s++;
++hval ^= (uint32_t)*s++;
+@@ -1693 +1693,2 @@ uint32_t
+-mrb_byte_hash(const uint8_t *s, mrb_int len)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mrb_byte_hash(const uint8_t *s, mrb_int len)
+@@ -1695 +1696,3 @@ mrb_byte_hash(const uint8_t *s, mrb_int len)
+-  return mrb_byte_hash_step(s, len, FNV1_32_INIT);
++  if (!s) return 0; // Prevent dereferencing null/expired pointers
++  uint32_t result = mrb_byte_hash_step(s, len, FNV1_32_INIT);
++  return result;
+@@ -1702 +1705,5 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-  return mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
++  if (!s) return 0;
++  const char* ptr = RSTR_PTR(s);
++  mrb_int len = RSTR_LEN(s);
++  if (!ptr) return 0;
++  return mrb_byte_hash((uint8_t*)ptr, len);
+@@ -1705,2 +1712 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-/* 15.2.10.5.20 */
+-/*
++/* 15.2.10.5.20 *//*

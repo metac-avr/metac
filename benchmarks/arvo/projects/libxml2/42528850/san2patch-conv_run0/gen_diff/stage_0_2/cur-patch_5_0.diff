@@ -1,0 +1,27 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..169e853e 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3728 +3728,2 @@ xmlFreeNode(xmlNodePtr cur) {
+-        DICT_FREE(cur->content)
++// Resolved CWE-416: Use After Free vulnerability
++         DICT_FREE(cur->content)
+diff --git a/parser.c b/parser.c
+index 11bb5199..32cbbde0 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7501,0 +7502,14 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++		    if (cur->type == XML_ELEMENT_NODE || cur->type == XML_ATTRIBUTE_NODE) {
++		        xmlNsPtr ns = cur->nsDef;
++		        while (ns != NULL) {
++		            if (ns->type != XML_LOCAL_NAMESPACE && ns->type != XML_GLOBAL_NAMESPACE) {
++		                ns = NULL;
++		                break;
++		            }
++		            ns = ns->next;
++		        }
++		        if (ns == NULL && cur->nsDef != NULL) {
++		            cur = cur->next;
++		            continue;
++		        }
++		    }

@@ -1,0 +1,24 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..7e5b132d4 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -501 +501,3 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      q.p[j/2] |= qhat << HALFDIGITBITS;
++// FIXME: Crash CWE-190: Integer Overflow or Wraparound
++       if ((j/2) < q.sz && qhat <= (mrb_int)(((mrb_uint)~0) >> HALFDIGITBITS))  // Bounds check for both index and value
++         q.p[j/2] |= qhat << HALFDIGITBITS;
+@@ -503 +505,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      q.p[j/2] |= qhat;
++      if ((j/2) < q.sz && qhat <= (mrb_int)((mrb_uint)~0))  // Bounds check for both index and value
++        q.p[j/2] |= qhat;
+@@ -540,0 +544,10 @@ mpz_mmod(mrb_state *mrb, mpz_t *r, mpz_t *x, mpz_t *y)
++  
++  /* Bounds checking to prevent integer wraparound */
++  if (x->size > 0 && y->size > 0) {
++    size_t max_size = SIZE_MAX / 2;
++    if (x->size > max_size || y->size > max_size) {
++      zero(r);
++      return;
++    }
++  }
++  

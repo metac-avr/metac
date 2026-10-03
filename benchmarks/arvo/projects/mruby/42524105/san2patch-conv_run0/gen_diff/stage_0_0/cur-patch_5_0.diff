@@ -1,0 +1,25 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..4cf90aa45 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1676,2 +1676,3 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-  while (s < send) {
+-    /* multiply by the 32 bit FNV magic prime mod 2^32 */
++  if (s != NULL && len > 0) {  // Validate pointer and length before processing
++    while (s < send) {
++      /* multiply by the 32 bit FNV magic prime mod 2^32 */
+@@ -1679 +1680 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-    hval *= FNV_32_PRIME;
++      hval *= FNV_32_PRIME;
+@@ -1681 +1682 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-    hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
++      hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
+@@ -1683,3 +1684,5 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-
+-    /* xor the bottom with the current octet */
+-    hval ^= (uint32_t)*s++;
++// FIXME: Crash CWE-416: Use After Free
++ 
++      /* xor the bottom with the current octet */
++      hval ^= (uint32_t)*s++;
++    }

@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..e3872549ea4 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3274,0 +3275,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
++		// Skip GC operations if object has been marked for destruction
++		if (!(EX_OBJ_BUCKET(throw_op->result.var)->flags & IS_OBJ_DESTRUCTOR_CALLED)) {
++			zend_gc_delref(EX_OBJ_BUCKET(throw_op->result.var));
++		}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..ff1af66a75b 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++// FIXME: Crash CWE-416: Use After Free
++ 		if (object->gc.ref < 0) { object->gc.ref = 0; } /* Prevent negative refcount access */

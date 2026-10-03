@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..f19c6d3d41c 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -195,0 +196,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		
++		// Fix: Clear destructor called flag and remove from GC buffer before freeing
++		OBJ_FLAGS(object) &= ~IS_OBJ_DESTRUCTOR_CALLED;
++		GC_REMOVE_FROM_BUFFER(object);
+@@ -196,0 +201 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		
+@@ -203 +207,0 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		GC_REMOVE_FROM_BUFFER(object);
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..f18a54af875 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -213,0 +214,3 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++		if (!zv || Z_TYPE_P(zv) == IS_UNDEF) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}

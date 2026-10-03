@@ -1,0 +1,38 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 52295761245..48d59bfe38a 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1445,3 +1445,3 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
+-			EG(exit_status) = 255;
+-		}
+-	}
++            EG(exit_status) = 255;
++        }
++    }
+@@ -1452,2 +1452,3 @@ static ZEND_COLD void zend_error_va_list(
+-		int orig_type, zend_string *error_filename, uint32_t error_lineno,
+-		const char *format, va_list args)
++        int orig_type, zend_string *error_filename, uint32_t error_lineno,
++// FIXME: Crash CWE-416: Use After Free
++        const char *format, va_list args)
+@@ -1455,3 +1456,5 @@ static ZEND_COLD void zend_error_va_list(
+-	zend_string *message = zend_vstrpprintf(0, format, args);
+-	zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
+-	zend_string_release(message);
++    zend_string *message = zend_vstrpprintf(0, format, args);
++    if (message != NULL) {
++        zend_error_zstr_at(orig_type, error_filename, error_lineno, message);
++        zend_string_release(message);
++    }
+@@ -1461,6 +1464,5 @@ static ZEND_COLD void get_filename_lineno(int type, zend_string **filename, uint
+-	/* Obtain relevant filename and lineno */
+-	switch (type) {
+-		case E_CORE_ERROR:
+-		case E_CORE_WARNING:
+-			*filename = NULL;
+-			*lineno = 0;
++    /* Obtain relevant filename and lineno */
++    switch (type) {
++        case E_CORE_ERROR:
++        case E_CORE_WARNING:
++            *filename = NULL;			*lineno = 0;

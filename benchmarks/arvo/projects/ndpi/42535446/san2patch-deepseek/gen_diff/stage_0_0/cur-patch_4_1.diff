@@ -1,0 +1,25 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..193894b9a 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1024,0 +1025,3 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
++    }
++  }
++}
+@@ -1026,4 +1029,7 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	  snprintf(msg, sizeof(msg), "Expected %s, found %s",
+-		   ndpi_intoav4(ntohl(ndpi_struct->packet.iph->daddr), buf, sizeof(buf)), flow->host_server_name);
+-	  ndpi_set_risk(flow, NDPI_HTTP_SUSPICIOUS_HEADER, msg);
+-        }
++  if(flow->l4.tcp.http.parser != NULL) {
++    const char *needle = "Content-Type:";
++    size_t needle_len = strlen(needle);
++    size_t haystack_len = flow->l4.tcp.http.parser->packet.payload_packet_len;
++    if(haystack_len >= needle_len) {
++      if(ndpi_memmem(flow->l4.tcp.http.parser->packet.payload, haystack_len, needle, needle_len) != NULL) {
++        ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
+@@ -1032 +1037,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+@@ -1035,2 +1039,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  ndpi_http_parse_subprotocol(ndpi_struct, flow, hostname_just_set);
+-

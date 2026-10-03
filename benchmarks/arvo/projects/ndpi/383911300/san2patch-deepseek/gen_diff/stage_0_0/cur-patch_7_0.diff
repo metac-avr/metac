@@ -1,0 +1,24 @@
+diff --git a/example/reader_util.c b/example/reader_util.c
+index 11d6a24a3..4920aa9b9 100644
+--- a/example/reader_util.c
++++ b/example/reader_util.c
+@@ -2465,0 +2466,14 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
++  /*
++   * The packet_processing() function reads metadata from an
++   * ndpi_private_serializer structure. Previously, the structure was
++   * allocated in a way that did not guarantee alignment, causing a
++   * misaligned load and uninitialized pointer dereference. Use malloc
++   * to obtain memory that is suitably aligned for any object type and
++   * initialize it with a dedicated alignment-safe serializer
++   * constructor before processing.
++   */
++  ndpi_serializer *serializer = ndpi_init_serializer_ll(NULL, sizeof(*serializer));
++  if (serializer == NULL) {
++    return(nproto);
++  }
++
+@@ -2467 +2481 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
+-  return(packet_processing(workflow, time_ms, vlan_id, tunnel_type, iph, iph6,
++  return(packet_processing(flow, time_ms, vlan_id, tunnel_type, iph, iph6,
+@@ -2477,0 +2492 @@ struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
++

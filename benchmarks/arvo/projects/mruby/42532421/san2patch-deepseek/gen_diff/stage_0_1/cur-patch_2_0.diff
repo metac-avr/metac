@@ -1,0 +1,15 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..6852db932 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -619 +619,9 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-    const bitint eq = (*s0 ^ first) | (*s1 ^ last);
++    size_t remaining = (size_t)(n - i);
++    size_t can_read = remaining < sizeof(bitint) ? remaining : sizeof(bitint);
++    unsigned char local_s0[sizeof(bitint)] = {0};
++    unsigned char local_s1[sizeof(bitint)] = {0};
++    for (size_t k = 0; k < can_read; k++) {
++      local_s0[k] = s0[k];
++      local_s1[k] = s1[k];
++    }
++    const bitint eq = (*(const bitint *)local_s0 ^ first) | (*(const bitint *)local_s1 ^ last);

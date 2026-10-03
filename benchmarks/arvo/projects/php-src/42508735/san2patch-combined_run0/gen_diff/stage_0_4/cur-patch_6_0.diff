@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..ad5721b1180 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -250 +250,4 @@ void shutdown_destructors(void) /* {{{ */
+-		do {
++		zend_object *obj;
++		HashPosition pos;
++// FIXME: Crash CWE-416: Use After Free
++ 		do {
+@@ -252 +255,7 @@ void shutdown_destructors(void) /* {{{ */
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			zend_hash_internal_pointer_reset_ex(&EG(symbol_table), &pos);
++			while (zend_hash_get_current_data_ex(&EG(symbol_table), (void **) &obj, &pos) == SUCCESS) {
++				if (obj && Z_OBJ(obj)->handlers && Z_OBJ(obj)->handlers->get_gc) {
++					zval_call_destructor((zval *)obj);
++				}
++				zend_hash_move_forward_ex(&EG(symbol_table), &pos);
++			}

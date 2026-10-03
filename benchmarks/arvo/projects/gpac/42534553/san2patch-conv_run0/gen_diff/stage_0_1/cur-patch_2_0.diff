@@ -1,0 +1,33 @@
+diff --git a/src/utils/os_net.c b/src/utils/os_net.c
+index 5e344c3f8..2f75e340c 100644
+--- a/src/utils/os_net.c
++++ b/src/utils/os_net.c
+@@ -1236,2 +1236 @@ GF_Err gf_netcap_setup(char *rules)
+-
+-	GF_NetcapFilter *nf = gf_net_filter_get(id);
++GF_NetcapFilter *nf = gf_net_filter_get(id);
+@@ -1257 +1256 @@ GF_Err gf_netcap_setup(char *rules)
+-	nf->rt = cap_rt;
++	gf_mx_p(&nf->mutex);	nf->rt = cap_rt;
+@@ -1480,3 +1479,4 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-		if (nf->cap_mode==NETCAP_GPAC)
+-			gf_netcap_load_pck_gpac(nf);
+-		else
++		if (nf->cap_mode==NETCAP_GPAC) {
++			if (nf->cap_bs != NULL)
++				gf_netcap_load_pck_gpac(nf);
++		} else
+@@ -1484 +1484 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-
++ 
+@@ -1489,3 +1489,7 @@ static void gf_netcap_load_pck(GF_NetcapFilter *nf, u64 now)
+-			gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);
+-			nf->dst_port = 0;
+-			goto refetch;
++			if (nf->cap_bs != NULL) {
++				gf_bs_skip_bytes(nf->cap_bs, nf->pck_len);
++				nf->dst_port = 0;
++				goto refetch;
++			} else {
++				return;
++			}

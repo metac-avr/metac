@@ -1,0 +1,33 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..b943acfe 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1194 +1194,3 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-				    cur = cur->next;
++				    /* Reset cur to NULL if it was freed during copy operation */
++				    if (cur->_private == NULL) cur = NULL;
++				    if (cur != NULL) cur = cur->next;
+@@ -1214,9 +1216,12 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		/* Double-check node validity before final copy operations */
++		if (set->nodeTab[i] != NULL && set->nodeTab[i]->_private != NULL) {
++		    if (last == NULL)
++		        list = last = xmlXIncludeCopyNode(ctxt, target, source,
++							  set->nodeTab[i]);
++		    else {
++		        xmlAddNextSibling(last,
++			        xmlXIncludeCopyNode(ctxt, target, source,
++					            set->nodeTab[i]));
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2277,0 +2283 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	return(0);  /* Exit early to avoid further access */

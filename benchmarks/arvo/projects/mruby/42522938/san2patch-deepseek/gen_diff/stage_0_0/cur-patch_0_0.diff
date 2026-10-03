@@ -1,0 +1,19 @@
+diff --git a/mrbgems/mruby-class-ext/src/class.c b/mrbgems/mruby-class-ext/src/class.c
+index dbe061524..14a37ad63 100644
+--- a/mrbgems/mruby-class-ext/src/class.c
++++ b/mrbgems/mruby-class-ext/src/class.c
+@@ -106,3 +106,11 @@ mrb_class_subclasses(mrb_state *mrb, mrb_value self)
+-  if (c->flags & MRB_FL_CLASS_IS_INHERITED) {
+-    struct subclass_args arg = {c, ary};
+-    mrb_objspace_each_objects(mrb, add_subclasses, &arg);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   if (c->flags & MRB_FL_CLASS_IS_INHERITED) {
++    struct RClass *sub;
++
++    for (sub = mrb->subclass_list; sub != NULL; sub = sub->next_subclass) {
++      if (sub->super == c) {
++        if (!MRB_CLASS_IS_INHERITED(sub)) {
++          mrb_ary_push(mrb, ary, mrb_obj_value(sub));
++        }
++      }
++    }

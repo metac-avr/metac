@@ -1,0 +1,33 @@
+diff --git a/src/error.c b/src/error.c
+index c622df789..9c58d6073 100644
+--- a/src/error.c
++++ b/src/error.c
+@@ -515 +514,0 @@ frozen_error(mrb_state *mrb, mrb_value v)
+-
+@@ -523 +522,2 @@ MRB_API void
+-mrb_check_frozen(mrb_state *mrb, void *o)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mrb_check_frozen(mrb_state *mrb, void *o)
+@@ -524,0 +525,2 @@ mrb_check_frozen(mrb_state *mrb, void *o)
++  if (o == NULL) return;
++  if (((uintptr_t)o) % sizeof(void*) != 0) return;
+diff --git a/src/string.c b/src/string.c
+index 2a44cb8be..0ab3e2272 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -903 +903,3 @@ mrb_str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
+-  mrb_check_frozen(mrb, s);
++  if (s != NULL) {
++    mrb_check_frozen(mrb, (struct RBasic*)s);
++  }
+@@ -908 +910,2 @@ MRB_API void
+-mrb_str_modify(mrb_state *mrb, struct RString *s)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mrb_str_modify(mrb_state *mrb, struct RString *s)
+@@ -910,2 +913,4 @@ mrb_str_modify(mrb_state *mrb, struct RString *s)
+-  mrb_str_modify_keep_ascii(mrb, s);
+-  RSTR_UNSET_SINGLE_BYTE_FLAG(s);
++  if (s != NULL) {
++    mrb_str_modify_keep_ascii(mrb, s);
++    RSTR_UNSET_SINGLE_BYTE_FLAG(s);
++  }

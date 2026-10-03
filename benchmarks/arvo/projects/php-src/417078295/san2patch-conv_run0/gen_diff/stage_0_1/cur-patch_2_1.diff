@@ -1,0 +1,66 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 14e3a5aca2a..b31c15fb40f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -40388,28 +40388,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BIND_STATIC_SPEC_CV_HANDLER(ZE
+-	if (opline->extended_value & ZEND_BIND_REF) {
+-		i_zval_ptr_dtor(variable_ptr);
+-		if (UNEXPECTED(!Z_ISREF_P(value))) {
+-			zend_reference *ref = (zend_reference*)emalloc(sizeof(zend_reference));
+-			GC_SET_REFCOUNT(ref, 2);
+-			GC_TYPE_INFO(ref) = GC_REFERENCE;
+-			if (opline->op2_type == IS_UNUSED) {
+-				ZVAL_COPY_VALUE(&ref->val, value);
+-			} else {
+-				ZEND_ASSERT(!Z_REFCOUNTED_P(value));
+-				ZVAL_COPY(&ref->val, get_zval_ptr_deref(opline->op2_type, opline->op2, BP_VAR_R));
+-				FREE_OP(opline->op2_type, opline->op2.var);
+-			}
+-			ref->sources.ptr = NULL;
+-			Z_REF_P(value) = ref;
+-			Z_TYPE_INFO_P(value) = IS_REFERENCE_EX;
+-			ZVAL_REF(variable_ptr, ref);
+-		} else {
+-			Z_ADDREF_P(value);
+-			ZVAL_REF(variable_ptr, Z_REF_P(value));
+-			if (opline->op2_type != IS_UNUSED) {
+-				FREE_OP(opline->op2_type, opline->op2.var);
+-			}
+-		}
+-	} else {
+-		i_zval_ptr_dtor(variable_ptr);
+-		ZVAL_COPY(variable_ptr, value);
+-	}
++	static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (!p) return 0;
++	ZEND_RC_MOD_CHECK(p);
++	return ++(p->refcount);
++}
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index af5f3821723..4886d5786a5 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1260,3 +1259,0 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
+-}
+-
+@@ -1263,0 +1261 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
++	if (!p) return 0;
+@@ -1266,16 +1264 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	ZEND_RC_MOD_CHECK(p);
+-	return ++(p->refcount);
+-}
+-
+-static zend_always_inline void zend_gc_try_addref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
+-		ZEND_RC_MOD_CHECK(p);
+-		++p->refcount;
+-	}
+-}
+-
+-static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-	if (!(p->u.type_info & GC_IMMUTABLE)) {
++}	if (!(p->u.type_info & GC_IMMUTABLE)) {

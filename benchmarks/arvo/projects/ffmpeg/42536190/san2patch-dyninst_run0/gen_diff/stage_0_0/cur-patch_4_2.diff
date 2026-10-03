@@ -1,0 +1,29 @@
+diff --git a/libavcodec/hevc/filter.c b/libavcodec/hevc/filter.c
+index 56e354b486..13f365221c 100644
+--- a/libavcodec/hevc/filter.c
++++ b/libavcodec/hevc/filter.c
+@@ -765,3 +765,21 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *
+-        const RefPicList *rpl_top = (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ?
+-                                    ff_hevc_get_ref_list(s, s->cur_frame, x0, y0 - 1) :
+-                                    s->cur_frame->refPicList;
++        const RefPicList *rpl_top = NULL;
++        
++        // Validate both branches of the ternary operator separately
++        if ((lc->boundary_flags & BOUNDARY_UPPER_SLICE)) {
++            // Check that s->cur_frame is not NULL before calling ff_hevc_get_ref_list()
++            if (s && s->cur_frame) {
++                rpl_top = ff_hevc_get_ref_list(s, s->cur_frame, x0, y0 - 1);
++            }
++        } else {
++            // Verify s->cur_frame->refPicList is properly initialized before using it as fallback
++            if (s && s->cur_frame && s->cur_frame->refPicList) {
++                rpl_top = s->cur_frame->refPicList;
++            }
++        }
++        
++        // Ensure rpl_top is valid before proceeding
++        if (!rpl_top) {
++            // Handle error case gracefully
++            return;
++        }
++        

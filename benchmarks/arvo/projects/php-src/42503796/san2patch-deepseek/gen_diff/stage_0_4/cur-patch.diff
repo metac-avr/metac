@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..70d293546cd 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -54421,2 +54421,14 @@ ZEND_API void execute_ex(zend_execute_data *ex)
+-		((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-		if (UNEXPECTED(!OPLINE)) {
++		if (UNEXPECTED(OPLINE->opcode == ZEND_ASSIGN_DIM)) {
++			zval *op1 = RT_CONSTANT(OPLINE, OPLINE->op1);
++			if (Z_TYPE_P(op1) == IS_ARRAY) {
++				Z_TRY_ADDREF_P(op1);
++				((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++				zval_ptr_dtor(op1);
++			} else {
++				((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++			}
++		} else {
++			((opcode_handler_t)OPLINE->handler)(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++		}
++// FIXME: Crash CWE-416: Use After Free
++ 		if (UNEXPECTED(!OPLINE)) {
+@@ -54434,0 +54447 @@ ZEND_API void execute_ex(zend_execute_data *ex)
++

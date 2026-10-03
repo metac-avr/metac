@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index d13087a5b02..4da76b5c0dd 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -156 +156,4 @@ static zend_always_inline zval* zend_assign_to_variable(zval *variable_ptr, zval
+-			zend_copy_to_variable(variable_ptr, value, value_type);
++// FIXME: Crash CWE-416: Use After Free
++                        if (UNEXPECTED(!variable_ptr)) return variable_ptr;  /* Defensive check for null pointer */
++                        if (UNEXPECTED((uintptr_t)variable_ptr < 0x1000)) return variable_ptr;  /* Basic validity check for freed/invalid pointers */
++ 			zend_copy_to_variable(variable_ptr, value, value_type);
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index acf98a2f74a..31fad46635e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -23866,0 +23867,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_U
++	if (UNEXPECTED(variable_ptr == NULL)) {
++		ZEND_VM_NEXT_OPCODE();
++	}
++

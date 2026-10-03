@@ -1,0 +1,22 @@
+diff --git a/valid.c b/valid.c
+index 3ea9f87c..4397ba0e 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1144,0 +1145 @@ xmlAddElementDecl(xmlValidCtxt *ctxt,
++	    goto skip_processing;  /* Skip further processing to avoid use-after-free */
+@@ -1146,0 +1148 @@ xmlAddElementDecl(xmlValidCtxt *ctxt,
++skip_processing:
+diff --git a/tree.c b/tree.c
+index e2357131..140df378 100644
+--- a/tree.c
++++ b/tree.c
+@@ -5530 +5530 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
+-        return(1);
++         return(1);
+@@ -5538,0 +5539,6 @@ xmlGetNsListSafe(const xmlDoc *doc ATTRIBUTE_UNUSED, const xmlNode *node,
++                /* Validate namespace node before use - check for freed memory */
++                if (((char*)cur >= (char*)0x1000) && ((char*)cur <= (char*)0x100000000000)) {
++                    /* Skip invalid memory addresses that indicate freed pointers */
++                    cur = cur->next;
++                    continue;
++                }

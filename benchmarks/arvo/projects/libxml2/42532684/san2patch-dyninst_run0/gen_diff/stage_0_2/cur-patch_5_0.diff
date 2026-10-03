@@ -1,0 +1,34 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..7adde6cb 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2499,4 +2499,8 @@ xmlFreeID(xmlIDPtr id) {
+-    if (id->value != NULL)
+-	DICT_FREE(id->value)
+-    if (id->name != NULL)
+-	DICT_FREE(id->name)
++    if (id->value != NULL) {
++	DICT_FREE(id->value);
++	id->value = NULL;  /* Prevent use-after-free by clearing reference */
++    }
++    if (id->name != NULL) {
++	DICT_FREE(id->name);
++	id->name = NULL;   /* Prevent use-after-free by clearing reference */
++    }
+@@ -2743,4 +2747 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
+-
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++         return(-1);
+@@ -2748 +2749,2 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    attr->atype = 0;
++    /* Nullify the reference before removal to prevent use-after-free */
++    xmlIDPtr temp_id = attr->id;
+@@ -2749,0 +2752,6 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    attr->atype = 0;
++    
++    if (temp_id != NULL && temp_id->value != NULL) {
++        if (xmlHashRemoveEntry(table, temp_id->value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }

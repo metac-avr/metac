@@ -1,0 +1,71 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..abe0e603 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2636,4 +2636,3 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
+-        }
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
++int
++xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
++    xmlIDTablePtr table;
+@@ -2641,2 +2640,2 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-    return(id);
+-}
++    if (doc == NULL) return(-1);
++    if ((attr == NULL) || (attr->id == NULL)) return(-1);
+@@ -2644,4 +2643,3 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-static void
+-xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
++    table = (xmlIDTablePtr) doc->ids;
++    if (table == NULL)
++        return(-1);
+@@ -2649,9 +2647,8 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++        return(-1);
++
++    attr->atype = 0;
++    attr->id = NULL;
++
++    return(0);
++}    xmlHashFree(table, xmlFreeIDTableEntry);
+@@ -2734,18 +2731,9 @@ xmlIsID(xmlDocPtr doc, xmlNodePtr elem, xmlAttrPtr attr) {
+-int
+-xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    xmlIDTablePtr table;
+-
+-    if (doc == NULL) return(-1);
+-    if ((attr == NULL) || (attr->id == NULL)) return(-1);
+-
+-    table = (xmlIDTablePtr) doc->ids;
+-    if (table == NULL)
+-        return(-1);
+-
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
+-
+-    attr->atype = 0;
+-    attr->id = NULL;
+-
+-    return(0);
++static void
++xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
++    xmlIDPtr idPtr = (xmlIDPtr) id;
++    if (idPtr != NULL) {
++        if ((idPtr->attr != NULL) && (idPtr->attr->id == idPtr)) {
++            idPtr->attr->id = NULL;
++        }
++        xmlFreeID(idPtr);
++    }

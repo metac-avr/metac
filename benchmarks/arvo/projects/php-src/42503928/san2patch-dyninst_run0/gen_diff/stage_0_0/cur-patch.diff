@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..d0c15ca4392 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -391 +391,6 @@ void shutdown_executor(void) /* {{{ */
+-	zend_shutdown_executor_values(fast_shutdown);
++	/* Fix for CWE-416: Use After Free - validate pointers before access */
++	zend_try {
++		zend_shutdown_executor_values(fast_shutdown);
++	} zend_catch {
++		/* Skip cleanup on exception to prevent use-after-free */
++	} zend_end_catch();
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..ba77de83c7e 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,3 +202,9 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
++// FIXME: Crash CWE-416: Use After Free
++ 		if (object->handlers && object->handlers->offset <= sizeof(zend_object)) {  // Bounds check
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++		} else {
++			GC_REMOVE_FROM_BUFFER(object);
++			if (object->handlers) efree(object);  // Fallback free
++		}

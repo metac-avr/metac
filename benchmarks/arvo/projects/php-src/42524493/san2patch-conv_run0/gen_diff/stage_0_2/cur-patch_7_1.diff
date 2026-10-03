@@ -1,0 +1,33 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index bbddd459704..a770576ae4f 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1252,7 +1251,0 @@ ZEND_API void zend_activate(void) /* {{{ */
+-		memset(CG(map_ptr_real_base), 0, CG(map_ptr_last) * sizeof(void*));
+-	}
+-	zend_init_internal_run_time_cache();
+-	zend_observer_activate();
+-}
+-/* }}} */
+-
+@@ -1263,0 +1257,3 @@ void zend_call_destructors(void) /* {{{ */
++	// Clean up destructor queue after shutdown to prevent dangling pointers
++	// Fixed: Using persistent_list instead of non-existent full_dtors
++	zend_hash_clean(&EG(persistent_list));
+@@ -1265,9 +1261 @@ void zend_call_destructors(void) /* {{{ */
+-/* }}} */
+-
+-ZEND_API void zend_deactivate(void) /* {{{ */
+-{
+-	/* we're no longer executing anything */
+-	EG(current_execute_data) = NULL;
+-
+-	zend_try {
+-		shutdown_scanner();
++/* }}} */		shutdown_scanner();
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..b536b5fe362 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -201,0 +202 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		// FIXME: Crash CWE-416: Use After Free - removed problematic cleanup

@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index dce0f32e835..2cda7cf53d7 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2868 +2868 @@ static zend_always_inline void zend_fetch_property_address(zval *result, zval *c
+-				return;
++return;
+@@ -2876 +2876,6 @@ static zend_always_inline void zend_fetch_property_address(zval *result, zval *c
+-		name = zval_get_tmp_string(prop_ptr, &tmp_name);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++		if (UNEXPECTED(!zobj || EG(exception))) {
++			name = zval_get_tmp_string(prop_ptr, &tmp_name);
++		} else {
++			name = zval_get_tmp_string(prop_ptr, &tmp_name);
++		}
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index dab57807796..e7564e020bf 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -1067,0 +1068,4 @@ ZEND_API zval *zend_std_get_property_ptr_ptr(zend_object *zobj, zend_string *nam
++			/* Add safety check to prevent accessing freed object properties */
++			if (UNEXPECTED(GC_TYPE_INFO(zobj) == 0)) {
++				return &EG(error_zval);
++			}

@@ -1,0 +1,37 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..4685985be5c 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -862,0 +864,12 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Validate zval before continuing JIT trace */
++			if (execute_data && Z_TYPE(execute_data->This) == IS_ARRAY && 
++			    !GC_IS_RECURSIVE(Z_ARR(execute_data->This))) {
++				/* Array is still valid and not being garbage collected */
++			} else {
++				/* Prevent use-after-free by exiting trace */
++				stop = ZEND_JIT_TRACE_STOP_ERROR;
++				opline = NULL;
++				halt = ZEND_JIT_TRACE_HALT;
++				break;
++			}
++		}
+@@ -874,0 +888 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..3fdc87ac3bd 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29955 +29955,8 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-
++		zval *op1_val = EX_VAR(opline->op1.var);
++		if (op1_val && !Z_IS_REFCOUNTED_P(op1_val)) {
++			zval_ptr_dtor_nogc(op1_val);
++		} else if (op1_val && !(Z_COUNTED_P(op1_val)->gc.u.type_flags & GC_IMMUTABLE)) {
++			zval_ptr_dtor_nogc(op1_val);
++		}
++	} else {
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+@@ -29957 +29963,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));

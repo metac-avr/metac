@@ -1,0 +1,97 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 904d1d971..137ea14f6 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -6825,28 +6825,9 @@ void ndpi_free_flow_data(struct ndpi_flow_struct* flow) {
+-    if(flow_is_proto(flow, NDPI_PROTOCOL_QUIC) ||
+-       flow_is_proto(flow, NDPI_PROTOCOL_TLS) ||
+-       flow_is_proto(flow, NDPI_PROTOCOL_DTLS) ||
+-       flow_is_proto(flow, NDPI_PROTOCOL_MAIL_SMTPS) ||
+-       flow_is_proto(flow, NDPI_PROTOCOL_MAIL_POPS) ||
+-       flow_is_proto(flow, NDPI_PROTOCOL_MAIL_IMAPS) ||
+-       flow_is_proto(flow, NDPI_PROTOCOL_FTPS)) {
+-      if(flow->protos.tls_quic.server_names)
+-	ndpi_free(flow->protos.tls_quic.server_names);
+-
+-      if(flow->protos.tls_quic.advertised_alpns)
+-	ndpi_free(flow->protos.tls_quic.advertised_alpns);
+-
+-      if(flow->protos.tls_quic.negotiated_alpn)
+-	ndpi_free(flow->protos.tls_quic.negotiated_alpn);
+-
+-      if(flow->protos.tls_quic.tls_supported_versions)
+-	ndpi_free(flow->protos.tls_quic.tls_supported_versions);
+-
+-      if(flow->protos.tls_quic.issuerDN)
+-	ndpi_free(flow->protos.tls_quic.issuerDN);
+-
+-      if(flow->protos.tls_quic.subjectDN)
+-	ndpi_free(flow->protos.tls_quic.subjectDN);
+-
+-      if(flow->protos.tls_quic.ja4_client_raw)
+-	ndpi_free(flow->protos.tls_quic.ja4_client_raw);
+-    }
++    void ndpi_free(void *ptr) {
++  if(_ndpi_free) {
++    if(ptr)
++      _ndpi_free(ptr);
++  } else {
++    if(ptr)
++      free(ptr);
++  }
++}
+diff --git a/src/lib/ndpi_memory.c b/src/lib/ndpi_memory.c
+index bb8173108..4cb885a18 100644
+--- a/src/lib/ndpi_memory.c
++++ b/src/lib/ndpi_memory.c
+@@ -72,22 +72,28 @@ void *ndpi_calloc(unsigned long count, size_t size) {
+-}
+-
+-/* ****************************************** */
+-
+-void ndpi_free(void *ptr) {
+-  if(_ndpi_free) {
+-    if(ptr)
+-      _ndpi_free(ptr);
+-  } else {
+-    if(ptr)
+-      free(ptr);
+-  }
+-}
+-
+-/* ****************************************** */
+-
+-void *ndpi_realloc(void *ptr, size_t old_size, size_t new_size) {
+-  void *ret = ndpi_malloc(new_size);
+-
+-  if(!ret)
+-    return(ret);
+-  else {
++if(flow_is_proto(flow, NDPI_PROTOCOL_QUIC) ||
++       flow_is_proto(flow, NDPI_PROTOCOL_TLS) ||
++       flow_is_proto(flow, NDPI_PROTOCOL_DTLS) ||
++       flow_is_proto(flow, NDPI_PROTOCOL_MAIL_SMTPS) ||
++       flow_is_proto(flow, NDPI_PROTOCOL_MAIL_POPS) ||
++       flow_is_proto(flow, NDPI_PROTOCOL_MAIL_IMAPS) ||
++       flow_is_proto(flow, NDPI_PROTOCOL_FTPS)) {
++      if(flow->protos.tls_quic.server_names && (uintptr_t)flow->protos.tls_quic.server_names != 0xDEADBEEFDEADBEEF)
++	ndpi_free(flow->protos.tls_quic.server_names);
++
++      if(flow->protos.tls_quic.advertised_alpns && (uintptr_t)flow->protos.tls_quic.advertised_alpns != 0xDEADBEEFDEADBEEF)
++	ndpi_free(flow->protos.tls_quic.advertised_alpns);
++
++      if(flow->protos.tls_quic.negotiated_alpn && (uintptr_t)flow->protos.tls_quic.negotiated_alpn != 0xDEADBEEFDEADBEEF)
++	ndpi_free(flow->protos.tls_quic.negotiated_alpn);
++
++      if(flow->protos.tls_quic.tls_supported_versions && (uintptr_t)flow->protos.tls_quic.tls_supported_versions != 0xDEADBEEFDEADBEEF)
++	ndpi_free(flow->protos.tls_quic.tls_supported_versions);
++
++      if(flow->protos.tls_quic.issuerDN && (uintptr_t)flow->protos.tls_quic.issuerDN != 0xDEADBEEFDEADBEEF)
++	ndpi_free(flow->protos.tls_quic.issuerDN);
++
++      if(flow->protos.tls_quic.subjectDN && (uintptr_t)flow->protos.tls_quic.subjectDN != 0xDEADBEEFDEADBEEF)
++	ndpi_free(flow->protos.tls_quic.subjectDN);
++
++      if(flow->protos.tls_quic.ja4_client_raw && (uintptr_t)flow->protos.tls_quic.ja4_client_raw != 0xDEADBEEFDEADBEEF)
++	ndpi_free(flow->protos.tls_quic.ja4_client_raw);
++    }  else {

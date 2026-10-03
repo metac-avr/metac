@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index dce0f32e835..b1b36e4dccf 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2868,22 +2868 @@ static zend_always_inline void zend_fetch_property_address(zval *result, zval *c
+-				return;
+-			}
+-		}
+-	}
+-
+-	if (prop_op_type == IS_CONST) {
+-		name = Z_STR_P(prop_ptr);
+-	} else {
+-		name = zval_get_tmp_string(prop_ptr, &tmp_name);
+-	}
+-	ptr = zobj->handlers->get_property_ptr_ptr(zobj, name, type, cache_slot);
+-	if (NULL == ptr) {
+-		ptr = zobj->handlers->read_property(zobj, name, type, cache_slot, result);
+-		if (ptr == result) {
+-			if (UNEXPECTED(Z_ISREF_P(ptr) && Z_REFCOUNT_P(ptr) == 1)) {
+-				ZVAL_UNREF(ptr);
+-			}
+-			goto end;
+-		}
+-		if (UNEXPECTED(EG(exception))) {
+-			ZVAL_ERROR(result);
+-			goto end;
++zend_fetch_property_address			goto end;
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index dab57807796..3a8661c787d 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -1056,2 +1056,2 @@ ZEND_API zval *zend_std_get_property_ptr_ptr(zend_object *zobj, zend_string *nam
+-		if (EXPECTED(!zobj->ce->__get) ||
+-		    UNEXPECTED((*zend_get_property_guard(zobj, name)) & IN_GET)) {
++		if (UNEXPECTED(zobj->ce->__get) &&
++		    EXPECTED(!((*zend_get_property_guard(zobj, name)) & IN_GET))) {

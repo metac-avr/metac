@@ -1,0 +1,96 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..20fc4de2a 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -778,0 +779,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
++static void
++incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc)
++{
++  size_t tried_sweep = 0;
++  size_t heap_used = 0;
++  size_t limit = (gc->incremental_gc_step ? gc->incremental_gc_step : gc->live) * GC_STEP_SCALE;
+@@ -780,4 +786,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  default:
+-    break;
+-  }
+-}
++  if (gc->live < gc->live_after_mark) limit = 0;
++  if (limit > MRB_GC_MAX_PER_CYCLE) limit = MRB_GC_MAX_PER_CYCLE;
+@@ -785,9 +789,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-MRB_API void
+-mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
+-  if (obj == 0) return;
+-  if (!is_white(obj)) return;
+-  if (is_red(obj)) return;
+-  mrb_assert((obj)->tt != MRB_TT_FREE);
+-  add_gray_list(mrb, &mrb->gc, obj);
+-}
++  while (page && (tried_sweep < limit)) {
++    RVALUE *p = objects(page);
++    RVALUE *e = p + MRB_HEAP_PAGE_SIZE;
++    size_t freed = 0;
++    mrb_bool dead_slot = TRUE;
++    mrb_bool full = (page->freelist == NULL);
+@@ -795,6 +796,52 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++    if (is_minor_gc(gc) && page->old) {
++      /* skip a slot which doesn't contain any young object */
++      p = e;
++      dead_slot = FALSE;
++    }
++    while (p<e) {
++      if (is_dead(gc, &p->as.basic)) {
++        if (p->as.basic.tt != MRB_TT_FREE) {
++          obj_free(mrb, &p->as.basic, FALSE);
++          if (p->as.basic.tt == MRB_TT_FREE) {
++            p->as.free.next = page->freelist;
++            page->freelist = (struct RBasic*)p;
++            freed++;
++          }
++          else {
++            dead_slot = FALSE;
++          }
++        }
++      }
++      else {
++        if (!is_generational(gc))
++          paint_partial_white(gc, &p->as.basic); /* next gc target */
++        dead_slot = FALSE;
++      }
++      p++;
++    }
++
++    /* free dead slot */
++    if (dead_slot && freed < MRB_HEAP_PAGE_SIZE) {
++      mrb_heap_page *next = page->next;
++
++      /* Clear references in marking queues before freeing memory */
++      clear_free_page_from_mark_queue(gc, page);
++      unlink_heap_page(gc, page);
++      unlink_free_heap_page(gc, page);
++      mrb_free(mrb, page);
++      page = next;
++    }
++    else {
++      if (full && freed > 0) {
++        link_free_heap_page(gc, page);
++      }
++      if (page->freelist == NULL && is_minor_gc(gc))
++        page->old = TRUE;
++      else
++        page->old = FALSE;
++      page = page->next;
++    }
++    tried_sweep += MRB_HEAP_PAGE_SIZE;
++    gc->live -= freed;
++    gc->live_after_mark -= freed;
++  }  case MRB_TT_OBJECT:
+@@ -1202,0 +1250,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Clear references in marking queues before freeing memory */
++      clear_free_page_from_mark_queue(gc, page);

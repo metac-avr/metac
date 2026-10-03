@@ -1,0 +1,14 @@
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index 753cff17d..1e63ca74c 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -1255,0 +1256,2 @@ void esds_box_del(GF_Box *s)
++	// Clear the pointer to prevent expired pointer dereference
++	*((GF_ESDBox**)&s) = NULL;
+@@ -4028 +4030,2 @@ GF_Err audio_sample_entry_box_read(GF_Box *s, GF_BitStream *bs)
+-		if (GF_4CC((u32)data[i+4], (u8)data[i+5], (u8)data[i+6], (u8)data[i+7]) == GF_ISOM_BOX_TYPE_ESDS) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		if (GF_4CC((u32)data[i+4], (u8)data[i+5], (u8)data[i+6], (u8)data[i+7]) == GF_ISOM_BOX_TYPE_ESDS) {
+@@ -4035 +4038 @@ GF_Err audio_sample_entry_box_read(GF_Box *s, GF_BitStream *bs)
+-			if ((e==GF_OK) && (ptr->esd->type == GF_ISOM_BOX_TYPE_ESDS)) {
++			if ((e==GF_OK) && (ptr->esd && ptr->esd->type == GF_ISOM_BOX_TYPE_ESDS)) {

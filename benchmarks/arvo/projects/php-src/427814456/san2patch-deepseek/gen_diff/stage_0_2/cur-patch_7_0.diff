@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..a82a6626452 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -348,0 +349,2 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
++				char *str_copy = estrndup(Z_STRVAL_P(op), Z_STRLEN_P(op));
++				size_t str_len = Z_STRLEN_P(op);
+@@ -351 +353 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
+-				type = is_numeric_string_ex(Z_STRVAL_P(op), Z_STRLEN_P(op), &lval, &dval,
++				type = is_numeric_string_ex(str_copy, str_len, &lval, &dval,
+@@ -352,0 +355 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
++				efree(str_copy);
+@@ -1698 +1701,5 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
+-			zend_binop_error("&", op1, op2);
++			zend_string *op1_str = zval_get_string(op1);
++			zval op1_tmp;
++			ZVAL_STR(&op1_tmp, op1_str);
++			zend_binop_error("&", &op1_tmp, op2);
++			zend_string_release(op1_str);
+@@ -1712 +1719,5 @@ ZEND_API zend_result ZEND_FASTCALL bitwise_and_function(zval *result, zval *op1,
+-			zend_binop_error("&", op1, op2);
++			zend_string *op2_str = zval_get_string(op2);
++			zval op2_tmp;
++			ZVAL_STR(&op2_tmp, op2_str);
++			zend_binop_error("&", op1, &op2_tmp);
++			zend_string_release(op2_str);

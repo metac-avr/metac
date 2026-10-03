@@ -1,0 +1,42 @@
+diff --git a/parser.c b/parser.c
+index cae2b7fd..5bc7a9e4 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7373,11 +7373,4 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw == NULL) {
+-                        xmlErrMemory(ctxt);
+-                    } else {
+-			if (nw->_private == NULL)
+-			    nw->_private = cur->_private;
+-			if (firstChild == NULL){
+-			    firstChild = nw;
+-			}
+-			nw = xmlAddChild(ctxt->node, nw);
+-                        if (nw == NULL)
++		    /* Validate node and its namespace before copying to prevent use-after-free */
++		    if (cur != NULL && (cur->nsDef == NULL || (cur->nsDef != NULL && cur->nsDef->_private != NULL))) {
++		        nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		        if (nw == NULL) {
+@@ -7384,0 +7378,10 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++                        } else {
++			    if (nw->_private == NULL)
++			        nw->_private = cur->_private;
++			    if (firstChild == NULL){
++			        firstChild = nw;
++			    }
++			    nw = xmlAddChild(ctxt->node, nw);
++                            if (nw == NULL)
++                                xmlErrMemory(ctxt);
++		        }
+@@ -7399 +7402 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    cur = cur->next;
++		    if (cur != NULL) cur = cur->next;
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..5453542e 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346 +1346,2 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++// Patched: Prevent use-after-free by clearing oldnode reference before freeing node
++                     oldnode = NULL;

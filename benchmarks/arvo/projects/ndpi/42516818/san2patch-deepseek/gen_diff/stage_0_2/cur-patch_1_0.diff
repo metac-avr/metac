@@ -1,0 +1,31 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 34c6f5594..51f788357 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -664,2 +664,9 @@ static void ndpi_check_http_server(struct ndpi_detection_module_struct *ndpi_str
+-
+-	  snprintf(msg, sizeof(msg), "Obsolete Apache server %s", buf);
++	  char bounded[16];
++	  size_t limit = sizeof(msg) - strlen("Obsolete Apache server ") - 1;
++	  size_t copy_len = strnlen(buf, sizeof(buf));
++
++	  if (copy_len > limit)
++	    copy_len = limit;
++	  memcpy(bounded, buf, copy_len);
++	  bounded[copy_len] = '\0';
++	  snprintf(msg, sizeof(msg), "Obsolete Apache server %s", bounded);
+@@ -668,3 +675,11 @@ static void ndpi_check_http_server(struct ndpi_detection_module_struct *ndpi_str
+-	  char msg[64];
+-
+-	  snprintf(msg, sizeof(msg), "Obsolete nginx server %s", buf);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 	  char msg[64];
++	  char bounded[16];
++	  size_t limit = sizeof(msg) - strlen("Obsolete nginx server ") - 1;
++	  size_t copy_len = strnlen(buf, sizeof(buf));
++
++	  if (copy_len > limit)
++	    copy_len = limit;
++	  memcpy(bounded, buf, copy_len);
++	  bounded[copy_len] = '\0';
++	  snprintf(msg, sizeof(msg), "Obsolete nginx server %s", bounded);

@@ -1,0 +1,37 @@
+diff --git a/src/utils/list.c b/src/utils/list.c
+index 52693a415..7f98d6ffb 100644
+--- a/src/utils/list.c
++++ b/src/utils/list.c
+@@ -672 +672,8 @@ void *gf_list_get(GF_List *ptr, u32 itemNumber)
+-	return ptr->slots[itemNumber];
++	
++	void *temp_ptr = ptr->slots[itemNumber];
++	
++	if(temp_ptr) {
++		return temp_ptr;
++	} else {
++		return NULL;
++	}
+@@ -681,2 +687,0 @@ void *gf_list_last(GF_List *ptr)
+-
+-
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..9599f0ccc 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -579 +579,2 @@ GF_Err gf_odf_avc_cfg_write(GF_AVCConfig *cfg, u8 **outData, u32 *outSize)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -581 +582,2 @@ GF_Err gf_odf_avc_cfg_write(GF_AVCConfig *cfg, u8 **outData, u32 *outSize)
+-	gf_odf_avc_cfg_write_bs(cfg, bs);
++	if (!bs) return GF_OUT_OF_MEM;
++	GF_Err e = gf_odf_avc_cfg_write_bs(cfg, bs);
+@@ -584 +586,3 @@ GF_Err gf_odf_avc_cfg_write(GF_AVCConfig *cfg, u8 **outData, u32 *outSize)
+-	gf_bs_get_content(bs, outData, outSize);
++	if (e == GF_OK) {
++		gf_bs_get_content(bs, outData, outSize);
++	}
+@@ -586 +590 @@ GF_Err gf_odf_avc_cfg_write(GF_AVCConfig *cfg, u8 **outData, u32 *outSize)
+-	return GF_OK;
++	return e != GF_OK ? e : GF_OK;

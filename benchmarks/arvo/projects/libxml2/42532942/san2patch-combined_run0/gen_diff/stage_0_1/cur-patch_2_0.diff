@@ -1,0 +1,25 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..edcbf629 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2743 +2743 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-        return(-1);
++         return(-1);
+@@ -2745,2 +2745,5 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+-    if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
+-        return(-1);
++    /* Ensure the ID value is valid before removal to prevent use-after-free */
++    if (attr->id->value != NULL) {
++        if (xmlHashRemoveEntry(table, attr->id->value, xmlFreeIDTableEntry) < 0)
++            return(-1);
++    }
+diff --git a/tree.c b/tree.c
+index 8e0b346a..28161533 100644
+--- a/tree.c
++++ b/tree.c
+@@ -2078,2 +2078,3 @@ xmlFreeProp(xmlAttrPtr cur) {
+-    /* Check for ID removal -> leading to invalid references ! */
+-    if ((cur->doc != NULL) && (cur->atype == XML_ATTRIBUTE_ID)) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     /* Check for ID removal -> leading to invalid references ! */
++    if ((cur->doc != NULL) && (cur->atype == XML_ATTRIBUTE_ID) && (cur->children != NULL)) {

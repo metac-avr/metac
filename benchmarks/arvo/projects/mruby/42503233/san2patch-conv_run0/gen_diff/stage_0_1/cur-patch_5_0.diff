@@ -1,0 +1,25 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..c1fd540bc 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -479 +479,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     c = mrb_class(mrb, self);
+@@ -480,0 +482,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    // Prevent integer overflow in stack extension calculation
++    if (argc > MRB_INT_MAX - 3) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "too many arguments");
++    }
+@@ -481,0 +488 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
+@@ -496,0 +504,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      if (n > MRB_INT_MAX - 2) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow");
++      }
+@@ -506,0 +517,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++        // Check for potential overflow in proc stack extension
++        if (p->body.irep->nregs > MRB_INT_MAX - argc) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack size overflow in proc call");
++        }

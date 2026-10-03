@@ -1,0 +1,50 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..bab480a3f 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -185 +185,2 @@ int is_version_with_ietf_long_header(uint32_t version)
+-int quic_len(const uint8_t *buf, uint64_t *value)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ int quic_len(const uint8_t *buf, uint64_t *value)
+@@ -186,0 +188 @@ int quic_len(const uint8_t *buf, uint64_t *value)
++  if (!buf || !value) return 0;
+@@ -926,4 +928,4 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-				       struct ndpi_flow_struct *flow,
+-				       const uint8_t *dest_conn_id, uint8_t dest_conn_id_len,
+-				       uint8_t source_conn_id_len, uint32_t version,
+-				       uint32_t *clear_payload_len)
++			       struct ndpi_flow_struct *flow,
++			       const uint8_t *dest_conn_id, uint8_t dest_conn_id_len,
++			       uint8_t source_conn_id_len, uint32_t version,
++			       uint32_t *clear_payload_len)
+@@ -956,0 +959,6 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Add bounds checking before calling quic_len */
++  if(pn_offset >= packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
+@@ -957,0 +966,7 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Bounds check after adding token_length */
++  if(token_length > packet->payload_packet_len || pn_offset > packet->payload_packet_len || pn_offset < token_length) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
+@@ -963,0 +979,6 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Add bounds checking before second quic_len call */
++  if(pn_offset >= packet->payload_packet_len) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
+@@ -967 +988 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-		pn_offset, token_length, payload_length);
++			pn_offset, token_length, payload_length);
+@@ -977 +998 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-			  GCRY_CIPHER_AES128, &first_byte, &pkn32, 0)) {
++				  GCRY_CIPHER_AES128, &first_byte, &pkn32, 0)) {
+@@ -995 +1016 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-		       offset, first_byte, pkn_len, packet_number, &decryption);
++			       offset, first_byte, pkn_len, packet_number, &decryption);

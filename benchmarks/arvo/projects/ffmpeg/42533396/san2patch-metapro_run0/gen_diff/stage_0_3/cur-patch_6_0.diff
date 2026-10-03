@@ -1,0 +1,33 @@
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..67c41358cf 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -524 +524 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+-
++ 
+@@ -526 +526,2 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+-        ret = av_channel_layout_custom_init(ch_layout, nb_channels);
++        // Fix: Allocate sufficient memory based on actual number of descriptors
++        ret = av_channel_layout_custom_init(ch_layout, num_descr);
+diff --git a/libavcodec/codec_par.c b/libavcodec/codec_par.c
+index abaac63841..5f90c3d11d 100644
+--- a/libavcodec/codec_par.c
++++ b/libavcodec/codec_par.c
+@@ -271 +271 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        } else {
++         } else {
+@@ -273 +273,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
+-        ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++        if (par->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM && par->ch_layout.nb_channels > 0) {
++            // Validate custom channel layout size to prevent buffer overflow
++            if (par->ch_layout.u.map && par->ch_layout.nb_channels * sizeof(AVChannelCustom) > 32) {
++                // Reject oversized custom channel layouts that exceed buffer limits
++                codec->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
++                codec->ch_layout.nb_channels = 0;
++                ret = AVERROR_INVALIDDATA;
++            } else {
++                ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++            }
++        } else {
++            ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
++        }

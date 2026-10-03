@@ -1,0 +1,37 @@
+diff --git a/libavcodec/hevc/filter.c b/libavcodec/hevc/filter.c
+index 56e354b486..77d27a815c 100644
+--- a/libavcodec/hevc/filter.c
++++ b/libavcodec/hevc/filter.c
+@@ -784,0 +785,2 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *
++                else if (!rpl_top || !rpl_top[0].refPicList || !rpl_top[1].refPicList)
++                    bs = 0;
+diff --git a/libavcodec/hevc/refs.c b/libavcodec/hevc/refs.c
+index 48fc4d27da..2e16565568 100644
+--- a/libavcodec/hevc/refs.c
++++ b/libavcodec/hevc/refs.c
+@@ -44,7 +43,0 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
+-        ff_refstruct_unref(&frame->rpl_tab);
+-        frame->refPicList = NULL;
+-
+-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+-    }
+-}
+-
+@@ -52 +45,2 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-                                       const HEVCFrame *ref, int x0, int y0)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++                                        const HEVCFrame *ref, int x0, int y0)
+@@ -57,0 +52,4 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
++    if (x_cb < 0 || y_cb < 0 || x_cb >= pic_width_cb || y_cb >= s->ps.sps->ctb_height)
++        return NULL;
++    if (!ref || !ref->rpl_tab || !ref->rpl_tab[ctb_addr_ts])
++        return NULL;
+@@ -59,7 +57 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
+-}
+-
+-void ff_hevc_clear_refs(HEVCContext *s)
+-{
+-    int i;
+-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++)
+-        ff_hevc_unref_frame(&s->DPB[i],
++}        ff_hevc_unref_frame(&s->DPB[i],

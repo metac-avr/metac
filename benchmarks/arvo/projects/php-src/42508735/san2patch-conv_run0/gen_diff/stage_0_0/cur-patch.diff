@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..742ae8bd36d 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -252 +252,3 @@ void shutdown_destructors(void) /* {{{ */
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			if (EG(symbol_table).nNumOfElements > 0) {
++				zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
++			}
+diff --git a/Zend/zend.c b/Zend/zend.c
+index c37cd9ed974..a1538411e98 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1215,8 +1215 @@ ZEND_API void zend_activate(void) /* {{{ */
+-	if (CG(map_ptr_last)) {
+-		memset(CG(map_ptr_real_base), 0, CG(map_ptr_last) * sizeof(void*));
+-	}
+-	zend_observer_activate();
+-}
+-/* }}} */
+-
+-void zend_call_destructors(void) /* {{{ */
++zend_call_destructors(void) /* {{{ */
+@@ -1225 +1218,3 @@ void zend_call_destructors(void) /* {{{ */
+-		shutdown_destructors();
++		if (!GC_G(gc_active)) {
++			shutdown_destructors();
++		}
+@@ -1228,9 +1222,0 @@ void zend_call_destructors(void) /* {{{ */
+-/* }}} */
+-
+-ZEND_API void zend_deactivate(void) /* {{{ */
+-{
+-	/* we're no longer executing anything */
+-	EG(current_execute_data) = NULL;
+-
+-	zend_observer_deactivate();
+-

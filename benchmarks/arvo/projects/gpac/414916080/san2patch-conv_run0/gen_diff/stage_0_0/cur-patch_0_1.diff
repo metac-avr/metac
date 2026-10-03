@@ -1,0 +1,59 @@
+diff --git a/src/filter_core/filter_pid.c b/src/filter_core/filter_pid.c
+index c9289e2bb..e3be6ee72 100644
+--- a/src/filter_core/filter_pid.c
++++ b/src/filter_core/filter_pid.c
+@@ -5697,7 +5697,18 @@ static GF_Err gf_filter_pid_set_property_full(GF_FilterPid *pid, u32 prop_4cc, c
+-	if (value && (prop_4cc == GF_PROP_PID_ID) && !pid->name) {
+-		char szName[100];
+-		sprintf(szName, "PID%d", value->value.uint);
+-		gf_filter_pid_set_name(pid, szName);
+-	}
+-	return gf_props_set_property(map, prop_4cc, prop_name, dyn_name, value);
+-}
++if (nb_es) {
++		//translate hierarchy descriptors indexes into PIDs - check whether the PMT-index rules are the same for HEVC
++		for (i=0; i<gf_list_count(pmt->program->streams); i++) {
++			GF_M2TS_PES *an_es = NULL;
++			GF_M2TS_PES *es = (GF_M2TS_PES *)gf_list_get(pmt->program->streams, i);
++			if ( !(es->flags & GF_M2TS_ES_IS_PES)) continue;
++			if (!es->depends_on_pid) continue;
++
++			//fixeme we are not always assured that hierarchy_layer_index matches the stream index...
++			//+1 is because our first stream is the PMT
++			an_es =  (GF_M2TS_PES *)gf_list_get(pmt->program->streams, es->depends_on_pid);
++			if (an_es) {
++				es->depends_on_pid = an_es->pid;
++			} else {
++				GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[M2TS] Wrong dependency index in hierarchy descriptor, assuming non-scalable stream\n"));
++				es->depends_on_pid = 0;
++			}
++		}
+@@ -5705,4 +5716,13 @@ static GF_Err gf_filter_pid_set_property_full(GF_FilterPid *pid, u32 prop_4cc, c
+-GF_EXPORT
+-GF_Err gf_filter_pid_set_property(GF_FilterPid *pid, u32 prop_4cc, const GF_PropertyValue *value)
+-{
+-	if (!prop_4cc) return GF_BAD_PARAM;
++		// Validate nb_es against maximum allowed value to prevent buffer overflow
++		#define MAX_ALLOWED_ES_COUNT 1024
++		if (nb_es > MAX_ALLOWED_ES_COUNT) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[M2TS] Invalid ES count detected, capping to prevent overflow\n"));
++			nb_es = MAX_ALLOWED_ES_COUNT;
++		}
++
++		evt_type = (status&GF_M2TS_TABLE_FOUND) ? GF_M2TS_EVT_PMT_FOUND : GF_M2TS_EVT_PMT_UPDATE;
++		if (ts->on_event) ts->on_event(ts, evt_type, pmt->program);
++	} else {
++		/* if we found no new ES it's simply a repeat of the PMT */
++		if (ts->on_event) ts->on_event(ts, GF_M2TS_EVT_PMT_REPEAT, pmt->program);
++	}	if (!prop_4cc) return GF_BAD_PARAM;
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..4416b84ac 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1801,0 +1802,6 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
++		// Validate nb_es against maximum allowed value to prevent buffer overflow
++		if (nb_es > MAX_ALLOWED_ES_COUNT) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[M2TS] Invalid ES count detected, capping to prevent overflow\n"));
++			nb_es = MAX_ALLOWED_ES_COUNT;
++		}
++

@@ -1,0 +1,25 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 535a0c5bd..2aa6eff9e 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1750 +1750,19 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    NDPI_LOG_DBG2(ndpi_struct, "Request where expected\n");
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     NDPI_LOG_DBG2(ndpi_struct, "Request where expected\n");
++
++    {
++      char hostname_buf[256];
++      u_int16_t hostname_len = 0;
++      const char *hostname_ptr = NULL;
++
++      ndpi_parse_packet_line_info(ndpi_struct, flow);
++      hostname_ptr = flow->host_server_name;
++      if(hostname_ptr != NULL) {
++        hostname_len = (u_int16_t)strnlen(hostname_ptr, sizeof(hostname_buf) - 1);
++        if(hostname_len > 0) {
++          memcpy(hostname_buf, hostname_ptr, hostname_len);
++          hostname_buf[hostname_len] = '\0';
++          ndpi_is_valid_hostname(hostname_buf, hostname_len);
++        }
++      }
++    }

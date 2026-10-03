@@ -1,0 +1,44 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..6a98a8faa 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1038,9 +1038,18 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+-      if(content != NULL) {
+-	char *double_dot = strchr((char*)content, ':');
+-
+-	if(double_dot) {
+-	  double_dot[0] = '\0';
+-	  flow->http.username = ndpi_strdup((char*)content);
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
+-	}
++ 
++      if(content != NULL && content_len > 0) {
++        /* Create a null-terminated copy for string operations */
++        char *str_content = (char*)ndpi_malloc(content_len + 1);
++        if(str_content != NULL) {
++          strncpy(str_content, (char*)content, content_len);
++          str_content[content_len] = '\0';
++          
++          char *double_dot = strchr(str_content, ':');
++
++	  if(double_dot) {
++	    double_dot[0] = '\0';
++	    flow->http.username = ndpi_strdup(str_content);
++	    flow->http.password = ndpi_strdup(&double_dot[1]);
++	  }
++	  
++	  ndpi_free(str_content);
++        }
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 782f85f16..0723f1828 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -956 +956 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-
++ 
+@@ -958 +958 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
+-  pos = out = ndpi_malloc(olen);
++  pos = out = ndpi_malloc(olen + 1); // Add space for null terminator
+@@ -960,0 +961 @@ u_char* ndpi_base64_decode(const u_char *src, size_t len, size_t *out_len) {
++  out[olen] = '\0'; // Pre-null terminate to prevent out-of-bounds access

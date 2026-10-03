@@ -1,0 +1,18 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..be3946daca7 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1838 +1838,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 					i_zval_ptr_dtor(&p->val);
+@@ -1840 +1841,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						zend_string_release_ex(p->key, 0);
++						if (GC_DELREF(p->key) >= 0) {
++							zend_string_release_ex(p->key, 0);
++						}
+@@ -1848 +1851,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-							zend_string_release_ex(p->key, 0);
++							if (GC_DELREF(p->key) >= 0) {
++								zend_string_release_ex(p->key, 0);
++							}

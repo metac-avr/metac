@@ -1,0 +1,33 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..9530659f0 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -3216,0 +3217,4 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
++			if (pctx->nalu_size_length > size) {
++				inspect_printf(dump, "   <!-- Insufficient data to read NALU size -->\n");
++				break;
++			}
+@@ -3225 +3229,5 @@ static void inspect_dump_packet(GF_InspectCtx *ctx, FILE *dump, GF_FilterPacket
+-				gf_inspect_dump_nalu_internal(dump, data, nal_size, pctx->has_svcc ? 1 : 0, pctx->hevc_state, pctx->avc_state, pctx->vvc_state, pctx->nalu_size_length, ctx->crc, pctx->is_cenc_protected, ctx->analyze, pctx);
++				if (nal_size <= size - pctx->nalu_size_length) {
++					gf_inspect_dump_nalu_internal(dump, data, nal_size, pctx->has_svcc ? 1 : 0, pctx->hevc_state, pctx->avc_state, pctx->vvc_state, pctx->nalu_size_length, ctx->crc, pctx->is_cenc_protected, ctx->analyze, pctx);
++				} else {
++					inspect_printf(dump, "<!-- NALU data exceeds available buffer -->");
++				}
+@@ -4460 +4468 @@ static GF_Err inspect_process(GF_Filter *filter)
+-					pctx->buf_start_time = gf_sys_clock();
++					pctx->buf_start_time = gf_sys_clock(); 
+@@ -4499,0 +4508 @@ static GF_Err inspect_process(GF_Filter *filter)
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -4502 +4511,10 @@ static GF_Err inspect_process(GF_Filter *filter)
+-					inspect_dump_packet(ctx, pctx->tmp, pck, pctx->idx, pctx->pck_num, pctx);
++					// Validate packet data bounds before processing to prevent out-of-bounds access
++					u32 packet_size = 0;
++					const u8 *packet_data = gf_filter_pck_get_data(pck, &packet_size);
++					
++					// Ensure we have valid packet data and sufficient size
++					if (packet_data != NULL && packet_size >= pctx->nalu_size_length) {
++						inspect_dump_packet(ctx, pctx->tmp, pck, pctx->idx, pctx->pck_num, pctx);
++					} else {
++						GF_LOG(GF_LOG_DEBUG, GF_LOG_MEDIA, ("[Inspect] Skipping packet dump - insufficient data size: %u bytes\n", packet_size));
++					}

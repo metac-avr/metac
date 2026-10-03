@@ -1,0 +1,32 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..476f453ad58 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -650,2 +650,5 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
++				HashTable *ht = Z_ARRVAL_P(zv);
++				if (ht && ht->u.flags != (uint32_t)-1) {
++					if (HT_IS_PACKED(ht)) {
++						flags |= IS_TRACE_PACKED;
++					}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..bf953fb27fb 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2490,6 +2490,9 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	GC_REMOVE_FROM_BUFFER(ht);
+-	if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
+-		_zend_hash_iterators_remove(ht);
+-	}
+-	if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
+-		efree(HT_GET_DATA_ADDR(ht));
++	if (ht && !(HT_FLAGS(ht) & HASH_FLAG_FREED)) {
++		GC_REMOVE_FROM_BUFFER(ht);
++		if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
++			_zend_hash_iterators_remove(ht);
++		}
++		if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
++			efree(HT_GET_DATA_ADDR(ht));
++		}
++		HT_FLAGS(ht) |= HASH_FLAG_FREED;

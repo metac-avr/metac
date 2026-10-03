@@ -1,0 +1,34 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..2e3ced15279 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,11 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++// FIXME: Crash CWE-416: Use After Free
++		/* Prevent use-after-free by checking object validity */
++		if (object != NULL && EG(objects_store).object_buckets[handle] == SET_OBJ_INVALID(object)) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		} else {
++			/* Object already freed or invalid, just update free list */
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 54e9a85808c..7bd2e8bdcac 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1262,0 +1263,3 @@ void zend_call_destructors(void) /* {{{ */
++	static int destructors_called = 0;
++	if (destructors_called) return;  /* Prevent double invocation */
++	destructors_called = 1;
+@@ -1265,0 +1269 @@ void zend_call_destructors(void) /* {{{ */
++	destructors_called = 0;  /* Reset for next request */
+@@ -1274,2 +1278 @@ ZEND_API void zend_deactivate(void) /* {{{ */
+-	zend_try {
+-		shutdown_scanner();
++	zend_try {		shutdown_scanner();

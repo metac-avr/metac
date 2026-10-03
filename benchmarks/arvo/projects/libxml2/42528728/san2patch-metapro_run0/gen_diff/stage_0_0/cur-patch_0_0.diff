@@ -1,0 +1,28 @@
+diff --git a/dict.c b/dict.c
+index 8bfc9f15..61efd2bc 100644
+--- a/dict.c
++++ b/dict.c
+@@ -522,0 +523,3 @@ xmlDictFindEntry(const xmlDict *dict, const xmlChar *prefix,
++    if (dict == NULL)
++        return(NULL);
++
+@@ -525 +528,2 @@ xmlDictFindEntry(const xmlDict *dict, const xmlChar *prefix,
+-    entry = &dict->table[pos];
++// FIXME: Crash CWE-416: Use After Free
++     entry = &dict->table[pos];
+@@ -557 +561,3 @@ xmlDictFindEntry(const xmlDict *dict, const xmlChar *prefix,
+-            if ((pos & mask) == 0)
++            if ((pos & mask) == 0) {
++                if (dict->table == NULL)
++                    return(NULL);
+@@ -558,0 +565 @@ xmlDictFindEntry(const xmlDict *dict, const xmlChar *prefix,
++            }
+@@ -689,2 +696,2 @@ xmlDictLookupInternal(xmlDictPtr dict, const xmlChar *prefix,
+-        else
+-            subHashValue = xmlDictHashQName(dict->subdict->seed, prefix, name,
++        else {
++             subHashValue = xmlDictHashQName(dict->subdict->seed, prefix, name,
+@@ -691,0 +699,3 @@ xmlDictLookupInternal(xmlDictPtr dict, const xmlChar *prefix,
++             /* Check if subdict is still valid before proceeding */
++             if (dict->subdict == NULL) return(NULL);
++        }

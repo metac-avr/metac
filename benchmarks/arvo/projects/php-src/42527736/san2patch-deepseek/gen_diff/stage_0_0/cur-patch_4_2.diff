@@ -1,0 +1,59 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..743d74d1431 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2140,7 +2140,24 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-						}
+-						break;
+-					default:
+-						break;
+-				}
+-				bptr += inc_len;
+-				inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
++		case -2:
++			if (op == 'n') {
++				/* illegal */
++				break;
++			}
++			/* fall through */
++		case -1:
++			if (op == 'n') {
++				break;
++			}
++			/* fall through */
++		case 0:
++			if (op == 'n') {
++				break;
++			}
++			/* fall through */
++		case 1:
++			if (op == 'n') {
++				break;
++			}
++			/* fall through */
++		default:
++			if (op == 'n') {
++				break;
+@@ -2147,0 +2165,2 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
++			break;
++		}
+@@ -2149,2 +2168,3 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-		quit_loop_3:
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
++quit_loop_3:
++		if (bptr >= hunk_begin) {
++			memcpy(tptr, hunk_begin, (size_t)(bptr - hunk_begin));
+@@ -2152,10 +2172,3 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-			bptr += inc_len;
+-			comp_end = tptr;
+-		} else {
+-			/* 2B. Handle non-enclosure field */
+-
+-			hunk_begin = bptr;
+-
+-			for (;;) {
+-				switch (inc_len) {
+-					case 0:
++		}
++		bptr += inc_len;
++		comp_end = tptr;					case 0:

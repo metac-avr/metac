@@ -1,0 +1,40 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index b51deb97b5a..a55155738b0 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1968 +1968,9 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-			result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			zend_string *old_str = Z_STR_P(result);
++			if (GC_DELREF(old_str) == 0) {
++				GC_ADDREF(old_str); // Prevent premature freeing
++				result_str = zend_string_alloc(result_len, 0);
++				memcpy(ZSTR_VAL(result_str), Z_STRVAL_P(op1), op1_len);
++				GC_DELREF(old_str); // Restore reference count
++			} else {
++				result_str = zend_string_extend(Z_STR_P(result), result_len, 0);
++			}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..b80b94fc91c 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -65 +65 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+@@ -72,0 +73 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
++// FIXME: Crash CWE-416: Use After Free
+@@ -74,2 +75,9 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
++	/* Validate reference before destruction to prevent use-after-free */
++	if (ref && GC_REFCOUNT(ref) > 0) {
++		i_zval_ptr_dtor(&ref->val);
++		efree_size(ref, sizeof(zend_reference));
++	} else if (ref) {
++		/* Reference exists but refcount is 0, safe to free */
++		i_zval_ptr_dtor(&ref->val);
++		efree_size(ref, sizeof(zend_reference));
++	}
+@@ -85,2 +93 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-}
+-/* }}} */
++}/* }}} */

@@ -1,0 +1,19 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index eb7ef1624b9..e1f881348b8 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3270 +3270,2 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				/* smart branch opcodes may not initialize result */
++// FIXME: Crash CWE-416: Use After Free
++ 				/* smart branch opcodes may not initialize result */
+@@ -3272 +3273,9 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *result = EX_VAR(throw_op->result.var);
++					if (Z_TYPE_P(result) == IS_OBJECT && Z_OBJ_P(result) != NULL) {
++						zend_object *obj = Z_OBJ_P(result);
++						if (GC_REFCOUNT(obj) > 0) {
++							zval_ptr_dtor_nogc(result);
++						}
++					} else if (Z_TYPE_P(result) != IS_OBJECT) {
++						zval_ptr_dtor_nogc(result);
++					}

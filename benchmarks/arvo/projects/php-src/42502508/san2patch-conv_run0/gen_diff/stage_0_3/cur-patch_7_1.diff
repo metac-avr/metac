@@ -1,0 +1,73 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..185beeaa4a1 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,13 +1208,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+-static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_ADDREF(Z_COUNTED_P(pz));
+-}
+-
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
+-	return GC_DELREF(Z_COUNTED_P(pz));
+-}
+-
+@@ -1224 +1211 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	do {												\
++	do {									\
+@@ -1226,3 +1213,3 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
++		Z_COUNTED_P(z) = gc;						\
++		z->value.ww.w2 = _w2;						\
++		Z_TYPE_INFO_P(z) = t;						\
+@@ -1229,0 +1217 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++
+@@ -1230,0 +1219,7 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
++	do {									\
++		Z_COUNTED_P(z) = gc;						\
++		z->value.ww.w1 = v->value.ww.w1;					\
++		Z_TYPE_INFO_P(z) = t;						\
++	} while (0)
++#endif#elif SIZEOF_SIZE_T == 8
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..1afdde080bb 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -24,22 +24,8 @@
+-#include "zend_types.h"
+-#include "zend_gc.h"
+-
+-BEGIN_EXTERN_C()
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p);
+-ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
+-	}
+-}
+-
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++	ZEND_ASSERT(pz != NULL);
++	if (!Z_REFCOUNTED_P(pz)) return 0;
++	zend_refcounted* counted = Z_COUNTED_P(pz);
++	if (!counted) return 0;
++	return GC_DELREF(counted);
++}		} else {

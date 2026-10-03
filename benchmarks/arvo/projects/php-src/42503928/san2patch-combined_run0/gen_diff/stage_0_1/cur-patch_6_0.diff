@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..b4d802e1349 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
++i_zval_ptr_dtor(&ref->val);
+@@ -81,0 +82 @@ static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
++// FIXME: Crash CWE-416: Use After Free
+@@ -84 +85,10 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr && Z_REFCOUNTED_P(zval_ptr)) {
++		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++		if (ref && !GC_IS_RECURSIVE(ref)) {
++			i_zval_ptr_dtor(zval_ptr);
++		} else if (!ref) {
++			return;
++		}
++	} else {
++		i_zval_ptr_dtor(zval_ptr);
++	}
+@@ -90,6 +100 @@ ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++	if (Z_REFCOUNTED_P(zval_ptr)) {				zend_string *str = (zend_string*)ref;
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..131429d6ede 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -390,0 +391,4 @@ void shutdown_executor(void) /* {{{ */
++	/* Prevent use-after-free by checking if GC is active before cleanup */
++	if (GC_G(gc_active)) {
++		GC_G(gc_active) = 0;
++	}

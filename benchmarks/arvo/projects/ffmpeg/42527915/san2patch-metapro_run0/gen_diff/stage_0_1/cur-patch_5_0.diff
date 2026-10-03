@@ -1,0 +1,31 @@
+diff --git a/libavcodec/vlc.c b/libavcodec/vlc.c
+index 9656a9472c..0463d3abb4 100644
+--- a/libavcodec/vlc.c
++++ b/libavcodec/vlc.c
+@@ -239 +239 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
+-    } else {
++     } else {
+@@ -245,0 +246,6 @@ static int vlc_common_end(VLC *vlc, int nb_bits, int nb_codes, VLCcode *codes,
++        // Validate pointer before returning to prevent expired pointer dereference
++        if (!vlc->table && ret >= 0) {
++            // Table was freed, ensure we don't use stale pointer
++            vlc->bits = 0;
++            vlc->table_allocated = 0;
++        }
+@@ -439,3 +445,13 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
+-        table[j].len = single->table[j].len;
+-        table[j].num = single->table[j].len > 0 ? 1 : 0;
+-        AV_WN16(table[j].val, single->table[j].sym);
++        // Add safety checks to prevent expired pointer dereference
++        if (table && single && single->table) {
++            // Ensure we don't exceed the bounds of either table
++            if (j < nb_elems && j < (1 << VLC_MAX_BITS)) {
++                table[j].len = single->table[j].len;
++                table[j].num = single->table[j].len > 0 ? 1 : 0;
++                AV_WN16(table[j].val, single->table[j].sym);
++            }
++        } else {
++            // Log error and return if invalid pointers are detected
++            av_log(logctx, AV_LOG_ERROR, "Invalid pointer in vlc_multi_gen\n");
++            return AVERROR(EINVAL);
++        }

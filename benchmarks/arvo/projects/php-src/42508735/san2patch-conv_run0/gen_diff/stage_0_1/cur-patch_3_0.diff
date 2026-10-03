@@ -1,0 +1,20 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..d34ad130f7b 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// FIXME: Crash CWE-416: Use After Free
++		object = NULL;  /* Prevent use-after-free by nullifying the pointer */
++ 		ptr = ((char*)object) - object->handlers->offset;
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..42532fa2f1e 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -539,0 +540,6 @@ static void gc_grow_root_buffer(void)
++// FIXME: Crash CWE-416: Use After Free
++		/* Check if buffer needs cleanup before growing */
++		if (GC_G(buf) == NULL) {
++			GC_G(buf_size) = 0;
++			return;
++		}

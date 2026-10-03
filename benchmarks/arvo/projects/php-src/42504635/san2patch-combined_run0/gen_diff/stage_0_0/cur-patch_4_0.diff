@@ -1,0 +1,57 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 24c4ced4b43..50b14589bb4 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1750,4 +1750,8 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-			do {
+-				i_zval_ptr_dtor(zv);
+-			} while (++zv != end);
++// FIXME: Crash CWE-416: Use After Free
++ 
++			while (zv != end) {
++				if (Z_TYPE_P(zv) != IS_UNDEF) {
++					i_zval_ptr_dtor(zv);
++				}
++				zv++;
++			}
+@@ -1759,3 +1763,6 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
+-					i_zval_ptr_dtor(&p->val);
+-				} while (++p != end);
++				while (p != end) {
++					if (Z_TYPE(p->val) != IS_UNDEF) {
++						i_zval_ptr_dtor(&p->val);
++					}
++					p++;
++				}
+@@ -1763,2 +1770,4 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
+-					i_zval_ptr_dtor(&p->val);
++				while (p != end) {
++					if (Z_TYPE(p->val) != IS_UNDEF) {
++						i_zval_ptr_dtor(&p->val);
++					}
+@@ -1768 +1777,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				} while (++p != end);
++					p++;
++				}
+@@ -1770 +1780 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				do {
++				while (p != end) {
+@@ -1777 +1787,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-				} while (++p != end);
++					p++;
++				}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..0bb0d64c315 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p) return;
+@@ -57 +58,4 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++	if (!(GC_FLAGS(p) & GC_IMM destruct)) {
++		GC_SET_FLAGS(p, GC_FLAGS(p) | GC_IMM destruct);
++		zend_rc_dtor_func[GC_TYPE(p)](p);
++	}

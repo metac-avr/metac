@@ -1,0 +1,30 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..53e462aca 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1671 +1671,6 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-  const uint8_t *send = s + len;
++  const uint8_t *send;
++
++  if (s == NULL || len < 0) {
++    return hval;
++  }
++  send = s + len;
+@@ -1683 +1687,0 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-
+@@ -1691,0 +1696 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
++
+@@ -1700 +1705 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-{
++ {
+@@ -1702 +1707,5 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-  return mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
++  mrb_gc_arena_save(mrb);
++  mrb_gc_protect(mrb, str);
++  uint32_t hash = mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
++  mrb_gc_arena_restore(mrb, 0);
++  return hash;
+@@ -1712,2 +1721 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-static mrb_value
+-mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++static mrb_valuemrb_str_hash_m(mrb_state *mrb, mrb_value self)

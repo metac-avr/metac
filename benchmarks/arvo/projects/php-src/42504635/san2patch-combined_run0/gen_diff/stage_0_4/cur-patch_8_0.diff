@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..06b915acfbf 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -43 +43 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (EXPECTED(ref != NULL) && !GC_DELREF(ref)) {
+@@ -45 +45 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		} else if (EXPECTED(ref != NULL)) {
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..f0341d6a041 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -65 +65,2 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
++// FIXED: Crash CWE-416: Use After Free - Added null check before accessing str
++	if (str) ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+@@ -77 +77,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

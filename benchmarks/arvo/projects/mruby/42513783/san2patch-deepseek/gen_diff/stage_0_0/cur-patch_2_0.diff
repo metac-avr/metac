@@ -1,0 +1,24 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..bb1190d8b 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -365,5 +365,11 @@ urshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-    mpz_init(mrb,&c); mpz_realloc(mrb,&c,(size_t)(a->sz));
+-    for (size_t i=a->sz-1; ; i--) {
+-      c.p[i] = ((a->p[i] >> n) | cc) & DIG_MASK;
+-      cc = (a->p[i] & rm) << (DIG_SIZE - n);
+-      if (i == 0) break;
++    size_t drop = n / DIG_SIZE;
++    size_t rem = n % DIG_SIZE;
++    if (drop >= (size_t)(a->sz)) {
++      mpz_set_ui(mrb, c1, 0);
++      return;
++    }
++    mpz_init(mrb,&c); mpz_realloc(mrb,&c,(size_t)(a->sz - drop));
++    for (size_t i=0; i < (size_t)(a->sz - drop); i++) {
++      mp_limb cur = a->p[i + drop];
++      mp_limb next = (i + drop + 1 < (size_t)(a->sz)) ? a->p[i + drop + 1] : 0;
++      c.p[i] = ((cur >> rem) | (next << (DIG_SIZE - rem))) & DIG_MASK;
+@@ -375 +381 @@ urshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-}
++},

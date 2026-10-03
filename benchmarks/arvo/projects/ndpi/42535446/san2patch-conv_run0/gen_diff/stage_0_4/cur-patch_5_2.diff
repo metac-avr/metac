@@ -1,0 +1,37 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..39e79b57f 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1440,0 +1441,4 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
++  static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct, struct ndpi_flow_struct *flow) {
++  struct ndpi_packet_struct *packet = &flow->packet;
++  int filename_start;
++
+@@ -1469 +1473,10 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
+-    process_request(ndpi_struct, flow, filename_start);
++    if(packet->payload != NULL && packet->payload_packet_len > 0) {
++      // Validate buffer bounds before processing
++      if(packet->payload_packet_len <= 65535) {
++        process_request(ndpi_struct, flow, filename_start);
++      } else {
++        NDPI_LOG_DBG2(ndpi_struct, "Packet buffer exceeds maximum allowed size\n");
++        NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++        return;
++      }
++    }
+@@ -1534,0 +1548 @@ static void ndpi_check_http_tcp(struct ndpi_detection_module_struct *ndpi_struct
++}
+@@ -1539,0 +1554,2 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
++  struct ndpi_packet_struct *packet = &flow->packet;
++  
+@@ -1545 +1561 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
+-
++ 
+@@ -1547 +1563,6 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
+-  ndpi_check_http_tcp(ndpi_struct, flow);
++  
++  /* Validate buffer length to prevent buffer overflow */
++  if(packet->payload_packet_len > 0 && 
++     packet->payload_packet_len <= 65535) {
++    ndpi_check_http_tcp(ndpi_struct, flow);
++  }

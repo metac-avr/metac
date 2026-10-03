@@ -1,0 +1,73 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..9ec438e898 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,8 +2017,51 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
++#define WRITE_FRAME(DIRECTORY, NAME, PIXEL)
++    static void j2k_write_##NAME##_##DIRECTORY (AVCodecContext *avctx, AVFrame *picture,
++                                    opj_tcd_tilecomp_t *tilec, int compno)
++    {
++        int x, y, pixel_size;
++        int cbps = FFMAX(avctx->bits_per_raw_sample, 8);
++        uint8_t *line;
++        PIXEL *datap;
++        
++        pixel_size = cbps >> 3;
++        line = picture->data[compno];
++        for (y = 0; y < tilec->res_level->numbands;
++             y++) {
++            opj_tcd_band_t *band = &tilec->res_level->band[y];
++            opj_tcd_precinct_t *precinct = &band->precinct;
++            int pos = band->bandno;
++            int w = precinct->x1 - precinct->x0;
++            int h = precinct->y1 - precinct->y0;
++            int *i_datap = precinct->data;
++            PIXEL *dst;
++
++            if (pos == 0) {
++                line = picture->data[compno] + (precinct->tby * picture->linesize[compno]) +
++                       (precinct->tbx * pixel_size);
++            } else if (pos == 1) {
++                line = picture->data[compno] + (precinct->tby * picture->linesize[compno]) +
++                       ((precinct->tbx + w) * pixel_size);
++            } else if (pos == 2) {
++                line = picture->data[compno] + ((precinct->tby + h) * picture->linesize[compno]) +
++                       (precinct->tbx * pixel_size);
++            } else {
++                line = picture->data[compno] + ((precinct->tby + h) * picture->linesize[compno]) +
++                       ((precinct->tbx + w) * pixel_size);
++            }
++
++            for (y = 0; y < h; y++) {
++                datap = (PIXEL *)line;
++                dst = datap;
++                for (x = 0; x < w; x++) {
++                    /* Fixed CWE-787: Out-of-bounds Write - Added bounds checking */
++                    if ((uint8_t*)dst >= (uint8_t*)picture->data[compno] &&
++                        (uint8_t*)dst < (uint8_t*)picture->data[compno] + 
++                        picture->linesize[compno] * picture->height) {
++                        *dst = *i_datap;
++                    }
++                    i_datap++;
++                    dst += pixel_size;
++                }
++                line += picture->linesize[compno] / sizeof(PIXEL);
++            }
++        }
+@@ -2031,8 +2073,0 @@ WRITE_FRAME(16, uint16_t)
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
+-

@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index f2f538a2c2c..333396a0fe2 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1340 +1340,2 @@ static zend_always_inline void zend_gc_try_delref(zend_refcounted_h *p) {
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -1342,3 +1343,5 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
+-	ZEND_RC_MOD_CHECK(p);
+-	return --(p->refcount);
++	if (p && p->refcount > 0) {
++		ZEND_RC_MOD_CHECK(p);
++		return --(p->refcount);
++	}
++	return 0;
+@@ -1352 +1354,0 @@ static zend_always_inline uint32_t zend_gc_addref_ex(zend_refcounted_h *p, uint3
+-
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 27e09d7db22..7d5aae5d2aa 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -55,0 +56 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (p == NULL || (void*)p == (void*)0xfeeefeee) return; // Check for freed memory pattern

@@ -1,0 +1,47 @@
+diff --git a/parser.c b/parser.c
+index cae2b7fd..46fbc3e7 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7373,11 +7373,4 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw == NULL) {
+-                        xmlErrMemory(ctxt);
+-                    } else {
+-			if (nw->_private == NULL)
+-			    nw->_private = cur->_private;
+-			if (firstChild == NULL){
+-			    firstChild = nw;
+-			}
+-			nw = xmlAddChild(ctxt->node, nw);
+-                        if (nw == NULL)
++		    /* Validate node before copying to prevent use-after-free */
++		    if (cur != NULL) {
++		        nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		        if (nw == NULL) {
+@@ -7384,0 +7378,10 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++                        } else {
++			    if (nw->_private == NULL)
++			        nw->_private = cur->_private;
++			    if (firstChild == NULL){
++			        firstChild = nw;
++			    }
++			    nw = xmlAddChild(ctxt->node, nw);
++                            if (nw == NULL)
++                                xmlErrMemory(ctxt);
++		        }
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..6a3cd7c2 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -401,0 +402 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -403,2 +404,7 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++        /* Validate nsDef before freeing to avoid use-after-free */
++        if (cur->nsDef != NULL) {
++            xmlFreeNsList(cur->nsDef);
++            cur->nsDef = NULL;
++        }
++    }

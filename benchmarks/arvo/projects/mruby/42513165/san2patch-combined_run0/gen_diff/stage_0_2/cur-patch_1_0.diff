@@ -1,0 +1,26 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..38b5557aa 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -1358 +1358 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-        {
++         {
+@@ -1360 +1360,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-          regs[a] = mrb_bint_new_str(mrb, s+2, (mrb_int)s[0], (mrb_int)s[1]);
++          /* Fix: Validate string length parameters to prevent out-of-bounds access */
++          if ((mrb_int)s[0] > 0 && (mrb_int)s[1] > 0 && (mrb_int)s[0] < 100000 && (mrb_int)s[1] < 100000) {
++            regs[a] = mrb_bint_new_str(mrb, s+2, (mrb_int)s[0], (mrb_int)s[1]);
++          } else {
++            goto L_INT_OVERFLOW;
++          }
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..56b77e07e 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -656 +656,5 @@ mpz_init_set_str(mrb_state *mrb, mpz_t *x, const char *s, mrb_int len, mrb_int b
+-  for (i = len-1;; i--) {
++  if (len > 1000000) {  /* Limit maximum string length to prevent integer overflow */
++  retval = (-1);
++  return retval;
++}
++for (i = len-1;; i--) {

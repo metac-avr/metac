@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..56b6dd6155e 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -1413,0 +1414,5 @@ static zend_always_inline int zend_binary_op(zval *ret, zval *op1, zval *op2 OPL
++	/* Validate pointers before dereferencing to prevent use-after-free */
++	if (!op1 || !op2) {
++		return FAILURE;
++	}
++
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..962310735ed 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1894,5 +1894,6 @@ ZEND_API zend_result ZEND_FASTCALL concat_function(zval *result, zval *op1, zval
+-	 	if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
+-	 		if (Z_ISREF_P(op1)) {
+-	 			op1 = Z_REFVAL_P(op1);
+-	 			if (Z_TYPE_P(op1) == IS_STRING) break;
+-	 		}
++		if (UNEXPECTED(Z_TYPE_P(op1) != IS_STRING)) {
++			zval op1_temp;
++			if (Z_ISREF_P(op1)) {
++				op1 = Z_REFVAL_P(op1);
++				if (Z_TYPE_P(op1) == IS_STRING) break;
++			}

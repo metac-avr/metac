@@ -1,0 +1,31 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..e75670847 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779,6 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+-  default:
+-    break;
+-  }
+-}
+-
+@@ -786,0 +781 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++/* FIXME: Crash CWE-825: Expired Pointer Dereference */
+@@ -790,0 +786 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (obj->tt >= 0xFF) return; /* Validate object type - using max reasonable value */
+@@ -793,8 +789 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-}
+-
+-static void
+-obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-{
+-  DEBUG(fprintf(stderr, "obj_free(%p,tt=%d)\n",obj,obj->tt));
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++}  case MRB_TT_OBJECT:
+@@ -1095,0 +1085,5 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++    // Validate object pointer before dereferencing
++    if (obj == NULL || (uintptr_t)obj < 0x1000) {  // Basic validity check
++      gc->gray_list = NULL;
++      break;
++    }

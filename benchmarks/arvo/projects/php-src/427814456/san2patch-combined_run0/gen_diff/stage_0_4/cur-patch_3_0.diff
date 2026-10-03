@@ -1,0 +1,31 @@
+diff --git a/main/spprintf.c b/main/spprintf.c
+index 4c01347fcf4..9e09134544d 100644
+--- a/main/spprintf.c
++++ b/main/spprintf.c
+@@ -777,0 +778 @@ PHPAPI void php_printf_to_smart_string(smart_string *buf, const char *format, va
++// FIXME: Crash CWE-416: Use After Free
+@@ -780 +781,6 @@ PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list
+-	xbuf_format_converter(buf, 0, format, ap);
++	if (buf != NULL) {
++		xbuf_format_converter(buf, 0, format, ap);
++	} else {
++		/* Handle null buffer case to prevent use-after-free */
++		return;
++	}
+@@ -782 +788 @@ PHPAPI void php_printf_to_smart_str(smart_str *buf, const char *format, va_list
+-/* }}} */
++/* }}} */
+\ No newline at end of file
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..ef126d78d05 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -350,0 +351,4 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
++				if (Z_STRVAL_P(op) == NULL || Z_STRLEN_P(op) < 0) {
++					*failed = 1;
++					return 0;
++				}
+@@ -371 +375,2 @@ static zend_never_inline zend_long ZEND_FASTCALL zendi_try_get_long(zval *op, bo
+-					lval = zend_dval_to_lval_cap(dval);
++// FIXME: Crash CWE-416: Use After Free
++ 					lval = zend_dval_to_lval_cap(dval);

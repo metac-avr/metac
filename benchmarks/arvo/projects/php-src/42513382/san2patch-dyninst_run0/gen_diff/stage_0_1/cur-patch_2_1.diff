@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_enum.h b/Zend/zend_enum.h
+index 797eb0c8ab5..d68c88a505b 100644
+--- a/Zend/zend_enum.h
++++ b/Zend/zend_enum.h
+@@ -45 +44,0 @@ ZEND_API zend_result zend_enum_get_case_by_value(zend_object **result, zend_clas
+-
+@@ -53 +52,2 @@ static zend_always_inline zval *zend_enum_fetch_case_value(zend_object *zobj)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
+@@ -55,0 +56 @@ static zend_always_inline zval *zend_enum_fetch_case_value(zend_object *zobj)
++	ZEND_ASSERT(zobj->properties_table != NULL);
+@@ -61 +62 @@ END_EXTERN_C()
+-#endif /* ZEND_ENUM_H */
++#endif /* ZEND_ENUM_H */
+\ No newline at end of file
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..c6a80246272 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -276,0 +277,6 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
++	/* Validate intern object to prevent out-of-bounds access */
++	if (intern == NULL) {
++		*gc_data = NULL;
++		*gc_data_count = 0;
++		return NULL;
++	}
+@@ -283 +289,2 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
+-static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
++// Fixed CWE-125: Out-of-bounds Read by adding null pointer checks
++ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
+@@ -286,0 +294,5 @@ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{
++	/* Prevent buffer overflow by validating allocation */
++	if (intern == NULL) {
++		return NULL;
++	}
++	
+@@ -295,2 +307 @@ static zval *reflection_instantiate(zend_class_entry *pce, zval *object) /* {{{
+-{
+-	object_init_ex(object, pce);
++{	object_init_ex(object, pce);

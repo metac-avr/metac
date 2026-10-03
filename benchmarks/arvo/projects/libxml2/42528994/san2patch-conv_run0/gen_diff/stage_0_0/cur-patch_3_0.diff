@@ -1,0 +1,40 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index 9667ccb4..3a33ce40 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -1085,3 +1085,12 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	if (val <   0x800) { *out++= (val >>  6) | 0xC0;  bits=  0; }
+-	else if (val < 0x10000) { *out++= (val >> 12) | 0xE0;  bits=  6;}
+-	else if (val < 0x110000)  { *out++= (val >> 18) | 0xF0;  bits=  12; }
++	if (val <   0x800) { 
++	    if (out[0] == '\0' && out[1] == '\0') return(0); // Check bounds before write
++	    *out++= (val >>  6) | 0xC0;  bits=  0; 
++	}
++	else if (val < 0x10000) { 
++	    if (out[0] == '\0' && out[1] == '\0' && out[2] == '\0') return(0); // Check bounds before write
++	    *out++= (val >> 12) | 0xE0;  bits=  6;
++	}
++	else if (val < 0x110000)  { 
++	    if (out[0] == '\0' && out[1] == '\0' && out[2] == '\0' && out[3] == '\0') return(0); // Check bounds before write
++	    *out++= (val >> 18) | 0xF0;  bits=  12; 
++	}
+@@ -1094 +1103,2 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
+-	for ( ; bits >= 0; bits-= 6)
++	for ( ; bits >= 0; bits-= 6) {
++	    if (*(out+1) == '\0') return(0); // Check bounds before write
+@@ -1095,0 +1106 @@ xmlCopyCharMultiByte(xmlChar *out, int val) {
++	}
+diff --git a/parser.c b/parser.c
+index 14288713..abf70733 100644
+--- a/parser.c
++++ b/parser.c
+@@ -4962 +4962 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
+-            size = new_size;
++             size = new_size;
+@@ -4963,0 +4964,6 @@ xmlParseCommentComplex(xmlParserCtxtPtr ctxt, xmlChar *buf,
++	if (len + ql >= size) {
++	    xmlFatalErrMsgStr(ctxt, XML_ERR_COMMENT_NOT_FINISHED,
++                         "Comment too big found", NULL);
++            xmlFree (buf);
++            return;
++        }

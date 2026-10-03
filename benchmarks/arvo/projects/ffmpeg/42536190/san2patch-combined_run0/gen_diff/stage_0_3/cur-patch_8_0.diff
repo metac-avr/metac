@@ -1,0 +1,25 @@
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 88f2bcecad..e390672d24 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1440,4 +1440,16 @@ do {
+-            ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
+-            if (pps->transquant_bypass_enable_flag &&
+-                lc->cu.cu_transquant_bypass_flag)
+-                set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++            // Check that reference frames are valid before accessing them
++            int ref_valid = 1;
++            if (lc && lc->ref) {
++                for (int ref_idx = 0; ref_idx < FF_ARRAY_ELEMS(lc->ref->refPicList); ref_idx++) {
++                    if (lc->ref->refPicList[ref_idx] && !lc->ref->refPicList[ref_idx]->frame) {
++                        ref_valid = 0;
++                        break;
++                    }
++                }
++            }
++            if (ref_valid && pps) {
++                ff_hevc_deblocking_boundary_strengths(lc, pps, x0, y0, log2_trafo_size);
++                if (pps->transquant_bypass_enable_flag &&
++                    lc->cu.cu_transquant_bypass_flag)
++                    set_deblocking_bypass(s, sps, x0, y0, log2_trafo_size);
++            }

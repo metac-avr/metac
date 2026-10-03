@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index feeff659bd5..519e67d2a65 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -649 +649,4 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return ex->func->op_array.opcodes[0].lineno;
++			if (ex->func != NULL && ex->func->op_array.opcodes != NULL) {
++				return ex->func->op_array.opcodes[0].lineno;
++			}
++			return 0;
+@@ -651,3 +654,4 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-		if (EG(exception) && ex->opline->opcode == ZEND_HANDLE_EXCEPTION &&
+-		    ex->opline->lineno == 0 && EG(opline_before_exception)) {
+-			return EG(opline_before_exception)->lineno;
++		if (EG(exception) && ex->opline != NULL && ex->opline->opcode == ZEND_HANDLE_EXCEPTION &&
++		    ex->opline->lineno == 0 && EG(opline_before_exception) != NULL) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			return EG(opline_before_exception)->lineno;
+@@ -655 +659 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-		return ex->opline->lineno;
++		return ex->opline != NULL ? ex->opline->lineno : 0;

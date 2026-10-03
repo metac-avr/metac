@@ -1,0 +1,34 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..db450f37c4 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,15 +2016,0 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+-
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+@@ -2040,0 +2026,13 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
++    if (tile->codsty[0].mct)
++        ff_dwt_decode(s, tile);
++
++    if (s->precision <= 8) {
++        write_frame_8bpp(s, tile, picture);
++    } else {
++        write_frame_16bpp(s, tile, picture);
++    }
++
++    return 0;
++}
++    tile_codeblocks(s, tile);
++

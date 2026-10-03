@@ -1,0 +1,24 @@
+diff --git a/libavcodec/h2645_parse.c b/libavcodec/h2645_parse.c
+index 28db465059..841adcfb9d 100644
+--- a/libavcodec/h2645_parse.c
++++ b/libavcodec/h2645_parse.c
+@@ -420 +420,2 @@ static void alloc_rbsp_buffer(H2645RBSP *rbsp, unsigned int size, int use_ref)
+-    if (size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
++    // Validate initial size to prevent integer overflow
++    if (size == 0 || size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
+@@ -430,0 +432,3 @@ static void alloc_rbsp_buffer(H2645RBSP *rbsp, unsigned int size, int use_ref)
++    // Prevent integer overflow in size calculation
++    if (size > (unsigned int)(INT_MAX - 32) || size > (INT_MAX - 32) / 17 * 16)
++        goto fail;
+@@ -436 +440 @@ static void alloc_rbsp_buffer(H2645RBSP *rbsp, unsigned int size, int use_ref)
+-        av_free(rbsp->rbsp_buffer);
++         av_free(rbsp->rbsp_buffer);
+@@ -471 +475,2 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
+-
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
+@@ -472,0 +478,4 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
++    if (length < 0) {
++        av_log(logctx, AV_LOG_ERROR, "Invalid length parameter\n");
++        return AVERROR(EINVAL);
++    }

@@ -1,0 +1,38 @@
+diff --git a/src/media_tools/m3u8.c b/src/media_tools/m3u8.c
+index 5f570e30a..daeadf417 100644
+--- a/src/media_tools/m3u8.c
++++ b/src/media_tools/m3u8.c
+@@ -333 +333 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			u32 spaces = 0;
++			s32 spaces = 0;
+@@ -343 +343,2 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-				if (!strncmp(&line[start+spaces], "\t", sz-spaces) || !strncmp(&line[start+spaces], "\n", sz-spaces)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 				if (!strncmp(&line[start+spaces], "\t", sz-spaces) || !strncmp(&line[start+spaces], "\n", sz-spaces)) {
+@@ -345,5 +346,7 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-					ret[curr_attribute] = gf_calloc( (1+sz-spaces), sizeof(char));
+-					strncpy(ret[curr_attribute], &(line[start+spaces]), sz-spaces);
+-					curr_attribute++;
+-					if (curr_attribute >= num_attributes)
+-						break;
++					char *temp_str = gf_strndup(&(line[start+spaces]), sz-spaces);
++					if (temp_str) {
++						ret[curr_attribute] = temp_str;
++						curr_attribute++;
++						if (curr_attribute >= num_attributes)
++							break;
++					}
+@@ -722,3 +725,10 @@ static char** parse_attributes(const char *line, s_accumulated_attributes *attri
+-				attributes->name = gf_strdup(ret[i]+5+1);
+-				u32 len = (u32) strlen(attributes->name);
+-				if (len) attributes->name[len-1]=0;
++				char* src_name = ret[i]+5+1;
++				u32 src_len = 0;
++				while (src_name[src_len] && src_name[src_len] != '"') src_len++;
++				attributes->name = (char*)gf_malloc(sizeof(char) * (src_len + 1));
++				if (attributes->name) {
++					memcpy(attributes->name, src_name, src_len);
++					attributes->name[src_len] = '\0';
++					u32 len = (u32) strlen(attributes->name);
++					if (len) attributes->name[len-1]=0;
++				}

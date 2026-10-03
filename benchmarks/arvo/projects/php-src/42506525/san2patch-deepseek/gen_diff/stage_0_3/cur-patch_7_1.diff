@@ -1,0 +1,65 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index fed3ae1d299..ad197b64d70 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -243 +243 @@ static ZEND_COLD void zend_throw_or_error(int fetch_type, zend_class_entry *exce
+-void shutdown_destructors(void) /* {{{ */
++static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx, Bucket *p, Bucket *prev)
+@@ -245,2 +245,4 @@ void shutdown_destructors(void) /* {{{ */
+-	if (CG(unclean_shutdown)) {
+-		EG(symbol_table).pDestructor = zend_unclean_zval_ptr_dtor;
++	if (prev) {
++		Z_NEXT(prev->val) = Z_NEXT(p->val);
++	} else {
++		HT_HASH(ht, p->h | ht->nTableMask) = Z_NEXT(p->val);
+@@ -248,2 +250,20 @@ void shutdown_destructors(void) /* {{{ */
+-	zend_try {
+-		uint32_t symbols;
++	idx = HT_HASH_TO_IDX(idx);
++	ht->nNumOfElements--;
++	if (ht->nInternalPointer == idx || UNEXPECTED(HT_HAS_ITERATORS(ht))) {
++		uint32_t new_idx;
++
++		new_idx = idx;
++		while (1) {
++			new_idx++;
++			if (new_idx >= ht->nNumUsed) {
++				break;
++			} else if (Z_TYPE(ht->arData[new_idx].val) != IS_UNDEF) {
++				break;
++			}
++		}
++		if (ht->nInternalPointer == idx) {
++			ht->nInternalPointer = new_idx;
++		}
++		zend_hash_iterators_update(ht, idx, new_idx);
++	}
++	if (ht->nNumUsed - 1 == idx) {
+@@ -251,8 +271,12 @@ void shutdown_destructors(void) /* {{{ */
+-			symbols = zend_hash_num_elements(&EG(symbol_table));
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
+-		} while (symbols != zend_hash_num_elements(&EG(symbol_table)));
+-		zend_objects_store_call_destructors(&EG(objects_store));
+-	} zend_catch {
+-		/* if we couldn't destruct cleanly, mark all objects as destructed anyway */
+-		zend_objects_store_mark_destructed(&EG(objects_store));
+-	} zend_end_try();
++			ht->nNumUsed--;
++		} while (ht->nNumUsed > 0 && (UNEXPECTED(Z_TYPE(ht->arData[ht->nNumUsed-1].val) == IS_UNDEF)));
++		ht->nInternalPointer = MIN(ht->nInternalPointer, ht->nNumUsed);
++	}
++	if (ht->pDestructor) {
++		zval tmp;
++		ZVAL_COPY_VALUE(&tmp, &p->val);
++		ZVAL_UNDEF(&p->val);
++		ht->pDestructor(&tmp);
++	} else {
++		ZVAL_UNDEF(&p->val);
++	}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 680263b5cb0..3ad9ee250eb 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1380 +1380 @@ static zend_always_inline void _zend_hash_del_el_ex(HashTable *ht, uint32_t idx,
+-		HT_HASH(ht, p->h | ht->nTableMask) = Z_NEXT(p->val);
++		HT_HASH(ht, p->id | ht->nTableMask) = Z_NEXT(p->val);

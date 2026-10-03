@@ -1,0 +1,78 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..0020001d092 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,3 +1208,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+@@ -1216,0 +1214 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++// FIXME: Crash CWE-416: Use After Free
+@@ -1219,12 +1217,6 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	return GC_DELREF(Z_COUNTED_P(pz));
+-}
+-
+-#if SIZEOF_SIZE_T == 4
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++	zval* checked_pz = pz;
++	if (UNEXPECTED(checked_pz == NULL)) return 0;
++	zend_refcounted* rc = Z_COUNTED_P(checked_pz);
++	if (UNEXPECTED(rc == NULL)) return 0;
++	return GC_DELREF(rc);
++}#elif SIZEOF_SIZE_T == 8
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..ff4f848e259 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -855,2 +855,21 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		handler();
+-		if (UNEXPECTED(opline == zend_jit_halt_op)) {
++	handler();
++	if (UNEXPECTED(opline == zend_jit_halt_op)) {
++		stop = ZEND_JIT_TRACE_STOP_RETURN;
++		opline = NULL;
++		halt = ZEND_JIT_TRACE_HALT;
++		break;
++	}
++	/* Add safety check to prevent use-after-free during JIT execution */
++	if (UNEXPECTED(execute_data != prev_execute_data)) {
++		/* Ensure pointers are valid before proceeding to prevent memory corruption */
++		if ((void*)execute_data < (void*)0x1000 || (void*)prev_execute_data < (void*)0x1000) {
++			/* Invalid pointer detected, halt trace execution */
++			stop = ZEND_JIT_TRACE_STOP_ERROR;
++			halt = ZEND_JIT_TRACE_HALT;
++			break;
++		}
++	}
++#else
++	rc = handler(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++	if (rc != 0) {
++		if (rc < 0) {
+@@ -860,0 +880,3 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++		} else if (execute_data == EG(current_execute_data)) {
++			/* return after interrupt handler */
++			rc = 0;
+@@ -862,14 +884,2 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		if (UNEXPECTED(execute_data != prev_execute_data)) {
+-#else
+-		rc = handler(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-		if (rc != 0) {
+-			if (rc < 0) {
+-				stop = ZEND_JIT_TRACE_STOP_RETURN;
+-				opline = NULL;
+-				halt = ZEND_JIT_TRACE_HALT;
+-				break;
+-			} else if (execute_data == EG(current_execute_data)) {
+-				/* return after interrupt handler */
+-				rc = 0;
+-			}
+-			execute_data = EG(current_execute_data);
++	}
++#endif			execute_data = EG(current_execute_data);

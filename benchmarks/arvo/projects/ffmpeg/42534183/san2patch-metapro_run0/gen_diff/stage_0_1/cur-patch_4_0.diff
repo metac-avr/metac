@@ -1,0 +1,21 @@
+diff --git a/libavformat/iamfdec.c b/libavformat/iamfdec.c
+index 28d69b8b3f..4a3824097d 100644
+--- a/libavformat/iamfdec.c
++++ b/libavformat/iamfdec.c
+@@ -394 +394,2 @@ static int iamf_read_header(AVFormatContext *s)
+-    int ret;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     int ret;
+@@ -453,0 +455,12 @@ static int iamf_read_header(AVFormatContext *s)
++                
++                // Validate audio_element pointer before use
++                if (!audio_element) {
++                    return AVERROR_INVALIDDATA;
++                }
++                
++                // Additional bounds check for ff_iamf_sound_system_map array access
++                ptrdiff_t offset = (uint8_t*)audio_element - (uint8_t*)ff_iamf_sound_system_map;
++                if (offset < 0 || offset > (ptrdiff_t)(sizeof(ff_iamf_sound_system_map) - sizeof(AVStreamGroup))) {
++                    return AVERROR_INVALIDDATA;
++                }
++                

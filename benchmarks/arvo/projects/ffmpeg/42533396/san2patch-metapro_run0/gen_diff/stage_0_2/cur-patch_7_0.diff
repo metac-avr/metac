@@ -1,0 +1,24 @@
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..44bdab0b72 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -675 +675,2 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
+-        if (!dst->u.map)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         if (!dst->u.map)
+@@ -676,0 +678,3 @@ int av_channel_layout_copy(AVChannelLayout *dst, const AVChannelLayout *src)
++        // Validate that src->u.map is not null and src->nb_channels is reasonable
++        if (!src->u.map || src->nb_channels > 256) // Safety check for channel count
++            return AVERROR(EINVAL);
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..e65e8e566a 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -529,0 +530,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
++        // Add bounds check before accessing ch_layout->u.map array
++        if (num_descr > 0 && ch_layout->u.map == NULL) {
++            av_log(s, AV_LOG_ERROR, "channel layout map allocation failed\n");
++            ret = AVERROR(ENOMEM);
++            goto out;
++        }
++

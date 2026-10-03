@@ -1,0 +1,21 @@
+diff --git a/ext/opcache/jit/zend_jit.c b/ext/opcache/jit/zend_jit.c
+index 5143b977ed9..8633c2e5f95 100644
+--- a/ext/opcache/jit/zend_jit.c
++++ b/ext/opcache/jit/zend_jit.c
+@@ -426 +426 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
+-						return 1;
++return 1;
+@@ -428,0 +429,11 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
++// Fixed CWE-416: Use After Free - Check for valid memory before dereference
++			if (call_info) {
++				if (call_info->caller_call_opline && 
++				    (char*)call_info->caller_call_opline < (char*)zend_vm_get_jump_target_addr) {
++					return 0; // Invalid pointer, potential use-after-free
++				}
++				if (call_info->caller_call_opline && call_info->caller_call_opline->handler &&
++				    !UNEXPECTED(call_info->caller_call_opline->opcode == ZEND_HANDLE_EXCEPTION)) {
++					return 0; // Opline handler is invalid, avoid dereferencing
++				}
++			}
+@@ -437 +447,0 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
+-

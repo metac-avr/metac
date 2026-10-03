@@ -1,0 +1,19 @@
+diff --git a/libavformat/iamf_parse.c b/libavformat/iamf_parse.c
+index feb670180e..5e2bb9e2f8 100644
+--- a/libavformat/iamf_parse.c
++++ b/libavformat/iamf_parse.c
+@@ -1080 +1080,2 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+-            break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             break;
+@@ -1082 +1083,9 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
+-            ret = mix_presentation_obu(log_ctx, c, pb, obu_size);
++            {
++                int64_t current_pos = avio_tell(pb);
++                if (current_pos + obu_size <= avio_size(pb)) {  // Bounds checking
++                    ret = mix_presentation_obu(log_ctx, c, pb, obu_size);
++                } else {
++                    av_log(log_ctx, AV_LOG_ERROR, "Buffer overflow detected in mix presentation OBU\n");
++                    ret = AVERROR_INVALIDDATA;
++                }
++            }

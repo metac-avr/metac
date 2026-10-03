@@ -1,0 +1,38 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..1e270c6f50d 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756,10 +756 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
+-	}
+-	return zend_hash_lookup(ht, offset_key);
+-
+-num_index:
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
+-}
+-
+-static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int type*/)
++static zend_never_inline zval *zend_check_string_offset(zval *dim/*, int type*/)
+@@ -766,0 +758,2 @@ static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int typ
++
++	zval *retval;
+@@ -768,0 +762,18 @@ static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int typ
++	switch(Z_TYPE_P(dim)) {
++		case IS_LONG:
++			retval = dim;
++			break;
++		case IS_STRING:
++			if (ZEND_HANDLE_NUMERIC_STR(Z_STR_P(dim), strlen(Z_STRVAL_P(dim)), offset)) {
++				retval = dim;
++			} else {
++				retval = NULL;
++			}
++			break;
++		default:
++			retval = NULL;
++			break;
++	}
++	return retval;
++}	zend_long offset;
++

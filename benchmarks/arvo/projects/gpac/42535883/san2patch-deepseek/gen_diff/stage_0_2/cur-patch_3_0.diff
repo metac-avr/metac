@@ -1,0 +1,23 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..e76dfaade 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1187 +1187,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-	u32 i, count;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 	u32 i, count;
++
++	if (!cfg) return GF_BAD_PARAM;
+@@ -1220,2 +1223,6 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				if (cfg->general_constraint_info && cfg->num_constraint_info > 1) {
++					gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
++					gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				} else {
++					gf_bs_write_int(bs, cfg->general_constraint_info ? cfg->general_constraint_info[0] : 0, 6);
++				}
+@@ -1253,0 +1261 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++		if (!ar) continue;
+@@ -1268,0 +1277 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			if (!sl || !sl->data) continue;

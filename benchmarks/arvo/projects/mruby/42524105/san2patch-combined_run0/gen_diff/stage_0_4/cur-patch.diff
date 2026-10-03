@@ -1,0 +1,32 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..d4c2ea5e2 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1685 +1685 @@ mrb_byte_hash_step(const uint8_t *s, mrb_int len, uint32_t hval)
+-    hval ^= (uint32_t)*s++;
++hval ^= (uint32_t)*s++;
+@@ -1693 +1693,2 @@ uint32_t
+-mrb_byte_hash(const uint8_t *s, mrb_int len)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ mrb_byte_hash(const uint8_t *s, mrb_int len)
+@@ -1695 +1696,10 @@ mrb_byte_hash(const uint8_t *s, mrb_int len)
+-  return mrb_byte_hash_step(s, len, FNV1_32_INIT);
++  // Validate input parameters before proceeding
++  if (!s || len < 0) return 0;
++  
++  // Use volatile to prevent compiler optimizations that might cause issues
++  volatile const uint8_t* volatile_s = s;
++  volatile mrb_int volatile_len = len;
++  
++  if (!volatile_s) return 0;
++  
++  return mrb_byte_hash_step(volatile_s, volatile_len, FNV1_32_INIT);
+@@ -1701,0 +1712,4 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
++  if (!s) return 0;
++  
++  // Ensure string is not garbage collected during hash operation
++  mrb_gc_mark(mrb, (struct RBasic*)s);
+@@ -1705,2 +1719 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-/* 15.2.10.5.20 */
+-/*
++/* 15.2.10.5.20 *//*

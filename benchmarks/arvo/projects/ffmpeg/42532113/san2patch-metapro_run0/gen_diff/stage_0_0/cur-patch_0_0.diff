@@ -1,0 +1,46 @@
+diff --git a/libavcodec/vvc/vvcdec.c b/libavcodec/vvc/vvcdec.c
+index 608d497cb7..5e9f404d2f 100644
+--- a/libavcodec/vvc/vvcdec.c
++++ b/libavcodec/vvc/vvcdec.c
+@@ -811,0 +812,15 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
++    
++    /* Validate parameter set sizes before processing to prevent buffer overflows */
++    if (frame->data_size > 0 && frame->nb_units > 0) {
++        /* Check that the total units size doesn't exceed reasonable limits */
++        size_t total_units_size = 0;
++        for (int j = 0; j < frame->nb_units; j++) {
++            total_units_size += frame->units[j].data_size;
++        }
++        if (total_units_size > frame->data_size) {
++            av_log(s->avctx, AV_LOG_ERROR, "Invalid parameter set sizes detected.\n");
++            ret = AVERROR_INVALIDDATA;
++            goto fail;
++        }
++    }
++    
+@@ -821 +836 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-                s->eos = 1;
++                 s->eos = 1;
+@@ -823,4 +838,11 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
+-            ret = decode_nal_unit(s, fc, nal, unit);
+-            if (ret < 0) {
+-                av_log(s->avctx, AV_LOG_WARNING,
+-                        "Error parsing NAL unit #%d.\n", i);
++            /* Validate unit data bounds before processing */
++            if (unit->data_size > 0 && unit->data && unit->data_size <= frame->data_size) {
++                ret = decode_nal_unit(s, fc, nal, unit);
++                if (ret < 0) {
++                    av_log(s->avctx, AV_LOG_WARNING,
++                            "Error parsing NAL unit #%d.\n", i);
++                    goto fail;
++                }
++            } else {
++                av_log(s->avctx, AV_LOG_WARNING, "Invalid NAL unit data detected.\n");
++                ret = AVERROR_INVALIDDATA;
+diff --git a/libavcodec/refstruct.c b/libavcodec/refstruct.c
+index 7597f6d0ee..3524e2745f 100644
+--- a/libavcodec/refstruct.c
++++ b/libavcodec/refstruct.c
+@@ -161 +161 @@ void ff_refstruct_replace(void *dstp, const void *src)
+-{
++ {

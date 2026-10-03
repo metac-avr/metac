@@ -1,0 +1,16 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..6579f988627 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1446,3 +1446,8 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
+-						ZVAL_COPY_VALUE(&tmp, data);
+-						ZVAL_UNDEF(data);
+-						ht->pDestructor(&tmp);
++// FIXME: Crash CWE-416: Use After Free
++						if (data && Z_TYPE_P(data) != IS_UNDEF) {
++							ZVAL_COPY_VALUE(&tmp, data);
++							ZVAL_UNDEF(data);
++							ht->pDestructor(&tmp);
++						} else {
++							ZVAL_UNDEF(data);
++						}

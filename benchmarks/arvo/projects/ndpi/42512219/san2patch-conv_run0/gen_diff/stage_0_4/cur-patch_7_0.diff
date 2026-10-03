@@ -1,0 +1,27 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..79571f5a3 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -269,2 +269,10 @@ char *ndpi_strdup(const char *s) {
+-  int len = strlen(s);
+-  char *m = ndpi_malloc(len + 1);
++  // Add explicit memory validation before strlen call
++  volatile const char* temp_s = s;
++  if(temp_s != NULL) {
++    int len = strlen(s);
++    char *m = ndpi_malloc(len + 1);
++
++    if(m) {
++      memcpy(m, s, len);
++      m[len] = '\0';
++    }
+@@ -272,3 +280 @@ char *ndpi_strdup(const char *s) {
+-  if(m) {
+-    memcpy(m, s, len);
+-    m[len] = '\0';
++    return(m);
+@@ -276,2 +282,2 @@ char *ndpi_strdup(const char *s) {
+-
+-  return(m);
++  
++  return NULL;

@@ -1,0 +1,51 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..5f1785077a7 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1830,0 +1831 @@ ZEND_API void ZEND_FASTCALL zend_hash_graceful_reverse_destroy(HashTable *ht)
++		if (Z_REFCOUNTED(p->val) && !(GC_FLAGS(GC_HDR(p->val)) & GC_IMMUTABLE)) continue;
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..86ac5c6bc16 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -74,8 +74 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-	i_zval_ptr_dtor(&ref->val);
+-	efree_size(ref, sizeof(zend_reference));
+-}
+-
+-static void ZEND_FASTCALL zend_empty_destroy(zend_reference *ref)
+-{
+-}
+-
++// FIXME: Crash CWE-416: Use After Free
+@@ -84 +77,17 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-	i_zval_ptr_dtor(zval_ptr);
++	if (zval_ptr != NULL) {
++		/* Validate that the zval is not already destroyed */
++		if (Z_REFCOUNTED_P(zval_ptr)) {
++			zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
++			if (ref != NULL && GC_REFCOUNT(ref) > 0) {
++				i_zval_ptr_dtor(zval_ptr);
++			} else {
++				/* Clear the zval to prevent use-after-free */
++				ZVAL_UNDEF(zval_ptr);
++			}
++		} else {
++			i_zval_ptr_dtor(zval_ptr);
++		}
++	} else {
++		/* Handle NULL pointer gracefully */
++		return;
++	}
+@@ -86,10 +95 @@ ZEND_API void zval_ptr_dtor(zval *zval_ptr) /* {{{ */
+-/* }}} */
+-
+-ZEND_API void zval_internal_ptr_dtor(zval *zval_ptr) /* {{{ */
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-
+-		if (GC_DELREF(ref) == 0) {
+-			if (Z_TYPE_P(zval_ptr) == IS_STRING) {
+-				zend_string *str = (zend_string*)ref;
++/* }}} */				zend_string *str = (zend_string*)ref;

@@ -1,0 +1,35 @@
+diff --git a/parser.c b/parser.c
+index cd78db4b..e5dd5a27 100644
+--- a/parser.c
++++ b/parser.c
+@@ -10515,5 +10515,12 @@ xmlParseEncodingDecl(xmlParserCtxtPtr ctxt) {
+-		if (xmlSwitchToEncoding(ctxt, handler) < 0) {
+-		    /* failed to convert */
+-		    ctxt->errNo = XML_ERR_UNSUPPORTED_ENCODING;
+-		    return(NULL);
+-		}
++                if ((ctxt->input != NULL) && (ctxt->input->buf != NULL) && 
++                    (ctxt->input->buf->buffer != NULL) && 
++                    (ctxt->input->cur <= ctxt->input->base + ctxt->input->buf->buffer->use)) {
++		    if (xmlSwitchToEncoding(ctxt, handler) < 0) {
++		        /* failed to convert */
++		        ctxt->errNo = XML_ERR_UNSUPPORTED_ENCODING;
++		        return(NULL);
++		    }
++                } else {
++                    ctxt->errNo = XML_ERR_UNSUPPORTED_ENCODING;
++                    return(NULL);
++                }
+@@ -12078,3 +12085,9 @@ xmlParseTryOrFinish(xmlParserCtxtPtr ctxt, int terminate) {
+-	snprintf(buffer, 149, "Bytes: 0x%02X 0x%02X 0x%02X 0x%02X\n",
+-			ctxt->input->cur[0], ctxt->input->cur[1],
+-			ctxt->input->cur[2], ctxt->input->cur[3]);
++	if (ctxt->input->cur != NULL && 
++	    ctxt->input->end != NULL && 
++	    (ctxt->input->cur + 3) < ctxt->input->end) {
++	    snprintf(buffer, 149, "Bytes: 0x%02X 0x%02X 0x%02X 0x%02X\n",
++		    ctxt->input->cur[0], ctxt->input->cur[1],
++		    ctxt->input->cur[2], ctxt->input->cur[3]);
++	} else {
++	    snprintf(buffer, 149, "Bytes: Insufficient data for encoding error display\n");
++	}

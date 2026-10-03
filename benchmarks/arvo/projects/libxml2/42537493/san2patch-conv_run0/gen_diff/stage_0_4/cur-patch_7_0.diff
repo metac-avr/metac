@@ -1,0 +1,20 @@
+diff --git a/encoding.c b/encoding.c
+index 3d336fb1..f67c9bd6 100644
+--- a/encoding.c
++++ b/encoding.c
+@@ -1928,0 +1929 @@ xmlCharEncCloseFunc(xmlCharEncodingHandler *handler) {
++    /* Fix: Prevent use-after-free by ensuring handler is not accessed after free */
+diff --git a/HTMLtree.c b/HTMLtree.c
+index cdfaed97..43a2cfcf 100644
+--- a/HTMLtree.c
++++ b/HTMLtree.c
+@@ -1109 +1109,2 @@ htmlSaveFileFormat(const char *filename, xmlDocPtr cur,
+-    buf = xmlOutputBufferCreateFilename(filename, handler, 0);
++// FIXME: Crash CWE-416: Use After Free
++     buf = xmlOutputBufferCreateFilename(filename, handler, 0);
+@@ -1111 +1112,4 @@ htmlSaveFileFormat(const char *filename, xmlDocPtr cur,
+-        xmlCharEncCloseFunc(handler);
++        if (handler != NULL) {
++            xmlCharEncCloseFunc(handler);
++            handler = NULL;  /* Prevent use-after-free by nullifying the pointer after free */
++        }

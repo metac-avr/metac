@@ -1,0 +1,57 @@
+diff --git a/src/variable.c b/src/variable.c
+index be27f0eda..bfec4ab9f 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -247 +247,3 @@ mark_tbl(mrb_state *mrb, iv_tbl *t)
+-  iv_foreach(mrb, t, iv_mark_i, 0);
++  if (t != 0) {
++    iv_foreach(mrb, t, iv_mark_i, 0);
++  }
+@@ -257,2 +259 @@ void
+-mrb_gc_free_gv(mrb_state *mrb)
+-{
++mrb_gc_free_gv(mrb_state *mrb){
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..044dd862a 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -690 +690 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -694 +694,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super) {
++        struct RBasic* super_obj = (struct RBasic*)c->super;
++        if (super_obj->tt != MRB_TT_FREE) {
++          mrb_gc_mark(mrb, super_obj);
++        }
++      }
+@@ -698 +703,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-416: Use After Free
++   case MRB_TT_OBJECT:
+@@ -700 +706,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (obj) {
++      struct RBasic* basic_obj = (struct RBasic*)obj;
++      if (basic_obj->tt != MRB_TT_FREE) {
++        mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++      }
++    }
+@@ -707,2 +718,12 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper) {
++        struct RBasic* upper_obj = (struct RBasic*)p->upper;
++        if (upper_obj->tt != MRB_TT_FREE) {
++          mrb_gc_mark(mrb, upper_obj);
++        }
++      }
++      if (p->e.env) {
++        struct RBasic* env_obj = (struct RBasic*)p->e.env;
++        if (env_obj->tt != MRB_TT_FREE) {
++          mrb_gc_mark(mrb, env_obj);
++        }
++      }
+@@ -711 +731,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-

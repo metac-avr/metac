@@ -1,0 +1,33 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..10b926687 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -643 +643 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -646,2 +646,4 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark_mt(mrb, c);
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (c->super && !is_dead(gc, (struct RBasic*)c->super)) {
++        mrb_gc_mark_mt(mrb, c);
++        mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      }
+@@ -653 +655,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (!is_dead(gc, obj)) {
++      mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    }
+@@ -660,2 +664,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (p->upper && !is_dead(gc, (struct RBasic*)p->upper)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++      }
++      if (p->e.env && !is_dead(gc, (struct RBasic*)p->e.env)) {
++        mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      }
+@@ -1048,0 +1057,4 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++    if (is_dead(gc, obj)) { 
++      gc->gray_list = obj->gcnext;
++      continue;
++    }

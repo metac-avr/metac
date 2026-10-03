@@ -1,0 +1,33 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 535a0c5bd..2b56a35d0 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1616 +1616,2 @@ static void process_request(struct ndpi_detection_module_struct *ndpi_struct,
+-  }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   }
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 42d0fa67d..833e30e8a 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -3247 +3247,2 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  p = hostname;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++   p = hostname;
+@@ -3249,2 +3250,5 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  while (p[idx] && (idx < len)) {
+-    if(*p == '.') {
++  while (idx < len) {
++    if(p[idx] == '\0')
++      break;
++
++    if(p[idx] == '.') {
+@@ -3261 +3265 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-    if(!(isalnum((unsigned char)*p) || *p == '-'))
++    if(!(isalnum((unsigned char)p[idx]) || p[idx] == '-'))
+@@ -3266 +3270 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-      if(!isalnum((unsigned char)*p))
++      if(!isalnum((unsigned char)p[idx]))
+@@ -3281 +3285 @@ bool ndpi_is_valid_hostname(char * const hostname, size_t len) {
+-  if(!isalnum(p[idx-1]))
++  if(idx == 0 || !isalnum(p[idx-1]))

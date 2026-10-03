@@ -1,0 +1,21 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..f4c692e2e 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -432,0 +433 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    if (j >= xd) break;  // Bounds check to prevent underflow
+@@ -436 +437 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      for (i=0; i<yd; i++) {
++      for (i=0; i<yd && i+j < xd; i++) {  // Added bounds check i+j < xd
+@@ -442 +443 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      b += (i+j < xd) ? x.p[i+j] : 0;  // Bounds check before accessing x.p[i+j]
+@@ -444 +445 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
++    for (; b!=0 && qhat > 0; qhat--) {  // Added qhat > 0 check
+@@ -446 +447 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      for (i=0; i<yd; i++) {
++      for (i=0; i<yd && i+j < xd; i++) {  // Added bounds check i+j < xd
+@@ -453 +454 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < xd) q.p[j] = qhat;  // Bounds check before writing to q.p[j]

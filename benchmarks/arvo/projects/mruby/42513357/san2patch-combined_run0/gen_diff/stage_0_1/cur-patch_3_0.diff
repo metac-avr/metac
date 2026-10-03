@@ -1,0 +1,24 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..2bfd86f83 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -709,5 +709,14 @@ mpz_get_str(mrb_state *mrb, char *s, mrb_int sz, mrb_int base, mpz_t *x)
+-    d = r.p[0];
+-    if (d < 10)
+-      *p++ = (char)(r.p[0] + '0');
+-    else
+-      *p++ = (char)(r.p[0] + -10 + 'a');
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     d = r.p[0];
++    if (d < 10) {
++      if (p - t < sz+1) 
++        *p++ = (char)(r.p[0] + '0');
++      else
++        break;
++    }
++    else {
++      if (p - t < sz+1)
++        *p++ = (char)(r.p[0] + -10 + 'a');
++      else
++        break;
++    }

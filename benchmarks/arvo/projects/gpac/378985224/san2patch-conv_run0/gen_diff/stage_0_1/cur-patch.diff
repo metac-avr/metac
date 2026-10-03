@@ -1,0 +1,21 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index dca7f4da1..0bf328a08 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -627 +627,2 @@ static GFINLINE GSF_Packet *gsfdmx_get_packet(GSF_DemuxCtx *ctx, GSF_Stream *gst
+-		gpck = gf_list_pop_back(ctx->pck_res);
++// FIXME: Crash CWE-416: Use After Free
++ 		gpck = gf_list_pop_back(ctx->pck_res);
+@@ -630,0 +632,2 @@ static GFINLINE GSF_Packet *gsfdmx_get_packet(GSF_DemuxCtx *ctx, GSF_Stream *gst
++ 			gpck->nb_alloc_frags = 0;
++ 			gpck->frags = NULL;
+@@ -1338,2 +1341,7 @@ static void gsfdmx_finalize(GF_Filter *filter)
+-		if (gsp->frags) gf_free(gsp->frags);
+-		gf_free(gsp);
++		if (gsp) {
++			if (gsp->frags) {
++				gf_free(gsp->frags);
++				gsp->frags = NULL;
++			}
++			gf_free(gsp);
++		}

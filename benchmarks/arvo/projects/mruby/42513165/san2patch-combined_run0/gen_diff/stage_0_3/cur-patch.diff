@@ -1,0 +1,33 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..508d5a33b 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -987,0 +988,25 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
++  // Input validation to prevent out-of-bounds read vulnerability
++  if (!x) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "null pointer input");
++    return mrb_nil_value();
++  }
++  
++  // Validate string length parameters
++  if (len <= 0) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid string length");
++    return mrb_nil_value();
++  }
++  
++  // Prevent buffer overflow by limiting length
++  if (len > 0x100000) {  // 1MB limit
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "string too long");
++    return mrb_nil_value();
++  }
++  
++  // Validate base parameter
++  const int abs_base = iabs(base);
++  if (abs_base < 2 || abs_base > 36) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid numeric base");
++    return mrb_nil_value();
++  }
++  
+@@ -989 +1014 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  mrb_assert(2 <= iabs(base) && iabs(base) <= 36);
++  mrb_assert(2 <= abs_base && abs_base <= 36);

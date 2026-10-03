@@ -1,0 +1,52 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..c3e4b9d8ef8 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,7 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+@@ -1153 +1146,2 @@ extern ZEND_API bool zend_rc_debug;
+-
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1155 +1149,2 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	if (p && ((zend_uintptr_t)p) > 0x1000) return p->refcount;
++	return 0;
+@@ -1159,2 +1154,5 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
+-	p->refcount = rc;
+-	return p->refcount;
++	if (p && ((zend_uintptr_t)p) > 0x1000) {
++		p->refcount = rc;
++		return p->refcount;
++	}
++	return 0;
+@@ -1164,3 +1162,5 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	ZEND_RC_MOD_CHECK(p);
+-	return ++(p->refcount);
+-}
++	if (p && ((zend_uintptr_t)p) > 0x1000) {
++		ZEND_RC_MOD_CHECK(p);
++		return ++(p->refcount);
++	}
++	return 0;}
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..6b45979e712 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683,2 +1682,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
+@@ -1686 +1684,6 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	FREE_HASHTABLE(ht);
++	efree(HT_GET_DATA_ADDR(ht));
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ free_ht:
++	if (EXPECTED(ht != NULL)) {
++		FREE_HASHTABLE(ht);
++	}

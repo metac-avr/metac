@@ -1,0 +1,37 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..edff4b36 100644
+--- a/valid.c
++++ b/valid.c
+@@ -5982,6 +5982,6 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-	    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
+-	    if (tmp <= 0)
+-		ret = 0;
+-	    break;
+-    }
+-    } /* not continuous */
++    tmp = xmlValidateElementContent(ctxt, child, elemDecl, 1, elem);
++    if (tmp <= 0)
++	ret = 0;
++    break;
++}
++} /* not continuous */
+@@ -5989 +5989,3 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-    /* [ VC: Required Attribute ] */
++/* [ VC: Required Attribute ] */
++// FIXME: Crash CWE-416: Use After Free
++if (elemDecl != NULL) {
+@@ -6002,2 +6004 @@ xmlValidateOneElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+-			goto found;
+-		    ns = ns->next;
++			goto found;		    ns = ns->next;
+@@ -6215 +6216,9 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-        ret &= xmlValidateOneElement(ctxt, doc, elem);
++        if ((doc != NULL) && (doc->intSubset != NULL)) {
++            int isValidDTD = (doc->intSubset->attributes != NULL);
++            if (isValidDTD)
++                ret &= xmlValidateOneElement(ctxt, doc, elem);
++            else
++                ret &= 0;
++        } else {
++            ret &= xmlValidateOneElement(ctxt, doc, elem);
++        }

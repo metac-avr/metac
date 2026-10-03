@@ -1,0 +1,32 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index c73bd47fe..9a8790211 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -534,7 +534,11 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
+-      origin_hostname = ptr + 3;
+-      origin_hostname_len = packet->http_origin.len - (ptr - (char *)packet->http_origin.ptr) - 3;
+-      ptr = ndpi_strnstr(origin_hostname, ":", origin_hostname_len);
+-      if(ptr) {
+-        origin_hostname_len = ptr - origin_hostname;
+-      }
+-      NDPI_LOG_DBG2(ndpi_struct, "Origin: [%.*s] -> [%.*s]\n", packet->http_origin.len, packet->http_origin.ptr,
++       origin_hostname = ptr + 3;
++      /* Validate the offset before computing the remaining length */
++      if((size_t)(origin_hostname - (char *)packet->http_origin.ptr) >= packet->http_origin.len) {
++        origin_hostname_len = 0;
++      } else {
++        origin_hostname_len = packet->http_origin.len - (origin_hostname - (char *)packet->http_origin.ptr);
++        ptr = ndpi_strnstr(origin_hostname, ":", origin_hostname_len);
++        if(ptr) {
++          origin_hostname_len = ptr - origin_hostname;
++        }
++        NDPI_LOG_DBG2(ndpi_struct, "Origin: [%.*s] -> [%.*s]\n", packet->http_origin.len, packet->http_origin.ptr,
+@@ -542,3 +546,3 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
+-      /* We already checked hostname...*/
+-      if(strncmp(origin_hostname, flow->host_server_name, origin_hostname_len) != 0) {
+-        ndpi_match_host_subprotocol(ndpi_struct, flow,
++        /* We already checked hostname...*/
++        if(strncmp(origin_hostname, flow->host_server_name, origin_hostname_len) != 0) {
++          ndpi_match_host_subprotocol(ndpi_struct, flow,
+@@ -548,0 +553 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
++        }

@@ -1,0 +1,25 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..1e9cabdfd 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -515 +515,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++      if (argc > 0) {
++        if ((size_t)(ci->stack + 1 + argc) > (size_t)(mrb->c->stend)) {
++          mrb_raisef(mrb, E_ARGUMENT_ERROR, "stack overflow in funcall");
++        }
+@@ -516,0 +520,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      }
++      if ((size_t)(ci->stack + argc + 1) > (size_t)(mrb->c->stend)) {
++        mrb_raisef(mrb, E_ARGUMENT_ERROR, "stack overflow in funcall");
++      }
+diff --git a/src/variable.c b/src/variable.c
+index d89295229..edf4e8c29 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -790,0 +791,5 @@ const_get(mrb_state *mrb, struct RClass *base, mrb_sym sym, mrb_bool skip)
++  
++  /* Check available stack space before function call to avoid buffer overflow */
++  if (mrb->c->ci + 1 >= mrb->c->stend) {
++    mrb_stack_extend(mrb, 2);
++  }

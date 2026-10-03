@@ -1,0 +1,62 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..a9dafe6046 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -194 +194 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-    }
++     }
+@@ -227,6 +227,11 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-        for (k = 1; k <= s->diff_height; k++) {
+-            memcpy(s->frame->data[0] + x_pos * 3 +
+-                   (s->image_height - y_pos - k) * s->frame->linesize[0],
+-                   line, width * 3);
+-            /* advance source pointer to next line */
+-            line += width * 3;
++        if (s->frame && s->frame->data[0] && line) {
++            for (k = 1; k <= s->diff_height; k++) {
++                memcpy(s->frame->data[0] + x_pos * 3 +
++                       (s->image_height - y_pos - k) * s->frame->linesize[0],
++                       line, width * 3);
++                /* advance source pointer to next line */
++                line += width * 3;
++            }
++        } else {
++            av_log(avctx, AV_LOG_ERROR, "Invalid frame data or line pointer\n");
++            return AVERROR(ENOMEM);
+@@ -235,9 +240,14 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-        /* hybrid 15-bit/palette mode */
+-        ret = decode_hybrid(s->tmpblock, s->zstream.next_out,
+-                      s->frame->data[0],
+-                      s->image_height - (y_pos + 1 + s->diff_height),
+-                      x_pos, s->diff_height, width,
+-                      s->frame->linesize[0], s->pal);
+-        if (ret < 0) {
+-            av_log(avctx, AV_LOG_ERROR, "decode_hybrid failed\n");
+-            return ret;
++        if (s->frame && s->frame->data[0] && s->tmpblock) {
++            /* hybrid 15-bit/palette mode */
++            ret = decode_hybrid(s->tmpblock, s->zstream.next_out,
++                          s->frame->data[0],
++                          s->image_height - (y_pos + 1 + s->diff_height),
++                          x_pos, s->diff_height, width,
++                          s->frame->linesize[0], s->pal);
++            if (ret < 0) {
++                av_log(avctx, AV_LOG_ERROR, "decode_hybrid failed\n");
++                return ret;
++            }
++        } else {
++            av_log(avctx, AV_LOG_ERROR, "Invalid frame data or tmpblock\n");
++            return AVERROR(ENOMEM);
+@@ -465 +474,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-
+@@ -468,2 +477,4 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-                    memcpy(s->frame->data[0] + x, s->keyframe + x,
+-                           cur_blk_width * 3);
++                    if (s->frame && s->frame->data[0]) {
++                        memcpy(s->frame->data[0] + x, s->keyframe + x,
++                               cur_blk_width * 3);
++                    }
+@@ -485,2 +496 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if (!s->keyframe) {
+-            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);
++        if (!s->keyframe) {            s->keyframe = av_malloc(s->frame->linesize[0] * avctx->height);

@@ -1,0 +1,32 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..6e0befd63 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -190 +190 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
+-     to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
++ to prevent infinite recursion. However, do this only after resizing the stack, so mrb_raise has stack space to work with. */
+@@ -198,0 +199 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++  if (!mrb || !mrb->c || !mrb->c->ci) return; /* Null pointer checks */
+@@ -202,10 +203 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-}
+-
+-static inline struct REnv*
+-uvenv(mrb_state *mrb, mrb_int up)
+-{
+-  const struct RProc *proc = mrb->c->ci->proc;
+-  struct REnv *e;
+-
+-  while (up--) {
+-    proc = proc->upper;
++}    proc = proc->upper;
+@@ -515 +507 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++      if (argc > 0 && ci->stack + 1 + argc <= mrb->c->stend)
+@@ -517 +509,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      ci->stack[argc+1] = blk;
++      else if (argc > 0)
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++      if (ci->stack + argc + 1 <= mrb->c->stend)
++        ci->stack[argc+1] = blk;
++      else
++        mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));

@@ -1,0 +1,22 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..48309e7f 100644
+--- a/tree.c
++++ b/tree.c
+@@ -836 +836,2 @@ xmlFreeNsList(xmlNsPtr cur) {
+-    while (cur != NULL) {
++// FIXME: Crash CWE-416: Use After Free
++     while (cur != NULL) {
+@@ -839 +840 @@ xmlFreeNsList(xmlNsPtr cur) {
+-	cur = next;
++        cur = next;
+@@ -840,0 +842 @@ xmlFreeNsList(xmlNsPtr cur) {
++    cur = NULL;  /* Ensure cur is NULL after loop to prevent use-after-free */
+@@ -3848,2 +3850,6 @@ xmlReplaceNode(xmlNodePtr old, xmlNodePtr cur) {
+-    xmlUnlinkNode(cur);
+-    xmlSetTreeDoc(cur, old->doc);
++// FIXME: Crash CWE-416: Use After Free
++     xmlUnlinkNode(cur);
++    // Ensure both nodes have valid document references before proceeding
++    if (old->doc != NULL) {
++        xmlSetTreeDoc(cur, old->doc);
++    }

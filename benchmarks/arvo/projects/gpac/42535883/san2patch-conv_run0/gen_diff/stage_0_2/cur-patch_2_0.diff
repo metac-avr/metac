@@ -1,0 +1,62 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..0b71e1446 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1186,0 +1187 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++  	// Fixed CWE-125: Out-of-bounds Read by adding comprehensive bounds checking
+@@ -1188,0 +1190,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++	// Validate input parameters
++	if (!cfg || !bs) return GF_BAD_PARAM;
++	if (!cfg->param_array) return GF_BAD_PARAM;
++
+@@ -1219,3 +1224,14 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			if (cfg->num_constraint_info) {
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++			// Add comprehensive bounds checking for constraint info
++			if (cfg->num_constraint_info > 0 && cfg->general_constraint_info) {
++				u32 constraint_size = cfg->num_constraint_info;
++				// Ensure we don't exceed buffer bounds (64 bytes)
++				if (constraint_size > 64) constraint_size = 64;
++				
++				if (constraint_size > 1) {
++					gf_bs_write_data(bs, cfg->general_constraint_info, constraint_size - 1);
++					gf_bs_write_int(bs, cfg->general_constraint_info[constraint_size - 1], 6);
++				} else if (constraint_size == 1) {
++					gf_bs_write_int(bs, cfg->general_constraint_info[0], 6);
++				} else {
++					gf_bs_write_int(bs, 0, 6);
++				}
+@@ -1227,2 +1243,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				u8 val = cfg->ptl_sublayer_present_mask & (1<<idx);
+-				gf_bs_write_int(bs, val ? 1 : 0, 1);
++				if (idx < 32) { // Reasonable limit for temporal layers
++					u8 val = cfg->ptl_sublayer_present_mask & (1<<idx);
++					gf_bs_write_int(bs, val ? 1 : 0, 1);
++				}
+@@ -1234 +1252 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				if (cfg->ptl_sublayer_present_mask & (1<<idx))
++				if (idx < 8 && (cfg->ptl_sublayer_present_mask & (1<<idx))) {
+@@ -1235,0 +1254 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++				}
+@@ -1239 +1258 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			for (idx=0; idx<cfg->num_sub_profiles; idx++) {
++			for (idx=0; idx<cfg->num_sub_profiles && idx < 32; idx++) {
+@@ -1251 +1270 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-	for (i=0; i<count; i++) {
++	for (i=0; i<count && i < 256; i++) { // Limit param array count
+@@ -1254,0 +1274,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++		if (!ar) continue;
++
+@@ -1267 +1288 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-		for (j=0; j<nalucount; j++) {
++		for (j=0; j<nalucount && j < 1024; j++) { // Limit NALU count
+@@ -1268,0 +1290,2 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
++			if (!sl) continue;
++			
+@@ -1274 +1297,4 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-			gf_bs_write_data(bs, sl->data, sl->size);
++			// Add bounds checking for NALU data
++			if (sl->data && sl->size > 0 && sl->size <= 65535) {
++				gf_bs_write_data(bs, sl->data, sl->size);
++			}

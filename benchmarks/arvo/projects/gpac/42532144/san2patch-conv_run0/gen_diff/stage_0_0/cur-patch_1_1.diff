@@ -1,0 +1,78 @@
+diff --git a/src/filter_core/filter_props.c b/src/filter_core/filter_props.c
+index f507546bf..c96699b9e 100644
+--- a/src/filter_core/filter_props.c
++++ b/src/filter_core/filter_props.c
+@@ -1063,0 +1064,5 @@ GF_Err gf_props_insert_property(GF_PropertyMap *map, u32 hash, u32 p4cc, const c
++		// Check for negative or invalid size values that could cause underflow
++		if ((s32)value->value.data.size < 0) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_FILTER, ("Invalid negative data property size: %d\n", (s32)value->value.data.size));
++			return GF_BAD_PARAM;
++		}
+diff --git a/src/filters/reframe_adts.c b/src/filters/reframe_adts.c
+index 43531ca54..83958f5d0 100644
+--- a/src/filters/reframe_adts.c
++++ b/src/filters/reframe_adts.c
+@@ -459,16 +458,0 @@ static void adts_dmx_check_pid(GF_Filter *filter, GF_ADTSDmxCtx *ctx)
+-	if (ctx->ovsbr) timescale = 2*sr;
+-
+-	gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_TIMESCALE, & PROP_UINT(ctx->timescale ? ctx->timescale : timescale));
+-	gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_NUM_CHANNELS, & PROP_UINT(ctx->nb_ch) );
+-
+-	if (ctx->bitrate) {
+-		gf_filter_pid_set_property(ctx->opid, GF_PROP_PID_BITRATE, & PROP_UINT(ctx->bitrate));
+-	}
+-
+-	if (ctx->id3_buffer_size) {
+-		id3dmx_flush(filter, ctx->id3_buffer, ctx->id3_buffer_size, ctx->opid, ctx->expart ? &ctx->vpid : NULL);
+-		ctx->id3_buffer_size = 0;
+-	}
+-
+-}
+-
+@@ -480,0 +465,46 @@ static Bool adts_dmx_process_event(GF_Filter *filter, const GF_FilterEvent *evt)
++	switch (evt->base.type) {
++	case GF_FEVT_PLAY:
++		if (ctx->is_playing) return GF_TRUE;
++		ctx->is_playing = GF_TRUE;
++		if (evt->play.start_offset) {
++			ctx->cts = (u64) (evt->play.start_offset * ctx->timescale);
++		}
++		return GF_TRUE;
++	case GF_FEVT_STOP:
++		ctx->is_playing = GF_FALSE;
++		return GF_TRUE;
++	case GF_FEVT_SET_SPEED:
++		return GF_TRUE;
++	case GF_FEVT_FLUSH_DATA:
++		ctx->bytes_in_obj = 0;
++		ctx->adts_header_len = 0;
++		ctx->got_adts_header = GF_FALSE;
++		ctx->first_sync_word_found = GF_FALSE;
++		ctx->sync_state = ADTS_SYNC_STATE_NONE;
++		ctx->frame_size = 0;
++		ctx->nb_frames = 0;
++		ctx->cur_frame_start = 0;
++		ctx->nb_ch = 0;
++		ctx->sample_rate_idx = 0;
++		ctx->profile = 0;
++		ctx->protection_absent = GF_FALSE;
++		ctx->header_pos = 0;
++		ctx->skip_bytes = 0;
++		ctx->sync_offset = 0;
++		ctx->has_crc = GF_FALSE;
++		ctx->crc_check = 0;
++		ctx->frame_crc = 0;
++		ctx->adts_header[0] = 0;
++		ctx->adts_header[1] = 0;
++		ctx->adts_header[2] = 0;
++		ctx->adts_header[3] = 0;
++		ctx->adts_header[4] = 0;
++		ctx->adts_header[5] = 0;
++		ctx->adts_header[6] = 0;
++		ctx->adts_header[7] = 0;
++		return GF_TRUE;
++	default:
++		break;
++	}
++	return GF_FALSE;
++}

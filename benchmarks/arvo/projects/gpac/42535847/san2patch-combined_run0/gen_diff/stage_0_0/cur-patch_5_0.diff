@@ -1,0 +1,63 @@
+diff --git a/src/filters/isoffin_read.c b/src/filters/isoffin_read.c
+index 2f08cf8f9..da22683b0 100644
+--- a/src/filters/isoffin_read.c
++++ b/src/filters/isoffin_read.c
+@@ -1474,21 +1474,25 @@ static GF_Err isoffin_process(GF_Filter *filter)
+-		//eos not sent on this channel, we are active
+-		if (!ch->eos_sent)
+-			is_active = GF_TRUE;
+-
+-		while (nb_pck) {
+-			ch->sample_data_offset = 0;
+-			if (!in_is_flush && !read->full_segment_flush && gf_filter_pid_would_block(ch->pid) )
+-				break;
+-
+-			if (ch->item_id) {
+-				isor_reader_get_sample_from_item(ch);
+-			} else {
+-				isor_reader_get_sample(ch);
+-			}
+-			if (!ch->sample && ch->pck) {
+-				gf_filter_pck_discard(ch->pck);
+-				ch->pck = NULL;
+-				if (ch->static_sample) {
+-					ch->static_sample->data = NULL;
+-					ch->static_sample->alloc_size=0;
+-				}
++        //eos not sent on this channel, we are active
++                if (!ch->eos_sent)
++                        is_active = GF_TRUE;
++
++                while (nb_pck) {
++                        ch->sample_data_offset = 0;
++                        if (!in_is_flush && !read->full_segment_flush && gf_filter_pid_would_block(ch->pid) )
++                                break;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
++                        if (ch->item_id) {
++                                // Check if ch is valid before accessing
++                                if (ch != NULL) {
++                                        isor_reader_get_sample_from_item(ch);
++                                }
++                        } else {
++                                isor_reader_get_sample(ch);
++                        }
++                        if (!ch->sample && ch->pck) {
++                                gf_filter_pck_discard(ch->pck);
++                                ch->pck = NULL;
++                                if (ch->static_sample) {
++                                        ch->static_sample->data = NULL;
++                                        ch->static_sample->alloc_size=0;
++                                }
+diff --git a/src/isomedia/meta.c b/src/isomedia/meta.c
+index 65660dcba..cfb7341b2 100644
+--- a/src/isomedia/meta.c
++++ b/src/isomedia/meta.c
+@@ -373,0 +374 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -376 +377 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-				nalu_size_length = hvcc->config->nal_unit_size;
++				if (hvcc->config && hvcc->config->nal_unit_size) nalu_size_length = hvcc->config->nal_unit_size;
+@@ -387 +388 @@ static GF_Err gf_isom_extract_meta_item_intern(GF_ISOFile *file, Bool root_meta,
+-				nalu_size_length = avcc->config->nal_unit_size;
++				if (avcc->config && avcc->config->nal_unit_size) nalu_size_length = avcc->config->nal_unit_size;

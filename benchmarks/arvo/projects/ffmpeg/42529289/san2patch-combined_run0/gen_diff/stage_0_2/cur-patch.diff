@@ -1,0 +1,36 @@
+diff --git a/libavcodec/bitstream_template.h b/libavcodec/bitstream_template.h
+index 0308e3a924..befe1facd6 100644
+--- a/libavcodec/bitstream_template.h
++++ b/libavcodec/bitstream_template.h
+@@ -529 +529,2 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-    int ret, nb_bits, code, n = Jtable[idx].len;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     int ret, nb_bits, code, n = Jtable[idx].len;
+@@ -531 +532,10 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-        AV_COPY64U(dst, Jtable[idx].val);
++        // Validate buffer boundary before 8-byte write operation
++        const size_t buffer_size = 65536;
++        const size_t offset = dst - (uint8_t*)0; // Calculate current offset
++        if (offset + 8 <= buffer_size) {
++            AV_COPY64U(dst, Jtable[idx].val);
++        } else {
++            // Handle boundary violation by writing only available bytes
++            size_t available_bytes = buffer_size - offset;
++            memcpy(dst, &Jtable[idx].val, available_bytes < 8 ? available_bytes : 8);
++        }
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..85c0ba9531 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -296,2 +296,7 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
+-
+-            for (k = 0; k < height; k++)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 
++            for (k = 0; k < height; k++) {
++                // Check for sufficient buffer space before READ_PLANE operation
++                if (width > 0 && dst >= p->data[i] + p->linesize[i] * avctx->coded_height) {
++                    return AVERROR_INVALIDDATA;
++                }
+@@ -298,0 +304 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
++            }

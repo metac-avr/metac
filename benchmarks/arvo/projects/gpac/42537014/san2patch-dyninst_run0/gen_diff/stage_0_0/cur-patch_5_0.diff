@@ -1,0 +1,46 @@
+diff --git a/src/media_tools/dash_client.c b/src/media_tools/dash_client.c
+index 6b1f874df..5e2d4772a 100644
+--- a/src/media_tools/dash_client.c
++++ b/src/media_tools/dash_client.c
+@@ -4905,4 +4905,11 @@ static GF_Err gf_dash_download_init_segment(GF_DashClient *dash, GF_DASH_Group *
+-		e = gf_dash_resolve_url(dash->mpd, rep, group, dash->base_url, GF_MPD_RESOLVE_URL_MEDIA, group->download_segment_index, &base_init_url, &start_range, &end_range, &group->current_downloaded_segment_duration, NULL, &key_url, &key_iv, NULL, &start_number);
+-		if (e) {
+-			GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[DASH] Unable to resolve media URL: %s\n", gf_error_to_string(e) ));
+-			return e;
++		GF_Err resolve_err;
++		/* Store error result separately for better debugging */
++		resolve_err = gf_dash_resolve_url(dash->mpd, rep, group, dash->base_url, GF_MPD_RESOLVE_URL_MEDIA, group->download_segment_index, &base_init_url, &start_range, &end_range, &group->current_downloaded_segment_duration, NULL, &key_url, &key_iv, NULL, &start_number);
++		if (resolve_err != GF_OK) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[DASH] Unable to resolve media URL: %s\n", gf_error_to_string(resolve_err) ));
++			return resolve_err;
++		}
++		/* Additional safety check for NULL pointer */
++		if (base_init_url == NULL) {
++			GF_LOG(GF_LOG_ERROR, GF_LOG_DASH, ("[DASH] base_init_url is unexpectedly NULL\n"));
++			return GF_BAD_PARAM;
+@@ -4915,2 +4922,5 @@ static GF_Err gf_dash_download_init_segment(GF_DashClient *dash, GF_DASH_Group *
+-		e = gf_dash_resolve_url(dash->mpd, rep, group, dash->base_url, GF_MPD_RESOLVE_URL_MEDIA, group->download_segment_index, &tmp_url, &sr, &er, &dur, NULL, &key_url, &key_iv, NULL, &start_number);
+-		if (tmp_url) gf_free(tmp_url);
++		GF_Err m3u8_err = gf_dash_resolve_url(dash->mpd, rep, group, dash->base_url, GF_MPD_RESOLVE_URL_MEDIA, group->download_segment_index, &tmp_url, &sr, &er, &dur, NULL, &key_url, &key_iv, NULL, &start_number);
++		if (tmp_url) {
++			gf_free(tmp_url);
++			tmp_url = NULL; /* Prevent dangling pointer */
++		}
+diff --git a/src/utils/error.c b/src/utils/error.c
+index 23c5105d6..899d2f2dd 100644
+--- a/src/utils/error.c
++++ b/src/utils/error.c
+@@ -2166,0 +2167 @@ GF_Err gf_dynstrcat(char **str, const char *to_append, const char *sep)
++	char	*old_ptr;
+@@ -2171,0 +2173,3 @@ GF_Err gf_dynstrcat(char **str, const char *to_append, const char *sep)
++	
++	// Store old pointer to check if realloc succeeded
++	old_ptr = *str;
+@@ -2175 +2179,4 @@ GF_Err gf_dynstrcat(char **str, const char *to_append, const char *sep)
+-	if (! (*str) )
++	// Check if realloc failed
++	if (! (*str) ) {
++		// Restore old pointer to avoid dangling pointer issues
++		*str = old_ptr;
+@@ -2176,0 +2184 @@ GF_Err gf_dynstrcat(char **str, const char *to_append, const char *sep)
++	}

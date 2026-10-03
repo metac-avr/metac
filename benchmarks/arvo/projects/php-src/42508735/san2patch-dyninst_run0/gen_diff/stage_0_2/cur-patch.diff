@@ -1,0 +1,38 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index c37cd9ed974..e38adfc088c 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1215,7 +1214,0 @@ ZEND_API void zend_activate(void) /* {{{ */
+-	if (CG(map_ptr_last)) {
+-		memset(CG(map_ptr_real_base), 0, CG(map_ptr_last) * sizeof(void*));
+-	}
+-	zend_observer_activate();
+-}
+-/* }}} */
+-
+@@ -1224,0 +1218,2 @@ void zend_call_destructors(void) /* {{{ */
++		/* Pre-process generators to avoid expired pointer dereference */
++		zend_gc_collect_cycles();
+@@ -1229,8 +1223,0 @@ void zend_call_destructors(void) /* {{{ */
+-
+-ZEND_API void zend_deactivate(void) /* {{{ */
+-{
+-	/* we're no longer executing anything */
+-	EG(current_execute_data) = NULL;
+-
+-	zend_observer_deactivate();
+-
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..76337402f63 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,2 +202,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 		ptr = ((char*)object) - object->handlers->offset;
++		if (object->ce && object->ce->name) {
++			GC_REMOVE_FROM_BUFFER(object);
++		} else {
++			GC_REMOVE_FROM_BUFFER(object);
++		}

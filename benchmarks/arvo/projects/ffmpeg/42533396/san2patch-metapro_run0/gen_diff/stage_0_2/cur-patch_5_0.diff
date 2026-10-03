@@ -1,0 +1,25 @@
+diff --git a/libavformat/aiffdec.c b/libavformat/aiffdec.c
+index 5314d159ef..57c0ec67bd 100644
+--- a/libavformat/aiffdec.c
++++ b/libavformat/aiffdec.c
+@@ -335 +335,2 @@ static int aiff_read_header(AVFormatContext *s)
+-            break;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             break;
+@@ -337,2 +338,5 @@ static int aiff_read_header(AVFormatContext *s)
+-            if ((ret = ff_mov_read_chan(s, pb, st, size)) < 0)
+-                return ret;
++            if ((ret = ff_mov_read_chan(s, pb, st, size)) < 0) {
++                if (ret == AVERROR(ENOMEM)) // Handle allocation failures specifically
++                    return ret;
++                return AVERROR_INVALIDDATA; // Convert other errors to invalid data
++            }
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..03a6599627 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -405,2 +405,2 @@ int av_channel_layout_custom_init(AVChannelLayout *channel_layout, int nb_channe
+-    if (nb_channels <= 0)
+-        return AVERROR(EINVAL);
++    if (nb_channels <= 0 || nb_channels > INT_MAX / sizeof(*channel_layout->u.map))
++         return AVERROR(EINVAL);

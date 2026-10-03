@@ -1,0 +1,23 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..129e8d3d6 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -389 +389,5 @@ ulshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-    mpz_init(mrb,&c); mpz_realloc(mrb,&c,(size_t)(a->sz + 1));
++    mpz_init(mrb,&c); 
++    if (a->sz >= SIZE_MAX - 1) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "integer overflow");
++    }
++    mpz_realloc(mrb,&c,(size_t)(a->sz + 1));
+@@ -395 +399,3 @@ ulshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-    c.p[i] = cc;
++    if (i < c.sz) {
++        c.p[i] = cc;
++    }
+@@ -741,2 +747,4 @@ mpz_mul_2exp(mrb_state *mrb, mpz_t *z, mpz_t *x, mrb_int e)
+-    for (size_t i=0;i<x->sz;i++)
+-      y.p[i+digs] = x->p[i];
++    for (size_t i=0;i<x->sz;i++) {
++      if (i+digs < y.sz) 
++        y.p[i+digs] = x->p[i];
++    }

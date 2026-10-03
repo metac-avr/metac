@@ -1,0 +1,28 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..7f4224ec3 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1700 +1700,2 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -1702,12 +1703,7 @@ mrb_str_hash(mrb_state *mrb, mrb_value str)
+-  return mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
+-}
+-
+-/* 15.2.10.5.20 */
+-/*
+- * call-seq:
+- *    str.hash   => int
+- *
+- * Return a hash based on the string's length and content.
+- */
+-static mrb_value
+-mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++  if (RSTR_FSHARED(s) || RSTR_NOFREE(s)) {
++    return mrb_byte_hash((uint8_t*)RSTR_PTR(s), RSTR_LEN(s));
++  }
++  else {
++    return mrb_byte_hash((uint8_t*)RSTRING_PTR(str), RSTRING_LEN(str));
++  }
++}mrb_str_hash_m(mrb_state *mrb, mrb_value self)

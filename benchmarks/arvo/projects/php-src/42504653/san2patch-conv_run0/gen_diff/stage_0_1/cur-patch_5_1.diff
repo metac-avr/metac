@@ -1,0 +1,66 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index cd52a50ac7e..3dd2496a9b3 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -7865,17 +7864,0 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf
+-	if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
+-		if (zend_jit_trace_exit_is_bad(trace_num, exit_num)) {
+-			zend_jit_blacklist_trace_exit(trace_num, exit_num);
+-			if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_BLACKLIST) {
+-				fprintf(stderr, "---- EXIT %d/%d blacklisted\n",
+-					trace_num, exit_num);
+-			}
+-			return 0;
+-		}
+-	} else if (JIT_G(hot_side_exit) && zend_jit_trace_exit_is_hot(trace_num, exit_num)) {
+-		return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
+-	}
+-
+-	/* Return 1 to call original handler instead of the same JIT-ed trace */
+-	return (orig_opline == t->opline && EX(opline) == orig_opline);
+-}
+-
+@@ -7885,2 +7868 @@ static zend_always_inline uint8_t zend_jit_trace_supported(const zend_op *opline
+-		case ZEND_CATCH:
+-		case ZEND_FAST_CALL:
++		case ZEND_CATCH:		case ZEND_FAST_CALL:
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..e88a108360f 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -24,12 +24,11 @@
+-#include "zend_types.h"
+-#include "zend_gc.h"
+-
+-BEGIN_EXTERN_C()
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p);
+-ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-
+-static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
++if (t->exit_info[exit_num].flags & ZEND_JIT_EXIT_TO_VM) {
++		if (zend_jit_trace_exit_is_bad(trace_num, exit_num)) {
++			zend_jit_blacklist_trace_exit(trace_num, exit_num);
++			if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_BLACKLIST) {
++				fprintf(stderr, "---- EXIT %d/%d blacklisted\n",
++					trace_num, exit_num);
++			}
++			return 0;
++		}
++	} else if (JIT_G(hot_side_exit) && zend_jit_trace_exit_is_hot(trace_num, exit_num)) {
++		return zend_jit_trace_hot_side(execute_data, trace_num, exit_num);
+@@ -37 +35,0 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-}
+@@ -39,7 +37,2 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+-		zend_refcounted *ref = Z_COUNTED_P(zval_ptr);
+-		if (!GC_DELREF(ref)) {
+-			rc_dtor_func(ref);
+-		} else {
++	/* Return 1 to call original handler instead of the same JIT-ed trace */
++	return (orig_opline == t->opline && EX(opline) == orig_opline);		} else {

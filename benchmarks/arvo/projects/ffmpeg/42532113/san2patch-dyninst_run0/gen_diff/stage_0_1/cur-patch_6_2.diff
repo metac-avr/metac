@@ -1,0 +1,34 @@
+diff --git a/libavcodec/vvc/vvcdec.c b/libavcodec/vvc/vvcdec.c
+index 608d497cb7..4a3ac23163 100644
+--- a/libavcodec/vvc/vvcdec.c
++++ b/libavcodec/vvc/vvcdec.c
+@@ -786 +786,2 @@ static int decode_nal_unit(VVCContext *s, VVCFrameContext *fc, const H2645NAL *n
+-    case VVC_PREFIX_APS_NUT:
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     case VVC_PREFIX_APS_NUT:
+@@ -788,3 +789,5 @@ static int decode_nal_unit(VVCContext *s, VVCFrameContext *fc, const H2645NAL *n
+-        ret = ff_vvc_decode_aps(&s->ps, unit);
+-        if (ret < 0)
+-            return ret;
++        if (unit->data && unit->data_size > 0) {  // Validate input data before processing
++            ret = ff_vvc_decode_aps(&s->ps, unit);
++            if (ret < 0)
++                return ret;
++        }
+diff --git a/libavcodec/vvc/vvc_ps.c b/libavcodec/vvc/vvc_ps.c
+index ac96ed9f43..24d64d42f7 100644
+--- a/libavcodec/vvc/vvc_ps.c
++++ b/libavcodec/vvc/vvc_ps.c
+@@ -161 +161,2 @@ static void sps_partition_constraints(VVCSPS* sps)
+-static void sps_ladf(VVCSPS* sps)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ static void sps_ladf(VVCSPS* sps)
+@@ -168,3 +169,5 @@ static void sps_ladf(VVCSPS* sps)
+-        for (int i = 0; i < sps->num_ladf_intervals - 1; i++) {
+-            sps->ladf_interval_lower_bound[i + 1] =
+-                sps->ladf_interval_lower_bound[i] + r->sps_ladf_delta_threshold_minus1[i] + 1;
++        for (int i = 0; i < sps->num_ladf_intervals - 1 && i < MAX_LADF_INTERVALS - 1; i++) {
++            if (i < MAX_LADF_INTERVALS - 1) {
++                sps->ladf_interval_lower_bound[i + 1] =
++                    sps->ladf_interval_lower_bound[i] + r->sps_ladf_delta_threshold_minus1[i] + 1;
++            }

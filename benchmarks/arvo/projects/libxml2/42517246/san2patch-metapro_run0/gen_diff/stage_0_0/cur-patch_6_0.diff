@@ -1,0 +1,33 @@
+diff --git a/tree.c b/tree.c
+index 6a42f118..97df8a3f 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4519 +4519 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4527 +4527,2 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     xmlNodePtr ret;
+@@ -4528,0 +4530,2 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (node == NULL)
++        return(NULL);
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..c9d37ae7 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1216,0 +1217 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++// Patched CWE-825: Expired Pointer Dereference - Add null check before node operations
+@@ -1218,5 +1219,7 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		    xmlNodePtr new_node = xmlXIncludeCopyNode(ctxt, target, source,
++							        set->nodeTab[i]);
++		    if (new_node != NULL) {
++		        xmlAddNextSibling(last, new_node);
++		        if (last->next != NULL)
++		    	    last = last->next;
++		    }

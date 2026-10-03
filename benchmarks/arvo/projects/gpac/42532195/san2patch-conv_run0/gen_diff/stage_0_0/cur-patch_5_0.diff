@@ -1,0 +1,18 @@
+diff --git a/src/filters/in_rtp.c b/src/filters/in_rtp.c
+index 3d8e2933a..beefbca76 100644
+--- a/src/filters/in_rtp.c
++++ b/src/filters/in_rtp.c
+@@ -840 +840,2 @@ static GF_Err rtpin_initialize(GF_Filter *filter)
+-		return GF_OK;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ 		return GF_OK;
+@@ -846 +847,8 @@ static GF_Err rtpin_initialize(GF_Filter *filter)
+-		rtpin_satip_get_server_ip(ctx->src, ctx->session->satip_server);
++		// Create temporary buffer with bounds checking
++		char* temp_url = gf_strdup(ctx->src);
++		if (temp_url) {
++			rtpin_satip_get_server_ip(temp_url, ctx->session->satip_server);
++			gf_free(temp_url);
++		} else {
++			return GF_OUT_OF_MEM;
++		}

@@ -1,0 +1,23 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..135f9eec6 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -791,0 +792,5 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  /* Prevent use-after-free during incremental GC */
++  if (mrb->gc.state == MRB_GC_STATE_SWEEP) {
++    /* Skip marking during sweep to avoid referencing freed objects */
++    return;
++  }
+@@ -799,2 +804 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1202,0 +1207,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Ensure no references remain before freeing */
++      sweep_page_references(gc, page);

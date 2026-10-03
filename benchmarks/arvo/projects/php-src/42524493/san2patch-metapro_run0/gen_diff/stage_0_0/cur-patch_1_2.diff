@@ -1,0 +1,39 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..8e8ddbf36ce 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -251,16 +251,4 @@ static ZEND_COLD void zend_throw_or_error(int fetch_type, zend_class_entry *exce
+-void shutdown_destructors(void) /* {{{ */
+-{
+-	if (CG(unclean_shutdown)) {
+-		EG(symbol_table).pDestructor = zend_unclean_zval_ptr_dtor;
+-	}
+-	zend_try {
+-		uint32_t symbols;
+-		do {
+-			symbols = zend_hash_num_elements(&EG(symbol_table));
+-			zend_hash_reverse_apply(&EG(symbol_table), (apply_func_t) zval_call_destructor);
+-		} while (symbols != zend_hash_num_elements(&EG(symbol_table)));
+-		zend_objects_store_call_destructors(&EG(objects_store));
+-	} zend_catch {
+-		/* if we couldn't destruct cleanly, mark all objects as destructed anyway */
+-		zend_objects_store_mark_destructed(&EG(objects_store));
+-	} zend_end_try();
++static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++	ZEND_ASSERT(Z_REFCOUNTED_P(pz));
++	return GC_ADDREF(Z_COUNTED_P(pz));
++
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..2e4f53b2869 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1301 +1301,5 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	zend_refcounted *counted = Z_COUNTED_P(pz);
++	if (!counted) {
++		return 0;
++	}
++	return GC_REFCOUNT(counted);
+@@ -1312 +1316 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-}
++}}

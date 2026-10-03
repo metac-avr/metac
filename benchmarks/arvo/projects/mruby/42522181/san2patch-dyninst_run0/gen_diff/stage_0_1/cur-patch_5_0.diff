@@ -1,0 +1,29 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..ca427f6ef 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1096,3 +1096,7 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc->gray_list = obj->gcnext;
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj->tt != MRB_TT_FREE) {
++      gc->gray_list = obj->gcnext;
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    } else {
++      gc->gray_list = obj->gcnext;
++    }
+@@ -1202,0 +1207,13 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Remove from gray list before freeing to prevent UAF */
++      if (gc->gray_list) {
++        struct RBasic **prev = &gc->gray_list;
++        struct RBasic *current = gc->gray_list;
++        while (current) {
++          if ((mrb_heap_page*)((char*)current - offsetof(mrb_heap_page, freelist)) == page) {
++            *prev = current->gcnext;
++            break;
++          }
++          prev = &current->gcnext;
++          current = current->gcnext;
++        }
++      }

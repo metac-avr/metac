@@ -1,0 +1,58 @@
+diff --git a/src/media_tools/m3u8.c b/src/media_tools/m3u8.c
+index 5f570e30a..7694920c3 100644
+--- a/src/media_tools/m3u8.c
++++ b/src/media_tools/m3u8.c
+@@ -333 +333 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			u32 spaces = 0;
++			s32 spaces = 0;
+@@ -338 +338 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			while (line[start+spaces] == ' ')
++			while ((start+spaces < len) && (line[start+spaces] == ' '))
+@@ -340 +340 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-			if ((sz-spaces<=1) && (line[start+spaces]==',')) {
++			if ((sz-spaces<=1) && (start+spaces < len) && (line[start+spaces]==',')) {
+@@ -343 +343,2 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-				if (!strncmp(&line[start+spaces], "\t", sz-spaces) || !strncmp(&line[start+spaces], "\n", sz-spaces)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 				if ((start+spaces < len) && sz-spaces > 0 && (!strncmp(&line[start+spaces], "\t", sz-spaces) || !strncmp(&line[start+spaces], "\n", sz-spaces))) {
+@@ -345,2 +346,5 @@ static char** extract_attributes(const char *name, const char *line, const int n
+-					ret[curr_attribute] = gf_calloc( (1+sz-spaces), sizeof(char));
+-					strncpy(ret[curr_attribute], &(line[start+spaces]), sz-spaces);
++					ret[curr_attribute] = gf_malloc((1+sz-spaces) * sizeof(char));
++					if (sz-spaces > 0) {
++						memcpy(ret[curr_attribute], &(line[start+spaces]), sz-spaces);
++					}
++					ret[curr_attribute][sz-spaces] = '\0';
+@@ -722,3 +726,29 @@ static char** parse_attributes(const char *line, s_accumulated_attributes *attri
+-				attributes->name = gf_strdup(ret[i]+5+1);
+-				u32 len = (u32) strlen(attributes->name);
+-				if (len) attributes->name[len-1]=0;
++				char *name_attr = ret[i]+5+1;
++				// Validate the source buffer before calling gf_strdup
++				if (name_attr) {
++					// Ensure we don't read past buffer boundaries
++					u32 attr_len = 0;
++					char *temp_ptr = name_attr;
++					while (*temp_ptr && *temp_ptr != '"' && attr_len < 1024) { // Reasonable limit
++						temp_ptr++;
++						attr_len++;
++					}
++					
++					if (attr_len > 0) {
++						char *temp_buffer = (char *)gf_malloc(attr_len + 1);
++						if (temp_buffer) {
++							strncpy(temp_buffer, name_attr, attr_len);
++							temp_buffer[attr_len] = '\0';
++							attributes->name = gf_strdup(temp_buffer);
++							gf_free(temp_buffer);
++							if (attributes->name) {
++								u32 len = (u32) strlen(attributes->name);
++								if (len) attributes->name[len-1]=0;
++							}
++						}
++					} else {
++						attributes->name = gf_strdup("");
++					}
++				} else {
++					attributes->name = gf_strdup("");
++				}

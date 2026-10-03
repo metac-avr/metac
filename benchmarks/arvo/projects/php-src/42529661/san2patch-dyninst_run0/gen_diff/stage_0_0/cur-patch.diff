@@ -1,0 +1,47 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..d804ded32ec 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2490,6 +2490,9 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	GC_REMOVE_FROM_BUFFER(ht);
+-	if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
+-		_zend_hash_iterators_remove(ht);
+-	}
+-	if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
+-		efree(HT_GET_DATA_ADDR(ht));
++	if (!(ht->u.flags & HASH_FLAG_JIT_PROTECTED)) {
++		GC_REMOVE_FROM_BUFFER(ht);
++		if (UNEXPECTED(HT_HAS_ITERATORS(ht))) {
++			_zend_hash_iterators_remove(ht);
++		}
++		if (!(EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED))) {
++			efree(HT_GET_DATA_ADDR(ht));
++		}
++		FREE_HASHTABLE(ht);
+@@ -2497 +2499,0 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
+-	FREE_HASHTABLE(ht);
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..a987da2bcb1 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -8981,9 +8981,3 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+-			} else if (!zend_jit_traces[parent_num].polymorphism) {
+-				polymorphism = 1;
+-			} else if (exit_num == 0) {
+-				polymorphism = zend_jit_traces[parent_num].polymorphism + 1;
+-			}
+-		}
+-	}
+-
++// FIXME: Crash CWE-416: Use After Free
++	// Fixed use-after-free vulnerability by adding state tracking for trace execution
++	volatile zend_bool trace_state = JIT_G(tracing);
+@@ -8992 +8986,2 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	JIT_G(tracing) = 0;
++	zend_memory_barrier(); // Ensure memory operations are synchronized
++	JIT_G(tracing) = trace_state;
+@@ -9001,2 +8996 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-			const zend_op_array *op_array = trace_buffer[0].op_array;
+-			const zend_op *opline = trace_buffer[1].opline;
++			const zend_op_array *op_array = trace_buffer[0].op_array;			const zend_op *opline = trace_buffer[1].opline;

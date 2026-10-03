@@ -1,0 +1,24 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..4271252e8aa 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1371,0 +1372,2 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++				// Validate bucket index before accessing
++				if (UNEXPECTED(i >= ht->nNumUsed)) return; // Early exit to prevent UAF
+@@ -1374 +1376 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++	  	}
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..449c8138a95 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -198 +198,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++// FIXME: Crash CWE-416: Use After Free
++ 			GC_REMOVE_FROM_BUFFER(object);
++ 			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+@@ -200,0 +203,2 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
++		} else {
++			GC_REMOVE_FROM_BUFFER(object);
+@@ -203 +206,0 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		GC_REMOVE_FROM_BUFFER(object);

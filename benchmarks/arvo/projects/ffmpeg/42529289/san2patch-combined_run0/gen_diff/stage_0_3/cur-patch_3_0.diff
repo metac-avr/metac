@@ -1,0 +1,33 @@
+diff --git a/libavcodec/bitstream_template.h b/libavcodec/bitstream_template.h
+index 0308e3a924..c4c84b6f0c 100644
+--- a/libavcodec/bitstream_template.h
++++ b/libavcodec/bitstream_template.h
+@@ -529 +529,2 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-    int ret, nb_bits, code, n = Jtable[idx].len;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     int ret, nb_bits, code, n = Jtable[idx].len;
+@@ -531 +532,6 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-        AV_COPY64U(dst, Jtable[idx].val);
++        if (/* Validate buffer capacity before 8-byte write */
++            (uintptr_t)dst <= (uintptr_t)bc->buffer_end - 8) {
++            AV_COPY64U(dst, Jtable[idx].val);
++        } else {
++            return AVERROR_INVALIDDATA; /* Insufficient buffer space */
++        }
+@@ -544 +550,6 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+-        AV_WN16(dst, code);
++        if (/* Validate buffer capacity before 2-byte write */
++            (uintptr_t)dst <= (uintptr_t)bc->buffer_end - 2) {
++            AV_WN16(dst, code);
++        } else {
++            return AVERROR_INVALIDDATA; /* Insufficient buffer space */
++        }
+diff --git a/libavcodec/magicyuv.c b/libavcodec/magicyuv.c
+index bbaf14d0e0..93a9d8cc3b 100644
+--- a/libavcodec/magicyuv.c
++++ b/libavcodec/magicyuv.c
+@@ -295,0 +296,4 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
++            
++            // Check buffer bounds before bitstream operations
++            if (s->slices[i][j].size - 2 > 65536)
++                return AVERROR_INVALIDDATA;

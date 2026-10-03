@@ -1,0 +1,28 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..4f4da94ac 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1713 +1713,2 @@ static mrb_value
+-mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++// FIXME: Crash CWE-416: Use After Free
++ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+@@ -1714,0 +1716 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++  mrb_gc_protect(mrb, self);
+@@ -1725,2 +1727 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+- *  Returns <code>true</code> if <i>str</i> contains the given string or
+- *  character.
++ *  Returns <code>true</code> if <i>str</i> contains the given string or *  character.
+diff --git a/src/gc.c b/src/gc.c
+index 823297612..424a56dae 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -253 +253,4 @@ mrb_free(mrb_state *mrb, void *p)
+-  (mrb->allocf)(mrb, p, 0, mrb->allocf_ud);
++  /* Prevent use-after-free by checking for null pointer */
++  if (p != NULL) {
++    (mrb->allocf)(mrb, p, 0, mrb->allocf_ud);
++  }
+@@ -265,2 +268 @@ static mrb_bool
+-heap_p(mrb_gc *gc, struct RBasic *object)
+-{
++heap_p(mrb_gc *gc, struct RBasic *object){

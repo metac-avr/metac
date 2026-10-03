@@ -1,0 +1,38 @@
+diff --git a/libavformat/jpegxl_probe.c b/libavformat/jpegxl_probe.c
+index a3845b037d..9394302375 100644
+--- a/libavformat/jpegxl_probe.c
++++ b/libavformat/jpegxl_probe.c
+@@ -295,0 +296,8 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++    static int jpegxl_read_header(GetBitContext *gb, int validate_level,
++                               int extra_fields, int *have_animation,
++                               uint32_t *num_extra_channels, int *xyb_encoded,
++                               int *have_icc_profile)
++{
++    int all_default = jxl_bits(1);
++    uint64_t extensions;
++
+@@ -305 +313 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-            return -1;
++             return -1;
+@@ -327,0 +336 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++                        if (get_bits_left(gb) < 42) return -1; // Boundary check before reading
+@@ -337,0 +347 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++                            if (get_bits_left(gb) < 126) return -1; // Boundary check before reading
+@@ -346,0 +357 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++                    if (get_bits_left(gb) < 24) return -1; // Boundary check before reading
+@@ -361 +372,2 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-        if (extra_fields && !jxl_bits(1))
++        if (extra_fields && !jxl_bits(1)) {
++            if (get_bits_left(gb) < 49) return -1; // Boundary check before reading
+@@ -362,0 +375 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++        }
+@@ -367 +380,2 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
+-                if (extensions & (UINT64_C(1) << i))
++                if (extensions & (UINT64_C(1) << i)) {
++                    if (get_bits_left(gb) < 64) return -1; // Boundary check before reading
+@@ -368,0 +383 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++                }
+@@ -372,0 +388,3 @@ int ff_jpegxl_verify_codestream_header(const uint8_t *buf, int buflen, int valid
++    return 0;
++}
++

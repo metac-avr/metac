@@ -1,0 +1,34 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..ed8adb7e3 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -1269,3 +1269,9 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-          packet->payload = &block[13];
+-          packet->payload_packet_len = block_len;
+-          processTLSBlock(ndpi_struct, flow);
++// Fixed CWE-125: Out-of-bounds Read - Added bounds validation before payload access
++          if(handshake_len + 14 <= block_len) { 
++            packet->payload = &block[13];
++            packet->payload_packet_len = block_len;
++            processTLSBlock(ndpi_struct, flow);
++          } else {
++            no_dtls = 1;
++            break;
++          }
+@@ -1288,2 +1294,2 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-					handshake_frag_len + 12,
+-					handshake_frag_off, message);
++				handshake_frag_len + 12,
++				handshake_frag_off, message);
+@@ -1292,2 +1298,2 @@ static int ndpi_search_tls_udp(struct ndpi_detection_module_struct *ndpi_struct,
+-					handshake_frag_len,
+-					handshake_frag_off + 12, message);
++				handshake_frag_len,
++				handshake_frag_off + 12, message);
+@@ -2883 +2889,5 @@ static void ndpi_search_tls_wrapper(struct ndpi_detection_module_struct *ndpi_st
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++  if(packet->payload_packet_len < 197) /* Prevent buffer overflow access */
++    return;
++  

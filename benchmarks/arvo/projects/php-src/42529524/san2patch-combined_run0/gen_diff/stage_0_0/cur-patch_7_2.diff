@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index c352902bbe9..7e343a9e6b6 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3272,2 +3272,12 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+-				}
++static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
++{
++	USE_OPLINE
++
++	zend_execute_data *ex = EX(call);
++	zend_op *throw_op = EG(opline_before_exception);
++	uint32_t throw_op_num = throw_op - EX(func)->op_array.opcodes;
++	uint32_t current_try_catch_offset = opline - EX(func)->op_array.opcodes;
++
++	if (throw_op->result_type & IS_VAR) {
++		if (throw_op->result.var >= ex->func->op_array.last_var) {
++			zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
+@@ -3277,7 +3287,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-	ZEND_VM_TAIL_CALL(zend_dispatch_try_catch_finally_helper_SPEC(current_try_catch_offset, throw_op_num ZEND_OPCODE_HANDLER_ARGS_PASSTHRU_CC));
+-}
+-
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_USER_OPCODE_SPEC_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	int ret;
++	// Fixed CWE-825: Expired Pointer Dereference
++	if (EX_VAR(throw_op->result.var) != NULL) {
++		ZEND_VM_TAIL_CALL(zend_dispatch_try_catch_finally_helper_SPEC(current_try_catch_offset, throw_op_num ZEND_OPCODE_HANDLER_ARGS_PASSTHRU_CC));
++	}
++}	int ret;

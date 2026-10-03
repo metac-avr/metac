@@ -1,0 +1,20 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..aa86ad1ca 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1693,0 +1694,4 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
++				if (es) {
++					gf_free(es);
++					es = NULL;
++				}
+@@ -3113 +3117,2 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
+-	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++// FIXME: Crash CWE-416: Use After Free
++ 	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
+@@ -3118,0 +3124,6 @@ void gf_m2ts_demux_del(GF_M2TS_Demuxer *ts)
++	// Second pass to nullify freed pointers
++	for (i=0; i<GF_M2TS_MAX_STREAMS; i++) {
++		if (ts->ess[i] && (ts->ess[i]->pid==i)) {
++			ts->ess[i] = NULL; // Ensure no dangling pointers remain
++		}
++	}

@@ -1,0 +1,23 @@
+diff --git a/src/utils/error.c b/src/utils/error.c
+index 957e7dc9b..ee54de5e7 100644
+--- a/src/utils/error.c
++++ b/src/utils/error.c
+@@ -2187 +2187,3 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-       //basically a memmem clone (we don't use for portability reasons)
++        // Fixed: Calculate maximum safe search length
++        u32 max_search = data_size - len_pat + 1;
++        if (max_search == 0) return NULL;
+@@ -2189 +2191,4 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-               char *next = memchr(data, pat[0], data_size);
++               // Limit search to safe boundary
++               u32 safe_search_len = (data_size < max_search) ? data_size : max_search;
++               if (safe_search_len == 0) return NULL;
++               char *next = memchr(data, pat[0], safe_search_len);
+@@ -2194 +2199,2 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
+-               //left is always at least 1
++               // Ensure we don't underflow
++               if (left <= 1) return NULL;
+@@ -2196,0 +2203,3 @@ const char* gf_strmemstr(const char *data, u32 data_size, const char *pat)
++               // Update max_search for next iteration
++               if (data_size < len_pat) return NULL;
++               max_search = data_size - len_pat + 1;

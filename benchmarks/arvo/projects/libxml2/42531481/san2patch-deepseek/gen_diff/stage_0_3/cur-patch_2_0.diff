@@ -1,0 +1,56 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..f16647ad 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4452,6 +4451,0 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
+- *
+- * Do a copy of the node to a given document.
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
+- */
+@@ -4461,0 +4456,18 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (node == NULL)
++        return(NULL);
++
++    if ((node->type == XML_ELEMENT_NODE) && (node->nsDef != NULL)) {
++        if (node->nsDef == (xmlNsPtr) -1) {
++            memset(&node->nsDef, 0, sizeof(xmlNsPtr));
++        }
++        else {
++            xmlNsPtr ns = node->nsDef;
++            while (ns != NULL) {
++                if (ns->next == NULL) {
++                    ns->next = NULL;
++                }
++                ns = ns->next;
++            }
++        }
++    }
++
+@@ -4464,10 +4476 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-}
+-
+-/**
+- * xmlDocCopyNodeList:
+- * @doc: the target document
+- * @node:  the first node in the list.
+- *
+- * Do a recursive copy of the node list.
+- *
+- * Returns: a new #xmlNodePtr, or NULL in case of error.
++} * Returns: a new #xmlNodePtr, or NULL in case of error.
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..870eee56 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -403,2 +403,7 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++	(cur->nsDef != NULL)) {
++	if ((reader == NULL) || (reader->ctxt == NULL) ||
++	    (reader->ctxt->inSubset != 0)) {
++		xmlFreeNsList(cur->nsDef);
++	}
++	cur->nsDef = NULL;
++    }

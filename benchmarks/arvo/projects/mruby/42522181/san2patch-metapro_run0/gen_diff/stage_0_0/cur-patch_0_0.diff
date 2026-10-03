@@ -1,0 +1,18 @@
+diff --git a/src/gc.c b/src/gc.c
+index f1b50ad78..0b76c8d78 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1096,3 +1096,7 @@ incremental_marking_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-    gc->gray_list = obj->gcnext;
+-    gc_mark_children(mrb, gc, obj);
+-    tried_marks += gc_gray_counts(mrb, gc, obj);
++    if (obj->tt != MRB_TT_FREE) {  // Check if object is not freed
++      gc->gray_list = obj->gcnext;
++      gc_mark_children(mrb, gc, obj);
++      tried_marks += gc_gray_counts(mrb, gc, obj);
++    } else {
++      gc->gray_list = obj->gcnext;  // Skip freed objects
++    }
+@@ -1202,0 +1207,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Clear freelist pointers before freeing page to prevent use-after-free */
++      page->freelist = NULL;

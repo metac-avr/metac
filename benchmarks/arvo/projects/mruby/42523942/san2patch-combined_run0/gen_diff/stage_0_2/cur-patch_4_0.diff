@@ -1,0 +1,34 @@
+diff --git a/src/gc.c b/src/gc.c
+index 443b778d9..e152bc918 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -779 +778,0 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-
+@@ -787 +786,2 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
+-{
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ {
+@@ -790,0 +791 @@ mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
++  if (mrb->gc.state == MRB_GC_STATE_SWEEP) return;
+@@ -799,2 +800 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-  switch (obj->tt) {
+-  case MRB_TT_OBJECT:
++  switch (obj->tt) {  case MRB_TT_OBJECT:
+@@ -1245,5 +1245,12 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-     size_t tried_sweep = 0;
+-     tried_sweep = incremental_sweep_phase(mrb, gc, limit);
+-     if (tried_sweep == 0)
+-       gc->state = MRB_GC_STATE_ROOT;
+-     return tried_sweep;
++    size_t tried_sweep = 0;
++    /* Ensure no marking occurs during sweeping */
++    if (gc->state == MRB_GC_STATE_SWEEP) {
++      tried_sweep = incremental_sweep_phase(mrb, gc, limit);
++      if (tried_sweep == 0)
++        gc->state = MRB_GC_STATE_ROOT;
++      return tried_sweep;
++    }
++    tried_sweep = incremental_sweep_phase(mrb, gc, limit);
++    if (tried_sweep == 0)
++      gc->state = MRB_GC_STATE_ROOT;
++    return tried_sweep;

@@ -1,0 +1,18 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index cf1e6282b..3942d76ba 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1289,0 +1290,13 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
++
++  /* Defensive check: ensure the packet buffer is valid before HTTP parsing.
++     This prevents check_content_type_and_change_protocol from using an
++     invalid length in ndpi_strncasestr and reading one byte past the heap
++     allocation. */
++  if(flow->packet.payload == NULL ||
++     flow->packet.payload_packet_len == 0 ||
++     flow->packet.payload_packet_len > flow->packet.size) {
++    NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++    http_bitmask_exclude_other(flow);
++    return;
++  }
++

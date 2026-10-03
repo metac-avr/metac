@@ -1,0 +1,28 @@
+diff --git a/xmlstring.c b/xmlstring.c
+index 54734724..72f5cf5a 100644
+--- a/xmlstring.c
++++ b/xmlstring.c
+@@ -48 +48 @@ xmlStrndup(const xmlChar *cur, int len) {
+-    if ((cur == NULL) || (len < 0)) return(NULL);
++    if ((cur == NULL) || (len < 0) || (len > XML_MAX_LOOKUP_LIMIT)) return(NULL);
+@@ -51 +51,2 @@ xmlStrndup(const xmlChar *cur, int len) {
+-        return(NULL);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++         return(NULL);
+diff --git a/HTMLparser.c b/HTMLparser.c
+index b8b6bd23..873079bd 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -2987 +2987 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
+-    if ((CUR != '"') && (CUR != '\'')) {
++    if ((CUR != '"') && (CUR != '\''')) {
+@@ -3013,3 +3013,6 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
+-        NEXT;
+-        if (err == 0)
+-            ret = xmlStrndup((BASE_PTR+startPosition), len);
++         NEXT;
++        if (err == 0) {
++            /* Check if the calculated position and length are within valid buffer bounds */
++            if (startPosition <= ctxt->input->end - BASE_PTR && len <= ctxt->input->end - (BASE_PTR + startPosition))
++                ret = xmlStrndup((BASE_PTR+startPosition), len);
++        }

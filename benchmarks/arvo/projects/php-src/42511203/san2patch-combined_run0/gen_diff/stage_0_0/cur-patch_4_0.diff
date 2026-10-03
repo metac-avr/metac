@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..6714605ec12 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2328 +2328,7 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-fetch_from_array:
++// Fixed CWE-416: Use After Free - Validate array before accessing
++		if (UNEXPECTED(Z_ARRVAL_P(container) == NULL || GC_IS_DTOR_RUNNING(Z_ARRVAL_P(container)))) {
++			zend_cannot_add_element();
++			ZVAL_UNDEF(result);
++			return;
++		}
++ fetch_from_array:
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..1f6340c3b32 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -47 +47 @@ static const zend_rc_dtor_func_t zend_rc_dtor_func[] = {
+-	/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
++/* IS_ARRAY        */ (zend_rc_dtor_func_t)zend_array_destroy,
+@@ -55,0 +56,2 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
++	if (!p) return;
++	if (GC_TYPE(p) > IS_CONSTANT_AST) return;

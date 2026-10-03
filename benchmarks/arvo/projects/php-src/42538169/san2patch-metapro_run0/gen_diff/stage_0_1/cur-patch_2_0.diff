@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 8f012868dda..2900b8b6a69 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1346,3 +1346,6 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
+-	ZEND_ASSERT(p->refcount > 0);
+-	ZEND_RC_MOD_CHECK(p);
+-	return --(p->refcount);
++	if (p && (p->u.type_info & ~GC_TYPE_MASK) != 0) {
++		ZEND_ASSERT(p->refcount > 0);
++		ZEND_RC_MOD_CHECK(p);
++		return --(p->refcount);
++	}
++	return 0;
+@@ -1358,0 +1362 @@ static zend_always_inline uint32_t zend_gc_delref_ex(zend_refcounted_h *p, uint3
++
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 733ce54dc24..982c9a7d673 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -5166 +5166,4 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			zend_object *obj = &iter->std;
++			if (obj && obj->gc && GC_REFCOUNT(obj->gc) > 0) {
++				OBJ_RELEASE(&iter->std);
++			}
+@@ -5179 +5182,4 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-			OBJ_RELEASE(&iter->std);
++			zend_object *obj = &iter->std;
++			if (obj && obj->gc && GC_REFCOUNT(obj->gc) > 0) {
++				OBJ_RELEASE(&iter->std);
++			}
+@@ -5188 +5194,4 @@ static zend_never_inline bool ZEND_FASTCALL zend_fe_reset_iterator(zval *array_p
+-		OBJ_RELEASE(&iter->std);
++		zend_object *obj = &iter->std;
++		if (obj && obj->gc && GC_REFCOUNT(obj->gc) > 0) {
++			OBJ_RELEASE(&iter->std);
++		}

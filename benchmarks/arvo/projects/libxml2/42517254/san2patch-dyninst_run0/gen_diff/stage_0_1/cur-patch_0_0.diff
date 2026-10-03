@@ -1,0 +1,31 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..59ad9076 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -1178,0 +1179,2 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++			    /* Check if node is still valid before accessing */
++			    if (cur->_private == NULL) break;  /* Node was freed */
+@@ -1214,9 +1216,12 @@ xmlXIncludeCopyXPointer(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-		if (last == NULL)
+-		    list = last = xmlXIncludeCopyNode(ctxt, target, source,
+-			                              set->nodeTab[i]);
+-		else {
+-		    xmlAddNextSibling(last,
+-			    xmlXIncludeCopyNode(ctxt, target, source,
+-				                set->nodeTab[i]));
+-		    if (last->next != NULL)
+-			last = last->next;
++		/* Check if node is still valid before copying */
++		if (set->nodeTab[i] != NULL && set->nodeTab[i]->_private != NULL) {
++		    if (last == NULL)
++		        list = last = xmlXIncludeCopyNode(ctxt, target, source,
++							  set->nodeTab[i]);
++		    else {
++		        xmlAddNextSibling(last,
++			        xmlXIncludeCopyNode(ctxt, target, source,
++					            set->nodeTab[i]));
++		        if (last->next != NULL)
++			    last = last->next;
++		    }
+@@ -2277,0 +2283 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++	cur = NULL;  /* Prevent use-after-free */

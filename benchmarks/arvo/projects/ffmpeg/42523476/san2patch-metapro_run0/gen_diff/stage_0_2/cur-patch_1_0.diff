@@ -1,0 +1,34 @@
+diff --git a/libavutil/mem.c b/libavutil/mem.c
+index 36b8940a0c..af01198744 100644
+--- a/libavutil/mem.c
++++ b/libavutil/mem.c
+@@ -249,2 +249,5 @@ void av_freep(void *arg)
+-    memcpy(&val, arg, sizeof(val));
+-    memcpy(arg, &(void *){ NULL }, sizeof(val));
++// Fixed CWE-763: Release of Invalid Pointer or Reference
++    if (!arg) return;
++    val = *(void **)arg;
++    if (!val) return;
++    *(void **)arg = NULL;
+@@ -261 +263,0 @@ void *av_mallocz(size_t size)
+-
+diff --git a/libavcodec/hevc_ps.c b/libavcodec/hevc_ps.c
+index 348e4d8de2..d96a5390b4 100644
+--- a/libavcodec/hevc_ps.c
++++ b/libavcodec/hevc_ps.c
+@@ -880 +879,0 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
+-
+@@ -888 +887,2 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
+-    if (sps->chroma_format_idc > 3U) {
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     if (sps->chroma_format_idc > 3U) {
+@@ -893 +893 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
+-    if (sps->chroma_format_idc == 3)
++    if (sps->chroma_format_idc == 3) {
+@@ -894,0 +895 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
++    }
+@@ -896 +897 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
+-    if (sps->separate_colour_plane_flag)
++    if (sps->separate_colour_plane_flag) {
+@@ -897,0 +899 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
++    }

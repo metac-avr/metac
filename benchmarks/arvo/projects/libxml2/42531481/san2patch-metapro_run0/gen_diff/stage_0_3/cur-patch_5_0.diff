@@ -1,0 +1,51 @@
+diff --git a/parser.c b/parser.c
+index cae2b7fd..72ff2636 100644
+--- a/parser.c
++++ b/parser.c
+@@ -7373,11 +7373,16 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
+-		    nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
+-		    if (nw == NULL) {
+-                        xmlErrMemory(ctxt);
+-                    } else {
+-			if (nw->_private == NULL)
+-			    nw->_private = cur->_private;
+-			if (firstChild == NULL){
+-			    firstChild = nw;
+-			}
+-			nw = xmlAddChild(ctxt->node, nw);
+-                        if (nw == NULL)
++		    /* Add safety check to prevent use-after-free when copying nodes with namespaces */
++		    int skip_node = 0;
++		    if (cur->nsDef != NULL) {
++		        xmlNsPtr ns = cur->nsDef;
++		        while (ns != NULL) {
++		            if (ns->href == NULL && ns->prefix == NULL) {
++		                /* Likely indicates freed/dangling namespace */
++		                skip_node = 1;
++		                break;
++		            }
++		            ns = ns->next;
++		        }
++		    }
++		    if (!skip_node) {
++		        nw = xmlDocCopyNode(cur, ctxt->myDoc, 1);
++		        if (nw == NULL) {
+@@ -7384,0 +7390,10 @@ xmlParseReference(xmlParserCtxtPtr ctxt) {
++                        } else {
++			    if (nw->_private == NULL)
++			        nw->_private = cur->_private;
++			    if (firstChild == NULL){
++			        firstChild = nw;
++			    }
++			    nw = xmlAddChild(ctxt->node, nw);
++                            if (nw == NULL)
++                                xmlErrMemory(ctxt);
++		        }
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..92eb840e 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346 +1346,2 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++// Security Fix: Clear oldnode reference to prevent dangling pointer access
++                     oldnode = NULL;

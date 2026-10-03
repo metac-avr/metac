@@ -1,0 +1,26 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..21d00a71 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2226 +2226,2 @@ xmlSAX2StartElementNs(void *ctx,
+-        pref = namespaces[i++];
++// FIXME: Crash CWE-416: Use After Free
++         pref = namespaces[i++];
+@@ -2240 +2241,16 @@ xmlSAX2StartElementNs(void *ctx,
+-	    continue;
++            pref = namespaces[i-2];
++            uri = namespaces[i-1];
++            ns = xmlNewNs(NULL, uri, pref);
++            if (ns == NULL) {
++                pref = NULL;
++                uri = NULL;
++                continue;
++            }
++            if (last == NULL) {
++                ret->nsDef = last = ns;
++            } else {
++                last->next = ns;
++                last = ns;
++            }
++            if ((URI != NULL) && (prefix == pref))
++                ret->ns = ns;

@@ -1,0 +1,31 @@
+diff --git a/src/range.c b/src/range.c
+index fc126be80..89e03b3fc 100644
+--- a/src/range.c
++++ b/src/range.c
+@@ -391 +391 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-        while (a < b) {
++        while (a < b && i < RARRAY_LEN(ary)) {
+@@ -397,2 +397,3 @@ range_num_to_a(mrb_state *mrb, mrb_value range)
+-      else {
+-        while (a <= b) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       else {
++        while (a <= b && i < RARRAY_LEN(ary)) {
+diff --git a/src/array.c b/src/array.c
+index a02a1306d..481e007c2 100644
+--- a/src/array.c
++++ b/src/array.c
+@@ -57,4 +56,0 @@ ary_new_capa(mrb_state *mrb, mrb_int capa)
+-    a->as.heap.aux.capa = capa;
+-    a->as.heap.len = 0;
+-  }
+-
+@@ -65 +61,2 @@ MRB_API mrb_value
+-mrb_ary_new_capa(mrb_state *mrb, mrb_int capa)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ mrb_ary_new_capa(mrb_state *mrb, mrb_int capa)
+@@ -67 +64,3 @@ mrb_ary_new_capa(mrb_state *mrb, mrb_int capa)
+-  struct RArray *a = ary_new_capa(mrb, capa);
++  struct RArray *a;
++  if (capa < 0) capa = 0;  // Ensure non-negative capacity
++  a = ary_new_capa(mrb, capa);

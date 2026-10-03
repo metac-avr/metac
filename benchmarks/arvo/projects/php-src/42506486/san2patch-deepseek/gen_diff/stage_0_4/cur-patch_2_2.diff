@@ -1,0 +1,27 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..144d23a6774 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -271,0 +272,2 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
++/* No PHP callback functions should be called after this point. */
++EG(active) = 0;
+@@ -273,2 +275,2 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-	/* No PHP callback functions should be called after this point. */
+-	EG(active) = 0;
++if (!fast_shutdown) {
++	zend_hash_destroy(&EG(symbol_table));
+@@ -276,7 +278,7 @@ ZEND_API void zend_shutdown_executor_values(bool fast_shutdown)
+-	if (!fast_shutdown) {
+-		zend_hash_graceful_reverse_destroy(&EG(symbol_table));
+-
+-		/* Constants may contain objects, destroy them before the object store. */
+-		if (EG(full_tables_cleanup)) {
+-			zend_hash_reverse_apply(EG(zend_constants), clean_non_persistent_constant_full);
+-		} else {
++	/* Constants may contain objects, destroy them before the object store. */
++	if (EG(full_tables_cleanup)) {
++		zend_hash_reverse_apply(EG(zend_constants), clean_non_persistent_constant_full);
++	} else {
++		zend_hash_clean(EG(zend_constants));
++	}
++}

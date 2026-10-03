@@ -1,0 +1,123 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..10f8ad45d8d 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1144,0 +1145,15 @@ extern ZEND_API bool zend_rc_debug;
++#ifndef ZEND_TYPES_H
++#define ZEND_TYPES_H
++
++#if defined(ZTS) && defined(COMPILE_DL_opcache)
++ZEND_TSRMLS_CACHE_EXTERN()
++#endif
++
++#include "zend_portability.h"
++
++#if defined(ZTS) && defined(GC_MOD_CHECK)
++# define ZEND_RC_MOD_CHECK(p) \
++	zend_rc_mod_check(p)
++# define GC_MAKE_PERSISTENT_LOCAL(p) \
++	do { \
++		GC_SET_REFCOUNT(p, 1); \
+@@ -1155 +1170,2 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-	return p->refcount;
++	if (p && ((zend_uintptr_t)p) > 0x1000) return p->refcount;
++	return 0;
+@@ -1159,2 +1175,5 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
+-	p->refcount = rc;
+-	return p->refcount;
++	if (p && ((zend_uintptr_t)p) > 0x1000) {
++		p->refcount = rc;
++		return p->refcount;
++	}
++	return 0;
+@@ -1164,2 +1183,5 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	ZEND_RC_MOD_CHECK(p);
+-	return ++(p->refcount);
++	if (p && ((zend_uintptr_t)p) > 0x1000) {
++		ZEND_RC_MOD_CHECK(p);
++		return ++(p->refcount);
++	}
++	return 0;
+@@ -1167,0 +1190,63 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (p && ((zend_uintptr_t)p) > 0x1000) {
++		ZEND_RC_MOD_CHECK(p);
++		return --(p->refcount);
++	}
++	return 0;
++}
++
++static zend_always_inline void zval_addref_p(zval *pz) {
++	if (pz && ((zend_uintptr_t)pz) > 0x1000) {
++		Z_ADDREF_P(pz);
++	}
++}
++
++static zend_always_inline void zval_delref_p(zval *pz) {
++	if (pz && ((zend_uintptr_t)pz) > 0x1000) {
++		Z_DELREF_P(pz);
++	}
++}
++
++static zend_always_inline uint32_t zval_refcount_p(zval *pz) {
++	if (pz && ((zend_uintptr_t)pz) > 0x1000) {
++		return Z_REFCOUNT_P(pz);
++	}
++	return 0;
++}
++
++static zend_always_inline void ZVAL_DEREF(zval *z) {
++	if (z && ((zend_uintptr_t)z) > 0x1000) {
++		if (Z_ISREF_P(z)) {
++			z = Z_REFVAL_P(z);
++		}
++	}
++}
++
++static zend_always_inline void ZVAL_COPY_VALUE(zval *z, zval *v) {
++	if (z && ((zend_uintptr_t)z) > 0x1000 && v && ((zend_uintptr_t)v) > 0x1000) {
++		(z)->value = (v)->value;
++		Z_TYPE_INFO_P(z) = Z_TYPE_INFO_P(v);
++	}
++}
++
++static zend_always_inline void ZVAL_COPY(zval *z, zval *v) {
++	if (z && ((zend_uintptr_t)z) > 0x1000 && v && ((zend_uintptr_t)v) > 0x1000) {
++		zval_copy(z, v);
++	}
++}
++
++static zend_always_inline void ZVAL_UNREF(zval *z) {
++	if (z && ((zend_uintptr_t)z) > 0x1000) {
++		if (Z_ISREF_P(z) && 
++		    UNEXPECTED(Z_REFCOUNT_P(Z_REF_P(z)) == 1)) {
++			zend_reference *ref = Z_REF_P(z);
++			ZVAL_COPY_VALUE(z, Z_REFVAL_P(z));
++			efree_size(ref, sizeof(zend_reference));
++		} else {
++			Z_DELREF_P(z);
++			ZVAL_REF(z, zend_reference_dup(Z_REF_P(z)));
++			z = Z_REFVAL_P(z);
++		}
++	}
++}}
++
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..e4cd1d4c244 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1681,2 +1681,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	}
+-	SET_INCONSISTENT(HT_DESTROYED);
++SET_INCONSISTENT(HT_DESTROYED);
++	zend_hash_iterators_remove(ht);
+@@ -1683,0 +1684 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++// Fixed null pointer dereference issue
+@@ -1685,2 +1686,3 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	zend_hash_iterators_remove(ht);
+-	FREE_HASHTABLE(ht);
++	if (ht != NULL) {
++		FREE_HASHTABLE(ht);
++	}
+@@ -1692 +1693,0 @@ ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-

@@ -1,0 +1,18 @@
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index fc95a1781f..d39481d5f9 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -158,2 +158,6 @@ static int jpegxl_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
+-    if (ctx->initial && size < ctx->initial->size)
+-        size = ctx->initial->size;
++    if (ctx->initial) {
++        if (size < ctx->initial->size)
++            size = ctx->initial->size;
++        if ((uint64_t)ctx->initial->size > (uint64_t)size)
++            return AVERROR_INVALIDDATA;
++    }
+@@ -166,0 +171,4 @@ static int jpegxl_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
++        if (offset > pkt->size) {
++            av_packet_unref(pkt);
++            return AVERROR_INVALIDDATA;
++        }

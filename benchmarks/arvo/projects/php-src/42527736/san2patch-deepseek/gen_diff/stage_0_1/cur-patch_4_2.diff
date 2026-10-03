@@ -1,0 +1,43 @@
+diff --git a/ext/standard/file.c b/ext/standard/file.c
+index edaba57748c..dee583987b8 100644
+--- a/ext/standard/file.c
++++ b/ext/standard/file.c
+@@ -2140,21 +2140,17 @@ PHPAPI HashTable *php_fgetcsv(php_stream *stream, char delimiter, char enclosure
+-						}
+-						break;
+-					default:
+-						break;
+-				}
+-				bptr += inc_len;
+-				inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : php_mblen(bptr, limit - bptr)): 0);
+-			}
+-
+-		quit_loop_3:
+-			memcpy(tptr, hunk_begin, bptr - hunk_begin);
+-			tptr += (bptr - hunk_begin);
+-			bptr += inc_len;
+-			comp_end = tptr;
+-		} else {
+-			/* 2B. Handle non-enclosure field */
+-
+-			hunk_begin = bptr;
+-
+-			for (;;) {
+-				switch (inc_len) {
++            if (bptr > hunk_begin) {
++        size_t field_len = (size_t)(bptr - hunk_begin);
++        if (field_len <= (size_t)(buf + buf_len - tptr)) {
++            memcpy(tptr, hunk_begin, field_len);
++            tptr += field_len;
++        } else {
++            /* invalid or too large field */
++            bptr += inc_len;
++            goto exit_taint_loop;
++        }
++    } else {
++        /* invalid field length */
++        bptr += inc_len;
++        goto exit_taint_loop;
++    }
++    bptr += inc_len;
++    comp_end = tptr;

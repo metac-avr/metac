@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_string.h b/Zend/zend_string.h
+index 2be7e7d2672..a91be6e96f4 100644
+--- a/Zend/zend_string.h
++++ b/Zend/zend_string.h
+@@ -344 +344,2 @@ static zend_always_inline void zend_string_efree(zend_string *s)
+-static zend_always_inline void zend_string_release(zend_string *s)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline void zend_string_release(zend_string *s)
+@@ -347 +348,2 @@ static zend_always_inline void zend_string_release(zend_string *s)
+-		if (GC_DELREF(s) == 0) {
++		zend_ulong refcount = GC_REFCOUNT(s);
++		if (refcount > 0 && GC_DELREF(s) == 0) {
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..108162f869d 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -291 +291 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
+-
++ 
+@@ -297,0 +298 @@ ZEND_API zend_result zend_get_attribute_object(zval *obj, zend_class_entry *attr
++		call->func->op_array.filename = NULL; // Clear reference before freeing frame

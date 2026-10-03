@@ -1,0 +1,27 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..2e67571c6d 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -706,2 +706,2 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
+-        // Annex B, or later MP4 with already-known parameters.
+-
++    // Fixed: Added bounds checking to prevent negative size calculations
++    if (frag->data != NULL && frag->data_size > 0 && frag->data_size <= INT_MAX) {
+@@ -718,0 +719,3 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
++    } else {
++        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid fragment data size\n");
++        return AVERROR_INVALIDDATA;
+@@ -719,0 +723 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
++}
+@@ -1214 +1218,2 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        // This happens normally for CABAC.
++// FIXME: Crash CWE-787: Out-of-bounds Write
++         // This happens normally for CABAC.
+@@ -1216,2 +1221,5 @@ static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+-        memcpy(put_bits_ptr(pbc), pos, rest);
+-        skip_put_bytes(pbc, rest);
++        if (rest > 0) {
++            size_t safe_rest = FFMIN(rest, data_size);
++            memcpy(put_bits_ptr(pbc), pos, safe_rest);
++            skip_put_bytes(pbc, safe_rest);
++        }

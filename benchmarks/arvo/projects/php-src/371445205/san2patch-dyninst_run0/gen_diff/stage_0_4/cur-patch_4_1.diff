@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_attributes.c b/Zend/zend_attributes.c
+index af00117369a..91fec16d2b3 100644
+--- a/Zend/zend_attributes.c
++++ b/Zend/zend_attributes.c
+@@ -151 +151 @@ static zend_attribute *get_attribute(HashTable *attributes, zend_string *lcname,
+-	if (attributes) {
++	if (attributes && lcname) {
+@@ -155 +155 @@ static zend_attribute *get_attribute(HashTable *attributes, zend_string *lcname,
+-			if (attr->offset == offset && zend_string_equals(attr->lcname, lcname)) {
++			if (attr->offset == offset && attr->lcname && zend_string_equals(attr->lcname, lcname)) {
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 3cb31a6296e..25ab927ee90 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1838 +1838,2 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-					i_zval_ptr_dtor(&p->val);
++// FIXME: Crash CWE-416: Use After Free
++ 					i_zval_ptr_dtor(&p->val);
+@@ -1840 +1841,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-						zend_string_release_ex(p->key, 0);
++						if (!ZSTR_IS_INTERNED(p->key) && GC_DELREF(&p->key->gc) > 0) {
++							gc_check_possible_root(&p->key->gc);
++						} else {
++							zend_string_release_ex(p->key, 0);
++						}
+@@ -1848 +1853,5 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-							zend_string_release_ex(p->key, 0);
++							if (!ZSTR_IS_INTERNED(p->key) && GC_DELREF(&p->key->gc) > 0) {
++								gc_check_possible_root(&p->key->gc);
++							} else {
++								zend_string_release_ex(p->key, 0);
++							}

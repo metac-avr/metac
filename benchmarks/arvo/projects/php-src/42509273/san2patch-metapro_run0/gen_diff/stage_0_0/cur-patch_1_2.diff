@@ -1,0 +1,41 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 151afadec22..a4d138a3f8d 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -559 +559 @@ struct _zend_ast_ref {
+-#define IS_PTR						13
++#define IS_PTR					13
+@@ -566 +566,2 @@ struct _zend_ast_ref {
+-
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
+@@ -567,0 +569,3 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
++	if (!pz) {
++		return 0;
++	}
+@@ -570,10 +573,0 @@ static zend_always_inline zend_uchar zval_get_type(const zval* pz) {
+-
+-#define ZEND_SAME_FAKE_TYPE(faketype, realtype) ( \
+-	(faketype) == (realtype) \
+-	|| ((faketype) == _IS_BOOL && ((realtype) == IS_TRUE || (realtype) == IS_FALSE)) \
+-)
+-
+-/* we should never set just Z_TYPE, we should set Z_TYPE_INFO */
+-#define Z_TYPE(zval)				zval_get_type(&(zval))
+-#define Z_TYPE_P(zval_p)			Z_TYPE(*(zval_p))
+-
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..1a22bdb9279 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -216 +216,2 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		}
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 		}
+@@ -218,2 +219,4 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-			zend_hash_index_update(ht, i, &intern->array.elements[i]);
+-			Z_TRY_ADDREF(intern->array.elements[i]);
++			if (i < intern->array.capacity) {
++				zend_hash_index_update(ht, i, &intern->array.elements[i]);
++				Z_TRY_ADDREF(intern->array.elements[i]);
++			}

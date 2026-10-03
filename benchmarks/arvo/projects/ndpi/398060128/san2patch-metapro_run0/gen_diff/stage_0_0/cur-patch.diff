@@ -1,0 +1,23 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 904d1d971..ac979c8f9 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -183 +183,2 @@ static ndpi_risk_info ndpi_known_risks[] = {
+-  { NDPI_TLS_UNCOMMON_ALPN,                     NDPI_RISK_MEDIUM, CLIENT_FAIR_RISK_PERCENTAGE, NDPI_CLIENT_ACCOUNTABLE },
++// Fixed CWE-825: Expired Pointer Dereference - Added pointer validation before string duplication
++   { NDPI_TLS_UNCOMMON_ALPN,                     NDPI_RISK_MEDIUM, CLIENT_FAIR_RISK_PERCENTAGE, NDPI_CLIENT_ACCOUNTABLE },
+@@ -195,2 +196 @@ static ndpi_risk_info ndpi_known_risks[] = {
+-  { NDPI_ERROR_CODE_DETECTED,                   NDPI_RISK_LOW,    CLIENT_LOW_RISK_PERCENTAGE,  NDPI_BOTH_ACCOUNTABLE   },
+-  { NDPI_HTTP_CRAWLER_BOT,                      NDPI_RISK_LOW,    CLIENT_LOW_RISK_PERCENTAGE,  NDPI_CLIENT_ACCOUNTABLE },
++  { NDPI_ERROR_CODE_DETECTED,                   NDPI_RISK_LOW,    CLIENT_LOW_RISK_PERCENTAGE,  NDPI_BOTH_ACCOUNTABLE   },  { NDPI_HTTP_CRAWLER_BOT,                      NDPI_RISK_LOW,    CLIENT_LOW_RISK_PERCENTAGE,  NDPI_CLIENT_ACCOUNTABLE },
+diff --git a/src/lib/ndpi_memory.c b/src/lib/ndpi_memory.c
+index bb8173108..70c5b38e9 100644
+--- a/src/lib/ndpi_memory.c
++++ b/src/lib/ndpi_memory.c
+@@ -108,0 +109,6 @@ char *ndpi_strdup(const char *s) {
++  // Validate pointer before use to prevent use-after-free
++  volatile char *test_ptr = s;
++  if(test_ptr == NULL) {
++    return NULL;
++  }
++

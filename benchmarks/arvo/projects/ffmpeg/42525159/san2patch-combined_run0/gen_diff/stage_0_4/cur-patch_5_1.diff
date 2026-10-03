@@ -1,0 +1,51 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..15e518c9ce 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017,9 +2016,0 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
+-                        dst += pixelsize;                                                         \
+-                    }                                                                             \
+-                }                                                                                 \
+-                line += picture->linesize[plane] / sizeof(PIXEL);                                 \
+-            }                                                                                     \
+-        }                                                                                         \
+-                                                                                                  \
+-    }
+@@ -2027,11 +2018,12 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
+-
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
+-{
+-    const Jpeg2000DecoderContext *s = avctx->priv_data;
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
++    do {
++        int x;
++        
++        if (planar) {
++            x = 0;
++        } else {
++            int cpy = FFMIN(s->avctx->width - (int)(dst - picture->data[0]) / pixel_size, cblk->w);
++            memcpy(dst, i_datap, pixel_size * cpy);
++            i_datap += cpy;
++            dst += pixel_size * cpy;
++            x = cpy;
++        }
+@@ -2038,0 +2031,12 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
++        // Fixed: Bounds validation added to prevent out-of-bounds write
++        if (planar && x < cblk->w) {
++            for (; x < cblk->w; x++) {
++                if ((uintptr_t)dst + pixel_size <= (uintptr_t)line_end) {
++                    *((PIXEL*)dst) = *i_datap++;
++                } else {
++                    i_datap++;
++                }
++                dst += pixel_size;
++            }
++        }
++    } while(0)

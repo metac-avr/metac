@@ -1,0 +1,29 @@
+diff --git a/src/filter_core/filter_props.c b/src/filter_core/filter_props.c
+index f507546bf..fb2c5775f 100644
+--- a/src/filter_core/filter_props.c
++++ b/src/filter_core/filter_props.c
+@@ -1101 +1101,12 @@ GF_Err gf_props_insert_property(GF_PropertyMap *map, u32 hash, u32 p4cc, const c
+-	e = gf_props_assign_value(prop, value, GF_FALSE);
++	if (value) {
++		if ((value->type == GF_PROP_DATA || value->type == GF_PROP_DATA_NO_COPY) && 
++		    value->value.data.ptr && value->value.data.size > 0) {
++			e = gf_props_assign_value(prop, value, GF_FALSE);
++		} else if (!(value->type == GF_PROP_DATA || value->type == GF_PROP_DATA_NO_COPY)) {
++			e = gf_props_assign_value(prop, value, GF_FALSE);
++		} else {
++			e = GF_BAD_PARAM;
++		}
++	} else {
++		e = GF_BAD_PARAM;
++	}
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index 38d2d9e2e..62fd78cbd 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -1565 +1565,2 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-								pes = (GF_M2TS_PES*)es;
++// Fixed: Added proper bounds checking to prevent buffer overflow
++ 								pes = (GF_M2TS_PES*)es;
+@@ -1568 +1569 @@ static void gf_m2ts_process_pmt(GF_M2TS_Demuxer *ts, GF_M2TS_SECTION_ES *pmt, GF
+-								if (pes->gpac_meta_dsi)
++								if (pes->gpac_meta_dsi && (data+6 <= data+len) && (pes->gpac_meta_dsi_size <= len))

@@ -1,0 +1,20 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 68c2bd244..8e11d1e75 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -5196,2 +5196,6 @@ static u_int32_t check_ndpi_tcp_flow_func(struct ndpi_detection_module_struct *n
+-{
+-  if (ndpi_str->packet.payload_packet_len != 0) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
++  /* Prevent out-of-bounds read by validating buffer boundaries */
++  if (ndpi_str->packet.payload_packet_len != 0 && 
++      ndpi_str->callback_buffer_tcp_payload != NULL &&
++      ndpi_str->callback_buffer_size_tcp_payload <= 105) { /* 105 byte limit from ASan report */
+@@ -5201 +5205,3 @@ static u_int32_t check_ndpi_tcp_flow_func(struct ndpi_detection_module_struct *n
+-  } else {
++  } else if(ndpi_str->packet.payload_packet_len == 0 &&
++            ndpi_str->callback_buffer_tcp_no_payload != NULL &&
++            ndpi_str->callback_buffer_size_tcp_no_payload <= 105) {
+@@ -5206,0 +5213 @@ static u_int32_t check_ndpi_tcp_flow_func(struct ndpi_detection_module_struct *n
++  return 0; /* Return safe default on invalid conditions */

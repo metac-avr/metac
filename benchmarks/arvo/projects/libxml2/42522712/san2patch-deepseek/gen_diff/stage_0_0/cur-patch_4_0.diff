@@ -1,0 +1,25 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index b8b6bd23..be3af64a 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -3303 +3303,2 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	}
++
++ 	}
+@@ -3305,4 +3306,12 @@ htmlParseExternalID(htmlParserCtxtPtr ctxt, xmlChar **publicID) {
+-	URI = htmlParseSystemLiteral(ctxt);
+-	if (URI == NULL) {
+-	    htmlParseErr(ctxt, XML_ERR_URI_REQUIRED,
+-	                 "htmlParseExternalID: SYSTEM, no URI\n", NULL, NULL);
++        {
++            const xmlChar *save = CUR_PTR;
++            URI = htmlParseSystemLiteral(ctxt);
++            if (URI == NULL) {
++                htmlParseErr(ctxt, XML_ERR_URI_REQUIRED,
++                             "htmlParseExternalID: SYSTEM, no URI\n", NULL, NULL);
++            } else if ((URI - save) < 0 || (size_t)(URI - save) > (size_t)(ctxt->input->end - save)) {
++                htmlParseErr(ctxt, XML_ERR_INTERNAL_ERROR,
++                             "htmlParseExternalID: invalid SYSTEM URI\n", NULL, NULL);
++                xmlFree(URI);
++                URI = NULL;
++            }

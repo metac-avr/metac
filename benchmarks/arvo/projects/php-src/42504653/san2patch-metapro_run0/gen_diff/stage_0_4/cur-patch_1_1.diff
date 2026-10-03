@@ -1,0 +1,66 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..a16b9f50b77 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1680,0 +1681,24 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
++{
++	Bucket *p, *end;
++
++	IS_CONSISTENT(ht);
++	HT_ASSERT_RC1(ht);
++
++	if (ht->nNumUsed) {
++		if (HT_HAS_STATIC_KEYS_ONLY(ht)) {
++			for (p = ht->arData, end = p + ht->nNumUsed; p != end; p++) {
++				if (Z_TYPE(p->val) == IS_UNDEF) continue;
++				if (Z_TYPE(p->val) <= IS_FALSE) continue;
++				zval_ptr_dtor_nogc(&p->val);
++			}
++		} else {
++			for (p = ht->arData, end = p + ht->nNumUsed; p != end; p++) {
++				if (Z_TYPE(p->val) == IS_UNDEF) continue;
++				if (Z_TYPE(p->val) <= IS_FALSE) continue;
++				zval_ptr_dtor_nogc(&p->val);
++				if (p->key) {
++					zend_string_release(p->key);
++				}
++			}
++		}
+@@ -1683,0 +1708 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
++	ht = NULL;
+@@ -1688,5 +1712,0 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-
+-ZEND_API void ZEND_FASTCALL zend_hash_clean(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..08cb6a15593 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -24,8 +23,0 @@
+-#include "zend_types.h"
+-#include "zend_gc.h"
+-
+-BEGIN_EXTERN_C()
+-
+-ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p);
+-ZEND_API void ZEND_FASTCALL zval_copy_ctor_func(zval *zvalue);
+-
+@@ -35,7 +26,0 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-		rc_dtor_func(Z_COUNTED_P(zval_ptr));
+-	}
+-}
+-
+-static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-{
+-	if (Z_REFCOUNTED_P(zval_ptr)) {
+@@ -43 +28 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		if (!GC_DELREF(ref)) {
++		if (ref != NULL) {
+@@ -45 +30,3 @@ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr)
+-		} else {
++		}
++	}
++}		} else {

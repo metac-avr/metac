@@ -1,0 +1,32 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..b31641cfaff 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2022,3 +2022,12 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
+-	value = zend_assign_to_variable(property_val, &tmp, IS_TMP_VAR, EX_USES_STRICT_TYPES());
+-	if (result) {
+-		ZVAL_COPY_DEREF(result, value);
++	/* Fixed: Check if value is valid before assignment to prevent use-after-free */
++	if (value && Z_TYPE_P(value) != IS_UNDEF) {
++		value = zend_assign_to_variable(property_val, &tmp, IS_TMP_VAR, EX_USES_STRICT_TYPES());
++		if (result) {
++			ZVAL_COPY_DEREF(result, value);
++		}
++	} else {
++		zval_ptr_dtor(&tmp);
++		if (result) {
++			ZVAL_NULL(result);
++		}
++		return;
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..913ac449eed 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -64,0 +65,2 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Fixed CWE-416: Use After Free - Validate pointer before access */
++	ZEND_ASSERT(str != NULL);
+@@ -77 +78,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

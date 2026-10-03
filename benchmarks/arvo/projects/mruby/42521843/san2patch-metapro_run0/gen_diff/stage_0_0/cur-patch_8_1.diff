@@ -1,0 +1,43 @@
+diff --git a/src/class.c b/src/class.c
+index 180d66c1a..a83be3572 100644
+--- a/src/class.c
++++ b/src/class.c
+@@ -144 +144 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-
++ 
+@@ -150,0 +151,4 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++  
++  /* Validate memory layout to prevent expired pointer dereference */
++  if (t->ptr == NULL) return 0;
++  
+@@ -155 +159 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-  if (pos < t->alloc) {
++  if (pos < t->alloc && pos >= 0) {  /* Add array bounds validation */
+@@ -157,5 +161,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-    if (key) {
+-      if (MT_KEY_SYM(key) == sym) {
+-        *pp = vals[pos];
+-        return key;
+-      }
++    if (key && MT_KEY_SYM(key) == sym) {  /* Null check key before use */
++      *pp = vals[pos];
++      return key;
+@@ -166,0 +169 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (pos >= t->alloc) return 0;  /* Prevent buffer overflow */
+@@ -167,0 +171 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
++    if (key == 0) return 0;  /* Early exit for null key */
+@@ -169 +173,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      *pp = vals[pos];
++      if (pos >= 0) {  /* Additional position validation */
++        *pp = vals[pos];
+@@ -171,3 +176,3 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      if (pos < 0x100) {
+-        mt_cache[cpos] = pos;
+-      }
++        if (pos < 0x100) {
++          mt_cache[cpos] = pos;
++        }
+@@ -175 +180,2 @@ mt_get(mrb_state *mrb, mt_tbl *t, mrb_sym sym, union mt_ptr *pp)
+-      return key;
++        return key;
++      }

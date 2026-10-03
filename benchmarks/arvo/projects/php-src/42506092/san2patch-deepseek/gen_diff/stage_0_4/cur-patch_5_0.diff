@@ -1,0 +1,16 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..728c77b90ac 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -730,2 +730,9 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-			hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
+-			goto num_index;
++			{
++				zend_long safe_hval;
++				safe_hval = zend_dval_to_lval_safe(Z_DVAL_P(dim));
++				if (UNEXPECTED(EG(exception))) {
++					return NULL;
++				}
++				hval = safe_hval;
++				goto num_index;
++			}

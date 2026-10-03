@@ -1,0 +1,28 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..91ad1444d3 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2046 +2046,2 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-        write_frame_8(s, tile, picture, 8);
++        if ((tile->comp[0].x1 - tile->comp[0].x0) * (tile->comp[0].y1 - tile->comp[0].y0) <= picture->linesize[0] * picture->height)
++            write_frame_8(s, tile, picture, 8);
+@@ -2053 +2054,2 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-        write_frame_16(s, tile, picture, precision);
++        if ((tile->comp[0].x1 - tile->comp[0].x0) * (tile->comp[0].y1 - tile->comp[0].y0) <= picture->linesize[0] * picture->height)
++            write_frame_16(s, tile, picture, precision);
+@@ -2498,0 +2501,15 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
++     }
++
++    // Validate multiplication to prevent integer overflow
++    if (s->numXtiles > 0 && s->numYtiles > 0) {
++        if (s->numXtiles > INT_MAX / s->numYtiles) {
++            av_log(avctx, AV_LOG_ERROR, "Tile count overflow\n");
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }
++        int tile_count = s->numXtiles * s->numYtiles;
++        if (tile_count <= 0) {
++            av_log(avctx, AV_LOG_ERROR, "Invalid tile count\n");
++            ret = AVERROR_INVALIDDATA;
++            goto end;
++        }

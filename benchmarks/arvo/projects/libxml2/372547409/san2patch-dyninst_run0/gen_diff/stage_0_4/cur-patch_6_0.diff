@@ -1,0 +1,29 @@
+diff --git a/valid.c b/valid.c
+index f9f26d7f..a223a1ee 100644
+--- a/valid.c
++++ b/valid.c
+@@ -1597,0 +1598,2 @@ xmlFreeAttribute(xmlAttributePtr attr) {
++    /* Mark attribute as freed to prevent use-after-free */
++    attr->atype = XML_ATTRIBUTE_DECL; /* Reuse field to mark as invalid */
+@@ -6215 +6217,3 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-        ret &= xmlValidateOneElement(ctxt, doc, elem);
++        if (elem != NULL) {
++            ret &= xmlValidateOneElement(ctxt, doc, elem);
++        }
+@@ -6220,7 +6224,9 @@ xmlValidateElement(xmlValidCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr root) {
+-                value = xmlNodeListGetString(doc, attr->children, 0);
+-                if (value == NULL) {
+-                    xmlVErrMemory(ctxt);
+-                    ret = 0;
+-                } else {
+-                    ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
+-                    xmlFree((char *)value);
++                if (attr != NULL) {  /* Check if attribute is still valid */
++                    value = xmlNodeListGetString(doc, attr->children, 0);
++                    if (value == NULL) {
++                        xmlVErrMemory(ctxt);
++                        ret = 0;
++                    } else {
++                        ret &= xmlValidateOneAttribute(ctxt, doc, elem, attr, value);
++                        xmlFree((char *)value);
++                    }

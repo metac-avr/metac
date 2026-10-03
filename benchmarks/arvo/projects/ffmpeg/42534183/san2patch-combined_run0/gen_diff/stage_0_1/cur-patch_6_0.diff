@@ -1,0 +1,34 @@
+diff --git a/libavformat/iamfdec.c b/libavformat/iamfdec.c
+index 28d69b8b3f..25a32375a4 100644
+--- a/libavformat/iamfdec.c
++++ b/libavformat/iamfdec.c
+@@ -394 +394,2 @@ static int iamf_read_header(AVFormatContext *s)
+-    int ret;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     int ret;
+@@ -454,2 +455,7 @@ static int iamf_read_header(AVFormatContext *s)
+-                av_assert0(audio_element);
+-
++                
++                // Validate audio_element before use to prevent null pointer dereference
++                if (!audio_element) {
++                    av_log(s, AV_LOG_ERROR, "Invalid audio element reference\n");
++                    return AVERROR_INVALIDDATA;
++                }
++                
+diff --git a/libavformat/iamf_parse.c b/libavformat/iamf_parse.c
+index feb670180e..3c3254a9f7 100644
+--- a/libavformat/iamf_parse.c
++++ b/libavformat/iamf_parse.c
+@@ -942 +942 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
+-                int sound_system;
++                 int sound_system;
+@@ -944 +944,7 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
+-                av_channel_layout_copy(&submix_layout->sound_system, &ff_iamf_sound_system_map[sound_system].layout);
++                if (sound_system >= 0 && sound_system < FF_ARRAY_ELEMS(ff_iamf_sound_system_map)) {
++                    av_channel_layout_copy(&submix_layout->sound_system, &ff_iamf_sound_system_map[sound_system].layout);
++                } else {
++                    av_log(s, AV_LOG_ERROR, "Invalid sound system index %d\n", sound_system);
++                    ret = AVERROR_INVALIDDATA;
++                    goto fail;
++                }

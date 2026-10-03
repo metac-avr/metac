@@ -1,0 +1,39 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..c4a9b6c20 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -387 +387,2 @@ ulshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-    mpz_t c;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     mpz_t c;
+@@ -395 +396,3 @@ ulshift(mrb_state *mrb, mpz_t *c1, mpz_t *a, size_t n)
+-    c.p[i] = cc;
++    if (i < c.alloc_size) {
++      c.p[i] = cc;
++    }
+@@ -437,4 +440,6 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-        mp_limb2 zz = qhat * y.p[i];
+-        mp_limb2s u = LOW(b)+x.p[i+j]-LOW(zz);
+-        x.p[i+j] = LOW(u);
+-        b = HIGH(b) - HIGH(zz) + HIGH(u);
++        if (i+j < x.alloc_size) { 
++          mp_limb2 zz = qhat * y.p[i];
++          mp_limb2s u = LOW(b)+x.p[i+j]-LOW(zz);
++          x.p[i+j] = LOW(u);
++          b = HIGH(b) - HIGH(zz) + HIGH(u);
++        }
+@@ -442 +447 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if (i+j < x.alloc_size) b += x.p[i+j];
+@@ -447,3 +452,5 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-        c += (mp_limb2)x.p[i+j] + (mp_limb2)y.p[i];
+-        x.p[i+j] = LOW(c);
+-        c = HIGH(c);
++        if (i+j < x.alloc_size) {
++          c += (mp_limb2)x.p[i+j] + (mp_limb2)y.p[i];
++          x.p[i+j] = LOW(c);
++          c = HIGH(c);
++        }
+@@ -453 +460 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < q.alloc_size) q.p[j] = qhat;

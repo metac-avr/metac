@@ -1,0 +1,45 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..8d058fce 100644
+--- a/tree.c
++++ b/tree.c
+@@ -6882 +6882 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	if (prop->children != NULL)
++	if (prop->children != NULL) {
+@@ -6883,0 +6884 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++	}
+@@ -6890,8 +6891,11 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	    prop->children = children;
+-	    prop->last = NULL;
+-	    tmp = prop->children;
+-	    while (tmp != NULL) {
+-		tmp->parent = (xmlNodePtr) prop;
+-		if (tmp->next == NULL)
+-		    prop->last = tmp;
+-		tmp = tmp->next;
++	    /* Validate children pointer before use */
++	    if (children != NULL) {
++	        prop->children = children;
++	        prop->last = NULL;
++	        tmp = prop->children;
++	        while (tmp != NULL) {
++		    tmp->parent = (xmlNodePtr) prop;
++		    if (tmp->next == NULL)
++		        prop->last = tmp;
++		    tmp = tmp->next;
++	        }
+@@ -6904 +6908 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	return(prop);
++return(prop);
+@@ -6907 +6911 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-    * No equal attr found; create a new one.
++     * No equal attr found; create a new one.
+@@ -6908,0 +6913,5 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++    /* Add safety check to prevent expired pointer dereference */
++    if (prop != NULL) {
++        /* Reset child pointers that may have been freed */
++        prop->children = NULL;
++    }
+@@ -6914,2 +6923 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-/**
+- * xmlNodeIsText:
++/** * xmlNodeIsText:

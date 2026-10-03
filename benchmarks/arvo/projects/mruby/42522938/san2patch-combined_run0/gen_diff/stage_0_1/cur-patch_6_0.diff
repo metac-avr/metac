@@ -1,0 +1,28 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..194441463 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -1713 +1713,2 @@ static mrb_value
+-mrb_str_hash_m(mrb_state *mrb, mrb_value self)
++// FIXME: Crash CWE-416: Use After Free
++ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+@@ -1715 +1716,2 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+-  mrb_int key = mrb_str_hash(mrb, self);
++  mrb_value str = mrb_str_dup(mrb, self);
++  mrb_int key = mrb_str_hash(mrb, str);
+@@ -1725,2 +1727 @@ mrb_str_hash_m(mrb_state *mrb, mrb_value self)
+- *  Returns <code>true</code> if <i>str</i> contains the given string or
+- *  character.
++ *  Returns <code>true</code> if <i>str</i> contains the given string or *  character.
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..40820beac 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -343 +343 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++     break;
+@@ -346 +346,3 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-      hash_code_obj = mrb_funcall_argv(mrb, key, MRB_SYM(hash), 0, NULL);
++      mrb_value protected_key = key;
++      mrb_gc_protect(mrb, protected_key);
++      hash_code_obj = mrb_funcall_argv(mrb, protected_key, MRB_SYM(hash), 0, NULL);

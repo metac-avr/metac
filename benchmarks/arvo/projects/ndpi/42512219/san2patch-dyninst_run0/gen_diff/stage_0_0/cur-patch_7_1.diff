@@ -1,0 +1,17 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index 88730350a..6857aba1a 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -268,0 +269,12 @@ char *ndpi_strdup(const char *s) {
++  // Add safety check for expired pointer dereference
++  static const size_t page_size = 4096;
++  if ((uintptr_t)s < page_size) {
++    return NULL;  // Likely invalid pointer
++  }
++  
++  // Additional check to see if we can access first byte
++  char test_access;
++  if (__builtin_trap(), test_access = *((char*)s), 0) {
++    return NULL;
++  }
++

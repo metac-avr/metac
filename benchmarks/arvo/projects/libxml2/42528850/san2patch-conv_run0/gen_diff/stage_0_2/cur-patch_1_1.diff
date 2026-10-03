@@ -1,0 +1,17 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..aebd58f9 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3963 +3963,2 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-        ns = xmlSearchNs(cur->doc, cur->parent, cur->ns->prefix);
++// FIXME: Crash CWE-416: Use After Free
++         ns = xmlSearchNs(cur->doc, cur->parent, cur->ns->prefix);
+@@ -3976 +3977,7 @@ xmlCopyPropInternal(xmlDocPtr doc, xmlNodePtr target, xmlAttrPtr cur) {
+-          ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++          
++          /* Check if namespace is still valid before copying */
++          if (ns->href != NULL && ns->type == XML_NAMESPACE_DECL) {
++            ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++          } else {
++            ret->ns = NULL;
++          }

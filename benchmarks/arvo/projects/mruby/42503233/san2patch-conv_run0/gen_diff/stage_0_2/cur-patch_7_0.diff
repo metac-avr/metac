@@ -1,0 +1,51 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..867804ee1 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -198,0 +199,3 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
++  if (room > MRB_STACK_MAX) {  /* Prevent excessive stack extension */
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
+@@ -202,10 +205 @@ mrb_stack_extend(mrb_state *mrb, mrb_int room)
+-}
+-
+-static inline struct REnv*
+-uvenv(mrb_state *mrb, mrb_int up)
+-{
+-  const struct RProc *proc = mrb->c->ci->proc;
+-  struct REnv *e;
+-
+-  while (up--) {
+-    proc = proc->upper;
++}    proc = proc->upper;
+@@ -479 +473 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++     c = mrb_class(mrb, self);
+@@ -480,0 +475,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    if (argc > MRB_INT_MAX - 3) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "too many arguments");
++    }
+@@ -496,0 +494,3 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      if (n > MRB_INT_MAX - 2) {
++        mrb_raise(mrb, E_ARGUMENT_ERROR, "stack extension overflow");
++      }
+@@ -507 +507,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-        mrb_stack_extend(mrb, p->body.irep->nregs + argc);
++        mrb_int required_regs = p->body.irep->nregs;
++        if (required_regs > MRB_INT_MAX - argc) {
++          mrb_raise(mrb, E_ARGUMENT_ERROR, "stack size overflow");
++        }
++        mrb_stack_extend(mrb, required_regs + argc);
+@@ -515,2 +519,10 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
+-        stack_copy(ci->stack+1, argv, argc);
++      if (argc > 0) {
++        if (ci->stack + 1 + argc <= mrb->c->stend) {
++          stack_copy(ci->stack+1, argv, argc);
++        } else {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack overflow in copy operation");
++        }
++      }
++      if (argc + 1 < 0 || argc + 1 >= mrb->c->stend - ci->stack) {
++        mrb_raise(mrb, E_RUNTIME_ERROR, "stack index out of bounds");
++      }

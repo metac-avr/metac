@@ -1,0 +1,54 @@
+diff --git a/src/lib/ndpi_main.c b/src/lib/ndpi_main.c
+index d66ebc786..3f4c1c6d6 100644
+--- a/src/lib/ndpi_main.c
++++ b/src/lib/ndpi_main.c
+@@ -246,5 +246,15 @@ void ndpi_free(void *ptr) {
+-    if(ptr)
+-      _ndpi_free(ptr);
+-  } else {
+-    if(ptr)
+-      free(ptr);
++    if(ptr && ptr != NULL) {
++      static void* last_freed = NULL;
++      if(ptr != last_freed) { // Prevent double free
++        _ndpi_free(ptr);
++        last_freed = ptr;
++      }
++    }
++   } else {
++    if(ptr && ptr != NULL) {
++      static void* last_freed = NULL;
++      if(ptr != last_freed) { // Prevent double free
++        free(ptr);
++        last_freed = ptr;
++      }
++    }
+@@ -8215,0 +8226 @@ int ndpi_match_impossible_bigram(const char *str) {
++// ****************************************************** //
+@@ -8217,8 +8228,2 @@ int ndpi_match_impossible_bigram(const char *str) {
+-int ndpi_match_trigram(const char *str) {
+-  return ndpi_match_xgram(trigrams_bitmap, 3, str);
+-}
+-
+-
+-/* ****************************************************** */
+-
+-void ndpi_free_flow(struct ndpi_flow_struct *flow) {
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++ void ndpi_free_flow(struct ndpi_flow_struct *flow) {
+@@ -8226 +8231,5 @@ void ndpi_free_flow(struct ndpi_flow_struct *flow) {
+-    ndpi_free_flow_data(flow);
++    // Prevent double-free by checking if flow data exists
++    if(flow->__ndpi_flow_data_used) {
++      ndpi_free_flow_data(flow);
++      flow->__ndpi_flow_data_used = 0; // Mark as freed
++    }
+@@ -8231,7 +8240 @@ void ndpi_free_flow(struct ndpi_flow_struct *flow) {
+-/* ****************************************************** */
+-
+-char *ndpi_revision() {
+-  return(NDPI_GIT_RELEASE);
+-}
+-
+-/* ****************************************************** */
++// ****************************************************** ///* ****************************************************** */

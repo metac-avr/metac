@@ -1,0 +1,17 @@
+diff --git a/libavcodec/speedhq.c b/libavcodec/speedhq.c
+index 4cfd4ce73d..bffb1b7dcf 100644
+--- a/libavcodec/speedhq.c
++++ b/libavcodec/speedhq.c
+@@ -479,2 +479,8 @@ static int decode_speedhq_field(const SHQContext *s, const uint8_t *buf, int buf
+-
+-    if (s->subsampling != SHQ_SUBSAMPLING_444 && (frame->width & 15))
++ 
++    if (s->subsampling != SHQ_SUBSAMPLING_444 && (frame->width & 15)) {
++        // Validate that processing border won't exceed buffer boundaries
++        int remaining_pixels = (frame->width & 15);
++        int max_safe_offset = remaining_pixels * sizeof(uint8_t);
++        if (max_safe_offset > 0 && dest_a + max_safe_offset > frame->data[0] + frame->linesize[0] * frame->height) {
++            return AVERROR_INVALIDDATA;
++        }
+@@ -481,0 +488 @@ static int decode_speedhq_field(const SHQContext *s, const uint8_t *buf, int buf
++    }

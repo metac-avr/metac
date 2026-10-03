@@ -1,0 +1,25 @@
+diff --git a/src/string.c b/src/string.c
+index 1b5aecff2..e82ba45eb 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -138,2 +138,3 @@ str_new(mrb_state *mrb, const char *p, mrb_int len)
+-{
+-  if (RSTR_EMBEDDABLE_P(len)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
++  if (len >= 0 && RSTR_EMBEDDABLE_P(len)) {
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 08c22b5eb..21293eb53 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -817 +817,2 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
+-  if (count == -1)
++  if (count == -1) {
++    if (slen > MRB_INT_MAX / 2) return 0; // Prevent integer overflow
+@@ -818,0 +820,4 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
++  }
++
++  // Validate count to prevent buffer overflow
++  if (count < 0 || count > MRB_INT_MAX) return 0;
+@@ -825,0 +831 @@ unpack_hex(mrb_state *mrb, const void *src, int slen, mrb_value ary, int count,
++    if (sptr >= (const char *)src + slen) break; // Bounds check

@@ -1,0 +1,106 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..486a7d39ec9 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2325,42 +2325 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-	if (EXPECTED(Z_TYPE_P(container) == IS_ARRAY)) {
+-try_array:
+-		SEPARATE_ARRAY(container);
+-fetch_from_array:
+-		if (dim == NULL) {
+-			retval = zend_hash_next_index_insert(Z_ARRVAL_P(container), &EG(uninitialized_zval));
+-			if (UNEXPECTED(retval == NULL)) {
+-				zend_cannot_add_element();
+-				ZVAL_UNDEF(result);
+-				return;
+-			}
+-		} else {
+-			retval = zend_fetch_dimension_address_inner(Z_ARRVAL_P(container), dim, dim_type, type EXECUTE_DATA_CC);
+-			if (UNEXPECTED(!retval)) {
+-				/* This may fail without throwing if the array was modified while throwing an
+-				 * undefined index error. */
+-				ZVAL_NULL(result);
+-				return;
+-			}
+-		}
+-		ZVAL_INDIRECT(result, retval);
+-		return;
+-	} else if (EXPECTED(Z_TYPE_P(container) == IS_REFERENCE)) {
+-		zend_reference *ref = Z_REF_P(container);
+-		container = Z_REFVAL_P(container);
+-		if (EXPECTED(Z_TYPE_P(container) == IS_ARRAY)) {
+-			goto try_array;
+-		} else if (EXPECTED(Z_TYPE_P(container) <= IS_FALSE)) {
+-			if (type != BP_VAR_UNSET) {
+-				if (ZEND_REF_HAS_TYPE_SOURCES(ref)) {
+-					if (UNEXPECTED(!zend_verify_ref_array_assignable(ref))) {
+-						ZVAL_UNDEF(result);
+-						return;
+-					}
+-				}
+-				array_init(container);
+-				goto fetch_from_array;
+-			} else {
+-				goto return_null;
+-			}
+-		}
+-	}
++	zend_fetch_dimension_address_write_helper
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..5d68117a5fb 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1636,52 +1636 @@ ZEND_API void ZEND_FASTCALL zend_hash_destroy(HashTable *ht)
+-ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-{
+-	Bucket *p, *end;
+-
+-	IS_CONSISTENT(ht);
+-	HT_ASSERT(ht, GC_REFCOUNT(ht) <= 1);
+-
+-	/* break possible cycles */
+-	GC_REMOVE_FROM_BUFFER(ht);
+-	GC_TYPE_INFO(ht) = GC_NULL /*???| (GC_WHITE << 16)*/;
+-
+-	if (ht->nNumUsed) {
+-		/* In some rare cases destructors of regular arrays may be changed */
+-		if (UNEXPECTED(ht->pDestructor != ZVAL_PTR_DTOR)) {
+-			zend_hash_destroy(ht);
+-			goto free_ht;
+-		}
+-
+-		p = ht->arData;
+-		end = p + ht->nNumUsed;
+-		SET_INCONSISTENT(HT_IS_DESTROYING);
+-
+-		if (HT_HAS_STATIC_KEYS_ONLY(ht)) {
+-			do {
+-				i_zval_ptr_dtor(&p->val);
+-			} while (++p != end);
+-		} else if (HT_IS_WITHOUT_HOLES(ht)) {
+-			do {
+-				i_zval_ptr_dtor(&p->val);
+-				if (EXPECTED(p->key)) {
+-					zend_string_release_ex(p->key, 0);
+-				}
+-			} while (++p != end);
+-		} else {
+-			do {
+-				if (EXPECTED(Z_TYPE(p->val) != IS_UNDEF)) {
+-					i_zval_ptr_dtor(&p->val);
+-					if (EXPECTED(p->key)) {
+-						zend_string_release_ex(p->key, 0);
+-					}
+-				}
+-			} while (++p != end);
+-		}
+-	} else if (EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED)) {
+-		goto free_ht;
+-	}
+-	SET_INCONSISTENT(HT_DESTROYED);
+-	efree(HT_GET_DATA_ADDR(ht));
+-free_ht:
+-	zend_hash_iterators_remove(ht);
+-	FREE_HASHTABLE(ht);
+-}
++ZEND_API void zend_array_destroy

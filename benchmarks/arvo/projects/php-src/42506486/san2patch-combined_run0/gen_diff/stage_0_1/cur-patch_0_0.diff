@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index 7b9f8b849dc..d0fe7472f84 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -389 +389,5 @@ void shutdown_executor(void) /* {{{ */
+-	} zend_end_try();
++// FIXME: Crash CWE-416: Use After Free
++ 	} zend_end_try();
++
++	/* Ensure garbage collection completes before hash table destruction to prevent use-after-free */
++	zend_gc_collect_cycles();
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..25d39340912 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1374 +1374,6 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}
++	}
++
++	/* Ensure garbage collection is completed before proceeding with hash table element deletion */
++	if (GC_G(gc_active)) {
++		gc_collect_cycles();

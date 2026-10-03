@@ -1,0 +1,56 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 25d7e2cc6..a48b0fbd4 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -2786,5 +2786,11 @@ u_int32_t ndpi_get_flow_error_code(struct ndpi_flow_struct *flow) {
+-int ndpi_vsnprintf(char * str, size_t size, char const * format, va_list va_args)
+-{
+-#ifdef WIN32
+-  if((str == NULL) || (size == 0) || (format == NULL)) {
+-    return -1;
++static inline int ndpi_extend_serializer_buffer(ndpi_private_serializer_buffer *buffer, u_int32_t min_len) {
++  u_int32_t new_size;
++  void *r;
++
++  if(min_len < NDPI_SERIALIZER_DEFAULT_BUFFER_INCR) {
++    if(buffer->initial_size < NDPI_SERIALIZER_DEFAULT_BUFFER_INCR) {
++      if(min_len < buffer->initial_size)
++        min_len = buffer->initial_size;
++    } else {
++      min_len = NDPI_SERIALIZER_DEFAULT_BUFFER_INCR;
++    }
+@@ -2793 +2799,6 @@ int ndpi_vsnprintf(char * str, size_t size, char const * format, va_list va_args
+-  int ret = vsnprintf_s(str, size, _TRUNCATE, format, va_args);
++  new_size = buffer->size + min_len;
++  /* Ensure minimum buffer increment to avoid insufficient allocation */
++  if(new_size < buffer->size + NDPI_SERIALIZER_DEFAULT_BUFFER_INCR)
++    new_size = buffer->size + NDPI_SERIALIZER_DEFAULT_BUFFER_INCR;
++    
++  new_size = ((new_size / 4) + 1) * 4; /* required by zmq encryption */
+@@ -2795,8 +2806,9 @@ int ndpi_vsnprintf(char * str, size_t size, char const * format, va_list va_args
+-  if(ret < 0) {
+-    return size;
+-  } else {
+-    return ret;
+-  }
+-#else
+-  return vsnprintf(str, size, format, va_args);
+-#endif
++  r = ndpi_realloc((void *) buffer->data, buffer->size, new_size);
++
++  if(r == NULL)
++    return(-1);
++
++  buffer->data = r;
++  buffer->size = new_size;
++
++  return(0);
+diff --git a/src/lib/ndpi_serializer.c b/src/lib/ndpi_serializer.c
+index 9a27add4d..452cfc564 100644
+--- a/src/lib/ndpi_serializer.c
++++ b/src/lib/ndpi_serializer.c
+@@ -277,0 +278,4 @@ static inline int ndpi_extend_serializer_buffer(ndpi_private_serializer_buffer *
++  /* Ensure minimum buffer increment to avoid insufficient allocation */
++  if(new_size < buffer->size + NDPI_SERIALIZER_DEFAULT_BUFFER_INCR)
++    new_size = buffer->size + NDPI_SERIALIZER_DEFAULT_BUFFER_INCR;
++    

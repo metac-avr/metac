@@ -1,0 +1,28 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 6d5bdd8a..9caedc9c 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -421 +421,2 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-     */
++// Buffer boundary check added to prevent out-of-bounds read
++      */
+@@ -423 +424,5 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-    c = *cur;
++    if (ctxt->input->cur >= ctxt->input->end) {
++        c = 0;
++    } else {
++        c = *cur;
++    }
+@@ -3167 +3172,2 @@ htmlParseCharDataInternal(htmlParserCtxtPtr ctxt, int readahead) {
+-static void
++// Fixed CWE-125: Out-of-bounds Read - Added safety checks for context validity
++ static void
+@@ -3169 +3175,3 @@ htmlParseCharData(htmlParserCtxtPtr ctxt) {
+-    htmlParseCharDataInternal(ctxt, 0);
++    if (ctxt && ctxt->input && ctxt->input->cur && ctxt->input->base) {
++        htmlParseCharDataInternal(ctxt, 0);
++    }
+@@ -3179,2 +3187 @@ htmlParseCharData(htmlParserCtxtPtr ctxt) {
+- * [75] ExternalID ::= 'SYSTEM' S SystemLiteral
+- *                   | 'PUBLIC' S PubidLiteral S SystemLiteral
++ * [75] ExternalID ::= 'SYSTEM' S SystemLiteral *                   | 'PUBLIC' S PubidLiteral S SystemLiteral

@@ -1,0 +1,34 @@
+diff --git a/src/vm.c b/src/vm.c
+index 1c59d4406..873294bf4 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -179,0 +180,8 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* Add bounds checking before memory allocation */
++  if (size > MRB_STACK_MAX) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
++  if (size > SIZE_MAX / sizeof(mrb_value)) {
++    mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++  }
++
+@@ -480,0 +489,5 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++    
++    // Add comprehensive bounds checking
++    if (argc > 0 && (argc > MRB_INT_MAX / sizeof(mrb_value) || argc > MRB_INT_MAX - 3)) {
++      mrb_raise(mrb, E_ARGUMENT_ERROR, "argument count too large");
++    }
+@@ -506,0 +520,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++        // Add bounds checking for proc execution
++        if (p->body.irep && (p->body.irep->nregs > MRB_INT_MAX - argc)) {
++          mrb_raise(mrb, E_RUNTIME_ERROR, "stack size would overflow");
++        }
+@@ -515 +532,6 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       if (argc > 0) {
++        // Prevent out-of-bounds write during stack copy
++        if (ci->stack + 1 + argc >= mrb->c->stend) {
++          mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++        }
+@@ -516,0 +539 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      }

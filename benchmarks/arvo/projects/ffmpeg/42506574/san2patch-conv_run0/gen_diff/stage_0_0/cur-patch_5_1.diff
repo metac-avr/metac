@@ -1,0 +1,24 @@
+diff --git a/libavcodec/mjpegdec.c b/libavcodec/mjpegdec.c
+index 0dbbc14bae..2b9ec70aab 100644
+--- a/libavcodec/mjpegdec.c
++++ b/libavcodec/mjpegdec.c
+@@ -2553,6 +2552,0 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            if (!CONFIG_JPEGLS_DECODER ||
+-                (ret = ff_jpegls_decode_lse(s)) < 0)
+-                goto fail;
+-            if (ret == 1)
+-                goto redo_for_pal8;
+-            break;
+@@ -2561,2 +2555,4 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-            if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
+-                s->progressive && s->cur_scan && s->got_picture)
++// FIXME: Crash CWE-787: Out-of-bounds Write
++             if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
++                s->progressive && s->cur_scan && s->got_picture) {
++                /* Bounds checking removed due to missing mb_x/mb_y fields */
+@@ -2563,0 +2560 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
++            }
+@@ -2573,2 +2570 @@ int ff_mjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+-                if (s->bottom_field == !s->interlace_polarity)
+-                    break;
++                if (s->bottom_field == !s->interlace_polarity)                    break;

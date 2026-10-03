@@ -1,0 +1,12 @@
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..0cccc731764 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202 +202,6 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
++// Fixed: Nullify references before freeing to prevent use-after-free
++		if (EG(user_error_handler) && Z_OBJ_P(EG(user_error_handler)) == object) {
++			zval_ptr_dtor(EG(user_error_handler));
++			EG(user_error_handler) = NULL;
++		}
++ 		ptr = ((char*)object) - object->handlers->offset;

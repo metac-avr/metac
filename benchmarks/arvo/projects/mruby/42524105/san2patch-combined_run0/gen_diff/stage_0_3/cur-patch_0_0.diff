@@ -1,0 +1,29 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..02c1a301e 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -213,0 +214,5 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
++    if (shared->flags & MRB_STR_HASH_IN_PROGRESS) {
++      /* Defer freeing until hash computation is complete */
++      shared->flags |= MRB_STR_FREE_ON_HASH_COMPLETE;
++      return;
++    }
+@@ -224 +228,0 @@ str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
+-
+diff --git a/src/gc.c b/src/gc.c
+index 823297612..143cfc87e 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -824 +824,2 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -826 +827,7 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-    mrb_gc_free_str(mrb, (struct RString*)obj);
++    /* Check if string is being used in hash computation before freeing */
++    if (((struct RString*)obj)->flags & 0x80000000) {  /* hash computation flag */
++      /* Defer freeing until hash computation is complete */
++      ((struct RString*)obj)->flags |= 0x40000000;  /* deferred free flag */
++    } else {
++      mrb_gc_free_str(mrb, (struct RString*)obj);
++    }

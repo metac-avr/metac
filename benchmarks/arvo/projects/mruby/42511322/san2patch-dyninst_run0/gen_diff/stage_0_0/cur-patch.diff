@@ -1,0 +1,27 @@
+diff --git a/src/vm.c b/src/vm.c
+index bff02877a..d88d05c8f 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -189,0 +190,10 @@ stack_extend_alloc(mrb_state *mrb, mrb_int room)
++  /* update ci stack pointers */
++  mrb_callinfo *ci = mrb->c->ci;
++  ptrdiff_t delta = newstack - oldbase;
++  while (ci >= mrb->c->cibase) {
++    if (ci->stack) {
++      ci->stack += delta;
++    }
++    ci--;
++  }
++
+@@ -525 +535,2 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-    c = mrb_class(mrb, self);
++// FIXME: Crash CWE-416: Use After Free
++     c = mrb_class(mrb, self);
+@@ -534 +545,4 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
+-      if (argc > 0)
++      if (argc > 0) {
++        if (voff >= 0) {
++          argv = mrb->c->stbase + voff;
++        }
+@@ -535,0 +550 @@ mrb_funcall_with_block(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc
++      }

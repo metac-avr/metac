@@ -1,0 +1,47 @@
+diff --git a/libavformat/jpegxl_anim_dec.c b/libavformat/jpegxl_anim_dec.c
+index 6ea6c46d8f..0f696554d0 100644
+--- a/libavformat/jpegxl_anim_dec.c
++++ b/libavformat/jpegxl_anim_dec.c
+@@ -187 +187,2 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    }
++// FIXME: Crash CWE-125: Out-of-bounds Read
++     }
+@@ -201,0 +203,4 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
++    
++    // Check if there are enough bits available before reading
++    if (get_bits_left(gb) < 2)
++        return AVERROR_INVALIDDATA;
+@@ -203 +208,10 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    tb.den = (const uint32_t[]){100, 1000, 1, 1}[ctrl] + get_bits_long(gb, (const uint32_t[]){0, 0, 10, 30}[ctrl]);
++    
++    // Check if there are enough bits available before reading tb.den
++    int tb_den_bits = (const uint32_t[]){0, 0, 10, 30}[ctrl];
++    if (get_bits_left(gb) < tb_den_bits)
++        return AVERROR_INVALIDDATA;
++    tb.den = (const uint32_t[]){100, 1000, 1, 1}[ctrl] + get_bits_long(gb, tb_den_bits);
++    
++    // Check if there are enough bits available before reading tb.num
++    if (get_bits_left(gb) < 2)
++        return AVERROR_INVALIDDATA;
+@@ -205 +219,6 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
+-    tb.num = (const uint32_t[]){1, 1001, 1, 1}[ctrl] + get_bits_long(gb, (const uint32_t[]){0, 0, 8, 10}[ctrl]);
++    
++    // Check if there are enough bits available before reading tb.num
++    int tb_num_bits = (const uint32_t[]){0, 0, 8, 10}[ctrl];
++    if (get_bits_left(gb) < tb_num_bits)
++        return AVERROR_INVALIDDATA;
++    tb.num = (const uint32_t[]){1, 1001, 1, 1}[ctrl] + get_bits_long(gb, tb_num_bits);
+diff --git a/libavcodec/get_bits.h b/libavcodec/get_bits.h
+index 65dc080ddb..8899ad61ce 100644
+--- a/libavcodec/get_bits.h
++++ b/libavcodec/get_bits.h
+@@ -327,0 +328,9 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
++// Prevent out-of-bounds read by validating bit availability
++    if (n <= 0 || n > 25) {
++        av_log(NULL, AV_LOG_ERROR, "Invalid bit count requested: %d\n", n);
++        return 0;
++    }
++    if (get_bits_left(s) < n) {
++        av_log(NULL, AV_LOG_ERROR, "Not enough bits left in buffer for request: %d\n", n);
++        return 0;
++    }

@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index fe551c38820..0bb9aab56f7 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,3 +1208,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+@@ -1216,0 +1214 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -1219,12 +1217,6 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	return GC_DELREF(Z_COUNTED_P(pz));
+-}
+-
+-#if SIZEOF_SIZE_T == 4
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++	zend_refcounted *ref = Z_COUNTED_P(pz);
++	if (ref && ref != (zend_refcounted *)0xdeadbeef) {
++		return GC_DELREF(ref);
++	}
++	return 0;
++}#elif SIZEOF_SIZE_T == 8
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index f2eb205d53c..cc07bdb1b35 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3109,0 +3110 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -3111 +3112 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-				if (!zend_is_smart_branch(throw_op)) {
++				if (!zend_is_smart_branch(throw_op) && throw_op && throw_op->result.var) {

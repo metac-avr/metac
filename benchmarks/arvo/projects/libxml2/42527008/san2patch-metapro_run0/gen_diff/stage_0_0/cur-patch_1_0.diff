@@ -1,0 +1,25 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index ba3eb16d..30379900 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -351,0 +352 @@ htmlFindEncoding(xmlParserCtxtPtr ctxt) {
++    xmlChar *encoding;
+@@ -383 +384,8 @@ htmlFindEncoding(xmlParserCtxtPtr ctxt) {
+-    return(xmlStrndup(start, cur - start));
++    
++    /* Create encoding copy and store in context to avoid premature freeing */
++    encoding = xmlStrndup(start, cur - start);
++    if (ctxt->encoding != NULL) {
++        xmlFree((xmlChar *) ctxt->encoding);
++    }
++    ctxt->encoding = encoding;
++    return(encoding);
+@@ -446 +454 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-        } else {
++         } else {
+@@ -456,0 +465,2 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
++                /* Store encoding name in context to prevent use-after-free */
++                ctxt->lastError.message = xmlStrdup(guess);
+@@ -458 +468 @@ htmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
+-                             "Unsupported encoding %s", guess, NULL);
++                             "Unsupported encoding %s", ctxt->lastError.message, NULL);

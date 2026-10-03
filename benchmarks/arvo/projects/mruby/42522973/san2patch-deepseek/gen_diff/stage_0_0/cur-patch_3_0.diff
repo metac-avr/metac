@@ -1,0 +1,13 @@
+diff --git a/src/variable.c b/src/variable.c
+index 3088783ec..415b7eace 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -264 +264,2 @@ void
+-mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
++// FIXME: Crash CWE-416: Use After Free
++ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+@@ -266 +267,3 @@ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+-  mark_tbl(mrb, obj->iv);
++  if (mrb_gc_object_is_live(mrb, (struct RBasic*)obj) && !mrb_gc_object_is_dead(mrb, (struct RBasic*)obj) && obj->iv != NULL) {
++    mark_tbl(mrb, obj->iv);
++  }

@@ -1,0 +1,36 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..2285c819 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+@@ -4272,2 +4272,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-	ns = xmlSearchNs(doc, ret, node->ns->prefix);
+-	if (ns == NULL) {
++	 ns = xmlSearchNs(doc, ret, node->ns->prefix);
++	 if (ns == NULL) {
+@@ -4286,2 +4286,6 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		while (root->parent != NULL) root = root->parent;
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		while ((root != NULL) && (root->parent != NULL)) root = root->parent;
++		if (root != NULL) {
++	          ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++                } else {
++                  ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++                }
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..5f843a32 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -1346 +1346,9 @@ xmlTextReaderRead(xmlTextReaderPtr reader) {
+-                    oldnode = NULL;
++                     oldnode = NULL;
++		/* Prevent use-after-free by checking namespace validity */
++                xmlNodePtr cur = tmp;
++                while (cur != NULL) {
++                    if (cur->ns != NULL && cur->ns->_private == NULL) {
++                        cur->ns = NULL; /* Break dangling pointer */
++                    }
++                    cur = cur->children;
++                }

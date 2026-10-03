@@ -1,0 +1,26 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..017a91bccb 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -349,6 +348,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -359,3 +353,9 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-        if ((err = av_reallocp(&s->keyframedata, avpkt->size)) < 0)
+-            return err;
+-        memcpy(s->keyframedata, avpkt->data, avpkt->size);
++        uint8_t *new_keyframedata = av_malloc(avpkt->size);
++        if (!new_keyframedata)
++            return AVERROR(ENOMEM);
++        memcpy(new_keyframedata, avpkt->data, avpkt->size);
++        av_freep(&s->keyframedata);
++        s->keyframedata = new_keyframedata;
++        if (s->zstream) {
++            inflateReset(&s->zstream);
++        }
+@@ -370 +369,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-

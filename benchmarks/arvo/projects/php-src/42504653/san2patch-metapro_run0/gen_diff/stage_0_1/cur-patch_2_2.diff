@@ -1,0 +1,43 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..d09ddbdaf08 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29952,0 +29953,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++		if (IS_CV != IS_UNUSED) {
++			zval *check_ptr = EX_VAR(opline->op1.var);
++			if (check_ptr && Z_TYPE_P(check_ptr) <= IS_FALSE) {
++				zval_ptr_dtor_nogc(check_ptr);
++			}
++		} else {
++			zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++		}
++		/* assign_dim has two opcodes! */
++		ZEND_VM_NEXT_OPCODE_EX(1, 2);
+@@ -29954,7 +29963,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	if (IS_CV != IS_UNUSED) {
+-
+-	}
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+-	/* assign_dim has two opcodes! */
+-	ZEND_VM_NEXT_OPCODE_EX(1, 2);
+-}
+@@ -29962,6 +29965,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA_TMP_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	zval *object_ptr, *orig_object_ptr;
+-	zval *value;
+-	zval *variable_ptr;
++	static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA_TMP_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
++	{
++		USE_OPLINE
++		zval *object_ptr, *orig_object_ptr;
++		zval *value;
++		zval *variable_ptr;
+diff --git a/Zend/zend_variables.h b/Zend/zend_variables.h
+index ea3fd9c5efc..a3be220f598 100644
+--- a/Zend/zend_variables.h
++++ b/Zend/zend_variables.h
+@@ -34 +34 @@ static zend_always_inline void zval_ptr_dtor_nogc(zval *zval_ptr)
+-	if (Z_REFCOUNTED_P(zval_ptr) && !Z_DELREF_P(zval_ptr)) {
++	if (Z_REFCOUNTED_P(zval_ptr) && zval_ptr && !Z_DELREF_P(zval_ptr)) {

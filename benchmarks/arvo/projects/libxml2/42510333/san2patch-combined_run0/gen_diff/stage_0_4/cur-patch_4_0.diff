@@ -1,0 +1,36 @@
+diff --git a/xinclude.c b/xinclude.c
+index 180e70b5..e6383b40 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2218 +2218,2 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-		       "XInclude error: would result in multiple root nodes\n",
++// FIXME: Crash CWE-416: Use After Free
++ 		       "XInclude error: would result in multiple root nodes\n",
+@@ -2220 +2221 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-            xmlFreeNodeList(list);
++            if (list != NULL) xmlFreeNodeList(list);
+@@ -2236 +2237 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-	xmlFreeNode(cur);
++        if (cur != NULL) xmlFreeNode(cur);
+@@ -2251 +2252 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-            xmlFreeNode(child);
++            if (child != NULL) xmlFreeNode(child);
+@@ -2258 +2259 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
+-            xmlFreeNodeList(list);
++            if (list != NULL) xmlFreeNodeList(list);
+diff --git a/tree.c b/tree.c
+index 8077348a..6435d519 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3699,2 +3699,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	xmlFreeNsList((xmlNsPtr) cur);
+-	return;
++    xmlFreeNsList((xmlNsPtr) cur);
++    return;
+@@ -3702 +3702,2 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-    if (cur->doc != NULL) dict = cur->doc->dict;
++// FIXME: Crash CWE-416: Use After Free
++     if (cur != NULL && cur->doc != NULL) dict = cur->doc->dict;
+@@ -3704 +3705 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-        while ((cur->children != NULL) &&
++        while ((cur != NULL && cur->children != NULL) &&

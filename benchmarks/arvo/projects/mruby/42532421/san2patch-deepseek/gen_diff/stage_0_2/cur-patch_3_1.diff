@@ -1,0 +1,19 @@
+diff --git a/src/string.c b/src/string.c
+index 3642dfbe6..7a489b1a1 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -618 +618,13 @@ mrb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long
+-  for (mrb_int i=0; i < n; i+=sizeof(bitint), s0++, s1++) {
++          for (mrb_int i=0; i < n; i+=sizeof(bitint), s0++, s1++) {
++    if ((size_t)(n - i) < sizeof(bitint)) {
++      for (; i < n; i++, s0++, s1++) {
++        if ((char)*s0 == (char)*s1) {
++          const char* substr = (char*)s0 + 1;
++          if (m - 1 <= (size_t)(n - i - 1) &&
++              memcmp(substr, xs + 1, m - 2) == 0) {
++            return i;
++          }
++        }
++      }
++      break;
++    }

@@ -1,0 +1,42 @@
+diff --git a/tree.c b/tree.c
+index e4425f10..a2044f4d 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3800,2 +3800,14 @@ xmlFreeNode(xmlNodePtr cur) {
+-	DICT_FREE(ent->SystemID);
+-	DICT_FREE(ent->ExternalID);
++	if (ent->SystemID != NULL) {
++	    if ((dict == NULL) || 
++	        (!xmlDictOwns(dict, ent->SystemID)))
++	        xmlFree((xmlChar *) ent->SystemID);
++	    else
++	        ent->SystemID = NULL; // Clear reference but don't free
++	}
++	if (ent->ExternalID != NULL) {
++	    if ((dict == NULL) || 
++	        (!xmlDictOwns(dict, ent->ExternalID)))
++	        xmlFree((xmlChar *) ent->ExternalID);
++	    else
++	        ent->ExternalID = NULL; // Clear reference but don't free
++	}
+@@ -3803 +3815,2 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->children != NULL) &&
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     if ((cur->children != NULL) &&
+@@ -3817 +3830,5 @@ xmlFreeNode(xmlNodePtr cur) {
+-	DICT_FREE(cur->content)
++	if ((dict == NULL) || 
++	    (!xmlDictOwns(dict, cur->content)))
++	    xmlFree((xmlChar *) cur->content);
++	else
++	    cur->content = NULL; // Clear reference but don't free
+@@ -3827,2 +3844,7 @@ xmlFreeNode(xmlNodePtr cur) {
+-        (cur->type != XML_COMMENT_NODE))
+-	DICT_FREE(cur->name)
++        (cur->type != XML_COMMENT_NODE)) {
++	if ((dict == NULL) || 
++	    (!xmlDictOwns(dict, cur->name)))
++	    xmlFree((xmlChar *) cur->name);
++	else
++	    cur->name = NULL; // Clear reference but don't free
++    }

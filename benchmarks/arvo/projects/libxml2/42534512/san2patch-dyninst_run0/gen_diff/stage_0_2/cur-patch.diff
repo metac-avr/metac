@@ -1,0 +1,33 @@
+diff --git a/tree.c b/tree.c
+index a8869fd9..f9f74006 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3609,0 +3610,19 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    /*
++	     * Break circular references in node tree before deallocation
++	     * This prevents accessing freed memory through expired pointers
++	     */
++	    if (cur->children != NULL) {
++	        xmlNodePtr next;
++	        xmlNodePtr child = cur->children;
++	        
++	        /* Nullify parent references in all children */
++	        while (child != NULL) {
++	            next = child->next;
++	            child->parent = NULL;
++	            child->next = NULL;
++	            child->prev = NULL;
++	            child = next;
++	        }
++	        cur->children = NULL;
++	    }
++
+@@ -6903,2 +6922,4 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
+-	}
+-	if (prop->children != NULL)
++// FIXME: Crash CWE-416: Use After Free
++ 	}
++	if (prop->children != NULL) {
++	    xmlUnlinkNode(prop->children);
+@@ -6905,0 +6927 @@ xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name,
++	}

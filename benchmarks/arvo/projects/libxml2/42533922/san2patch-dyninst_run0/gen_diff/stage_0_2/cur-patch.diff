@@ -1,0 +1,29 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..77ec4485 100644
+--- a/tree.c
++++ b/tree.c
+@@ -746 +746 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-	    if (xmlStrEqual(prev->prefix, cur->prefix))
++	    if (xmlStrEqualSafe(prev->prefix, cur->prefix))
+@@ -750 +750 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-		if (xmlStrEqual(prev->prefix, cur->prefix))
++		if (xmlStrEqualSafe(prev->prefix, cur->prefix))
+@@ -759 +759 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+-    xmlFreeNs(cur);
++    xmlFreeNsSafe(cur);
+@@ -792,2 +792,9 @@ xmlFreeNs(xmlNsPtr cur) {
+-    if (cur->href != NULL) xmlFree((char *) cur->href);
+-    if (cur->prefix != NULL) xmlFree((char *) cur->prefix);
++    /* Defensive clearing of namespace data before freeing */
++    if (cur->href != NULL) {
++        xmlFree((char *) cur->href);
++        cur->href = NULL;
++    }
++    if (cur->prefix != NULL) {
++        xmlFree((char *) cur->prefix);
++        cur->prefix = NULL;
++    }
+@@ -804,2 +811 @@ void
+-xmlFreeNsList(xmlNsPtr cur) {
+-    xmlNsPtr next;
++xmlFreeNsList(xmlNsPtr cur) {    xmlNsPtr next;

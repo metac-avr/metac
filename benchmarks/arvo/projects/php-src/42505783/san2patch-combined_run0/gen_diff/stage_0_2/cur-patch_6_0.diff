@@ -1,0 +1,18 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..a73c64219a9 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -1201 +1201,2 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -1212,0 +1214,5 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
++	/* Pin the string to prevent garbage collection during JIT execution */
++	if (!ZSTR_IS_INTERNED(op1_str)) {
++		GC_PIN(op1_str);
++	}
++
+@@ -1219,0 +1226 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
++				GC_UNPIN(op1_str); /* Unpin after reuse */
+@@ -1222,0 +1230 @@ static void ZEND_FASTCALL zend_jit_fast_concat_tmp_helper(zval *result, zval *op
++			GC_UNPIN(op1_str); /* Unpin after refcount decrement */

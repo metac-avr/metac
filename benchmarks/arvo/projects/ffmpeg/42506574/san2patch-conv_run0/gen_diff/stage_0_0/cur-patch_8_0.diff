@@ -1,0 +1,54 @@
+diff --git a/libavcodec/idctdsp.c b/libavcodec/idctdsp.c
+index 846ed0b0f8..2775c1d80b 100644
+--- a/libavcodec/idctdsp.c
++++ b/libavcodec/idctdsp.c
+@@ -88 +88,2 @@ void ff_put_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-    /* read the pixels */
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     /* read the pixels */
+@@ -90,8 +91,11 @@ void ff_put_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-        pixels[0] = av_clip_uint8(block[0]);
+-        pixels[1] = av_clip_uint8(block[1]);
+-        pixels[2] = av_clip_uint8(block[2]);
+-        pixels[3] = av_clip_uint8(block[3]);
+-        pixels[4] = av_clip_uint8(block[4]);
+-        pixels[5] = av_clip_uint8(block[5]);
+-        pixels[6] = av_clip_uint8(block[6]);
+-        pixels[7] = av_clip_uint8(block[7]);
++        // Prevent out-of-bounds write by checking available space
++        if (line_size >= 0) {  // Basic sanity check
++            pixels[0] = av_clip_uint8(block[0]);
++            pixels[1] = av_clip_uint8(block[1]);
++            pixels[2] = av_clip_uint8(block[2]);
++            pixels[3] = av_clip_uint8(block[3]);
++            pixels[4] = av_clip_uint8(block[4]);
++            pixels[5] = av_clip_uint8(block[5]);
++            pixels[6] = av_clip_uint8(block[6]);
++            pixels[7] = av_clip_uint8(block[7]);
++        }
+@@ -99,2 +103,9 @@ void ff_put_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+-        pixels += line_size;
+-        block  += 8;
++        // Only advance if we won't go out of bounds on next iteration
++        if (i < 7 && line_size > 0) {
++            pixels += line_size;
++            block  += 8;
++        } else if (i == 7) {
++            // Last iteration - always advance
++            pixels += line_size;
++            block  += 8;
++        }
+diff --git a/libavcodec/jrevdct.c b/libavcodec/jrevdct.c
+index a1a0f571ad..9f6e2ff939 100644
+--- a/libavcodec/jrevdct.c
++++ b/libavcodec/jrevdct.c
+@@ -1161 +1161,2 @@ void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-{
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ {
+@@ -1163 +1164,4 @@ void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
+-    ff_put_pixels_clamped_c(block, dest, line_size);
++    // Defensive check to ensure valid parameters before memory operations
++    if (dest && block && line_size >= 8) {  // Minimum line size check for 8x8 blocks
++        ff_put_pixels_clamped_c(block, dest, line_size);
++    }

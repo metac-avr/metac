@@ -1,0 +1,67 @@
+diff --git a/Zend/zend.c b/Zend/zend.c
+index 46da1ebd21e..69289c76b84 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1564,2 +1564,8 @@ static ZEND_COLD void get_filename_lineno(int type, zend_string **filename, uint
+-				*filename = zend_get_executed_filename_ex();
+-				*lineno = zend_get_executed_lineno();
++				zend_string *temp_filename = zend_get_executed_filename_ex();
++				if (temp_filename) {
++					*filename = temp_filename;
++					*lineno = zend_get_executed_lineno();
++				} else {
++					*filename = NULL;
++					*lineno = 0;
++				}
+@@ -1595,10 +1601,41 @@ ZEND_API ZEND_COLD void zend_error_at(
+-ZEND_API ZEND_COLD void zend_error(int type, const char *format, ...) {
+-	zend_string *filename;
+-	uint32_t lineno;
+-	va_list args;
+-
+-	get_filename_lineno(type, &filename, &lineno);
+-	va_start(args, format);
+-	zend_error_va_list(type, filename, lineno, format, args);
+-	va_end(args);
+-}
++ZEND_API ZEND_COLD switch (type) {
++		case E_CORE_ERROR:
++		case E_CORE_WARNING:
++			*filename = NULL;
++			*lineno = 0;
++			break;
++		case E_PARSE:
++		case E_COMPILE_ERROR:
++		case E_COMPILE_WARNING:
++		case E_ERROR:
++		case E_NOTICE:
++		case E_STRICT:
++		case E_DEPRECATED:
++		case E_WARNING:
++		case E_USER_ERROR:
++		case E_USER_WARNING:
++		case E_USER_NOTICE:
++		case E_USER_DEPRECATED:
++		case E_RECOVERABLE_ERROR:
++			if (zend_is_compiling()) {
++				*filename = zend_get_compiled_filename();
++				*lineno = zend_get_compiled_lineno();
++			} else if (zend_is_executing()) {
++				zend_string *temp_filename = zend_get_executed_filename_ex();
++				if (temp_filename) {
++					*filename = temp_filename;
++					*lineno = zend_get_executed_lineno();
++				} else {
++					*filename = NULL;
++					*lineno = 0;
++				}
++			} else {
++				*filename = NULL;
++				*lineno = 0;
++			}
++			break;
++		default:
++			*filename = NULL;
++			*lineno = 0;
++			break;
++	}

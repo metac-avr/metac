@@ -1,0 +1,17 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..28a2c0c3c 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -3137,0 +3138 @@ mrb_top_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int st
++  mrb_int nregs;
+@@ -3142 +3143,2 @@ mrb_top_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int st
+-  if (mrb->c->ci == mrb->c->cibase) {
++// FIXME: Crash CWE-787: Out-of-bounds Write
++   if (mrb->c->ci == mrb->c->cibase) {
+@@ -3146,0 +3149,6 @@ mrb_top_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int st
++  nregs = stack_keep + (proc && proc->body.irep ? proc->body.irep->nregs : 0);
++  if (mrb->c->stack - mrb->c->stbase + nregs + 16 > mrb->c->stend - mrb->c->stbase) {
++    if (mrb_stack_extend(mrb, nregs + 16 - (mrb->c->stend - mrb->c->stack)) != 0) {
++      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
++  }

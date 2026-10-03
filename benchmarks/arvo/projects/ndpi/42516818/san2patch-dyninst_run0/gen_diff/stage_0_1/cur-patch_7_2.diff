@@ -1,0 +1,40 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 34c6f5594..72a7ac284 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -734,6 +734,5 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-					     (u_int16_t)packet->http_method.len);
+-
+-    if((flow->http.method == NDPI_HTTP_METHOD_RPC_IN_DATA)
+-       || (flow->http.method == NDPI_HTTP_METHOD_RPC_OUT_DATA)) {
+-      ndpi_set_detected_protocol(ndpi_struct, flow, NDPI_PROTOCOL_RPC, flow->detected_protocol_stack[0], NDPI_CONFIDENCE_DPI);
+-      check_content_type_and_change_protocol(ndpi_struct, flow);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ 
++  if(packet->server_line.ptr != NULL && packet->server_line.len > 0) {
++    if(packet->server_line.len <= 2048) {
++      ndpi_check_http_server(ndpi_struct, flow, (const char *)packet->server_line.ptr, packet->server_line.len);
+@@ -742,3 +740,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-
+-  if(packet->server_line.ptr != NULL)
+-    ndpi_check_http_server(ndpi_struct, flow, (const char *)packet->server_line.ptr, packet->server_line.len);
+@@ -746,10 +742 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-  if(packet->user_agent_line.ptr != NULL && packet->user_agent_line.len != 0) {
+-    ret = http_process_user_agent(ndpi_struct, flow, packet->user_agent_line.ptr, packet->user_agent_line.len);
+-    /* TODO: Is it correct to avoid setting ua, host_name,... if we have a (Netflix) subclassification? */
+-    if(ret != 0)
+-      return;
+-  }
+-
+-  /* check for host line */
+-  if(packet->host_line.ptr != NULL) {
+-    u_int len;
++  if(packet->user_agent_line.ptr != NULL && packet->user_agent_line.len != 0) {    u_int len;
+@@ -1461,0 +1449,7 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
++  /* Check for valid packet length to prevent buffer overflow */
++  if(flow->packet.payload_packet_len > 65535) {
++    NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
++    http_bitmask_exclude_other(flow);
++    return;
++  }
++

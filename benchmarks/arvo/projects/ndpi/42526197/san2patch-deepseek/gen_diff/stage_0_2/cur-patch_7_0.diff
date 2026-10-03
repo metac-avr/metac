@@ -1,0 +1,24 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 926b7f032..7c81acc39 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -297 +297,5 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    flow->http.filename = ndpi_malloc(filename_len);
++// FIXME: Crash CWE-125: Out-of-bounds Read
++	    if(filename_len <= 0) {
++	      return(flow->category);
++	    }
++ 	    flow->http.filename = ndpi_malloc(filename_len);
+@@ -299 +303 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
++	      memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1, filename_len-1);
+@@ -304,0 +309,3 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
++	    if(filename_len <= 1) {
++	      return(flow->category);
++	    }
+@@ -308 +315 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	      strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
++	      memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len+1,
+@@ -319 +326 @@ static ndpi_protocol_category_t ndpi_http_check_content(struct ndpi_detection_mo
+-	    strncpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);
++	    memcpy(flow->http.filename, (char*)packet->content_disposition_line.ptr+attachment_len, filename_len);

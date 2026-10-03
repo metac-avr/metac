@@ -1,0 +1,24 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..2881e12f34a 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -277,2 +277,9 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
+-	*gc_data = &intern->obj;
+-	*gc_data_count = 1;
++	
++	/* Bounds checking to prevent heap-based buffer overflow */
++	if (intern != NULL && sizeof(reflection_object) >= sizeof(zend_object)) {
++		*gc_data = &intern->obj;
++		*gc_data_count = 1;
++	} else {
++		*gc_data = NULL;
++		*gc_data_count = 0;
++	}
+@@ -283 +290,2 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
+-static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
+@@ -295,2 +303 @@ static zval *reflection_instantiate(zend_class_entry *pce, zval *object) /* {{{
+-{
+-	object_init_ex(object, pce);
++{	object_init_ex(object, pce);

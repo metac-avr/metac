@@ -1,0 +1,25 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index c346835e597..54acac1efa5 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -648 +648,4 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				ce1 = Z_OBJCE_P(zv);
++// FIXME: Crash CWE-416: Use After Free
++ 				if (!Z_ISUNDEF_P(zv) && zv) {
++					ce1 = Z_OBJCE_P(zv);
++				}
+@@ -650,2 +653,5 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-				if (HT_IS_PACKED(Z_ARRVAL_P(zv))) {
+-					flags |= IS_TRACE_PACKED;
++				HashTable *ht = Z_ARRVAL_P(zv);
++				if (!Z_ISUNDEF_P(zv) && ht && !HT_IS_DESTROYED(ht)) {
++					if (HT_IS_PACKED(ht)) {
++						flags |= IS_TRACE_PACKED;
++					}
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..2b8777b512a 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2495,0 +2496,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Set flag immediately after free to mark as invalid */
++		HT_FLAGS(ht) |= HASH_FLAG_UNINITIALIZED;

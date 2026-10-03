@@ -1,0 +1,35 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..b5aec7472 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -516,0 +517 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
++	if (!cfg->sequenceParameterSets) return GF_BAD_PARAM;
+@@ -528 +529,2 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
+-	}
++// FIXME: Crash CWE-416: Use After Free
++ 	}
+@@ -530,0 +533 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
++		if (!sl) return GF_BAD_PARAM;
+@@ -537,0 +541 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
++	if (!cfg->pictureParameterSets) return GF_BAD_PARAM;
+@@ -543,0 +548 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
++		if (!sl) return GF_BAD_PARAM;
+@@ -565,0 +571 @@ GF_Err gf_odf_avc_cfg_write_bs(GF_AVCConfig *cfg, GF_BitStream *bs)
++			if (!sl) return GF_BAD_PARAM;
+diff --git a/src/media_tools/isom_tools.c b/src/media_tools/isom_tools.c
+index a41e51a0d..e809ebb31 100644
+--- a/src/media_tools/isom_tools.c
++++ b/src/media_tools/isom_tools.c
+@@ -1404 +1404 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-	if (item_type == GF_ISOM_SUBTYPE_AVC_H264) {
++		if (item_type == GF_ISOM_SUBTYPE_AVC_H264) {
+@@ -1416 +1416,2 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
++// FIXME: Crash CWE-416: Use After Free
++ 		e = gf_isom_get_meta_image_props(mp4, GF_TRUE, 0, item_id, &props, NULL);
+@@ -1418 +1419,4 @@ GF_ESD *gf_media_map_item_esd(GF_ISOFile *mp4, u32 item_id)
+-			gf_odf_avc_cfg_write(((GF_AVCConfigurationBox *)props.config)->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			GF_AVCConfigurationBox *avc_box = (GF_AVCConfigurationBox *)props.config;
++			if (avc_box->config && avc_box->config->sequenceParameterSets) {
++				gf_odf_avc_cfg_write(avc_box->config, &esd->decoderConfig->decoderSpecificInfo->data, &esd->decoderConfig->decoderSpecificInfo->dataLength);
++			}

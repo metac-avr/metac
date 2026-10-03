@@ -1,0 +1,94 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..9a62fc73be5 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29947 +29947,6 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-assign_dim_error:
++static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA_TMP_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
++{
++	USE_OPLINE
++	zval *object_ptr, *orig_object_ptr;
++	zval *value;
++	zval *variable_ptr;
+@@ -29948,0 +29954,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++	SAVE_OPLINE();
++	object_ptr = orig_object_ptr = _get_zval_ptr_ptr_var(opline->op1.var EXECUTE_DATA_CC);
++	variable_ptr = _get_zval_ptr_ptr_cv_BP_VAR_W(execute_data, opline->op2.var EXECUTE_DATA_CC);
++	value = _get_zval_ptr_tmp(opline->op_data.var EXECUTE_DATA_CC);
++
++	if (EXPECTED(Z_TYPE_P(object_ptr) == IS_ARRAY)) {
++		if (EXPECTED(variable_ptr == NULL)) {
+@@ -29950 +29962,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-				ZVAL_NULL(EX_VAR(opline->result.var));
++				ZVAL_COPY(EX_VAR(opline->result.var), value);
++			}
++			if (UNEXPECTED(Z_ISREF_P(object_ptr))) {
++				ZEND_TRY_ASSIGN_REF_NEW_DIM(opline, object_ptr, value);
++			} else {
++				Z_ADDREF_P(value);
++				ZEND_TRY_ASSIGN_VALUE_NEW_DIM(opline, object_ptr, value);
+@@ -29951,0 +29970 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++			goto assign_dim_done;
+@@ -29952,0 +29972,24 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++		if (UNEXPECTED(Z_ISREF_P(object_ptr))) {
++			ZEND_TRY_ASSIGN_REF_DIM(opline, object_ptr, variable_ptr, value);
++		} else {
++			ZEND_TRY_ASSIGN_VALUE_DIM(opline, object_ptr, variable_ptr, value);
++		}
++		if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++			ZVAL_COPY(EX_VAR(opline->result.var), value);
++		}
++		goto assign_dim_done;
++	}
++
++	if (EXPECTED(Z_TYPE_P(object_ptr) == IS_OBJECT)) {
++		if (UNEXPECTED(variable_ptr == NULL)) {
++			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++				ZVAL_COPY(EX_VAR(opline->result.var), value);
++			}
++			zend_assign_to_object_dim(opline, object_ptr, NULL, value);
++		} else {
++			zend_assign_to_object_dim(opline, object_ptr, variable_ptr, value);
++		}
++		if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++			ZVAL_COPY(EX_VAR(opline->result.var), value);
++		}
++		goto assign_dim_done;
+@@ -29954 +29996,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	if (IS_CV != IS_UNUSED) {
+@@ -29955,0 +29998,16 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++	ZVAL_DEREF(variable_ptr);
++	if (UNEXPECTED(variable_ptr == NULL)) {
++		if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++			ZVAL_NULL(EX_VAR(opline->result.var));
++		}
++		zend_throw_error(NULL, "Cannot auto-initialize an array");
++		goto assign_dim_error;
++	}
++	if (UNEXPECTED(Z_TYPE_P(variable_ptr) != IS_STRING)) {
++		zend_type_error("Cannot append to %s", zend_zval_type_name(variable_ptr));
++		goto assign_dim_error;
++	}
++
++	assign_dim_error:
++	if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++		ZVAL_NULL(EX_VAR(opline->result.var));
+@@ -29957 +30014,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+@@ -29960 +30016,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-}
+@@ -29962,7 +30018,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA_TMP_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	zval *object_ptr, *orig_object_ptr;
+-	zval *value;
+-	zval *variable_ptr;
+-	zval *dim;
++assign_dim_done:
++	if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
++		ZVAL_COPY(EX_VAR(opline->result.var), value);
++	}
++	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++	ZEND_VM_NEXT_OPCODE_EX(1, 2);
++}	zval *dim;

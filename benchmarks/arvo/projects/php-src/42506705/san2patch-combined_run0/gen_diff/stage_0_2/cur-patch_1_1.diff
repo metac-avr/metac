@@ -1,0 +1,28 @@
+diff --git a/ext/opcache/jit/zend_jit.c b/ext/opcache/jit/zend_jit.c
+index 5143b977ed9..ef918d27763 100644
+--- a/ext/opcache/jit/zend_jit.c
++++ b/ext/opcache/jit/zend_jit.c
+@@ -426 +426 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
+-						return 1;
++return 1;
+@@ -428,0 +429,18 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
++// Fixed CWE-416: Use After Free - Validate array state before access
++			if (call_info && call_info->caller_call_opline) {
++				const zend_op *op = call_info->caller_call_opline;
++				if (op->op1_type == IS_ARRAY || op->op2_type == IS_ARRAY) {
++					zval *arr_zv = NULL;
++					if (op->op1_type == IS_ARRAY) {
++						arr_zv = ZEND_CALL_VAR(NULL, op->op1.var);
++					} else {
++						arr_zv = ZEND_CALL_VAR(NULL, op->op2.var);
++					}
++					if (arr_zv && Z_TYPE_P(arr_zv) == IS_ARRAY) {
++						zend_array *arr = Z_ARR_P(arr_zv);
++						if (!arr || ((GC_FLAGS(arr) & IS_ARRAY_IMMUTABLE) == 0 && GC_REFCOUNT(arr) == 0)) {
++							return 0; // Array is freed, avoid use-after-free
++						}
++					}
++				}
++			}
+@@ -437 +454,0 @@ static int zend_jit_needs_call_chain(zend_call_info *call_info, uint32_t b, cons
+-

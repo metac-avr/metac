@@ -1,0 +1,63 @@
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 0e95cca64e..3de9cafa2d 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -2017 +2017,3 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-                        i_datap++;                                                                \
++                                        i_datap++;                                                                \
++                        if (dst >= line + picture->linesize[plane] / sizeof(PIXEL))                     \
++                            return AVERROR_INVALIDDATA;                                                   \
+@@ -2027,4 +2029,26 @@ static inline void tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile
+-WRITE_FRAME(8, uint8_t)
+-WRITE_FRAME(16, uint16_t)
+-
+-#undef WRITE_FRAME
++static int write_frame_8(AVCodecContext *avctx, AVFrame *picture, Jpeg2000Tile *tile)
++{
++    const Jpeg2000DecoderContext *s = avctx->priv_data;
++    int plane;
++
++    for (plane = 0; plane < 3; plane++) {
++        int x, y;
++        uint8_t *line = picture->data[plane];
++        uint8_t *dst;
++
++        for (y = 0; y < avctx->height; y++) {
++            dst = line;
++            for (x = 0; x < avctx->width; x++) {
++                int16_t dat = i_datap[x];
++                int16_t val = dat < 0 ? -dat : dat;
++
++                if (val > 255)
++                    val = 255;
++                *dst = val;
++                dst += 1;
++            }
++            line += picture->linesize[plane];
++        }
++    }
++    return 0;
++}
+@@ -2032,2 +2056 @@ WRITE_FRAME(16, uint16_t)
+-static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-                                int jobnr, int threadnr)
++static int write_frame_16(AVCodecContext *avctx, AVFrame *picture, Jpeg2000Tile *tile)
+@@ -2036,2 +2059 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
+-    AVFrame *picture = td;
+-    Jpeg2000Tile *tile = s->tile + jobnr;
++    int x, y;
+@@ -2038,0 +2061,14 @@ static int jpeg2000_decode_tile(AVCodecContext *avctx, void *td,
++    for (y = 0; y < avctx->height; y++) {
++        uint16_t *line = (uint16_t *)(picture->data[0] + y * picture->linesize[0]);
++        uint16_t *dst = line;
++        for (x = 0; x < avctx->width; x++) {
++            int16_t val = i_datap[x];
++            if (val < 0)
++                val = 0;
++            else if (val > 65535)
++                val = 65535;
++            *dst++ = val;
++        }
++    }
++    return 0;
++}

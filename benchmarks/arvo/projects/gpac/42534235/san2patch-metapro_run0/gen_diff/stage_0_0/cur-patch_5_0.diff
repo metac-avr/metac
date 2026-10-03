@@ -1,0 +1,28 @@
+diff --git a/src/media_tools/route_dmx.c b/src/media_tools/route_dmx.c
+index 15ebed31d..d38a5946c 100644
+--- a/src/media_tools/route_dmx.c
++++ b/src/media_tools/route_dmx.c
+@@ -1799 +1799 @@ static GF_Err gf_route_dmx_process_service(GF_ROUTEDmx *routedmx, GF_ROUTEServic
+-		}
++        }
+@@ -1807 +1807,9 @@ static GF_Err gf_route_dmx_process_service(GF_ROUTEDmx *routedmx, GF_ROUTEServic
+-	GF_LOG(GF_LOG_DEBUG, GF_LOG_ROUTE, ("[ROUTE] Service %d : LCT packet TSI %u TOI %u size %d startOffset %u TOL "LLU" (PckNum %d)\n", s->service_id, tsi, toi, nb_read-pos, start_offset, tol_size, routedmx->nb_packets));
++	// Safe logging with boundary check to prevent buffer overflow
++	{
++		u32 log_size = (nb_read > pos) ? (nb_read - pos) : 0;
++		if (log_size <= routedmx->buffer_size) {
++			GF_LOG(GF_LOG_DEBUG, GF_LOG_ROUTE, ("[ROUTE] Service %d : LCT packet TSI %u TOI %u size %d startOffset %u TOL "LLU" (PckNum %d)\n", s->service_id, tsi, toi, log_size, start_offset, tol_size, routedmx->nb_packets));
++		} else {
++			GF_LOG(GF_LOG_DEBUG, GF_LOG_ROUTE, ("[ROUTE] Service %d : LCT packet TSI %u TOI %u size 0 startOffset %u TOL "LLU" (PckNum %d)\n", s->service_id, tsi, toi, start_offset, tol_size, routedmx->nb_packets));
++		}
++	}
+@@ -1820 +1827,0 @@ static GF_Err gf_route_dmx_process_service(GF_ROUTEDmx *routedmx, GF_ROUTEServic
+-
+@@ -1946,2 +1953,2 @@ GF_Err gf_route_dmx_process(GF_ROUTEDmx *routedmx)
+-
+-		if (gf_sk_group_sock_is_set(routedmx->active_sockets, s->sock, GF_SK_SELECT_READ)) {
++		
++		if (routedmx->active_sockets && gf_sk_group_sock_is_set(routedmx->active_sockets, s->sock, GF_SK_SELECT_READ)) {
+@@ -1956 +1963 @@ GF_Err gf_route_dmx_process(GF_ROUTEDmx *routedmx)
+-			if (gf_sk_group_sock_is_set(routedmx->active_sockets, rsess->sock, GF_SK_SELECT_READ)) {
++			if (routedmx->active_sockets && gf_sk_group_sock_is_set(routedmx->active_sockets, rsess->sock, GF_SK_SELECT_READ)) {

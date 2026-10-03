@@ -1,0 +1,25 @@
+diff --git a/src/string.c b/src/string.c
+index 7cc9c4ff3..4ae3115b9 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -52 +52,3 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-{
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ {
++  if (len < 0) len = 0;
+@@ -54 +56 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-  RSTR_EMBED_PTR(s)[len] = '\0';
++  RSTR_EMBED_PTR(s)[len < 0 ? 0 : len] = '\0';
+@@ -56 +58 @@ str_init_embed(struct RString *s, const char *p, mrb_int len)
+-  RSTR_SET_EMBED_LEN(s, len);
++  RSTR_SET_EMBED_LEN(s, len < 0 ? 0 : len);
+diff --git a/mrbgems/mruby-pack/src/pack.c b/mrbgems/mruby-pack/src/pack.c
+index 1edaac93b..2a174cb2d 100644
+--- a/mrbgems/mruby-pack/src/pack.c
++++ b/mrbgems/mruby-pack/src/pack.c
+@@ -1023 +1023,2 @@ static int
+-unpack_qenc(mrb_state *mrb, const void *src, int slen, mrb_value ary)
++// FIXME: Crash CWE-125: Out-of-bounds Read
++ unpack_qenc(mrb_state *mrb, const void *src, int slen, mrb_value ary)
+@@ -1024,0 +1026 @@ unpack_qenc(mrb_state *mrb, const void *src, int slen, mrb_value ary)
++  slen = (slen < 0) ? 0 : slen;  // Clamp negative lengths to zero

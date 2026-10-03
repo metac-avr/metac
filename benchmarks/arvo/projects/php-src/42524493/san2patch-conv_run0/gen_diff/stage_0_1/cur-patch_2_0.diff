@@ -1,0 +1,32 @@
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index 4d40b76854d..ecd9b8050f9 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -177 +177 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-			} else {
++		} else {
+@@ -181 +181,4 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-		OBJ_RELEASE(object);
++		/* Check if object is still valid before releasing */
++		if (object && Z_OBJ_HANDLE(*((zval*)object)) != 0) {
++			OBJ_RELEASE(object);
++		}
+@@ -185 +188,2 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+-ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
++// FIXME: Crash CWE-416: Use After Free
++ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+@@ -197,2 +201 @@ ZEND_API void ZEND_FASTCALL zend_objects_clone_members(zend_object *new_object,
+-	if (old_object->ce->default_properties_count) {
+-		zval *src = old_object->properties_table;
++	if (old_object->ce->default_properties_count) {		zval *src = old_object->properties_table;
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..aa74c53a517 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -216 +216,5 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-		return ZEND_HASH_APPLY_REMOVE;
++		/* Prevent use-after-free by checking object validity */
++		if (EXPECTED(Z_OBJ_P(zv) != NULL)) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
++		return ZEND_HASH_APPLY_KEEP;

@@ -1,0 +1,19 @@
+diff --git a/src/hash.c b/src/hash.c
+index 8de074a85..7e016916c 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -164,0 +165,2 @@ DEFINE_GETTER(ht, ib, uint32_t*, hsh.ht->ib)
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++#if defined(MRB_ENABLE_DEBUG_HOOK) && !defined(__SANITIZE_ADDRESS__)
+@@ -165,0 +168,6 @@ DEFINE_INCREMENTER(ht, size)
++#else
++static inline void safe_ht_size_increment(hash_* h) {
++  if (h->hsh.ht != NULL && h->hsh.ht != (hash_table*)0xdeadbeef) h->hsh.ht->size++;
++}
++#define HT_INC_SIZE(h) safe_ht_size_increment(h)
++#endif
+@@ -176,3 +184 @@ DEFINE_SWITCHER(ht, HT)
+-} while (0)
+-
+-#define ea_each(ea, size, entry_var, code) do {                               \
++} while (0)#define ea_each(ea, size, entry_var, code) do {                               \

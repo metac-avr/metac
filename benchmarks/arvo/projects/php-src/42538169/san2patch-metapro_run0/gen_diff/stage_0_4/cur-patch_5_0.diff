@@ -1,0 +1,31 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 8f012868dda..d0b2ca8c997 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1345,0 +1346,4 @@ static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	/* Fix for CWE-825: Expired Pointer Dereference - validate pointer before dereferencing */
++	if (p == NULL || (uintptr_t)p < 0x1000) {  // Basic sanity check for invalid pointers
++		return 0;
++	}
+diff --git a/Zend/zend_property_hooks.c b/Zend/zend_property_hooks.c
+index 9cfa15ecafa..b04d6d0732c 100644
+--- a/Zend/zend_property_hooks.c
++++ b/Zend/zend_property_hooks.c
+@@ -209,7 +209,10 @@ static void zho_it_dtor(zend_object_iterator *iter)
+-	zend_hooked_object_iterator *hooked_iter = (zend_hooked_object_iterator*)iter;
+-	zval_ptr_dtor(&iter->data);
+-	zval_ptr_dtor(&hooked_iter->declared_props);
+-	zval_ptr_dtor_nogc(&hooked_iter->current_key);
+-	zval_ptr_dtor(&hooked_iter->current_data);
+-	if (hooked_iter->dynamic_prop_it != (uint32_t) -1) {
+-		zend_hash_iterator_del(hooked_iter->dynamic_prop_it);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	zend_hooked_object_iterator *hooked_iter = (zend_hooked_object_iterator*)iter;
++	if (iter) {
++		zval_ptr_dtor(&iter->data);
++		zval_ptr_dtor(&hooked_iter->declared_props);
++		zval_ptr_dtor_nogc(&hooked_iter->current_key);
++		zval_ptr_dtor(&hooked_iter->current_data);
++		if (hooked_iter->dynamic_prop_it != (uint32_t) -1) {
++			zend_hash_iterator_del(hooked_iter->dynamic_prop_it);
++		}

@@ -1,0 +1,29 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..96f0b4ef 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2504,2 +2504,12 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-            (ctxt->incTab[i]->xptr != NULL) ||
+-	    (ctxt->incTab[i]->emptyFb != 0))	/* (empty fallback) */
++	    (ctxt->incTab[i]->xptr != NULL)) {
++	    if (ctxt->incTab[i]->xptr != NULL) {
++		/* Duplicate the result node before it might be freed */
++		xmlNodePtr savedNode = xmlCopyNode(ctxt->incTab[i]->ref, 1);
++		xmlXIncludeIncludeNode(ctxt, i);
++		/* Keep savedNode alive for any deferred processing */
++		xmlFreeNode(savedNode);
++		savedNode = NULL;
++	    } else {
++		xmlXIncludeIncludeNode(ctxt, i);
++	    }
++	} else if (ctxt->incTab[i]->emptyFb != 0) {	/* (empty fallback) */
+@@ -2506,0 +2517 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++	}
+@@ -2512,6 +2523 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-}
+-
+-/**
+- * xmlXIncludeSetFlags:
+- * @ctxt:  an XInclude processing context
+- * @flags: a set of xmlParserOption used for parsing XML includes
++} * @flags: a set of xmlParserOption used for parsing XML includes

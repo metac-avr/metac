@@ -1,0 +1,36 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..c1a0c5113ab 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1028 +1028,15 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-	zend_uchar type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));
++	zend_uchar type_pair;
++	zval op1_copy, op2_copy;
++
++	if (UNEXPECTED(Z_TYPE_P(op1) == IS_UNDEF) || UNEXPECTED(Z_TYPE_P(op2) == IS_UNDEF)) {
++		return FAILURE;
++	}
++	ZVAL_COPY_VALUE(&op1_copy, op1);
++	ZVAL_COPY_VALUE(&op2_copy, op2);
++	if (UNEXPECTED(Z_ISREF_P(&op1_copy))) {
++		ZVAL_DEREF(&op1_copy);
++	}
++	if (UNEXPECTED(Z_ISREF_P(&op2_copy))) {
++		ZVAL_DEREF(&op2_copy);
++	}
++	type_pair = TYPE_PAIR(Z_TYPE_P(&op1_copy), Z_TYPE_P(&op2_copy));
+@@ -1031 +1045 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-		fast_long_add_function(result, op1, op2);
++		fast_long_add_function(result, &op1_copy, &op2_copy);
+@@ -1034 +1048 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-		ZVAL_DOUBLE(result, Z_DVAL_P(op1) + Z_DVAL_P(op2));
++		ZVAL_DOUBLE(result, Z_DVAL_P(&op1_copy) + Z_DVAL_P(&op2_copy));
+@@ -1037 +1051 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-		ZVAL_DOUBLE(result, ((double)Z_LVAL_P(op1)) + Z_DVAL_P(op2));
++		ZVAL_DOUBLE(result, ((double)Z_LVAL_P(&op1_copy)) + Z_DVAL_P(&op2_copy));
+@@ -1040 +1054 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-		ZVAL_DOUBLE(result, Z_DVAL_P(op1) + ((double)Z_LVAL_P(op2)));
++		ZVAL_DOUBLE(result, Z_DVAL_P(&op1_copy) + ((double)Z_LVAL_P(&op2_copy)));
+@@ -1043 +1057 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-		add_function_array(result, op1, op2);
++		add_function_array(result, &op1_copy, &op2_copy);

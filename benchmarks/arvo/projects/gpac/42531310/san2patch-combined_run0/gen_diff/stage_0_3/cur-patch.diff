@@ -1,0 +1,44 @@
+diff --git a/src/filters/inspect.c b/src/filters/inspect.c
+index 3f87796a5..aa4b49a43 100644
+--- a/src/filters/inspect.c
++++ b/src/filters/inspect.c
+@@ -1585,0 +1586 @@ static u64 gf_inspect_dump_obu_internal(FILE *dump, AV1State *av1, u8 *obu_ptr,
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -1587,15 +1588,22 @@ static u64 gf_inspect_dump_obu_internal(FILE *dump, AV1State *av1, u8 *obu_ptr,
+-			GF_BitStream *bs = gf_bs_new(obu_ptr+hdr_size, obu_ptr_length-hdr_size, GF_BITSTREAM_READ);
+-			u32 metadata_type = (u32)gf_av1_leb128_read(bs, NULL);
+-			DUMP_OBU_INT2("metadata_type", metadata_type);
+-			switch (metadata_type) {
+-				case OBU_METADATA_TYPE_ITUT_T35:
+-					dump_t35(dump, bs, 0);
+-					break;
+-				case OBU_METADATA_TYPE_HDR_CLL:
+-					dump_clli(dump, bs);
+-					break;
+-				case OBU_METADATA_TYPE_HDR_MDCV:
+-					dump_mdcv(dump, bs, GF_FALSE);
+-					break;
+-				default:
+-					break;
++			if (obu_ptr_length <= hdr_size) break;
++			u32 remaining_bytes = obu_ptr_length - hdr_size;
++			if (remaining_bytes == 0) break;
++			GF_BitStream *bs = gf_bs_new(obu_ptr+hdr_size, remaining_bytes, GF_BITSTREAM_READ);
++			if (!bs) break;
++			u32 metadata_type = 0;
++			if (gf_bs_available(bs) > 0) {
++				metadata_type = (u32)gf_av1_leb128_read(bs, NULL);
++				DUMP_OBU_INT2("metadata_type", metadata_type);
++				switch (metadata_type) {
++					case OBU_METADATA_TYPE_ITUT_T35:
++						dump_t35(dump, bs, 0);
++						break;
++					case OBU_METADATA_TYPE_HDR_CLL:
++						dump_clli(dump, bs);
++						break;
++					case OBU_METADATA_TYPE_HDR_MDCV:
++						dump_mdcv(dump, bs, GF_FALSE);
++						break;
++					default:
++						break;
++				}

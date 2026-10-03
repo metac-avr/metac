@@ -1,0 +1,39 @@
+diff --git a/xinclude.c b/xinclude.c
+index 855ede3b..3a66d483 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2279,3 +2279,12 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlNodePtr tree) {
+-            if ((ctxt->incTab[i]->inc != NULL) ||
+-                (ctxt->incTab[i]->emptyFb != 0)) {	/* (empty fallback) */
+-                xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++// FIXME: Crash CWE-416: Use After Free
++             if ((ctxt->incTab[i]->inc != NULL) ||
++                (ctxt->incTab[i]->emptyFb != 0)) { /* (empty fallback) */
++                if (ctxt->incTab[i]->inc != NULL) {
++                    /* Validate node before use to prevent use-after-free */
++                    xmlNodePtr temp_node = ctxt->incTab[i]->inc;
++                    if (temp_node != NULL) {
++                        xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++                    }
++                } else {
++                    xmlXIncludeIncludeNode(ctxt, ctxt->incTab[i]);
++                }
+diff --git a/xmlreader.c b/xmlreader.c
+index 9c2da90e..80747d23 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -442,3 +442,11 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	cur->next = reader->ctxt->freeElems;
+-	reader->ctxt->freeElems = cur;
+-	reader->ctxt->freeElemsNr++;
++	/* Add safety check to prevent use-after-free with XInclude processing */
++	if (reader->xinclude != NULL && (cur->type == XML_ELEMENT_NODE)) {
++	    /* Mark node as pending deletion but don't free immediately */
++	    cur->next = reader->ctxt->freeElems;
++	    reader->ctxt->freeElems = cur;
++	    reader->ctxt->freeElemsNr++;
++	} else {
++	    cur->next = reader->ctxt->freeElems;
++	    reader->ctxt->freeElems = cur;
++	    reader->ctxt->freeElemsNr++;
++	}

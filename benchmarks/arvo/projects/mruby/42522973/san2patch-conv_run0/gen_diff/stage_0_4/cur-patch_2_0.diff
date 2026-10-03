@@ -1,0 +1,22 @@
+diff --git a/src/variable.c b/src/variable.c
+index 3088783ec..27d189f8f 100644
+--- a/src/variable.c
++++ b/src/variable.c
+@@ -266 +266,3 @@ mrb_gc_mark_iv(mrb_state *mrb, struct RObject *obj)
+-  mark_tbl(mrb, obj->iv);
++  if (obj->iv != NULL) {
++    mark_tbl(mrb, obj->iv);
++  }
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..0fa944240 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -1156 +1156,7 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-      unlink_heap_page(gc, page);
++      /* Ensure no dangling pointers to instance variables */
++      RVALUE *current = objects(page);
++      RVALUE *end = current + MRB_HEAP_PAGE_SIZE;
++      for (; current < end; current++) {
++        current->as.basic.iv = NULL;
++      }
++       unlink_heap_page(gc, page);

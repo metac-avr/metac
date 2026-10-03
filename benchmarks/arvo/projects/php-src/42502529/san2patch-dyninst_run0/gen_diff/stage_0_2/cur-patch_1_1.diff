@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..11cdd53d254 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1370 +1370 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-			while (Z_NEXT(prev->val) != idx) {
++			while (prev != NULL && Z_NEXT(prev->val) != idx) {
+@@ -1371,0 +1372 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
++				if (i >= ht->nNumUsed) break;
+@@ -1374 +1375 @@ static zend_always_inline void _zend_hash_del_el(HashTable *ht, uint32_t idx, Bu
+-	 	}
++		}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 810866a1be2..0a063a9bd09 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -64,0 +65 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
++	/* Patched CWE-416: Use After Free vulnerability */
+@@ -67 +68 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	efree(str);
++	if (str) efree(str); /* Safe free with null check */
+@@ -77 +77,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

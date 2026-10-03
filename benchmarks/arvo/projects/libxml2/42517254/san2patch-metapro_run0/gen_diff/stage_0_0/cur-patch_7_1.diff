@@ -1,0 +1,104 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..04683774 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -2262,0 +2263,36 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++    void xmlXIncludeDoProcess!
++    xmlNodePtr cur, end;
++    xmlNodePtr list;
++    int nr = ctxt->incNr - 1;
++
++    if (nr < 0)
++        return(-1);
++    if (ctxt->incTab[nr]->ref == NULL)
++        return(-1);
++    if (ctxt->incTab[nr]->inc == NULL) {
++        /*
++	 * Process pending requests
++	 */
++        xmlXIncludeEnqueueRequests(ctxt, ctxt->incTab[nr]->doc);
++        if (ctxt->incTab[nr]->inc == NULL)
++	    return(-1);
++    }
++    if (ctxt->incTab[nr]->inc->children == NULL) {
++        /*
++	 * Nothing to include, work done
++	 */
++        return(0);
++    }
++
++    /*
++     * Copy the nodeset, and do a bit of pre-processing
++     */
++    list = xmlXIncludeCopyNodeList(ctxt, ctxt->incTab[nr]->inc->children);
++    if (list == NULL) {
++        xmlXIncludeErr(ctxt, ctxt->incTab[nr]->ref,
++	               XML_XINCLUDE_HREF_URI,
++	               "failed to copy nodeset\n", NULL);
++        return(-1);
++    }
++
++    cur = ctxt->incTab[nr]->ref;
+@@ -2316,0 +2353 @@ xmlXIncludeIncludeNode(xmlXIncludeCtxtPtr ctxt, int nr) {
++
+@@ -2495,0 +2533,35 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++int xmlXIncludeDoProcess!
++    int i, ret = 0;
++
++    if (ctxt == NULL)
++        return(-1);
++    if (doc == NULL)
++        return(-1);
++    if (ctxt->incNr == 0)
++        return(0);
++
++    /*
++     * Enforce certain invariants
++     */
++    if (ctxt->urlDepth > ctxt->incNr) {
++        xmlXIncludeErr(ctxt, NULL, XML_XINCLUDE_RECURSION,
++                       "inclusion loop detected\n", NULL);
++        return(-1);
++    }
++
++    if (doc->URL != NULL)
++        xmlXIncludeURLPush(ctxt, doc->URL);
++
++    /*
++     * Walk through the list of includes processing them
++     * NOTE: the list can be modified as a result of
++     *       xmlXIncludeIncludeNode() calls, so we need to recheck
++     *       the bounds systematically
++     *
++     * NOTE: the xptr field in the element is used to detect
++     *       already processed nodes, which is a hack, but a safe one
++     *       (since pointers are guaranteed to be unique within a
++     *        document), and it allows to avoid having to maintain
++     *       a separate processed list.
++     *
++     * NOTE2: There were historically problems reported (Red Hat Bugzilla
+@@ -2501,0 +2574,4 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++    /* Track nodes that need to be freed after processing to prevent use-after-free */
++    xmlNodePtr* nodes_to_free = (xmlNodePtr*) xmlMalloc(ctxt->incNr * sizeof(xmlNodePtr));
++    int free_count = 0;
++    
+@@ -2504 +2580 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-            (ctxt->incTab[i]->xptr != NULL) ||
++             (ctxt->incTab[i]->xptr != NULL) ||
+@@ -2508,0 +2585,8 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
++    /* Now safely free all tracked nodes */
++    for (int j = 0; j < free_count; j++) {
++        if (nodes_to_free[j] != NULL) {
++            xmlFreeNode(nodes_to_free[j]);
++        }
++    }
++    xmlFree(nodes_to_free);
++
+@@ -2512,6 +2596 @@ xmlXIncludeDoProcess(xmlXIncludeCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr tree,
+-}
+-
+-/**
+- * xmlXIncludeSetFlags:
+- * @ctxt:  an XInclude processing context
+- * @flags: a set of xmlParserOption used for parsing XML includes
++} * @flags: a set of xmlParserOption used for parsing XML includes

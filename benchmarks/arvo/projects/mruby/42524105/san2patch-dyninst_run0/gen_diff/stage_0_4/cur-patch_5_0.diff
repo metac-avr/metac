@@ -1,0 +1,32 @@
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..111afa148 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326,8 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    {
++      mrb_value str_key = key;
++      if (!mrb_immediate_p(str_key) && !MRB_OBJECT_FROZEN_P(mrb_basic_ptr(str_key))) {
++        hash_code = mrb_str_hash(mrb, str_key);
++      } else {
++        hash_code = 0;
++      }
++    }
+@@ -343 +350,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     break;
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..49d5c9063 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -212,3 +212,6 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
+-  shared->refcnt--;
+-  if (shared->refcnt == 0) {
+-    mrb_free(mrb, shared->ptr);
++  if (!shared) return;
++  if (--shared->refcnt == 0) {
++    if (shared->ptr) {
++      mrb_free(mrb, shared->ptr);
++      shared->ptr = NULL;
++    }

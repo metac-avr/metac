@@ -1,0 +1,21 @@
+diff --git a/src/filters/dmx_ogg.c b/src/filters/dmx_ogg.c
+index 8b648f32f..385e279ee 100644
+--- a/src/filters/dmx_ogg.c
++++ b/src/filters/dmx_ogg.c
+@@ -129,0 +130,2 @@ static void oggdmx_get_stream_info(ogg_packet *oggpacket, OGGInfo *info)
++	/* Validate packet pointer to prevent use-after-free */
++	if (!oggpacket || !oggpacket->packet) return;
+@@ -429 +431,3 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-				ogg_stream_packetpeek(&os, &oggpacket);
++				ogg_packet temp_packet;
++				memset(&temp_packet, 0, sizeof(ogg_packet));
++				ogg_stream_packetpeek(&os, &temp_packet);
+@@ -431,2 +435,2 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-					ogg_stream_packetpeek(&os, &oggpacket);
+-					oggdmx_get_stream_info(&oggpacket, &info);
++					ogg_stream_packetpeek(&os, &temp_packet);
++					oggdmx_get_stream_info(&temp_packet, &info);
+@@ -438 +442,2 @@ static void oggdmx_check_dur(GF_Filter *filter, GF_OGGDmxCtx *ctx)
+-				}
++// FIXME: Crash CWE-416: Use After Free
++ 				}

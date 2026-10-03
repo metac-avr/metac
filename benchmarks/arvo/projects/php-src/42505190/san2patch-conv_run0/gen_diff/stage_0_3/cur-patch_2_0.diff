@@ -1,0 +1,47 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 7879f0ad984..7b1caedcd35 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2433,7 +2432,0 @@ static zend_always_inline void zend_fetch_dimension_address(zval *result, zval *
+-				zend_use_scalar_as_array();
+-				ZVAL_UNDEF(result);
+-			}
+-		}
+-	}
+-}
+-
+@@ -2441 +2434,2 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-{
++// FIXME: Crash CWE-416: Use After Free
++ {
+@@ -2442,0 +2437,5 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
++	if (UNEXPECTED(!container_ptr || Z_ISUNDEF_P(container_ptr))) {
++		zend_use_scalar_as_array();
++		ZVAL_UNDEF(result);
++		return;
++	}
+@@ -2444,11 +2443 @@ static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_W(zval
+-}
+-
+-static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_RW(zval *container_ptr, zval *dim, int dim_type OPLINE_DC EXECUTE_DATA_DC)
+-{
+-	zval *result = EX_VAR(opline->result.var);
+-	zend_fetch_dimension_address(result, container_ptr, dim, dim_type, BP_VAR_RW EXECUTE_DATA_CC);
+-}
+-
+-static zend_never_inline void ZEND_FASTCALL zend_fetch_dimension_address_UNSET(zval *container_ptr, zval *dim, int dim_type OPLINE_DC EXECUTE_DATA_DC)
+-{
+-	zval *result = EX_VAR(opline->result.var);
++}	zval *result = EX_VAR(opline->result.var);
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 8ee292106a6..a2349367e89 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -1683 +1683,6 @@ ZEND_API void ZEND_FASTCALL zend_array_destroy(HashTable *ht)
+-	efree(HT_GET_DATA_ADDR(ht));
++	/* Prevent use-after-free by ensuring data is not accessed after freeing */
++	volatile void *temp_data = HT_GET_DATA_ADDR(ht);
++	if (temp_data != NULL) {
++		HT_GET_DATA_ADDR(ht) = NULL;  /* Nullify pointer before freeing */
++		efree((void*)temp_data);
++	}

@@ -1,0 +1,18 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 24ed7b20e..00b68942f 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -1222,3 +1222,10 @@ static void tlsCheckUncommonALPN(struct ndpi_detection_module_struct *ndpi_struc
+-#endif
+-
+-      strncpy(str, alpn_start, alpn_len);
++// FIXME: Crash CWE-787: Out-of-bounds Write
++ #endif
++
++      if(alpn_len < sizeof(str)) {
++        strncpy(str, alpn_start, alpn_len);
++        str[alpn_len] = '\0';
++      } else {
++        strncpy(str, alpn_start, sizeof(str) - 1);
++        str[sizeof(str) - 1] = '\0';
++      }

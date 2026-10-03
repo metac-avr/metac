@@ -1,0 +1,46 @@
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index e31a31de1d3..26f98bd2686 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -283 +283,2 @@ static HashTable *reflection_get_gc(zend_object *obj, zval **gc_data, int *gc_da
+-static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
++// Fixed CWE-125: Out-of-bounds Read by adding safety checks
++ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{ */
+@@ -285 +286,15 @@ static zend_object *reflection_objects_new(zend_class_entry *class_type) /* {{{
+-	reflection_object *intern = zend_object_alloc(sizeof(reflection_object), class_type);
++	reflection_object *intern;
++	
++	/* Safety check for null class_type */
++	if (!class_type) {
++		zend_error(E_ERROR, "Invalid class type passed to reflection_objects_new");
++		return NULL;
++	}
++	
++	intern = zend_object_alloc(sizeof(reflection_object), class_type);
++	
++	/* Verify successful allocation */
++	if (!intern) {
++		zend_error(E_ERROR, "Failed to allocate memory for reflection object");
++		return NULL;
++	}
+@@ -295,2 +310 @@ static zval *reflection_instantiate(zend_class_entry *pce, zval *object) /* {{{
+-{
+-	object_init_ex(object, pce);
++{	object_init_ex(object, pce);
+@@ -6964 +6978 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	if (zend_parse_parameters_none() == FAILURE) {
++if (zend_parse_parameters_none() == FAILURE) {
+@@ -6974,3 +6988,8 @@ ZEND_METHOD(ReflectionEnumBackedCase, getBackingValue)
+-	zval *member_p = zend_enum_fetch_case_value(Z_OBJ(ref->value));
+-
+-	ZVAL_COPY_OR_DUP(return_value, member_p);
++	zend_object *obj = Z_OBJ(ref->value);
++	if (obj && obj->handlers && obj->handlers->get_class_entry) {
++		zval *member_p = zend_enum_fetch_case_value(obj);
++		ZVAL_COPY_OR_DUP(return_value, member_p);
++	} else {
++		zend_throw_error(NULL, "Invalid enum case object");
++		RETURN_THROWS();
++	}
+@@ -6984 +7002,0 @@ ZEND_METHOD(ReflectionFiber, __construct)
+-

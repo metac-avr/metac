@@ -1,0 +1,36 @@
+diff --git a/valid.c b/valid.c
+index 1ecc762c..60d616b7 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2636,9 +2636,2 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+-                            "ID %s already defined\n", value, NULL, NULL);
+-        }
+-    }
+-#endif /* LIBXML_VALID_ENABLED */
+-
+-    return(id);
+-}
+-
+-static void
++// FIXME: Crash CWE-416: Use After Free
++ static void
+@@ -2646,2 +2639 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-    xmlFreeID((xmlIDPtr) id);
+-}
++    xmlIDPtr id_ptr = (xmlIDPtr) id;
+@@ -2649,9 +2641,6 @@ xmlFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
+-/**
+- * xmlFreeIDTable:
+- * @table:  An id table
+- *
+- * Deallocate the memory used by an ID hash table.
+- */
+-void
+-xmlFreeIDTable(xmlIDTablePtr table) {
+-    xmlHashFree(table, xmlFreeIDTableEntry);
++    if (id_ptr == NULL)
++        return;
++    if (id_ptr->attr != NULL)
++        id_ptr->attr->_private = NULL;
++    xmlFreeID(id_ptr);
++}    xmlHashFree(table, xmlFreeIDTableEntry);

@@ -1,0 +1,37 @@
+diff --git a/Zend/zend_operators.c b/Zend/zend_operators.c
+index 4d3fe724769..385663a9947 100644
+--- a/Zend/zend_operators.c
++++ b/Zend/zend_operators.c
+@@ -1026 +1026,2 @@ static zend_never_inline void ZEND_FASTCALL add_function_array(zval *result, zva
+-static zend_always_inline zend_result add_function_fast(zval *result, zval *op1, zval *op2) /* {{{ */
++// Fixed: Added safety checks to prevent expired pointer dereference in arithmetic operations
++ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1, zval *op2) /* {{{ */
+@@ -1028 +1029,10 @@ static zend_always_inline zend_result add_function_fast(zval *result, zval *op1,
+-	zend_uchar type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));
++	zend_uchar type_pair;
++	
++	/* Prevent use-after-free by validating zval pointers */
++	if (!op1 || !op2 || 
++	    Z_TYPE_P(op1) < IS_NULL || Z_TYPE_P(op1) > _IS_NUMBER_MAX ||
++	    Z_TYPE_P(op2) < IS_NULL || Z_TYPE_P(op2) > _IS_NUMBER_MAX) {
++		return FAILURE;
++	}
++	
++	type_pair = TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2));
+@@ -1054 +1064,2 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (add_function_fast(result, op1, op2) == SUCCESS) {
++	
++	if (EXPECTED(op1 != NULL && op2 != NULL) && add_function_fast(result, op1, op2) == SUCCESS) {
+@@ -1061,4 +1072,5 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (UNEXPECTED(zendi_try_convert_scalar_to_number(op1, &op1_copy) == FAILURE)
+-			|| UNEXPECTED(zendi_try_convert_scalar_to_number(op2, &op2_copy) == FAILURE)) {
+-		zend_binop_error("+", op1, op2);
+-		if (result != op1) {
++	zval *orig_op1 = op1, *orig_op2 = op2;
++	if (UNEXPECTED(zendi_try_convert_scalar_to_number(orig_op1, &op1_copy) == FAILURE)
++			|| UNEXPECTED(zendi_try_convert_scalar_to_number(orig_op2, &op2_copy) == FAILURE)) {
++		zend_binop_error("+", orig_op1, orig_op2);
++		if (result != orig_op1) {
+@@ -1070 +1082 @@ static zend_never_inline zend_result ZEND_FASTCALL add_function_slow(zval *resul
+-	if (result == op1) {
++	if (result == orig_op1) {

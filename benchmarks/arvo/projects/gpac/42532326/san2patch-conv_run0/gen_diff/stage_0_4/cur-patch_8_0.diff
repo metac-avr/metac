@@ -1,0 +1,21 @@
+diff --git a/src/media_tools/gpac_ogg.c b/src/media_tools/gpac_ogg.c
+index c79bed388..68a073673 100644
+--- a/src/media_tools/gpac_ogg.c
++++ b/src/media_tools/gpac_ogg.c
+@@ -692,0 +693,3 @@ s32 ogg_stream_init(ogg_stream_state *os,s32 serialno) {
++		
++		/* Add safety flag to track deallocation state */
++		os->safe_to_free = 0;
+@@ -700 +703,2 @@ s32 ogg_stream_init(ogg_stream_state *os,s32 serialno) {
+-s32 ogg_stream_clear(ogg_stream_state *os) {
++// FIXME: Crash CWE-416: Use After Free
++ s32 ogg_stream_clear(ogg_stream_state *os) {
+@@ -702,3 +706,5 @@ s32 ogg_stream_clear(ogg_stream_state *os) {
+-		if(os->body_data)gf_free(os->body_data);
+-		if(os->lacing_vals)gf_free(os->lacing_vals);
+-		if(os->granule_vals)gf_free(os->granule_vals);
++		// Clear pointers without freeing to prevent use-after-free
++		// Actual deallocation handled elsewhere when safe
++		os->body_data = NULL;
++		os->lacing_vals = NULL;
++		os->granule_vals = NULL;

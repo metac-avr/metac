@@ -1,0 +1,20 @@
+diff --git a/src/hash.c b/src/hash.c
+index 365019352..eaa39d092 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -326 +326,10 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    hash_code = mrb_str_hash(mrb, key);
++    if (mrb_string_p(key)) {
++      struct RString *s = mrb_str_ptr(key);
++      if (!RSTR_DEAD_P(s)) {
++        hash_code = mrb_str_hash(mrb, key);
++      } else {
++        hash_code = U32(mrb_obj_id(key));
++      }
++    } else {
++      hash_code = U32(mrb_obj_id(key));
++    }
+@@ -343 +352,2 @@ obj_hash_code(mrb_state *mrb, mrb_value key, struct RHash *h)
+-    break;
++// FIXME: Crash CWE-416: Use After Free
++     break;

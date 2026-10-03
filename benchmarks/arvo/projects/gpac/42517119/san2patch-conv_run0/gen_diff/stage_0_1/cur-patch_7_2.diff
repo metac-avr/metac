@@ -1,0 +1,42 @@
+diff --git a/src/isomedia/box_code_base.c b/src/isomedia/box_code_base.c
+index d7f39328b..5d27ff637 100644
+--- a/src/isomedia/box_code_base.c
++++ b/src/isomedia/box_code_base.c
+@@ -737,5 +737 @@ GF_Err urn_box_size(GF_Box *s)
+-	}
+-	return GF_OK;
+-}
+-
+-#endif /*GPAC_DISABLE_ISOM_WRITE*/
++#ifndef GPAC_DISABLE_ISOM
+@@ -743,6 +739 @@ GF_Err urn_box_size(GF_Box *s)
+-void unkn_box_del(GF_Box *s)
+-{
+-	GF_UnknownBox *ptr = (GF_UnknownBox *) s;
+-	if (!s) return;
+-	if (ptr->data) gf_free(ptr->data);
+-	gf_free(ptr);
++gf_free(ptr);
+@@ -754,5 +745,17 @@ GF_Err unkn_box_read(GF_Box *s, GF_BitStream *bs)
+-	GF_Err e;
+-	u32 bytesToRead, sub_size, sub_a;
+-	GF_BitStream *sub_bs;
+-	GF_UnknownBox *ptr = (GF_UnknownBox *)s;
+-	if (ptr->size > 0xFFFFFFFF) return GF_ISOM_INVALID_FILE;
++GF_Err e;
++u32 bytesToRead, sub_size, sub_a;
++GF_BitStream *sub_bs;
++GF_UnknownBox *ptr = (GF_UnknownBox *)s;
++
++bytesToRead = (u32) (ptr->size);
++if (!bytesToRead) return GF_OK;
++if (bytesToRead>1000000) {
++gf_bs_skip_bytes(bs, ptr->size - bytesToRead);
++return GF_ISOM_INVALID_FILE;
++}
++ptr->data = (char*)gf_malloc(bytesToRead);
++if (ptr->data == NULL ) return GF_OUT_OF_MEM;
++ptr->dataSize = bytesToRead;
++gf_bs_read_data(bs, ptr->data, ptr->dataSize);
++sub_bs = gf_bs_new(ptr->data, ptr->dataSize, GF_BITSTREAM_READ);
++sub_size = gf_bs_read_u32(sub_bs);	if (ptr->size > 0xFFFFFFFF) return GF_ISOM_INVALID_FILE;

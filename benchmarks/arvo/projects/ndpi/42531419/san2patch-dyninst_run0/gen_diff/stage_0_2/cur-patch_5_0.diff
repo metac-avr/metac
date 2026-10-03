@@ -1,0 +1,19 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index 0b8674f38..7a2fc0074 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -1378,5 +1378,9 @@ void process_tls(struct ndpi_detection_module_struct *ndpi_struct,
+-  packet->payload = crypto_data;
+-  packet->payload_packet_len = crypto_data_len;
+-
+-  processClientServerHello(ndpi_struct, flow, flow->protos.tls_quic.quic_version);
+-  flow->protos.tls_quic.hello_processed = 1; /* Allow matching of custom categories */
++  
++  /* Input validation to prevent out-of-bounds read vulnerability */
++  if(crypto_data_len >= 2) {
++    packet->payload = crypto_data;
++    packet->payload_packet_len = crypto_data_len;
++
++    processClientServerHello(ndpi_struct, flow, flow->protos.tls_quic.quic_version);
++    flow->protos.tls_quic.hello_processed = 1; /* Allow matching of custom categories */
++  }

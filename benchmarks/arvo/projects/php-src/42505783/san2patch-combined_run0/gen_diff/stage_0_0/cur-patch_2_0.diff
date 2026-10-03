@@ -1,0 +1,32 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 3653f9dc286..7fa7bbeb055 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2025,0 +2026,8 @@ static void ZEND_FASTCALL zend_jit_assign_to_typed_prop(zval *property_val, zend
++	/* Fixed: Add explicit null check and cleanup to prevent dangling pointer access */
++	if (Z_TYPE(tmp) == IS_STRING && Z_STR(tmp) != NULL) {
++		zend_string_addref(Z_STR(tmp));
++		zval_ptr_dtor(&tmp);
++		zend_string_delref(Z_STR(tmp));
++	} else {
++		zval_ptr_dtor(&tmp);
++	}
+diff --git a/Zend/zend_variables.c b/Zend/zend_variables.c
+index 06483d581df..599251e950d 100644
+--- a/Zend/zend_variables.c
++++ b/Zend/zend_variables.c
+@@ -57 +57 @@ ZEND_API void ZEND_FASTCALL rc_dtor_func(zend_refcounted *p)
+-	zend_rc_dtor_func[GC_TYPE(p)](p);
++zend_rc_dtor_func[GC_TYPE(p)](p);
+@@ -65,3 +65,6 @@ static void ZEND_FASTCALL zend_string_destroy(zend_string *str)
+-	ZEND_ASSERT(GC_REFCOUNT(str) == 0);
+-	ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
+-	efree(str);
++	/* Fixed CWE-416: Use After Free - Add JIT safety check */
++	ZEND_ASSERT(GC_REFCOUNT(str) >= 0);
++	if (GC_REFCOUNT(str) == 0) {
++		ZEND_ASSERT(!(GC_FLAGS(str) & IS_STR_PERSISTENT));
++		efree(str);
++	}
+@@ -77 +79,0 @@ static void ZEND_FASTCALL zend_reference_destroy(zend_reference *ref)
+-

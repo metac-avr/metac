@@ -1,0 +1,23 @@
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index a8571af75c9..364e8933c2e 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2166,0 +2167 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++// FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -2167,0 +2169 @@ ZEND_API void ZEND_FASTCALL zend_hash_reverse_apply(HashTable *ht, apply_func_t
++			if (UNEXPECTED(GC_IS_RECURSIVE(p->val.value.counted))) continue;
+diff --git a/Zend/zend.c b/Zend/zend.c
+index bbddd459704..b8ededc9a8c 100644
+--- a/Zend/zend.c
++++ b/Zend/zend.c
+@@ -1262 +1262,5 @@ void zend_call_destructors(void) /* {{{ */
+-		shutdown_destructors();
++		if (EG(objects_store).buckets != NULL && EG(objects_store).top_buckets > 0) {
++			shutdown_destructors();
++		}
++	} zend_catch {
++		/* Ignore any exceptions during shutdown */
+@@ -1272,2 +1276 @@ ZEND_API void zend_deactivate(void) /* {{{ */
+-	zend_try {
+-		shutdown_scanner();
++	zend_try {		shutdown_scanner();

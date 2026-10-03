@@ -1,0 +1,32 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..930f06c66 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -348 +348,10 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++    }
++    void *new_cibase = mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    if (new_cibase != c->cibase) {
++      c->cibase = (mrb_callinfo*)new_cibase;
++      c->ci = ci = c->cibase + size;
++    } else {
++      c->cibase = (mrb_callinfo*)new_cibase;
++      c->ci = ci;
+@@ -350,2 +358,0 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
+-    c->ci = ci = c->cibase + size;
+@@ -2710,2 +2717,5 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
++// FIXME: Crash CWE-416: Use After Free
++     CASE(OP_ARYCAT, B) {
++      mrb_value splat;
++      mrb_int ai_new = mrb_gc_arena_save(mrb);  /* Save GC arena state */
++      splat = mrb_ary_splat(mrb, regs[a+1]);
+@@ -2719 +2729 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      mrb_gc_arena_restore(mrb, ai);
++      mrb_gc_arena_restore(mrb, ai_new);
+@@ -2722 +2731,0 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-

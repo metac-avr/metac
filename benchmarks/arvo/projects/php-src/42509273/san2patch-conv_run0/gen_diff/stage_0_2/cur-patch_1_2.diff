@@ -1,0 +1,54 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..d6c5182ac21 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -985,2 +985,7 @@ static void gc_mark_roots(gc_stack *stack)
+-				GC_REF_SET_COLOR(current->ref, GC_GREY);
+-				gc_mark_grey(current->ref, stack);
++				zend_refcounted *ref_ptr = current->ref;
++				gc_root_buffer *root_start = GC_IDX2PTR(GC_FIRST_ROOT);
++				gc_root_buffer *root_end = GC_IDX2PTR(GC_G(first_unused));
++				if (ref_ptr >= (zend_refcounted *)root_start && ref_ptr < (zend_refcounted *)root_end) {
++					GC_REF_SET_COLOR(current->ref, GC_GREY);
++					gc_mark_grey(current->ref, stack);
++				}
+@@ -1485,0 +1491,3 @@ ZEND_API int zend_gc_collect_cycles(void)
++static void gc_mark_roots(gc_stack *stack)
++{
++	gc_root_buffer *current, *last;
+@@ -1487,15 +1495 @@ ZEND_API int zend_gc_collect_cycles(void)
+-		if (GC_G(gc_active)) {
+-			return 0;
+-		}
+-
+-		GC_TRACE("Collecting cycles");
+-		GC_G(gc_runs)++;
+-		GC_G(gc_active) = 1;
+-
+-		GC_TRACE("Marking roots");
+-		gc_mark_roots(&stack);
+-		GC_TRACE("Scanning roots");
+-		gc_scan_roots(&stack);
+-
+-		GC_TRACE("Collecting roots");
+-		count = gc_collect_roots(&gc_flags, &stack);
++	gc_compact();
+@@ -1503,5 +1497,13 @@ ZEND_API int zend_gc_collect_cycles(void)
+-		if (!GC_G(num_roots)) {
+-			/* nothing to free */
+-			GC_TRACE("Nothing to free");
+-			gc_stack_free(&stack);
+-			GC_G(gc_active) = 0;
++	current = GC_IDX2PTR(GC_FIRST_ROOT);
++	last = GC_IDX2PTR(GC_G(first_unused));
++	while (current != last) {
++		if (GC_IS_ROOT(current->ref)) {
++// FIXME: Crash CWE-125: Out-of-bounds Read
++			if (GC_REF_CHECK_COLOR(current->ref, GC_PURPLE)) {
++				GC_REF_SET_COLOR(current->ref, GC_GREY);
++				gc_mark_grey(current->ref, stack);
++			}
++		}
++		current++;
++	}
++}			GC_G(gc_active) = 0;

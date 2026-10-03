@@ -1,0 +1,25 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index feeb1f6f6b0..a0cb4823598 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -1106,2 +1105,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_STATIC_PROP_REF_SPEC_HA
+-}
+-
+@@ -1115,0 +1114,13 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_leave_helper
++		/* Validate object references before freeing compiled variables to prevent use-after-free */
++		zend_object **objects = (zend_object**)EX(func)->op_array.vars;
++		uint32_t num_vars = EX(func)->op_array.last_var;
++		for (uint32_t i = 0; i < num_vars; i++) {
++			zval *var = ZEND_CALL_VAR_NUM(EXecute_data, i);
++			if (Z_TYPE_P(var) == IS_OBJECT && Z_OBJ_P(var) != NULL) {
++				zend_object *obj = Z_OBJ_P(var);
++				/* Check if object is still valid before proceeding */
++				if (obj->gc.refcount > 0) {
++					continue;
++				}
++			}
++		}
+@@ -1126,2 +1137 @@ static zend_never_inline ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL zend_leave_helper
+-		EG(vm_stack_top) = (zval*)execute_data;
+-		execute_data = EX(prev_execute_data);
++		EG(vm_stack_top) = (zval*)execute_data;		execute_data = EX(prev_execute_data);

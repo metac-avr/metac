@@ -1,0 +1,58 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index dc3022c89..8c15c57e1 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -421,0 +422,29 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  if (uzero(yy)) return;        /* divided by zero */
++  mpz_init(mrb,&q); mpz_init(mrb,&x); mpz_init(mrb,&y);
++  mpz_realloc(mrb,&x,xx->sz+1);
++  size_t yd = digits(yy);
++  size_t ns = lzb(yy->p[yd-1]);
++  ulshift(mrb,&x,xx,ns);
++  ulshift(mrb,&y,yy,ns);
++  size_t xd = digits(&x);
++  mpz_realloc(mrb,&q,xd);
++  mp_limb2 z = y.p[yd-1];
++  static void
++udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++{
++  /* simple cases */
++  int cmp = ucmp(xx, yy);
++  if (cmp == 0) {
++    mpz_set_int(mrb, qq, 1);
++    zero(rr);
++    return;
++  }
++  else if (cmp < 0) {
++    zero(qq);
++    mpz_set(mrb, rr, yy);
++    return;
++  }
++
++  mpz_t q, x, y;
++  size_t i;
++
+@@ -432,0 +462,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++    // Ensure j doesn't underflow and array accesses are within bounds
++    if (j > xd || j+yd > x.sz) break;
+@@ -436,0 +468,2 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        // Check bounds before each array access
++        if (i+j >= x.sz) { b = 0; break; }
+@@ -442 +475 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-      b += x.p[i+j];
++      if (i+j < x.sz) b += x.p[i+j];
+@@ -444 +477 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    for (; b!=0; qhat--) {
++    for (; b!=0 && i+j < x.sz; qhat--) {
+@@ -446,0 +480 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++        if (i+j >= x.sz) break;
+@@ -453 +487 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
+-    q.p[j] = qhat;
++    if (j < q.sz) q.p[j] = qhat;
+@@ -461,0 +496,6 @@ udiv(mrb_state *mrb, mpz_t *qq, mpz_t *rr, mpz_t *xx, mpz_t *yy)
++  urshift(mrb,rr,&x,ns);
++  trim(&q);
++  mpz_set(mrb,qq,&q);
++  mpz_clear(mrb,&x); mpz_clear(mrb,&y);
++  mpz_clear(mrb,&q);
++}

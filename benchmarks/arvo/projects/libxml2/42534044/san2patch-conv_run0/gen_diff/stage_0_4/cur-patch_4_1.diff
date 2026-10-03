@@ -1,0 +1,91 @@
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..36315c5a 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3604,21 +3604,7 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-        } else {
+-	    if ((__xmlRegisterCallbacks) && (xmlDeregisterNodeDefaultValue))
+-		xmlDeregisterNodeDefaultValue(cur);
+-
+-	    if (((cur->type == XML_ELEMENT_NODE) ||
+-		 (cur->type == XML_XINCLUDE_START) ||
+-		 (cur->type == XML_XINCLUDE_END)) &&
+-		(cur->properties != NULL))
+-		xmlFreePropList(cur->properties);
+-	    if ((cur->type != XML_ELEMENT_NODE) &&
+-		(cur->type != XML_XINCLUDE_START) &&
+-		(cur->type != XML_XINCLUDE_END) &&
+-		(cur->type != XML_ENTITY_REF_NODE) &&
+-		(cur->content != (xmlChar *) &(cur->properties))) {
+-		DICT_FREE(cur->content)
+-	    }
+-	    if (((cur->type == XML_ELEMENT_NODE) ||
+-	         (cur->type == XML_XINCLUDE_START) ||
+-		 (cur->type == XML_XINCLUDE_END)) &&
+-		(cur->nsDef != NULL))
+-		xmlFreeNsList(cur->nsDef);
++        } void xmlFreeNode(xmlNodePtr cur) {
++    if (cur->type == XML_DTD_NODE) {
++        xmlFreeDtd((xmlDtdPtr) cur);
++        return;
++    }
++    if (cur->_private != NULL)
++        xmlFreeNodeExternalContent(cur);
+@@ -3626,12 +3612,45 @@ xmlFreeNodeList(xmlNodePtr cur) {
+-	    /*
+-	     * When a node is a text node or a comment, it uses a global static
+-	     * variable for the name of the node.
+-	     * Otherwise the node name might come from the document's
+-	     * dictionary
+-	     */
+-	    if ((cur->name != NULL) &&
+-		(cur->type != XML_TEXT_NODE) &&
+-		(cur->type != XML_COMMENT_NODE))
+-		DICT_FREE(cur->name)
+-	    xmlFree(cur);
+-	}
++    if ((cur->type == XML_DOCUMENT_NODE) ||
++        (cur->type == XML_HTML_DOCUMENT_NODE)) {
++        xmlFreeDoc((xmlDocPtr) cur);
++        return;
++    }
++    if (cur->type == XML_NAMESPACE_DECL) {
++        xmlFreeNs((xmlNsPtr) cur);
++        return;
++    }
++    if (cur->type == XML_ATTRIBUTE_NODE) {
++        xmlFreeProp((xmlAttrPtr) cur);
++        return;
++    }
++
++    /* unlink the node from its siblings and parent */
++    if (cur->parent != NULL) {
++        xmlUnlinkNode(cur);
++    }
++
++    /* Free the node content */
++    if (cur->content != NULL) {
++        DICT_FREE(cur->content)
++    }
++
++    /* Free the node name */
++    if (cur->name != NULL) {
++        DICT_FREE(cur->name)
++    }
++
++    /* Free properties and namespace definitions for element nodes */
++    if ((cur->type == XML_ELEMENT_NODE) ||
++        (cur->type == XML_XINCLUDE_START) ||
++        (cur->type == XML_XINCLUDE_END)) {
++        if (cur->properties != NULL)
++            xmlFreePropList(cur->properties);
++        if (cur->nsDef != NULL)
++            xmlFreeNsList(cur->nsDef);
++    }
++
++    /* Mark node as freed to prevent dangling pointer access */
++    cur->type = XML_ELEMENT_NODE; /* Reuse type field as freed marker */
++    cur->_private = NULL;
++    
++    xmlFree(cur);
++}

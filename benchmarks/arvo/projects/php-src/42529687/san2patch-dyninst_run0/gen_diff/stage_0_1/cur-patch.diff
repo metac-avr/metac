@@ -1,0 +1,30 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c4a07f58874..719a9925ff6 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1368 +1368 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
++return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+@@ -1376 +1376,2 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
+-static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+@@ -1378 +1379,5 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	return GC_DELREF(Z_COUNTED_P(pz));
++	zend_refcounted *ref = Z_COUNTED_P(pz);
++	if (ref && Z_REFCOUNT_P(pz) > 0) {
++		return GC_DELREF(ref);
++	}
++	return 0;
+@@ -1383 +1388 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	do {												\
++	do {								\
+@@ -1385,3 +1390,3 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
++		Z_COUNTED_P(z) = gc;						\
++		z->value.ww.w2 = _w2;						\
++		Z_TYPE_INFO_P(z) = t;						\
+@@ -1388,0 +1394 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
++

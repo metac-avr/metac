@@ -1,0 +1,16 @@
+diff --git a/src/media_tools/mpegts.c b/src/media_tools/mpegts.c
+index b22fdbecd..c84260008 100644
+--- a/src/media_tools/mpegts.c
++++ b/src/media_tools/mpegts.c
+@@ -570,2 +570,5 @@ static void gf_m2ts_section_complete(GF_M2TS_Demuxer *ts, GF_M2TS_SectionFilter
+-					if (sec->process_section)
+-						sec->process_section(ts, ses, t->sections, t->table_id, t->ex_table_id, t->version_number, (u8) (t->last_section_number - 1), status);
++					if (sec->process_section) {
++						// Ensure ses is not freed before accessing it
++						GF_M2TS_SECTION_ES *safe_ses = ses;
++						sec->process_section(ts, safe_ses, t->sections, t->table_id, t->ex_table_id, t->version_number, (u8) (t->last_section_number - 1), status);
++					}
+@@ -2812 +2815,2 @@ GF_Err gf_m2ts_process_data(GF_M2TS_Demuxer *ts, u8 *data, u32 data_size)
+-		}
++// FIXME: Crash CWE-416: Use After Free
++ 		}

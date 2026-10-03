@@ -1,0 +1,21 @@
+diff --git a/src/odf/descriptors.c b/src/odf/descriptors.c
+index d5db4e0cd..e2fa62454 100644
+--- a/src/odf/descriptors.c
++++ b/src/odf/descriptors.c
+@@ -1220,2 +1220,14 @@ GF_Err gf_odf_vvc_cfg_write_bs(GF_VVCConfig *cfg, GF_BitStream *bs)
+-				gf_bs_write_data(bs, cfg->general_constraint_info, cfg->num_constraint_info - 1);
+-				gf_bs_write_int(bs, cfg->general_constraint_info[cfg->num_constraint_info - 1], 6);
++				// Bounds checking to prevent out-of-bounds access
++				u32 constraint_size = cfg->num_constraint_info;
++				if (constraint_size > 0) {
++					// Ensure we don't read beyond allocated buffer
++					u32 write_size = (constraint_size > 1) ? constraint_size - 1 : 0;
++					if (write_size < constraint_size) {
++						gf_bs_write_data(bs, cfg->general_constraint_info, write_size);
++						gf_bs_write_int(bs, cfg->general_constraint_info[write_size], 6);
++					} else {
++						gf_bs_write_int(bs, 0, 6);
++					}
++				} else {
++					gf_bs_write_int(bs, 0, 6);
++				}

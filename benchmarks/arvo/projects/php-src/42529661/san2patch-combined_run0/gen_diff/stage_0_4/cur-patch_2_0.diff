@@ -1,0 +1,46 @@
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..7435205c726 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -8981,8 +8981 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-					(ZEND_JIT_EXIT_METHOD_CALL | ZEND_JIT_EXIT_CLOSURE_CALL | ZEND_JIT_EXIT_POLYMORPHISM);
+-			} else if (!zend_jit_traces[parent_num].polymorphism) {
+-				polymorphism = 1;
+-			} else if (exit_num == 0) {
+-				polymorphism = zend_jit_traces[parent_num].polymorphism + 1;
+-			}
+-		}
+-	}
++FIXME: Crash CWE-825: Expired Pointer Dereference
+@@ -8990,3 +8983,4 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	JIT_G(tracing) = 1;
+-	stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
+-	JIT_G(tracing) = 0;
++	if (trace_buffer && trace_buffer->magic == ZEND_JIT_TRACE_MAGIC) {
++		JIT_G(tracing) = 1;
++		stop = zend_jit_trace_execute(execute_data, EX(opline), trace_buffer, ZEND_JIT_TRACE_START_SIDE, is_megamorphic);
++		JIT_G(tracing) = 0;
+@@ -8994,4 +8988,4 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	if (stop & ZEND_JIT_TRACE_HALT) {
+-		ret = -1;
+-	}
+-	stop &= ~ZEND_JIT_TRACE_HALT;
++		if (stop & ZEND_JIT_TRACE_HALT) {
++			ret = -1;
++		}
++		stop &= ~ZEND_JIT_TRACE_HALT;
+@@ -8999,4 +8993,3 @@ int ZEND_FASTCALL zend_jit_trace_hot_side(zend_execute_data *execute_data, uint3
+-	if (UNEXPECTED(trace_buffer->start != ZEND_JIT_TRACE_START_SIDE)) {
+-		if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_START) {
+-			const zend_op_array *op_array = trace_buffer[0].op_array;
+-			const zend_op *opline = trace_buffer[1].opline;
++		if (UNEXPECTED(trace_buffer->start != ZEND_JIT_TRACE_START_SIDE)) {
++			if (JIT_G(debug) & ZEND_JIT_DEBUG_TRACE_START) {
++				const zend_op_array *op_array = trace_buffer[0].op_array;			const zend_op *opline = trace_buffer[1].opline;
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..6fa260cd6fa 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2497,0 +2498,2 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++	/* Mark hash table as freed to prevent JIT access */
++	HT_FLAGS(ht) |= HASH_FLAG_FREED;

@@ -1,0 +1,43 @@
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..20b695a1cde 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -862 +862,11 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		if (UNEXPECTED(execute_data != prev_execute_data)) {
++// FIXME: Crash CWE-416: Use After Free
++ 		if (UNEXPECTED(execute_data != prev_execute_data)) {
++			/* Add memory validation check before accessing potentially freed memory */
++			if (execute_data && prev_execute_data && 
++			    ZEND_MM_VALID_PTR(execute_data)) {
++				continue;
++			} else {
++				zend_gc_reset();
++				continue;
++			}
++		}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..00263be5d02 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -29952,0 +29953,10 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
++		if (IS_CV != IS_UNUSED) {
++			/* Prevent use-after-free by checking object validity before GC */
++			if (object_ptr && Z_REFCOUNTED_P(object_ptr) && 
++			    Z_COUNTED_P(object_ptr)->gc.u.v.type != 0) {
++				zval_ptr_dtor_nogc(object_ptr);
++			}
++		}
++		zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
++		/* assign_dim has two opcodes! */
++		ZEND_VM_NEXT_OPCODE_EX(1, 2);
+@@ -29954,6 +29963,0 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	if (IS_CV != IS_UNUSED) {
+-
+-	}
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+-	/* assign_dim has two opcodes! */
+-	ZEND_VM_NEXT_OPCODE_EX(1, 2);
+@@ -29967,2 +29971 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	zval *variable_ptr;
+-	zval *dim;
++	zval *variable_ptr;	zval *dim;

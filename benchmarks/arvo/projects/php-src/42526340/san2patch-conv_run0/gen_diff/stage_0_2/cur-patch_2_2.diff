@@ -1,0 +1,49 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index df9bff9015e..5952fd0a055 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1251,2 +1251,5 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
++#ifndef ZEND_TYPES_H
++#define ZEND_TYPES_H
++
++#if defined(__GNUC__) && __GNUC__ >= 4
++# define ZEND_TYPE_MODIFIER __attribute__((aligned(sizeof(void*))))
+@@ -1254,4 +1257 @@ extern ZEND_API bool zend_rc_debug;
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
++# define ZEND_TYPE_MODIFIER
+@@ -1259,0 +1260,2 @@ extern ZEND_API bool zend_rc_debug;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 
+@@ -1260,0 +1263 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
++	if (!p || (ZEND_ASSUME(p != NULL), 0)) return 0;
+@@ -1264,0 +1268 @@ static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, ui
++	if (!p || (ZEND_ASSUME(p != NULL), 0)) return 0;
+@@ -1270,0 +1275 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	if (!p || (ZEND_ASSUME(p != NULL), 0)) return 0;
+@@ -1273,0 +1279,5 @@ static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++static zend_always_inline uint32_t zend_gc_delref(zend_refcounted_h *p) {
++	if (!p || (ZEND_ASSUME(p != NULL), 0)) return 0;
++	return --(p->refcount);
++}}
++
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..87a2ab415a1 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -202,4 +202,7 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		/* Add explicit check to prevent expired pointer dereference */
++		if (EG(objects_store).object_buckets && handle < EG(objects_store).top) {
++			ptr = ((char*)object) - object->handlers->offset;
++			GC_REMOVE_FROM_BUFFER(object);
++			efree(ptr);
++			ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		}

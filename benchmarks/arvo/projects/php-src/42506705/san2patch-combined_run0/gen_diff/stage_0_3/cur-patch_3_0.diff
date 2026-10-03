@@ -1,0 +1,30 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index fbac12f5248..50773d010db 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -421,3 +421,9 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-	retval = zend_hash_find(ht, offset_key);
+-	if (!retval) {
+-		zend_error(E_WARNING, "Undefined array key \"%s\"", ZSTR_VAL(offset_key));
++	if (ht != NULL) {
++		retval = zend_hash_find(ht, offset_key);
++		if (!retval) {
++			zend_error(E_WARNING, "Undefined array key \"%s\"", ZSTR_VAL(offset_key));
++			ZVAL_NULL(result);
++			return;
++		}
++		ZVAL_COPY_DEREF(result, retval);
++	} else {
+@@ -425 +430,0 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-		return;
+@@ -427 +431,0 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-	ZVAL_COPY_DEREF(result, retval);
+@@ -431,2 +435,6 @@ static void ZEND_FASTCALL zend_jit_fetch_dim_r_helper(zend_array *ht, zval *dim,
+-	ZEND_HASH_INDEX_FIND(ht, hval, retval, num_undef);
+-	ZVAL_COPY_DEREF(result, retval);
++	if (ht != NULL) {
++		ZEND_HASH_INDEX_FIND(ht, hval, retval, num_undef);
++		ZVAL_COPY_DEREF(result, retval);
++	} else {
++		ZVAL_NULL(result);
++	}

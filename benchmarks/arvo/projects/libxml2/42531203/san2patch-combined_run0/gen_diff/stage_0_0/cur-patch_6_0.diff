@@ -1,0 +1,31 @@
+diff --git a/buf.c b/buf.c
+index 9dc9400f..9de93806 100644
+--- a/buf.c
++++ b/buf.c
+@@ -409,0 +410,2 @@ xmlBufGrowInternal(xmlBufPtr buf, size_t len) {
++        // Store old content pointer to detect reallocation
++        xmlChar *old_content = buf->content;
+@@ -410,0 +413,2 @@ xmlBufGrowInternal(xmlBufPtr buf, size_t len) {
++        // Notify parsers that buffer may have moved
++        buf->flags |= XML_BUF_FLAG_MOVED;
+@@ -416,0 +421,2 @@ xmlBufGrowInternal(xmlBufPtr buf, size_t len) {
++        // Store old content pointer to detect reallocation
++        xmlChar *old_content = buf->content;
+@@ -417,0 +424,2 @@ xmlBufGrowInternal(xmlBufPtr buf, size_t len) {
++        // Notify parsers that buffer may have moved
++        buf->flags |= XML_BUF_FLAG_MOVED;
+diff --git a/HTMLparser.c b/HTMLparser.c
+index 840e6ebf..2d302457 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -4877,0 +4878,10 @@ htmlParseDocument(htmlParserCtxtPtr ctxt) {
++    /*
++     * Refresh context pointers after potential buffer reallocation
++     */
++    if (ctxt->input != NULL) {
++        ctxt->input->cur = ctxt->input->buf->buffer->content + 
++                           (ctxt->input->cur - ctxt->input->buf->buffer->content);
++        ctxt->input->end = ctxt->input->buf->buffer->content + 
++                           ctxt->input->buf->buffer->use;
++    }
++    

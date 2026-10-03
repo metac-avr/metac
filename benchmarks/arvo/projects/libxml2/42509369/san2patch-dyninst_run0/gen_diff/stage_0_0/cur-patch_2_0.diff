@@ -1,0 +1,17 @@
+diff --git a/tree.c b/tree.c
+index e4425f10..4dfaa286 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3803,3 +3803,9 @@ xmlFreeNode(xmlNodePtr cur) {
+-    if ((cur->children != NULL) &&
+-	(cur->type != XML_ENTITY_REF_NODE))
+-	xmlFreeNodeList(cur->children);
++// FIXME: Crash CWE-763: Release of Invalid Pointer or Reference
++     if ((cur->children != NULL) &&
++	(cur->type != XML_ENTITY_REF_NODE)) {
++        xmlNodePtr child_ptr = cur->children;
++        cur->children = NULL;  /* Clear the pointer before freeing */
++        if (child_ptr != NULL) {
++            xmlFreeNodeList(child_ptr);
++        }
++    }

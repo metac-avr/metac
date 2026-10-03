@@ -1,0 +1,84 @@
+diff --git a/src/lib/protocols/tls.c b/src/lib/protocols/tls.c
+index 71f6eb0be..5a398d662 100644
+--- a/src/lib/protocols/tls.c
++++ b/src/lib/protocols/tls.c
+@@ -2381,2 +2381,43 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-			 &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+-		}
++static void tls_detect_certificate_signaling_algorithm(struct ndpi_detection_module_struct *ndpi_struct,
++			       struct ndpi_flow_struct *flow,
++			       u_int16_t offset,
++			       u_int16_t extensions_len,
++			       u_int16_t total_len,
++			       u_int8_t certificate_algorithm,
++			       struct ndpi_tls_certificate_fingerprint *ja,
++			       struct ndpi_packet_struct *packet)
++{
++  u_int16_t i, id;
++
++  if(certificate_algorithm == 0x04 /* handshake_certs */) {
++    u_int16_t extension_offset = 0, tot_signature_algorithms_len;
++    u_int8_t sa_size = 0;
++    u_int16_t s_offset;
++    u_int16_t last_signature = 0;
++    u_int8_t duplicate_found = 0;
++
++    /* Check if we have extensions */
++    if((extensions_len+offset) <= total_len) {
++      u_int16_t extensions_len_check = ntohs(*((u_int16_t*)&packet->payload[offset]));
++
++      if((offset+extensions_len_check) <= total_len) {
++	extension_offset = 2;
++
++	while(extension_offset < extensions_len - 2) {
++	  u_int16_t extension_id = ntohs(*((u_int16_t*)&packet->payload[offset+extension_offset]));
++	  u_int16_t extension_len = ntohs(*((u_int16_t*)&packet->payload[offset+extension_offset+2]));
++
++	  if((offset+extension_offset+4) <= total_len) {
++	    if(extension_id == 13 /* signature_algorithms */) {
++	      if(extension_len >= 2 &&
++		 offset+extension_offset+4 < total_len &&
++		 offset+extension_offset+1 < total_len) {
++		sa_size = packet->payload[offset+extension_offset+4];
++		if(sa_size > 0) {
++		  tot_signature_algorithms_len = extension_len - 2;
++		  s_offset = offset+extension_offset+6;
++
++		  if(s_offset+tot_signature_algorithms_len <= total_len) {
++#ifdef TLS_HANDLE_SIGNATURE_ALGORITMS
++		    memcpy(ja.client.signature_algorithms_raw,
++			   &packet->payload[s_offset], 2 /* 16 bit */ * sa_size);
+@@ -2385 +2426 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
++		    ja.client.num_signature_algorithms = ndpi_min(sa_size, MAX_NUM_JA);
+@@ -2387,5 +2428,7 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i<total_len; i++) {
+-		  int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
+-					 sizeof(ja.client.signature_algorithms_str)-i*2,
+-					 "%02X", packet->payload[s_offset+i]);
+-		  ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++		    for(i=0, id=0; i<tot_signature_algorithms_len && s_offset+i*2+1<total_len; i++) {
++		      int rc = ndpi_snprintf(&ja.client.signature_algorithms_str[i*2],
++				     sizeof(ja.client.signature_algorithms_str)-i*2,
++				     "%02X", packet->payload[s_offset+i]);
++		      if(s_offset+i*2+1 < total_len) { // Bounds check added
++		        ja.client.signature_algorithms[id++] = ntohs(*(u_int16_t*)&packet->payload[s_offset+i*2]);
++		      }
+@@ -2393,2 +2436,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(rc < 0) break;
+-		}
++		      if(rc < 0) break;
++		    }
+@@ -2396,2 +2439,2 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
+-		  u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
++		    for(i=0; i<tot_signature_algorithms_len && s_offset + (int)i + 2 < packet->payload_packet_len; i+=2) {
++		      u_int16_t signature_algo = (u_int16_t)ntohs(*((u_int16_t*)&packet->payload[s_offset+i]));
+@@ -2399,4 +2442,3 @@ int processClientServerHello(struct ndpi_detection_module_struct *ndpi_struct,
+-		  if(last_signature == signature_algo) {
+-		    /* Consecutive duplication */
+-		    duplicate_found = 1;
+-		    continue;
++		      if(last_signature == signature_algo) {
++			/* Consecutive duplication */
++			duplicate_found = 1;		    continue;

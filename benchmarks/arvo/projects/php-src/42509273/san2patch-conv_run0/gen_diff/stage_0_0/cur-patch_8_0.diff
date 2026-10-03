@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
+index de7353013f0..2b4c5649c65 100644
+--- a/Zend/zend_gc.c
++++ b/Zend/zend_gc.c
+@@ -1486 +1485,0 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
+@@ -1494 +1493,8 @@ ZEND_API int zend_gc_collect_cycles(void)
+-
++		
++		/* Bounds check for stack before proceeding */
++		if (stack.max_size > 0x10000000) {  /* Prevent excessive allocation */
++			GC_TRACE("Stack size exceeds safety limits");
++			GC_G(gc_active) = 0;
++			return 0;
++		}
++ 
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7bfc8413fb2..abf1f7fb721 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -215,0 +216 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
++// FIXME: Crash CWE-125: Out-of-bounds Read
+@@ -217 +218 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-		for (zend_long i = 0; i < intern->array.size; i++) {
++		for (zend_long i = 0; i < intern->array.size && i < j; i++) {
+@@ -222 +223 @@ static HashTable* spl_fixedarray_object_get_properties(zend_object *obj)
+-			for (zend_long i = intern->array.size; i < j; ++i) {
++			for (zend_long i = intern->array.size; i < j && i < zend_hash_num_elements(ht); ++i) {

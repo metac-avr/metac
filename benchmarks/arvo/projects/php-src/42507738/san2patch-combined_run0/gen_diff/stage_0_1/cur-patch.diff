@@ -1,0 +1,21 @@
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index dce0f32e835..885efd9fcb5 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -2868,2 +2868 @@ static zend_always_inline void zend_fetch_property_address(zval *result, zval *c
+-				return;
+-			}
++return;
+@@ -2875,0 +2875,6 @@ static zend_always_inline void zend_fetch_property_address(zval *result, zval *c
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++		/* Add safety check for expired pointer dereference */
++		if (UNEXPECTED(!zobj || !zobj->handlers)) {
++			ZVAL_UNDEF(result);
++			return;
++		}
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index b09ce3b990d..bdc1f053e7f 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -183,0 +184 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
++// Security fix: Validate object before property access to prevent expired pointer dereference

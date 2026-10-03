@@ -1,0 +1,29 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 4714ab37101..de8b69aa180 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3209 +3209,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor(EX_VAR(EX(func)->op_array.opcodes[i].op1.var));
++					zval *temp_var = EX_VAR(EX(func)->op_array.opcodes[i].op1.var);
++					if (temp_var != NULL) {
++						zval_ptr_dtor(temp_var);
++					}
+@@ -3246 +3249,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *res_var = EX_VAR(throw_op->result.var);
++					if (res_var != NULL) {
++						zval_ptr_dtor_nogc(res_var);
++					}
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..4cfcfacb468 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -300 +300,2 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-
++		zval *orig_p = p;
++ 
+@@ -302 +303,3 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-			zval_ptr_dtor_nogc(p);
++			if (p && (p >= orig_p)) {
++				zval_ptr_dtor_nogc(p);
++			}

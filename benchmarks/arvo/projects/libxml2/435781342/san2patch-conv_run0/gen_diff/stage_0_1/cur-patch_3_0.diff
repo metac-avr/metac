@@ -1,0 +1,35 @@
+diff --git a/SAX2.c b/SAX2.c
+index 8e6ba6c7..91d3a7ef 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -2263,4 +2263,9 @@ xmlSAX2StartElementNs(void *ctx,
+-    if (nodePush(ctxt, ret) < 0) {
+-        xmlUnlinkNode(ret);
+-        xmlFreeNode(ret);
+-        return;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++    if (ret != NULL) {  // Add null check for ret before accessing it
++        if (nodePush(ctxt, ret) < 0) {
++            xmlUnlinkNode(ret);
++            xmlFreeNode(ret);
++            return;
++        }
++    } else {
++        return;  // Handle case where ret is NULL
+@@ -2274,2 +2279 @@ xmlSAX2StartElementNs(void *ctx,
+-	nb_attributes -= nb_defaulted;
+-
++	 nb_attributes -= nb_defaulted;
+diff --git a/valid.c b/valid.c
+index e11d2c95..a7d94533 100644
+--- a/valid.c
++++ b/valid.c
+@@ -2364 +2364,4 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-            return(0);
++             return(0);
++
++	if ((elem->ns != NULL) && (elem->ns->prefix == NULL))
++	     return(0);
+@@ -2376 +2379 @@ xmlIsID(xmlDoc *doc, xmlNode *elem, xmlAttr *attr) {
+-		                          attr->name, aprefix);
++	                          attr->name, aprefix);

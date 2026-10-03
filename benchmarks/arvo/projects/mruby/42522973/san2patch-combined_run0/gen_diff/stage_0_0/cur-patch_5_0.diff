@@ -1,0 +1,45 @@
+diff --git a/src/gc.c b/src/gc.c
+index e5488dfcc..cf4433485 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -643 +643 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    {
++{
+@@ -646,2 +646,6 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark_mt(mrb, c);
+-      mrb_gc_mark(mrb, (struct RBasic*)c->super);
++      if (gc->state != GC_STATE_SWEEP || !is_swept_object(gc, (struct RBasic*)c)) {
++        mrb_gc_mark_mt(mrb, c);
++        if (c->super && (!gc->state != GC_STATE_SWEEP || !is_swept_object(gc, (struct RBasic*)c->super))) {
++          mrb_gc_mark(mrb, (struct RBasic*)c->super);
++        }
++      }
+@@ -651 +655,2 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-  case MRB_TT_OBJECT:
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++   case MRB_TT_OBJECT:
+@@ -653 +658,3 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    if (gc->state != GC_STATE_SWEEP || !is_swept_object(gc, (struct RBasic*)obj)) {
++      mrb_gc_mark_iv(mrb, (struct RObject*)obj);
++    }
+@@ -660,2 +667,8 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-      mrb_gc_mark(mrb, (struct RBasic*)p->upper);
+-      mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++      if (gc->state != GC_STATE_SWEEP || !is_swept_object(gc, (struct RBasic*)p)) {
++        if (p->upper && (!gc->state != GC_STATE_SWEEP || !is_swept_object(gc, (struct RBasic*)p->upper))) {
++          mrb_gc_mark(mrb, (struct RBasic*)p->upper);
++        }
++        if (p->e.env && (!gc->state != GC_STATE_SWEEP || !is_swept_object(gc, (struct RBasic*)p->e.env))) {
++          mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
++        }
++      }
+@@ -663,2 +676 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
+-    break;
+-
++    break
+@@ -1155 +1166,0 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
+-
+@@ -1157,0 +1169,2 @@ incremental_sweep_phase(mrb_state *mrb, mrb_gc *gc, size_t limit)
++      /* Add synchronization barrier before freeing */
++      __sync_synchronize();

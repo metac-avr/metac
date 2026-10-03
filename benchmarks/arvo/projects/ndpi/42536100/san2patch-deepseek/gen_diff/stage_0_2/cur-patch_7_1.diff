@@ -1,0 +1,74 @@
+diff --git a/src/lib/protocols/zoom.c b/src/lib/protocols/zoom.c
+index 4ffad391a..da8a75e70 100644
+--- a/src/lib/protocols/zoom.c
++++ b/src/lib/protocols/zoom.c
+@@ -185,31 +185,36 @@ static void ndpi_search_zoom(struct ndpi_detection_module_struct *ndpi_struct,
+-            memcmp(packet->payload, tomatch_p2p, 3) == 0 &&
+-            *(u_int32_t *)&packet->payload[packet->payload_packet_len - 4] == 0) {
+-    u_int32_t ip_len, uuid_len;
+-
+-    /* Check if it is a Peer-To-Peer call.
+-       We have been identifing such flows using the "stun_zoom" LRU cache; let's
+-       see if we are able to detect them properly via DPI.
+-       According to the paper, P2P calls should use "Zoom Media Encapsulation"
+-       header without any "Zoom SFU Encapsulation".
+-       Looking at the traces, it seems that the packet structure is something like:
+-       * ZME type 0x1F
+-       * initial header 24 byte long, without any obvious sequence number field
+-       * a Length-Value list of attributes (4 bytes length field)
+-         * an ip address (as string)
+-         * some kind of UUID
+-       * 4 bytes as 0x00 at the end
+-
+-       TODO: if everything will work as expected, we can remove stun_zoom cache
+-    */
+-
+-    ip_len = ntohl(*(u_int32_t *)&packet->payload[24]);
+-
+-    if(24 + 4 + ip_len + 4 < packet->payload_packet_len) {
+-      uuid_len = ntohl(*(u_int32_t *)&packet->payload[24 + 4 + ip_len]);
+-
+-      if(packet->payload_packet_len == 24 + 4 + ip_len + 4 + uuid_len + 4) {
+-        NDPI_LOG_DBG(ndpi_struct, "found P2P Zoom\n");
+-        flow->l4.udp.zoom_p2p = 1;
+-        ndpi_int_zoom_add_connection(ndpi_struct, flow, NDPI_PROTOCOL_UNKNOWN);
+-        return;
+-      }
++        memcmp(packet->payload, tomatch_p2p, 3) == 0 &&
++        *(u_int32_t *)&packet->payload[packet->payload_packet_len - 4] == 0) {
++  u_int32_t ip_len, uuid_len;
++
++  /* Check if it is a Peer-To-Peer call.
++     We have been identifing such flows using the "stun_zoom" LRU cache; let's
++     see if we are able to detect them properly via DPI.
++     According to the paper, P2P calls should use "Zoom Media Encapsulation"
++     header without any "Zoom SFU Encapsulation".
++     Looking at the traces, it seems that the packet structure is something like:
++     * ZME type 0x1F
++     * initial header 24 byte long, without any obvious sequence number field
++     * a Length-Value list of attributes (4 bytes length field)
++       * an ip address (as string)
++       * some kind of UUID
++     * 4 bytes as 0x00 at the end
++
++     TODO: if everything will work as expected, we can remove stun_zoom cache
++  */
++
++  if(packet->payload_packet_len < 28)
++    return;
++  ip_len = ntohl(*(u_int32_t *)&packet->payload[24]);
++
++  if(ip_len > packet->payload_packet_len - 28)
++    return;
++  if(24 + 4 + ip_len + 4 < packet->payload_packet_len) {
++    if(packet->payload_packet_len < 24 + 4 + ip_len + 8)
++      return;
++    uuid_len = ntohl(*(u_int32_t *)&packet->payload[24 + 4 + ip_len]);
++
++    if(packet->payload_packet_len == 24 + 4 + ip_len + 4 + uuid_len + 4) {
++      NDPI_LOG_DBG(ndpi_struct, "found P2P Zoom\n");
++      flow->l4.udp.zoom_p2p = 1;
++      ndpi_int_zoom_add_connection(ndpi_struct, flow, NDPI_PROTOCOL_UNKNOWN);
++      return;
+@@ -217,0 +223 @@ static void ndpi_search_zoom(struct ndpi_detection_module_struct *ndpi_struct,
++}

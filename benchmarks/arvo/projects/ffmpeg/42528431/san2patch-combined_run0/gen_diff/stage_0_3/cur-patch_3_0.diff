@@ -1,0 +1,14 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 0a1c8ea426..e16251b41e 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1300,2 +1300,7 @@ static int cbs_h264_write_nal_unit(CodedBitstreamContext *ctx,
+-
+-            if (slice->data) {
++ 
++            if (slice->data && slice->data_size > 0) {
++                // Prevent integer overflow leading to negative size parameter
++                if (slice->data_size > INT_MAX / 8) {
++                    av_log(ctx->log_ctx, AV_LOG_ERROR, "Slice data size too large\n");
++                    return AVERROR_INVALIDDATA;
++                }

@@ -1,0 +1,31 @@
+diff --git a/src/string.c b/src/string.c
+index df83f2c05..515cd02f9 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -213,0 +214,5 @@ str_decref(mrb_state *mrb, mrb_shared_string *shared)
++    /* Prevent use-after-free during hash operations */
++    if (shared->hash_lock > 0) {
++      shared->pending_free = 1;
++      return;
++    }
+@@ -224 +228,0 @@ str_modify_keep_ascii(mrb_state *mrb, struct RString *s)
+-
+diff --git a/src/gc.c b/src/gc.c
+index 823297612..ba1292aee 100644
+--- a/src/gc.c
++++ b/src/gc.c
+@@ -824 +824,2 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-
++// FIXME: Crash CWE-416: Use After Free
++ 
+@@ -826 +827,9 @@ obj_free(mrb_state *mrb, struct RBasic *obj, int end)
+-    mrb_gc_free_str(mrb, (struct RString*)obj);
++    /* Atomic reference counting to prevent premature deallocation */
++    if (((struct RString*)obj)->refs > 0) {
++      ((struct RString*)obj)->refs--;
++      if (((struct RString*)obj)->refs == 0) {
++        mrb_gc_free_str(mrb, (struct RString*)obj);
++      }
++    } else {
++      mrb_gc_free_str(mrb, (struct RString*)obj);
++    }

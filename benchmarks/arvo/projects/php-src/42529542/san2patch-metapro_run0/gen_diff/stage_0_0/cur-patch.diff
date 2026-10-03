@@ -1,0 +1,28 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index feeff659bd5..75280457b9c 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -649 +649,5 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return ex->func->op_array.opcodes[0].lineno;
++			if (ex->func && ex->func->op_array.opcodes) {
++				return ex->func->op_array.opcodes[0].lineno;
++			} else {
++				return 0;
++			}
+@@ -651 +655 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-		if (EG(exception) && ex->opline->opcode == ZEND_HANDLE_EXCEPTION &&
++		if (EG(exception) && ex->opline && ex->opline->opcode == ZEND_HANDLE_EXCEPTION &&
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..bd60223d49c 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -340,0 +341,5 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
++	// Fixed CWE-125: Out-of-bounds Read by adding pointer validation
++	if (UNEXPECTED(execute_data == NULL || execute_data->func == NULL)) {
++		zend_error(E_WARNING, "Undefined variable");
++		return EG(exception) == NULL;
++	}
+@@ -353,2 +358 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint3
+-	 * Temporarily increase the refcount to detect this situation. */
+-	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
++	 * Temporarily increase the refcount to detect this situation. */	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {

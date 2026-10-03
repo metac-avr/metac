@@ -1,0 +1,49 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..97fac3b8ec 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -218,2 +218,4 @@ static int flashsv_decode_block(AVCodecContext *avctx, const AVPacket *avpkt,
+-        s->blocks[blk_idx].pos  = s->keyframedata + (get_bits_count(gb) / 8);
+-        s->blocks[blk_idx].size = block_size;
++        if (s->keyframedata) {
++            s->blocks[blk_idx].pos  = s->keyframedata + (get_bits_count(gb) / 8);
++            s->blocks[blk_idx].size = block_size;
++        }
+@@ -346,0 +349,27 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++    if (avctx->width != s->image_width || avctx->height != s->image_height) {
++        av_log(avctx, AV_LOG_ERROR,
++static int flashsv_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
++{
++    FlashSVContext *s = avctx->priv_data;
++    GetBitContext gb;
++    int ret, frame_ok = 0;
++    int h_blocks, v_blocks, h_part, v_part;
++    int i, j, k, l, m;
++    int y_pos, x_pos;
++    int blk_idx;
++    int block_size;
++    int ret;
++
++    /* no supplementary picture */
++    if (avpkt->size == 0) {
++        return 0;
++    }
++
++    /* initialize codec context */
++    if (!s->frame) {
++        s->frame = av_frame_alloc();
++        if (!s->frame)
++            return AVERROR(ENOMEM);
++    }
++
++    /* check for valid frame dimensions */
+@@ -356,0 +386 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++    // FIXME: Crash CWE-416: Use After Free
+@@ -361,0 +392,5 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++    } else {
++        /* Ensure keyframedata is not used when not a keyframe */
++        if (s->keyframedata) {
++            av_freep(&s->keyframedata);
++        }
+@@ -370,0 +406 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++}

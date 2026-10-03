@@ -1,0 +1,19 @@
+diff --git a/src/filters/dmx_gsf.c b/src/filters/dmx_gsf.c
+index eee917756..465f375d1 100644
+--- a/src/filters/dmx_gsf.c
++++ b/src/filters/dmx_gsf.c
+@@ -1320,4 +1320,8 @@ static void gsfdmx_finalize(GF_Filter *filter)
+-	while (gf_list_count(ctx->pck_res)) {
+-		GSF_Packet *gsp = gf_list_pop_back(ctx->pck_res);
+-		if (gsp->frags) gf_free(gsp->frags);
+-		gf_free(gsp);
++	// Clear the list first to prevent use-after-free
++	u32 count = gf_list_count(ctx->pck_res);
++	for (u32 i=0; i<count; i++) {
++		GSF_Packet *gsp = gf_list_get(ctx->pck_res, i);
++		if (gsp) {
++			if (gsp->frags) gf_free(gsp->frags);
++			gf_free(gsp);
++		}
+@@ -1324,0 +1329 @@ static void gsfdmx_finalize(GF_Filter *filter)
++	gf_list_reset(ctx->pck_res);

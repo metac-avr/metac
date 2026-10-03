@@ -1,0 +1,41 @@
+diff --git a/libavcodec/flashsv.c b/libavcodec/flashsv.c
+index 00f77f4902..66097f3fea 100644
+--- a/libavcodec/flashsv.c
++++ b/libavcodec/flashsv.c
+@@ -154,0 +155,5 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Add null check for tmpblock to prevent use-after-free
++    if (s->tmpblock == NULL) {
++        av_log(s->avctx, AV_LOG_ERROR, "tmpblock is NULL\n");
++        return AVERROR_INVALIDDATA;
++    }
+@@ -162,0 +168,5 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Add null check for deflate_block to prevent use-after-free
++    if (s->deflate_block == NULL) {
++        av_log(s->avctx, AV_LOG_ERROR, "deflate_block is NULL\n");
++        return AVERROR_INVALIDDATA;
++    }
+@@ -172,0 +183,6 @@ static int flashsv2_prime(FlashSVContext *s, uint8_t *src, int size)
++    // Final validation of pointers before use
++    if (s->deflate_block == NULL || s->tmpblock == NULL) {
++        av_log(s->avctx, AV_LOG_ERROR, "Pointers became NULL after operations\n");
++        return AVERROR_INVALIDDATA;
++    }
++    
+@@ -349,6 +364,0 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-               "Frame width or height differs from first frame!\n");
+-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+-               avctx->height, avctx->width, s->image_height, s->image_width);
+-        return AVERROR_INVALIDDATA;
+-    }
+-
+@@ -357 +367,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
+-    if (s->is_keyframe) {
++// FIXME: Crash CWE-416: Use After Free
++     if (s->is_keyframe) {
+@@ -358,0 +370,2 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        size_t old_size = 0;
++        // Store old size if needed for validation
+@@ -360,0 +374,3 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
++        // Validate pointer after reallocation
++        if (!s->keyframedata)
++            return AVERROR(ENOMEM);

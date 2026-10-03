@@ -1,0 +1,25 @@
+diff --git a/mrbgems/mruby-bigint/core/bigint.c b/mrbgems/mruby-bigint/core/bigint.c
+index d51efdf6f..5ab3bff1e 100644
+--- a/mrbgems/mruby-bigint/core/bigint.c
++++ b/mrbgems/mruby-bigint/core/bigint.c
+@@ -988 +988,19 @@ mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base)
+-  struct RBigint *b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);
++  struct RBigint *b;
++  
++  // Defensive check for null pointer and invalid parameters
++  if (!x) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "null string for bigint conversion");
++    return mrb_nil_value();
++  }
++  
++  if (len < 0) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "negative length for bigint conversion");
++    return mrb_nil_value();
++  }
++  
++  if (iabs(base) < 2 || iabs(base) > 36) {
++    mrb_raise(mrb, E_ARGUMENT_ERROR, "base out of range for bigint conversion");
++    return mrb_nil_value();
++  }
++  
++  b = MRB_OBJ_ALLOC(mrb, MRB_TT_BIGINT, mrb->integer_class);

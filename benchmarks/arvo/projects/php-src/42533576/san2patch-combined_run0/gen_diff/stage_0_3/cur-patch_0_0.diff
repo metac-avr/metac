@@ -1,0 +1,33 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 4714ab37101..7bccd76d427 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -3209 +3209,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor(EX_VAR(EX(func)->op_array.opcodes[i].op1.var));
++					zval *return_var = EX_VAR(EX(func)->op_array.opcodes[i].op1.var);
++					if (return_var) {
++						zval_ptr_dtor(return_var);
++					}
+@@ -3246 +3249,4 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_HANDLE_EXCEPTION_SPEC_HANDLER(
+-					zval_ptr_dtor_nogc(EX_VAR(throw_op->result.var));
++					zval *result_var = EX_VAR(throw_op->result.var);
++					if (result_var) {
++						zval_ptr_dtor_nogc(result_var);
++					}
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index 40dc4b87f9b..0c6b9dd7551 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -300,3 +300,6 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-
+-		do {
+-			zval_ptr_dtor_nogc(p);
++		zval *end = p + num_args;
++ 
++		while (p < end) {
++			if (p && Z_REFCOUNTED_P(p)) {
++				zval_ptr_dtor_nogc(p);
++			}
+@@ -304 +307 @@ static zend_always_inline void zend_vm_stack_free_args(zend_execute_data *call)
+-		} while (--num_args);
++		}

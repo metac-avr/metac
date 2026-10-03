@@ -1,0 +1,27 @@
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 4fcb5b26e..bc62cb7bd 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -1644,3 +1644,9 @@ int ndpi_dpi2json(struct ndpi_detection_module_struct *ndpi_struct,
+-    ndpi_serialize_start_of_block(serializer, "sip");
+-    if(flow->protos.sip.from)
+-      ndpi_serialize_string_string(serializer, "from", flow->protos.sip.from);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++     ndpi_serialize_start_of_block(serializer, "sip");
++    if(flow->protos.sip.from) {
++      char from_buf[256];
++      u_int16_t from_len = flow->protos.sip.from_len < sizeof(from_buf) - 1 ? flow->protos.sip.from_len : sizeof(from_buf) - 1;
++      memcpy(from_buf, flow->protos.sip.from, from_len);
++      from_buf[from_len] = '\0';
++      ndpi_serialize_string_string(serializer, "from", from_buf);
++    }
+@@ -1649,2 +1655,7 @@ int ndpi_dpi2json(struct ndpi_detection_module_struct *ndpi_struct,
+-    if(flow->protos.sip.to)
+-      ndpi_serialize_string_string(serializer, "to", flow->protos.sip.to);
++    if(flow->protos.sip.to) {
++      char to_buf[256];
++      u_int16_t to_len = flow->protos.sip.to_len < sizeof(to_buf) - 1 ? flow->protos.sip.to_len : sizeof(to_buf) - 1;
++      memcpy(to_buf, flow->protos.sip.to, to_len);
++      to_buf[to_len] = '\0';
++      ndpi_serialize_string_string(serializer, "to", to_buf);
++    }

@@ -1,0 +1,33 @@
+diff --git a/tree.c b/tree.c
+index fe02b414..5ed09ac7 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4202 +4202,2 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++// FIXME: Crash CWE-416: Use After Free
++         xmlNsPtr ns;
+@@ -4216 +4217,3 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		/* Check if node->ns is valid before using it */
++		if (node->ns != NULL) {
++		    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
+@@ -4218 +4221,9 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-			ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++		    ret->ns = NULL;
++		}
++		} else {
++		    /* Check if node->ns is valid before using it */
++		    if (node->ns != NULL) {
++		        ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
++		    } else {
++		        ret->ns = NULL;
++		    }
+@@ -4367 +4378 @@ xmlCopyNode(xmlNodePtr node, int extended) {
+- *		if 2 copy properties and namespaces (when applicable)
++ *              if 2 copy properties and namespaces (when applicable)
+@@ -4375 +4386 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
+-    xmlNodePtr ret;
++     xmlNodePtr ret;
+@@ -4376,0 +4388,2 @@ xmlDocCopyNode(xmlNodePtr node, xmlDocPtr doc, int extended) {
++    if (node == NULL)
++        return(NULL);

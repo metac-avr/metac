@@ -1,0 +1,68 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..87daf8a71d8 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1145,9 +1144,0 @@ extern ZEND_API bool zend_rc_debug;
+-		GC_ADD_FLAGS(p, GC_PERSISTENT_LOCAL); \
+-	} while (0)
+-#else
+-# define ZEND_RC_MOD_CHECK(p) \
+-	do { } while (0)
+-# define GC_MAKE_PERSISTENT_LOCAL(p) \
+-	do { } while (0)
+-#endif
+-
+@@ -1156,11 +1147 @@ static zend_always_inline uint32_t zend_gc_refcount(const zend_refcounted_h *p)
+-}
+-
+-static zend_always_inline uint32_t zend_gc_set_refcount(zend_refcounted_h *p, uint32_t rc) {
+-	p->refcount = rc;
+-	return p->refcount;
+-}
+-
+-static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
+-	ZEND_RC_MOD_CHECK(p);
+-	return ++(p->refcount);
+-}
++}}
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..a36eba1131f 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -16720,33 +16720,3 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_BOOL_XOR_SPEC_TMPVAR_TMPVAR_HA
+-static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_FETCH_DIM_R_SPEC_TMPVAR_TMPVAR_HANDLER(ZEND_OPCODE_HANDLER_ARGS)
+-{
+-	USE_OPLINE
+-	zval *container, *dim, *value;
+-
+-	SAVE_OPLINE();
+-	container = _get_zval_ptr_var(opline->op1.var EXECUTE_DATA_CC);
+-	dim = _get_zval_ptr_var(opline->op2.var EXECUTE_DATA_CC);
+-	if ((IS_TMP_VAR|IS_VAR) != IS_CONST) {
+-		if (EXPECTED(Z_TYPE_P(container) == IS_ARRAY)) {
+-fetch_dim_r_array:
+-			value = zend_fetch_dimension_address_inner(Z_ARRVAL_P(container), dim, (IS_TMP_VAR|IS_VAR), BP_VAR_R EXECUTE_DATA_CC);
+-			ZVAL_COPY_DEREF(EX_VAR(opline->result.var), value);
+-		} else if (EXPECTED(Z_TYPE_P(container) == IS_REFERENCE)) {
+-			container = Z_REFVAL_P(container);
+-			if (EXPECTED(Z_TYPE_P(container) == IS_ARRAY)) {
+-				goto fetch_dim_r_array;
+-			} else {
+-				goto fetch_dim_r_slow;
+-			}
+-		} else {
+-fetch_dim_r_slow:
+-			if ((IS_TMP_VAR|IS_VAR) == IS_CONST && Z_EXTRA_P(dim) == ZEND_EXTRA_VALUE) {
+-				dim++;
+-			}
+-			zend_fetch_dimension_address_read_R_slow(container, dim OPLINE_CC EXECUTE_DATA_CC);
+-		}
+-	} else {
+-		zend_fetch_dimension_address_read_R(container, dim, (IS_TMP_VAR|IS_VAR) OPLINE_CC EXECUTE_DATA_CC);
+-	}
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op2.var));
+-	zval_ptr_dtor_nogc(EX_VAR(opline->op1.var));
+-	ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
++static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL static zend_always_inline uint32_t zend_gc_addref(zend_refcounted_h *p) {
++	ZEND_RC_MOD_CHECK(p);
++	return ++(p->refcount);

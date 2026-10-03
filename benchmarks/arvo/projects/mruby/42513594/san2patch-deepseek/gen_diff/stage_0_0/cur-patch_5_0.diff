@@ -1,0 +1,19 @@
+diff --git a/src/vm.c b/src/vm.c
+index 3c3a5237f..71cb16eaf 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -116 +116 @@ stack_init(mrb_state *mrb)
+-  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE, sizeof(mrb_value));
++  c->stbase = (mrb_value *)mrb_calloc(mrb, STACK_INIT_SIZE * 2, sizeof(mrb_value));
+@@ -1707 +1707,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
+-      mrb_value recv, blk;
++// FIXME: Crash CWE-787: Out-of-bounds Write
++       mrb_value recv, blk;
+@@ -1710,0 +1712,7 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *proc, const mrb_code *pc)
++      {
++        size_t needed = (size_t)a + 1;
++        if (needed > (size_t)(c->stend - regs)) {
++          stack_extend(mrb, c, needed - (size_t)(c->stend - regs));
++          regs = c->stack;
++        }
++      }

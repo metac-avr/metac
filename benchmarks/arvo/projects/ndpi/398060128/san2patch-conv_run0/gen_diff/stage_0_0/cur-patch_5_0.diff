@@ -1,0 +1,20 @@
+diff --git a/fuzz/fuzz_ndpi_reader.c b/fuzz/fuzz_ndpi_reader.c
+index 5f29664be..0deba93a4 100644
+--- a/fuzz/fuzz_ndpi_reader.c
++++ b/fuzz/fuzz_ndpi_reader.c
+@@ -183 +183,2 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-  /* Free flow trees */
++// FIXME: Crash CWE-908: Use of Uninitialized Resource
++   /* Free flow trees */
+@@ -185,2 +186,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-    ndpi_twalk(workflow->ndpi_flows_root[i], node_cleanup_walker, NULL);
+-    ndpi_tdestroy(workflow->ndpi_flows_root[i], ndpi_flow_info_freer);
++    if(workflow->ndpi_flows_root && workflow->ndpi_flows_root[i]) {  // Defensive check for both array and element
++      ndpi_twalk(workflow->ndpi_flows_root[i], node_cleanup_walker, NULL);
++      ndpi_tdestroy(workflow->ndpi_flows_root[i], ndpi_flow_info_freer);
++    }
++  }
++  if(workflow->ndpi_flows_root) {  // Defensive check before freeing
++    ndpi_free(workflow->ndpi_flows_root);
+@@ -188 +193,0 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+-  ndpi_free(workflow->ndpi_flows_root);

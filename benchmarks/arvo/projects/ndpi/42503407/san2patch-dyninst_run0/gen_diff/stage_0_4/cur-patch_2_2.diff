@@ -1,0 +1,64 @@
+diff --git a/src/lib/protocols/quic.c b/src/lib/protocols/quic.c
+index af19fe7ea..c4ab832e9 100644
+--- a/src/lib/protocols/quic.c
++++ b/src/lib/protocols/quic.c
+@@ -926,4 +926,4 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-				       struct ndpi_flow_struct *flow,
+-				       const uint8_t *dest_conn_id, uint8_t dest_conn_id_len,
+-				       uint8_t source_conn_id_len, uint32_t version,
+-				       uint32_t *clear_payload_len)
++			       struct ndpi_flow_struct *flow,
++			       const uint8_t *dest_conn_id, uint8_t dest_conn_id_len,
++			       uint8_t source_conn_id_len, uint32_t version,
++			       uint32_t *clear_payload_len)
+@@ -956,0 +957,13 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Bounds checking before first quic_len call */
++  if(pn_offset >= packet->payload_packet_len || &packet->payload[pn_offset] == NULL) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
++  size_t remaining_len = packet->payload_packet_len - pn_offset;
++  if(remaining_len < 8) {  /* quic_len needs at least 8 bytes */
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
+@@ -963,0 +977,13 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
++  
++  /* Bounds checking before second quic_len call */
++  if(pn_offset >= packet->payload_packet_len || &packet->payload[pn_offset] == NULL) {
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
++  remaining_len = packet->payload_packet_len - pn_offset;
++  if(remaining_len < 8) {  /* quic_len needs at least 8 bytes */
++    quic_ciphers_reset(&ciphers);
++    return NULL;
++  }
++  
+@@ -967 +993 @@ static uint8_t *decrypt_initial_packet(struct ndpi_detection_module_struct *ndpi
+-		pn_offset, token_length, payload_length);
++			pn_offset, token_length, payload_length);
+@@ -1267 +1293 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
+-		   version, dest_conn_id_len);
++	   version, dest_conn_id_len);
+@@ -1271 +1297,8 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
+-    source_conn_id_len = packet->payload[6 + dest_conn_id_len];
++// FIXME: Crash CWE-125: Out-of-bounds Read
++    // Prevent out-of-bounds read by validating offset
++    uint32_t source_conn_id_offset = 6 + dest_conn_id_len;
++    if(source_conn_id_offset >= packet->payload_len) {
++        NDPI_LOG_DBG(ndpi_struct, "Invalid QUIC packet offset: %u\n", source_conn_id_offset);
++        return NULL;
++    }
++    source_conn_id_len = packet->payload[source_conn_id_offset];
+@@ -1274,3 +1307,3 @@ static uint8_t *get_clear_payload(struct ndpi_detection_module_struct *ndpi_stru
+-					   dest_conn_id, dest_conn_id_len,
+-					   source_conn_id_len, version,
+-					   clear_payload_len);
++				   dest_conn_id, dest_conn_id_len,
++				   source_conn_id_len, version,
++				   clear_payload_len);

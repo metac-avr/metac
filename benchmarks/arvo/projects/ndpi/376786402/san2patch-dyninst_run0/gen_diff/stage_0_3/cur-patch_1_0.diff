@@ -1,0 +1,36 @@
+diff --git a/src/lib/protocols/http.c b/src/lib/protocols/http.c
+index 1c468165c..1c6898f33 100644
+--- a/src/lib/protocols/http.c
++++ b/src/lib/protocols/http.c
+@@ -1030 +1030 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-    if((a = ndpi_strncasestr((const char*)packet->authorization_line.ptr,
++          if((a = ndpi_strncasestr((const char*)packet->authorization_line.ptr,
+@@ -1032,2 +1032,2 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-       || (b = ndpi_strncasestr((const char*)packet->authorization_line.ptr,
+-				"Digest", packet->authorization_line.len))) {
++	 || (b = ndpi_strncasestr((const char*)packet->authorization_line.ptr,
++				  "Digest", packet->authorization_line.len))) {
+@@ -1040,6 +1040,15 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	char *double_dot = strchr((char*)content, ':');
+-
+-	if(double_dot) {
+-	  double_dot[0] = '\0';
+-	  flow->http.username = ndpi_strdup((char*)content);
+-	  flow->http.password = ndpi_strdup(&double_dot[1]);
++	// Ensure null termination by allocating new buffer
++	char *terminated_content = (char*)ndpi_malloc(content_len + 1);
++	if(terminated_content != NULL) {
++	  strncpy(terminated_content, (char*)content, content_len);
++	  terminated_content[content_len] = '\0';
++	  
++	  char *double_dot = strchr(terminated_content, ':');
++	  
++	  if(double_dot) {
++	    double_dot[0] = '\0';
++	    flow->http.username = ndpi_strdup(terminated_content);
++	    flow->http.password = ndpi_strdup(&double_dot[1]);
++	  }
++	  
++	  ndpi_free(terminated_content);
+@@ -1047 +1055,0 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
+-	

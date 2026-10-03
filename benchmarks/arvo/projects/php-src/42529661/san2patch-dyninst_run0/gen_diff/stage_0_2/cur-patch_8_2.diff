@@ -1,0 +1,25 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..3966e677e3e 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2494,0 +2495,6 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Prevent use-after-free by checking JIT trace usage */
++		if (ht->u.flags & HASH_FLAG_IN_JIT_TRACE) {
++			/* Defer deallocation until JIT trace completes */
++			ht->u.flags |= HASH_FLAG_JIT_CLEANUP_PENDING;
++			return;
++		}
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..d3141bbeb6f 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -1509,0 +1510 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
++			zend_jit_validate_pointer(&opline);  // Validate pointer before use
+@@ -1515 +1516,2 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
+-				opline++;
++ 				opline++;
++				zend_jit_validate_pointer(&opline);  // Validate pointer before use
+@@ -1526,0 +1529 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
++			zend_jit_validate_pointer((void**)&op_array);  // Validate pointer before use
+@@ -1536,0 +1540 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
++			zend_jit_validate_pointer((void**)&op_array);  // Validate pointer before use

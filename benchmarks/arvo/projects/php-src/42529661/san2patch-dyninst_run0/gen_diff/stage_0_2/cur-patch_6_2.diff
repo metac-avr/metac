@@ -1,0 +1,23 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..109e9f12cae 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -2494,0 +2495,6 @@ static void ZEND_FASTCALL zend_jit_array_free(HashTable *ht)
++		/* Check if JIT is actively using this HashTable before freeing */
++		if (ht->u.flags & HASH_FLAG_JIT_TRACE_USED) {
++			/* Mark for deferred cleanup instead of immediate free */
++			ht->u.flags |= HASH_FLAG_JIT_DEFERRED_FREE;
++			return;
++		}
+diff --git a/ext/opcache/jit/zend_jit_trace.c b/ext/opcache/jit/zend_jit_trace.c
+index 85fcb657ffe..52e89c20386 100644
+--- a/ext/opcache/jit/zend_jit_trace.c
++++ b/ext/opcache/jit/zend_jit_trace.c
+@@ -1509,0 +1510 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
++			if (!opline) continue;  // Add null check to prevent expired pointer dereference
+@@ -1515,0 +1517 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
++				if (!opline) break;  // Add null check to prevent expired pointer dereference
+@@ -1526,0 +1529 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
++			if (!op_array) return NULL;  // Add null check to prevent expired pointer dereference
+@@ -1536,0 +1540 @@ static zend_ssa *zend_jit_trace_build_tssa(zend_jit_trace_rec *trace_buffer, uin
++			if (!op_array) return NULL;  // Add null check to prevent expired pointer dereference

@@ -1,0 +1,22 @@
+diff --git a/libavformat/mov_chan.c b/libavformat/mov_chan.c
+index 3e186b0837..898f93ac33 100644
+--- a/libavformat/mov_chan.c
++++ b/libavformat/mov_chan.c
+@@ -524 +524,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+-
++ 
++        // Ensure nb_channels matches num_descr to prevent size mismatch
++        if (nb_channels != num_descr) {
++            av_log(s, AV_LOG_WARNING, "channel count mismatch: nb_channels=%d, num_descr=%d\n", nb_channels, num_descr);
++            nb_channels = num_descr;
++        }
++ 
+diff --git a/libavutil/channel_layout.c b/libavutil/channel_layout.c
+index 8b3bf2f4af..2c1cac62b4 100644
+--- a/libavutil/channel_layout.c
++++ b/libavutil/channel_layout.c
+@@ -405,0 +406,4 @@ int av_channel_layout_custom_init(AVChannelLayout *channel_layout, int nb_channe
++         return AVERROR(EINVAL);
++
++    // Limit nb_channels to prevent buffer overflow
++    if (nb_channels > 256) 

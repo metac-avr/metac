@@ -1,0 +1,38 @@
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index feeff659bd5..a0fae4c9c87 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -649 +649 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return ex->func->op_array.opcodes[0].lineno;
++			return ex->func ? (ex->func->op_array.opcodes ? ex->func->op_array.opcodes[0].lineno : 0) : 0;
+@@ -653 +653,2 @@ ZEND_API uint32_t zend_get_executed_lineno(void) /* {{{ */
+-			return EG(opline_before_exception)->lineno;
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 			return EG(opline_before_exception) ? EG(opline_before_exception)->lineno : 0;
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index 7c80de916aa..5b5a514f22e 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -341 +341 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_string *cv = EX(func)->op_array.vars[EX_VAR_TO_NUM(var)];
++	zend_string *cv;
+@@ -343 +343,14 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper(uint32_t var)
+-	zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++	/* Check if execution context is valid before accessing its members */
++	if (!execute_data || !EX(func)) {
++		return EG(exception) == NULL;
++	}
++	
++	if (EX(func)->op_array.vars) {
++		uint32_t var_num = EX_VAR_TO_NUM(var);
++		if (var_num < EX(func)->op_array.last_var) {
++			cv = EX(func)->op_array.vars[var_num];
++			if (cv) {
++				zend_error(E_WARNING, "Undefined variable $%s", ZSTR_VAL(cv));
++			}
++		}
++	}
+@@ -353,2 +366 @@ static int ZEND_FASTCALL zend_jit_undefined_op_helper_write(HashTable *ht, uint3
+-	 * Temporarily increase the refcount to detect this situation. */
+-	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {
++	 * Temporarily increase the refcount to detect this situation. */	if (!(GC_FLAGS(ht) & IS_ARRAY_IMMUTABLE)) {

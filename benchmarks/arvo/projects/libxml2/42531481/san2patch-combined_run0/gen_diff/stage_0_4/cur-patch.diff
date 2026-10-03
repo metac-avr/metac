@@ -1,0 +1,50 @@
+diff --git a/tree.c b/tree.c
+index 314cf5d5..03fb95d4 100644
+--- a/tree.c
++++ b/tree.c
+@@ -4270 +4270 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-        xmlNsPtr ns;
++         xmlNsPtr ns;
+@@ -4287 +4287,4 @@ xmlStaticCopyNode(xmlNodePtr node, xmlDocPtr doc, xmlNodePtr parent,
+-		ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		if ((ns->href != NULL) && (ns->prefix != NULL))
++		    ret->ns = xmlNewNs(root, ns->href, ns->prefix);
++		else 
++		    ret->ns = xmlNewReconciledNs(doc, ret, node->ns);
+diff --git a/xmlreader.c b/xmlreader.c
+index d96a2ebc..0b8dacb2 100644
+--- a/xmlreader.c
++++ b/xmlreader.c
+@@ -402,3 +402,29 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
+-	 (cur->type == XML_XINCLUDE_END)) &&
+-	(cur->nsDef != NULL))
+-	xmlFreeNsList(cur->nsDef);
++// FIXME: Crash CWE-825: Expired Pointer Dereference
++ 	 (cur->type == XML_XINCLUDE_END)) &&
++	(cur->nsDef != NULL)) {
++        /* Implement safe namespace cleanup with validation */
++        if (reader != NULL) {
++            /* Validate that namespace nodes are not currently in use */
++            xmlNsPtr ns = cur->nsDef;
++            int valid_ns = 1;
++            
++            while (ns != NULL) {
++                /* Check if namespace is actively being processed */
++                if ((void*)ns == reader->ctxt->namespaceTab || 
++                    (void*)ns == reader->ctxt->namespaceDecl) {
++                    valid_ns = 0;
++                    break;
++                }
++                ns = ns->next;
++            }
++            
++            if (valid_ns) {
++                xmlFreeNsList(cur->nsDef);
++            } else {
++                /* Defer cleanup to avoid use-after-free */
++                cur->nsDef = NULL; /* Disconnect to prevent access */
++            }
++        } else {
++            xmlFreeNsList(cur->nsDef);
++        }
++    }

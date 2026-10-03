@@ -1,0 +1,14 @@
+diff --git a/libavcodec/cbs_h2645.c b/libavcodec/cbs_h2645.c
+index 95da597427..5733cf9c7a 100644
+--- a/libavcodec/cbs_h2645.c
++++ b/libavcodec/cbs_h2645.c
+@@ -1107 +1107,8 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
+-            H266RawPPS *pps = unit->content;
++// FIXME: Crash CWE-125: Out-of-bounds Read
++             H266RawPPS *pps = unit->content;
++
++            // Check buffer bounds before reading PPS data
++            if (gbc.buffer_end - gbc.buffer < 2) {
++                av_log(ctx->log_ctx, AV_LOG_ERROR, "Buffer too short for PPS\n");
++                return AVERROR_INVALIDDATA;
++            }

@@ -1,0 +1,22 @@
+diff --git a/fuzz/api.c b/fuzz/api.c
+index 9de577d0..47cb347d 100644
+--- a/fuzz/api.c
++++ b/fuzz/api.c
+@@ -601 +601,2 @@ nodeGetTree(xmlNodePtr node) {
+-    xmlNodePtr cur = node;
++// FIXME: Crash CWE-416: Use After Free
++     xmlNodePtr cur = node;
+@@ -603 +604 @@ nodeGetTree(xmlNodePtr node) {
+-    while (cur->parent)
++    while (cur != NULL && cur->parent)
+diff --git a/tree.c b/tree.c
+index 7ffdebf2..3390adf4 100644
+--- a/tree.c
++++ b/tree.c
+@@ -3635,0 +3636,6 @@ xmlFreeNodeList(xmlNodePtr cur) {
++	    
++	    /* Fix: Nullify pointers before freeing to prevent dangling references */
++	    cur->parent = NULL;
++	    cur->children = NULL;
++	    cur->next = NULL;
++	    cur->prev = NULL;

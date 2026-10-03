@@ -1,0 +1,71 @@
+diff --git a/src/vm.c b/src/vm.c
+index 228f29238..f15ae4bcf 100644
+--- a/src/vm.c
++++ b/src/vm.c
+@@ -345,0 +346 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    mrb_callinfo *old_base = c->cibase;
+@@ -348 +349,2 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
+-      mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -352,0 +355,5 @@ cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_c
++    
++    if (c->cibase != old_base) {
++      ptrdiff_t diff = c->cibase - old_base;
++      c->stack = c->stack + diff;
++    }
+@@ -2702,7 +2709,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-      NEXT;
+-    }
+-    CASE(OP_ARRAY2, BBB) {
+-      regs[a] = ary_new_from_regs(mrb, c, b);
+-      mrb_gc_arena_restore(mrb, ai);
+-      NEXT;
+-    }
++static inline mrb_callinfo*
++cipush(mrb_state *mrb, mrb_int push_stacks, uint8_t cci, struct RClass *target_class,
++       const struct RProc *proc, struct RProc *blk, mrb_sym mid, uint16_t argc)
++{
++  struct mrb_context *c = mrb->c;
++  mrb_callinfo *ci = c->ci + 1;
+@@ -2710,11 +2716,10 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYCAT, B) {
+-      mrb_value splat = mrb_ary_splat(mrb, regs[a+1]);
+-      if (mrb_nil_p(regs[a])) {
+-        regs[a] = splat;
+-      }
+-      else {
+-        mrb_assert(mrb_array_p(regs[a]));
+-        mrb_ary_concat(mrb, regs[a], splat);
+-      }
+-      mrb_gc_arena_restore(mrb, ai);
+-      NEXT;
++  if (ci < c->ciend) {
++    c->ci = ci;
++  }
++  else {
++    ptrdiff_t size = ci - c->cibase;
++    mrb_callinfo *old_base = c->cibase;
++
++    if (size >= MRB_CALL_LEVEL_MAX) {
++// FIXME: Crash CWE-416: Use After Free
++       mrb_exc_raise(mrb, mrb_obj_value(mrb->stack_err));
+@@ -2721,0 +2727,14 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
++    c->cibase = (mrb_callinfo*)mrb_realloc(mrb, c->cibase, sizeof(mrb_callinfo)*size*2);
++    c->ci = ci = c->cibase + size;
++    c->ciend = c->cibase + size * 2;
++    
++    /* Removed invalid stack adjustment - c->stack doesn't exist */
++  }
++  ci->mid = mid;
++  CI_PROC_SET(ci, proc);
++  ci->blk = blk;
++  ci->stack = ci[-1].stack + push_stacks;
++  ci->n = argc & 0xf;
++  ci->nk = (argc>>4) & 0xf;
++  ci->cci = cci;
++  ci->u.target_class = target_class;
+@@ -2723 +2742,2 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
+-    CASE(OP_ARYPUSH, BB) {
++  return ci;
++}    CASE(OP_ARYPUSH, BB) {

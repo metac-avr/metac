@@ -1,0 +1,28 @@
+diff --git a/xinclude.c b/xinclude.c
+index e14176c6..2e7aa680 100644
+--- a/xinclude.c
++++ b/xinclude.c
+@@ -846,3 +846,12 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
+-    if (elem->type == XML_DOCUMENT_NODE)
+-	result = xmlXIncludeCopyNodeList(ctxt, target, source, elem->children);
+-    else
++    if (elem->type == XML_DOCUMENT_NODE) {
++        if (source->dict == NULL)
++            return(NULL);
++        result = xmlXIncludeCopyNodeList(ctxt, target, source, elem->children);
++        if (result != NULL) {
++            xmlDictReference(source->dict);
++            target->dict = source->dict;
++        }
++    }
++    else {
++        if (source->dict == NULL)
++            return(NULL);
+@@ -849,0 +859,7 @@ xmlXIncludeCopyNode(xmlXIncludeCtxtPtr ctxt, xmlDocPtr target,
++        if (result != NULL) {
++            xmlDictReference(source->dict);
++            if (target->dict != NULL)
++                xmlDictFree(target->dict);
++            target->dict = source->dict;
++        }
++    }

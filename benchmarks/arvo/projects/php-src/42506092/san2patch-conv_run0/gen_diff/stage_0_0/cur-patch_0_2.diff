@@ -1,0 +1,70 @@
+diff --git a/ext/opcache/jit/zend_jit_helpers.c b/ext/opcache/jit/zend_jit_helpers.c
+index e1f24b6229d..10614868588 100644
+--- a/ext/opcache/jit/zend_jit_helpers.c
++++ b/ext/opcache/jit/zend_jit_helpers.c
+@@ -756,9 +755,0 @@ static zval* ZEND_FASTCALL zend_jit_fetch_dim_w_helper(zend_array *ht, zval *dim
+-		goto num_index;
+-	}
+-	return zend_hash_lookup(ht, offset_key);
+-
+-num_index:
+-	ZEND_HASH_INDEX_LOOKUP(ht, hval, retval);
+-	return retval;
+-}
+-
+@@ -767 +758,54 @@ static zend_never_inline zend_long zend_check_string_offset(zval *dim/*, int typ
+-	zend_long offset;
++	zval tmp;
++
++	if (Z_TYPE_P(dim) == IS_STRING) {
++		if (Z_STRLEN_P(dim) == 0) {
++			return 0;
++		}
++		ZVAL_COPY_VALUE(&tmp, dim);
++		dim = &tmp;
++		goto try_again;
++	} else if (Z_TYPE_P(dim) == IS_DOUBLE) {
++		if (Z_DVAL_P(dim) == 0.0) {
++			return 0;
++		}
++		ZVAL_COPY_VALUE(&tmp, dim);
++		dim = &tmp;
++		goto try_again;
++	} else if (Z_TYPE_P(dim) == IS_NULL) {
++		return 0;
++	} else if (Z_TYPE_P(dim) == IS_FALSE) {
++		return 0;
++	} else if (Z_TYPE_P(dim) == IS_TRUE) {
++		return 1;
++	} else if (Z_TYPE_P(dim) == IS_LONG) {
++		return Z_LVAL_P(dim);
++	} else {
++		ZVAL_COPY_VALUE(&tmp, dim);
++		dim = &tmp;
++		goto try_again;
++	}
++
++	try_again:
++	switch(Z_TYPE_P(dim)) {
++		case IS_STRING:
++			if (Z_STRLEN_P(dim) == 0) {
++				return 0;
++			}
++			return zend_atol_ex(Z_STRVAL_P(dim), Z_STRLEN_P(dim));
++		case IS_DOUBLE:
++			if (Z_DVAL_P(dim) == 0.0) {
++				return 0;
++			}
++			return (zend_long)Z_DVAL_P(dim);
++		case IS_NULL:
++			return 0;
++		case IS_FALSE:
++			return 0;
++		case IS_TRUE:
++			return 1;
++		case IS_LONG:
++			return Z_LVAL_P(dim);
++		default:
++			return zval_get_long_func(dim, /* is_strict */ false);
++	}
++}	zend_long offset;

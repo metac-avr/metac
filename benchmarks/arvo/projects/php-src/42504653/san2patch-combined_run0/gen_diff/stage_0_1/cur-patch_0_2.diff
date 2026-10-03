@@ -1,0 +1,79 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index 4a1232198fc..b5b7576d87b 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1209,3 +1208,0 @@ static zend_always_inline uint32_t zval_set_refcount_p(zval* pz, uint32_t rc) {
+-	return GC_SET_REFCOUNT(Z_COUNTED_P(pz), rc);
+-}
+-
+@@ -1216,0 +1214 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++/* Crash CWE-416: Use After Free */
+@@ -1219,12 +1217,8 @@ static zend_always_inline uint32_t zval_delref_p(zval* pz) {
+-	return GC_DELREF(Z_COUNTED_P(pz));
+-}
+-
+-#if SIZEOF_SIZE_T == 4
+-# define ZVAL_COPY_VALUE_EX(z, v, gc, t)				\
+-	do {												\
+-		uint32_t _w2 = v->value.ww.w2;					\
+-		Z_COUNTED_P(z) = gc;							\
+-		z->value.ww.w2 = _w2;							\
+-		Z_TYPE_INFO_P(z) = t;							\
+-	} while (0)
+-#elif SIZEOF_SIZE_T == 8
++	{
++		zend_refcounted* counted = Z_COUNTED_P(pz);
++		if (EXPECTED(counted != NULL)) {
++			return GC_DELREF(counted);
++		}
++		return 0;
++	}
++}#elif SIZEOF_SIZE_T == 8
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..4be959bb474 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -855,2 +855,20 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		handler();
+-		if (UNEXPECTED(opline == zend_jit_halt_op)) {
++	handler();
++	if (UNEXPECTED(opline == zend_jit_halt_op)) {
++		stop = ZEND_JIT_TRACE_STOP_RETURN;
++		opline = NULL;
++		halt = ZEND_JIT_TRACE_HALT;
++		break;
++	}
++	/* Validate execute_data before accessing to prevent use-after-free */
++	if (UNEXPECTED(execute_data != prev_execute_data)) {
++		/* Check if execute_data is valid to prevent dereferencing freed memory */
++		if (execute_data == NULL || prev_execute_data == NULL) {
++			stop = ZEND_JIT_TRACE_STOP_ERROR;
++			halt = ZEND_JIT_TRACE_HALT;
++			break;
++		}
++	}
++#else
++	rc = handler(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++	if (rc != 0) {
++		if (rc < 0) {
+@@ -860,0 +879,3 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++		} else if (execute_data == EG(current_execute_data)) {
++			/* return after interrupt handler */
++			rc = 0;
+@@ -862,14 +883,2 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
+-		if (UNEXPECTED(execute_data != prev_execute_data)) {
+-#else
+-		rc = handler(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+-		if (rc != 0) {
+-			if (rc < 0) {
+-				stop = ZEND_JIT_TRACE_STOP_RETURN;
+-				opline = NULL;
+-				halt = ZEND_JIT_TRACE_HALT;
+-				break;
+-			} else if (execute_data == EG(current_execute_data)) {
+-				/* return after interrupt handler */
+-				rc = 0;
+-			}
+-			execute_data = EG(current_execute_data);
++	}
++#endif			execute_data = EG(current_execute_data);

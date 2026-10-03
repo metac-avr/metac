@@ -1,0 +1,26 @@
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index c341ffa0b4d..cc4ada805a1 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -1301 +1301,7 @@ static zend_always_inline uint32_t zval_refcount_p(const zval* pz) {
+-	return GC_REFCOUNT(Z_COUNTED_P(pz));
++	if (pz && Z_REFCOUNTED_P(pz)) {
++		zend_refcounted_h *counted = Z_COUNTED_P(pz);
++		if (counted) {
++			return GC_REFCOUNT(counted);
++		}
++	}
++	return 0;
+@@ -1311,0 +1318 @@ static zend_always_inline uint32_t zval_addref_p(zval* pz) {
++
+diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
+index c1a5e31f7e6..ccebb52d003 100644
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -213,0 +214,3 @@ static int zval_call_destructor(zval *zv) /* {{{ */
++		if (!zv) {
++			return ZEND_HASH_APPLY_REMOVE;
++		}
+@@ -215 +218 @@ static int zval_call_destructor(zval *zv) /* {{{ */
+-	if (Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {
++	if (zv && Z_TYPE_P(zv) == IS_OBJECT && Z_REFCOUNT_P(zv) == 1) {

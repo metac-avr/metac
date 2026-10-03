@@ -1,0 +1,173 @@
+diff --git a/Zend/zend_vm_execute.h b/Zend/zend_vm_execute.h
+index 2ba23ff65bb..08d6a0ffb2e 100644
+--- a/Zend/zend_vm_execute.h
++++ b/Zend/zend_vm_execute.h
+@@ -30018,6 +30018,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	} else {
+-		if (EXPECTED(Z_ISREF_P(object_ptr))) {
+-			object_ptr = Z_REFVAL_P(object_ptr);
+-			if (EXPECTED(Z_TYPE_P(object_ptr) == IS_ARRAY)) {
+-				goto try_assign_dim_array;
+-			}
++	} #ifdef HAVE_GCC_GLOBAL_REGS
++		handler();
++		if (UNEXPECTED(opline == zend_jit_halt_op)) {
++			stop = ZEND_JIT_TRACE_STOP_RETURN;
++			opline = NULL;
++			halt = ZEND_JIT_TRACE_HALT;
++			break;
+@@ -30025,43 +30026,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-		if (EXPECTED(Z_TYPE_P(object_ptr) == IS_OBJECT)) {
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
+-			value = _get_zval_ptr_tmp((opline+1)->op1.var EXECUTE_DATA_CC);
+-
+-			if (IS_CV == IS_CONST && Z_EXTRA_P(dim) == ZEND_EXTRA_VALUE) {
+-				dim++;
+-			}
+-			zend_assign_to_object_dim(object_ptr, dim, value OPLINE_CC EXECUTE_DATA_CC);
+-
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-		} else if (EXPECTED(Z_TYPE_P(object_ptr) == IS_STRING)) {
+-			if (IS_CV == IS_UNUSED) {
+-				zend_use_new_element_for_string();
+-				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-				UNDEF_RESULT();
+-			} else {
+-				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
+-				value = _get_zval_ptr_tmp((opline+1)->op1.var EXECUTE_DATA_CC);
+-				zend_assign_to_string_offset(object_ptr, dim, value OPLINE_CC EXECUTE_DATA_CC);
+-				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-			}
+-		} else if (EXPECTED(Z_TYPE_P(object_ptr) <= IS_FALSE)) {
+-			if (Z_TYPE_P(object_ptr) == IS_FALSE) {
+-				zend_false_to_array_deprecated();
+-			}
+-
+-			if (Z_ISREF_P(orig_object_ptr)
+-			 && ZEND_REF_HAS_TYPE_SOURCES(Z_REF_P(orig_object_ptr))
+-			 && !zend_verify_ref_array_assignable(Z_REF_P(orig_object_ptr))) {
+-				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
+-				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-				UNDEF_RESULT();
+-			} else {
+-				ZVAL_ARR(object_ptr, zend_new_array(8));
+-				goto try_assign_dim_array;
+-			}
+-		} else {
+-			zend_use_scalar_as_array();
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
+-assign_dim_error:
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
+-				ZVAL_NULL(EX_VAR(opline->result.var));
++		if (UNEXPECTED(execute_data != prev_execute_data)) {
++			/* Validate execute_data before continuing to prevent UAF */
++			if (!execute_data || (char*)execute_data < (char*)EG(vm_stack) || 
++			    (char*)execute_data > (char*)EG(vm_stack) + EG(vm_stack_page_size)) {
++				continue;
+@@ -30070 +30033,13 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_VAR_CV_OP_DATA
+-	}
++#else
++		rc = handler(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++		if (rc != 0) {
++			if (rc < 0) {
++				stop = ZEND_JIT_TRACE_STOP_RETURN;
++				opline = NULL;
++				halt = ZEND_JIT_TRACE_HALT;
++				break;
++			} else if (execute_data == EG(current_execute_data)) {
++				/* return after interrupt handler */
++				rc = 0;
++			}
++#endif
+@@ -49605,6 +49580,7 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-	} else {
+-		if (EXPECTED(Z_ISREF_P(object_ptr))) {
+-			object_ptr = Z_REFVAL_P(object_ptr);
+-			if (EXPECTED(Z_TYPE_P(object_ptr) == IS_ARRAY)) {
+-				goto try_assign_dim_array;
+-			}
++	} #ifdef HAVE_GCC_GLOBAL_REGS
++		handler();
++		if (UNEXPECTED(opline == zend_jit_halt_op)) {
++			stop = ZEND_JIT_TRACE_STOP_RETURN;
++			opline = NULL;
++			halt = ZEND_JIT_TRACE_HALT;
++			break;
+@@ -49612,43 +49588,5 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-		if (EXPECTED(Z_TYPE_P(object_ptr) == IS_OBJECT)) {
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
+-			value = _get_zval_ptr_tmp((opline+1)->op1.var EXECUTE_DATA_CC);
+-
+-			if (IS_CV == IS_CONST && Z_EXTRA_P(dim) == ZEND_EXTRA_VALUE) {
+-				dim++;
+-			}
+-			zend_assign_to_object_dim(object_ptr, dim, value OPLINE_CC EXECUTE_DATA_CC);
+-
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-		} else if (EXPECTED(Z_TYPE_P(object_ptr) == IS_STRING)) {
+-			if (IS_CV == IS_UNUSED) {
+-				zend_use_new_element_for_string();
+-				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-				UNDEF_RESULT();
+-			} else {
+-				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
+-				value = _get_zval_ptr_tmp((opline+1)->op1.var EXECUTE_DATA_CC);
+-				zend_assign_to_string_offset(object_ptr, dim, value OPLINE_CC EXECUTE_DATA_CC);
+-				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-			}
+-		} else if (EXPECTED(Z_TYPE_P(object_ptr) <= IS_FALSE)) {
+-			if (Z_TYPE_P(object_ptr) == IS_FALSE) {
+-				zend_false_to_array_deprecated();
+-			}
+-
+-			if (Z_ISREF_P(orig_object_ptr)
+-			 && ZEND_REF_HAS_TYPE_SOURCES(Z_REF_P(orig_object_ptr))
+-			 && !zend_verify_ref_array_assignable(Z_REF_P(orig_object_ptr))) {
+-				dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
+-				zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-				UNDEF_RESULT();
+-			} else {
+-				ZVAL_ARR(object_ptr, zend_new_array(8));
+-				goto try_assign_dim_array;
+-			}
+-		} else {
+-			zend_use_scalar_as_array();
+-			dim = _get_zval_ptr_cv_BP_VAR_R(opline->op2.var EXECUTE_DATA_CC);
+-assign_dim_error:
+-			zval_ptr_dtor_nogc(EX_VAR((opline+1)->op1.var));
+-			if (UNEXPECTED(RETURN_VALUE_USED(opline))) {
+-				ZVAL_NULL(EX_VAR(opline->result.var));
++		if (UNEXPECTED(execute_data != prev_execute_data)) {
++			/* Validate execute_data before continuing to prevent UAF */
++			if (!execute_data || (char*)execute_data < (char*)EG(vm_stack) || 
++			    (char*)execute_data > (char*)EG(vm_stack) + EG(vm_stack_page_size)) {
++				continue;
+@@ -49657 +49595,13 @@ static ZEND_OPCODE_HANDLER_RET ZEND_FASTCALL ZEND_ASSIGN_DIM_SPEC_CV_CV_OP_DATA_
+-	}
++#else
++		rc = handler(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++		if (rc != 0) {
++			if (rc < 0) {
++				stop = ZEND_JIT_TRACE_STOP_RETURN;
++				opline = NULL;
++				halt = ZEND_JIT_TRACE_HALT;
++				break;
++			} else if (execute_data == EG(current_execute_data)) {
++				/* return after interrupt handler */
++				rc = 0;
++			}
++#endif
+diff --git a/ext/opcache/jit/zend_jit_vm_helpers.c b/ext/opcache/jit/zend_jit_vm_helpers.c
+index d48e2782566..ccfe8d4c658 100644
+--- a/ext/opcache/jit/zend_jit_vm_helpers.c
++++ b/ext/opcache/jit/zend_jit_vm_helpers.c
+@@ -861,0 +862 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++// FIXME: Crash CWE-416: Use After Free
+@@ -862,0 +864,6 @@ zend_jit_trace_stop ZEND_FASTCALL zend_jit_trace_execute(zend_execute_data *ex,
++			/* Validate execute_data before continuing to prevent UAF */
++			if (!execute_data || (char*)execute_data < (char*)EG(vm_stack) || 
++			    (char*)execute_data > (char*)EG(vm_stack) + EG(vm_stack)->size) {
++				continue;
++			}
++		}

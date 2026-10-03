@@ -1,0 +1,33 @@
+diff --git a/src/lib/ndpi_serializer.c b/src/lib/ndpi_serializer.c
+index 9a27add4d..2aa7ab1d9 100644
+--- a/src/lib/ndpi_serializer.c
++++ b/src/lib/ndpi_serializer.c
+@@ -1515 +1515,2 @@ int ndpi_serialize_string_int32(ndpi_serializer *_serializer,
+-    /* needed--; */
++// FIXME: Crash CWE-787: Out-of-bounds Write
++     /* needed--; */
+@@ -1518 +1519 @@ int ndpi_serialize_string_int32(ndpi_serializer *_serializer,
+-		       needed, "%u", value);
++		       needed > buff_diff ? buff_diff : needed, "%u", value);
+diff --git a/src/lib/ndpi_utils.c b/src/lib/ndpi_utils.c
+index 25d7e2cc6..d0d698203 100644
+--- a/src/lib/ndpi_utils.c
++++ b/src/lib/ndpi_utils.c
+@@ -2801 +2801,16 @@ int ndpi_vsnprintf(char * str, size_t size, char const * format, va_list va_args
+-  return vsnprintf(str, size, format, va_args);
++  if((str == NULL) || (size == 0) || (format == NULL)) {
++    return -1;
++  }
++  
++  int ret = vsnprintf(str, size, format, va_args);
++  
++  if(ret < 0) {
++    return -1;
++  }
++  
++  if((size_t)ret >= size) {
++    str[size-1] = '\0';
++    return size-1;
++  }
++  
++  return ret;
